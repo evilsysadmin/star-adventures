@@ -101,6 +101,7 @@ export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal:
   const facing = area.objects.find(object => object.x === front.x && object.y === front.y);
   const dispatch = useCallback((type: Command) => {
     const result = applyExploration(world, exploration, { type });
+    if (!result) return; // Invalid commands throw; narrow JS module return for strict TS.
     setExploration(result.state);
     setEvent(result.event);
   }, [exploration]);
