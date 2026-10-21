@@ -100,12 +100,10 @@ export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal:
   const front = faceTile(exploration);
   const facing = area.objects.find(object => object.x === front.x && object.y === front.y);
   const dispatch = useCallback((type: Command) => {
-    setExploration(previous => {
-      const result = applyExploration(world, previous, { type });
-      setEvent(result.event);
-      return result.state;
-    });
-  }, []);
+    const result = applyExploration(world, exploration, { type });
+    setExploration(result.state);
+    setEvent(result.event);
+  }, [exploration]);
   useEffect(() => {
     if (canvas.current) drawScene(canvas.current, exploration, alert);
   }, [exploration, alert, showMap]);
@@ -144,7 +142,7 @@ export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal:
           <canvas ref={canvas} className="firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
             aria-label={`Perspectiva en primera persona: ${area.title}, posición ${exploration.x} ${exploration.y}, rumbo ${exploration.heading}`} />
           <div className="firstperson-hud">
-            <span data-testid="explore-heading">RUMBO {exploration.heading} · ${exploration.x}:${exploration.y}</span>
+            <span data-testid="explore-heading">RUMBO {exploration.heading} · {exploration.x}:{exploration.y}</span>
             <span data-testid="explore-target">{facing ? `OBJETIVO: ${facing.label}` : 'Observando la estancia'}</span>
           </div>
           <div className="firstperson-controls" aria-label="Control de exploración">
