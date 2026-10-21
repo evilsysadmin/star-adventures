@@ -2,21 +2,33 @@
 
 An independent, narrative tactical space RPG under the ShadowOps label.
 
-**Current status:** foundation slice only. The repo contains an executable, deterministic branching-story engine, one example mission, and tests. No UI, server or deploy yet.
+## Play locally
 
-## Try the foundation
+Node.js 22+ required. The React interface uses Vite 6 and TypeScript; no backend or deployment is required.
 
-Requirements: Node.js 22+.
+```sh
+cd frontend
+npm install
+npm run dev
+```
 
-- Run tests: `npm test`
-- Verify syntax and tests: `npm run check`
+Open the local URL printed by Vite. The current proof-of-play episode is **Ecos en la frontera**: play through science, diplomacy, or tactical intervention and see the decisions affect real domain state. Select orders with mouse/touch or press keys 1–3. Restart via the button, or `R` after an ending.
 
-Start in `docs/PRODUCT.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md`.
+Run the core and UI quality checks from the repository root:
 
-## Ownership
+```sh
+npm run check
+cd frontend && npm run build && npm run test:e2e
+```
 
-- Game code, narrative content and CI: this repository.
-- Infrastructure, staging, deployments and observability: [shadowops-infra](https://github.com/evilsysadmin/shadowops-infra), through an **explicit verified adoption**, never implicitly.
-- Chess Studio and Chronicles remain completely independent.
+Note: Chrome must be installed for Playwright's `channel: chrome`. GitHub-hosted Ubuntu runners provide Chrome. A dependency lockfile will be committed after verifying installation through CI; until then install is intentionally in a bootstrap stage.
 
-> Visibility warning: the repository is currently **public**. The planned private fan prototype may explore the Star Trek universe, but no unlicensed franchise artwork, copied dialogue, or third-party assets should be committed to a public repo. See `docs/CONTENT-AND-IP.md`.
+### Ownership
+
+- **Game rules and stories:** this repository, separate from Chess Studio and Chronicles.
+- **Infrastructure, staging, deployments and observability:** [shadowops-infra](https://github.com/evilsysadmin/shadowops-infra), only after explicit handoff.
+- **No server yet:** the browser UI talks directly to a deterministic domain engine, not mocked API calls.
+
+Read `AGENTS.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` before extending the game.
+
+> This repository currently is **public**. Do not commit third-party Star Trek content or proprietary fan assets while it is public. The proof-of-play story uses original generic content, keeping later world changes inexpensive.
