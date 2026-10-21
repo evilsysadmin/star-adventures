@@ -126,3 +126,18 @@ test('corrupt v2 does not silently restore stale v1', async ({ page }) => {
   await expect(page.getByTestId('diplomacy-score')).toHaveText('00');
   await expect(page.getByText('Guardado incompatible · misión reiniciada')).toBeVisible();
 });
+
+for (const width of [390, 1280]) {
+  test(`expanded crew roster stays usable at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 850 : 820 });
+    await page.goto('/');
+    await page.getByTestId('crew-roster').locator('summary').click();
+    await expect(page.getByTestId('station-science')).toBeVisible();
+    await expect(page.getByTestId('station-medicine')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/crew-roster-${width}.png`, fullPage: true });
+    await page.getByTestId('station-science').selectOption('dorn');
+    await expect(page.getByTestId('station-tactical')).toHaveValue('venn');
+    await page.screenshot({ path: `test-results/crew-roster-swapped-${width}.png`, fullPage: true });
+  });
+}
