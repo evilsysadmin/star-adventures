@@ -96,15 +96,18 @@ export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal:
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const stateRef = useRef(exploration);
   const area = (world.scenes as Record<string, Scene>)[exploration.area];
   const front = faceTile(exploration);
   const facing = area.objects.find(object => object.x === front.x && object.y === front.y);
   const dispatch = useCallback((type: Command) => {
-    const result = applyExploration(world, exploration, { type });
-    if (!result) return; // Invalid commands throw; narrow JS module return for strict TS.
+    // Sync ref prevents dropped turns when two keyboard events arrive before React rerenders.
+    const result = applyExploration(world, stateRef.current, { type });
+    if (!result) return;
+    stateRef.current = result.state;
     setExploration(result.state);
     setEvent(result.event);
-  }, [exploration]);
+  }, []);
   useEffect(() => {
     if (canvas.current) drawScene(canvas.current, exploration, alert);
   }, [exploration, alert, showMap]);
