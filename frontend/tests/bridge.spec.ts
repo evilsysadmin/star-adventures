@@ -146,9 +146,14 @@ test('walk the first-person bridge, operate a console, and cancel/confirm transp
   await page.goto('/');
   await expect(page.getByTestId('explore-area')).toContainText('Puente de mando');
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N');
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-use').click();
-  await expect(page.getByTestId('explore-feedback')).toContainText('Sillón del capitán');
+  await expect(page.getByTestId('explore-feedback')).toContainText('Consola de navegación');
+  await page.getByTestId('explore-backward').click();
+  await page.getByTestId('explore-backward').click();
   await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-right').click();
   await expect(page.getByTestId('explore-target')).toContainText('sala de transporte');
   await page.getByTestId('explore-use').click();
@@ -180,6 +185,7 @@ for (const width of [360, 390, 430, 1280]) {
 test('keyboard navigation reaches the transporter without stealing focus from select inputs', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowUp');
   await page.keyboard.press('ArrowRight');
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO S');
   await page.keyboard.press('e');
