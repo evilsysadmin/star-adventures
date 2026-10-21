@@ -24,3 +24,29 @@ jobs:
           node-version: '22'
       - name: Verify rules, narrative and syntax
         run: npm run check
+
+  web:
+    name: React build and browser smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Typecheck and bundle
+        run: npm run build --prefix frontend
+      - name: Browser journey, keyboard and mobile widths
+        run: npm run test:e2e --prefix frontend
+      - name: Upload browser screenshots and lockfile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-adventures-react-visual-${{ github.sha }}
+          path: |
+            frontend/test-results/*.png
+            frontend/package-lock.json
+          if-no-files-found: warn
+          retention-days: 7
