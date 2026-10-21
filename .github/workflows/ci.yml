@@ -34,9 +34,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # Bootstrap stage: generate a lockfile during CI until a vetted lock is committed.
       - name: Install frontend dependencies
-        run: npm install --prefix frontend --no-audit --no-fund
+        run: npm ci --prefix frontend --no-audit --no-fund
       - name: Typecheck and bundle
         run: npm run build --prefix frontend
       - name: Browser journey, keyboard and mobile widths

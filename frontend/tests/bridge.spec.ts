@@ -36,6 +36,7 @@ test('science, diplomacy and tactical choices produce distinct genuine outcomes'
 
 test('keyboard choices and skip-navigation work', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByTestId('choice-hail')).toBeVisible();
   await page.keyboard.press('2');
   await expect(page.getByTestId('diplomacy-score')).toHaveText('01');
   await page.keyboard.press('1');

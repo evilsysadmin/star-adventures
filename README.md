@@ -8,7 +8,7 @@ Node.js 22+ required. The React interface uses Vite 6 and TypeScript; no backend
 
 ```sh
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -21,7 +21,7 @@ npm run check
 cd frontend && npm run build && npm run test:e2e
 ```
 
-Note: Chrome must be installed for Playwright's `channel: chrome`. GitHub-hosted Ubuntu runners provide Chrome. A dependency lockfile will be committed after verifying installation through CI; until then install is intentionally in a bootstrap stage.
+Note: Chrome must be installed for Playwright's `channel: chrome`. GitHub-hosted Ubuntu runners provide Chrome. The dependency lockfile is committed and CI installs it with `npm ci`.
 
 ### Ownership
 

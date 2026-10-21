@@ -49,7 +49,7 @@ export function App() {
     const keyHandler = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.defaultPrevented) return;
       const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))) return;
+      if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
       if (terminal && event.key.toLowerCase() === 'r') { event.preventDefault(); restart(); return; }
       const index = Number(event.key) - 1;
       if (event.key >= '1' && event.key <= '9' && choices[index]) {
