@@ -184,6 +184,9 @@ for (const width of [360, 390, 430, 1280]) {
 
 test('keyboard navigation reaches the transporter without stealing focus from select inputs', async ({ page }) => {
   await page.goto('/');
+  // Wait for the mounted React viewport and its global keydown listener.
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N');
+  await page.getByTestId('explore-right').focus();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('ArrowRight');
