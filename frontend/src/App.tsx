@@ -3,7 +3,7 @@ import episode from '../../content/episodes/border-signal.json';
 import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
 import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.mjs';
-import { BridgeScene } from './components/BridgeScene';
+import { FirstPersonView } from './components/FirstPersonView';
 import { restoreSession, persistSession, localStorageOrNull, type SessionState } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
@@ -83,7 +83,7 @@ export function App() {
           <div className="eyebrow"><span className="eyebrow-line" /> MISIÓN 001 <span className="eyebrow-muted">/ SECTOR DISPUTADO</span></div>
           <h1 id="mission-title">Ecos en la <em>frontera</em></h1>
           <p className="mission-summary">Un SOS en territorio disputado. Dos capitanes al borde del combate. El próximo movimiento es tuyo.</p>
-          <BridgeScene alert={showDamage} terminal={terminal} />
+          <FirstPersonView alert={showDamage} terminal={terminal} />
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>

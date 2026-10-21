@@ -9,42 +9,45 @@ const dispatch = (s, type) => applyExploration(world, s, { type });
 test('authored bridge/surface world and every spawn validate', () => {
   assert.equal(validateWorld(world), true);
   const start = startExploration(world);
-  assert.deepEqual({ area: start.area, x: start.x, y: start.y, heading: start.heading }, { area: 'bridge', x: 4, y: 5, heading: 'N' });
+  assert.deepEqual({ area: start.area, x: start.x, y: start.y, heading: start.heading }, { area: 'bridge', x: 3, y: 5, heading: 'N' });
 });
 
 test('move and rotate use identical rules regardless of scene, never mutate prior state', () => {
   const start = startExploration(world);
   const left = dispatch(start, 'turn-left').state;
   assert.equal(left.heading, 'W');
-  assert.deepEqual(faceTile(left), { x: 3, y: 5 });
+  assert.deepEqual(faceTile(left), { x: 2, y: 5 });
   const moved = dispatch(left, 'forward');
   assert.equal(moved.event.type, 'moved');
-  assert.equal(moved.state.x, 3);
-  assert.equal(start.x, 4);
-  const blocked = dispatch(start, 'forward');
-  assert.equal(blocked.event.type, 'blocked'); // Captain's chair occupies 4,4
-  assert.deepEqual(blocked.state, start);
+  assert.equal(moved.state.x, 2);
+  assert.equal(start.x, 3);
+  const nearerHelm = dispatch(dispatch(start, 'forward').state, 'forward').state;
+  const blocked = dispatch(nearerHelm, 'forward');
+  assert.equal(blocked.event.type, 'blocked'); // Helm console occupies 3,2
+  assert.deepEqual(blocked.state, nearerHelm);
 });
 
 test('using a real station returns action ID without pretending command executed', () => {
-  const start = startExploration(world);
+  const start = dispatch(dispatch(startExploration(world), 'forward').state, 'forward').state;
   const result = dispatch(start, 'use');
   assert.equal(result.event.type, 'station');
-  assert.equal(result.event.action, 'command');
+  assert.equal(result.event.action, 'helm');
   assert.deepEqual(result.state, start);
 });
 
 test('transition is opt-in: declining keeps tile, next use prompts again, confirming changes area', () => {
   const start = startExploration(world);
-  const south = dispatch(dispatch(start, 'turn-right').state, 'turn-right').state;
+  const east = dispatch(start, 'turn-right').state;
+  const moved = dispatch(east, 'forward').state;
+  const south = dispatch(moved, 'turn-right').state;
   const offered = dispatch(south, 'use');
   assert.equal(offered.event.type, 'transition-offered');
   assert.equal(offered.state.area, 'bridge');
-  assert.deepEqual({ x: offered.state.x, y: offered.state.y }, { x: start.x, y: start.y });
+  assert.deepEqual({ x: offered.state.x, y: offered.state.y }, { x: moved.x, y: moved.y });
   assert.throws(() => dispatch(offered.state, 'forward'), SpatialError);
   const declined = dispatch(offered.state, 'decline');
   assert.equal(declined.state.pending, null);
-  assert.deepEqual({ x: declined.state.x, y: declined.state.y }, { x: start.x, y: start.y });
+  assert.deepEqual({ x: declined.state.x, y: declined.state.y }, { x: moved.x, y: moved.y });
   const promptedAgain = dispatch(declined.state, 'use');
   assert.equal(promptedAgain.event.type, 'transition-offered');
   const confirmed = dispatch(promptedAgain.state, 'confirm');

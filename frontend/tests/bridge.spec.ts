@@ -141,3 +141,62 @@ for (const width of [390, 1280]) {
     await page.screenshot({ path: `test-results/crew-roster-swapped-${width}.png`, fullPage: true });
   });
 }
+
+test('walk the first-person bridge, operate a console, and cancel/confirm transport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 850 });
+  await page.goto('/');
+  await expect(page.getByTestId('explore-area')).toContainText('Puente de mando');
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N');
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('explore-feedback')).toContainText('Consola de navegación');
+  await page.getByTestId('explore-backward').click();
+  await page.getByTestId('explore-backward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await expect(page.getByTestId('explore-target')).toContainText('sala de transporte');
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByRole('dialog')).toContainText('Confirmar cambio de área');
+  await page.screenshot({ path: 'test-results/transport-confirm-390.png', fullPage: true });
+  await page.getByTestId('transport-decline').click();
+  await expect(page.getByTestId('explore-heading')).toContainText('4:5');
+  await page.getByTestId('explore-use').click();
+  await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N');
+  await page.screenshot({ path: 'test-results/away-surface-390.png', fullPage: true });
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('explore-feedback')).toContainText('Sonda científica');
+});
+
+for (const width of [360, 390, 430, 1280]) {
+  test(`first-person viewport stays operable at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 820 });
+    await page.goto('/');
+    await expect(page.getByTestId('explore-forward')).toBeVisible();
+    await expect(page.getByTestId('explore-use')).toBeVisible();
+    await expect(page.getByTestId('explore-area')).toContainText('Puente');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/firstperson-${width}.png`, fullPage: true });
+  });
+}
+
+test('keyboard navigation reaches the transporter without stealing focus from select inputs', async ({ page }) => {
+  await page.goto('/');
+  // Wait for the mounted React viewport and its global keydown listener.
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N');
+  await page.getByTestId('explore-right').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO S');
+  await page.keyboard.press('e');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByTestId('explore-heading')).toContainText('4:5');
+});
