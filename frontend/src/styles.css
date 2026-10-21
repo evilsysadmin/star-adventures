@@ -32,3 +32,25 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .choice-staff{font:600 10px 'DM Sans',sans-serif;color:#8fb4b5;line-height:1.4}
 .choice-staff.crew-risk{color:#eab28d}
 @media(max-width:520px){.crew-roster{margin:0 16px 16px}.station-grid{grid-template-columns:1fr}.crew-roster summary{letter-spacing:.02em;font-size:9px}}
+
+/* V1 first-person spatial viewport: rendering is temporary, spatial rules live in src/spatial.mjs. */
+.firstperson{position:relative;border:1px solid #375663;background:#071421;color:#d9ebe8;box-shadow:0 18px 55px #0005}
+.firstperson-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #36525d;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.07em;color:#b8d5d8}
+.firstperson-name{overflow-wrap:anywhere}.firstperson-map-toggle{cursor:pointer;border:1px solid #4a747e;background:#1c3847;color:#e1eacb;padding:8px 11px;font:600 10px 'Space Grotesk',sans-serif;white-space:nowrap}
+.firstperson-canvas{width:100%;height:auto;aspect-ratio:2/1;display:block;background:#101e2b}
+.firstperson-hud{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 14px;background:#132836;border-top:1px solid #365665;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.06em;color:#bad7d1}
+.firstperson-hud span:last-child{text-align:right;color:#e5bc88;min-width:0}
+.firstperson-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:10px;background:#0c1a28}
+.firstperson-controls button{min-width:0;min-height:45px;cursor:pointer;border:1px solid #375b65;background:#193546;color:#dcece8;font:700 11px 'Space Grotesk',sans-serif;padding:7px 3px}
+.firstperson-controls button:hover:not(:disabled){background:#275768;border-color:#8abeb8}
+.firstperson-controls button:disabled{opacity:.45;cursor:default}
+.firstperson-controls .firstperson-interact{background:#37554f;border-color:#83ae9a;color:#e6f5df}
+.firstperson-feedback{min-height:30px;margin:0;padding:8px 14px 13px;color:#9bb7bf;font-size:11px;line-height:1.5}
+.firstperson-dialog-backdrop{position:absolute;inset:0;background:#06121ddf;display:grid;place-items:center;z-index:5;padding:12px}
+.firstperson-dialog{width:min(100%,440px);border:1px solid #a0c3bd;background:#162b38;box-shadow:0 20px 75px #0008;padding:20px}
+.firstperson-dialog h3{font:600 21px 'Space Grotesk',sans-serif;color:#e4f1e8;margin:0 0 12px}
+.firstperson-dialog p{font-size:14px;line-height:1.6;color:#b2ced0;margin:0 0 20px}
+.firstperson-dialog-actions{display:flex;flex-wrap:wrap;gap:12px}
+.firstperson-dialog-actions button{flex:1;border:1px solid #628a8c;background:#214353;color:#f2f3e8;padding:11px 9px;cursor:pointer}
+.firstperson-dialog-actions button:last-child{background:#3b655e;border-color:#91c4a9}
+@media(max-width:520px){.firstperson-top{font-size:9px;padding:8px}.firstperson-map-toggle{font-size:9px;padding:7px}.firstperson-hud{font-size:9px;padding:9px 7px}.firstperson-controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px}.firstperson-controls button{min-height:44px;font-size:10px}.firstperson-controls .firstperson-interact{grid-column:span 2}.firstperson-feedback{font-size:10px}}
