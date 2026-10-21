@@ -3,6 +3,10 @@ import episode from '../../content/episodes/border-signal.json';
 import { startEpisode, choose, currentNode } from '../../src/episode.mjs';
 import { BridgeScene } from './components/BridgeScene';
 
+type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
+type LogEntry = { nodeId: string; choiceId: string; next: string; effects: Record<string, number> };
+type GameState = { schemaVersion: number; episodeId: string; nodeId: string; stats: { science: number; diplomacy: number; shipDamage: number }; log: LogEntry[] };
+
 const outcomeText: Record<string, string> = {
   'peaceful-resolution': 'Paz negociada',
   'tactical-resolution': 'Victoria táctica',
@@ -34,10 +38,10 @@ const spanishChoices: Record<string, string> = {
 };
 
 export function App() {
-  const [state, setState] = useState(() => startEpisode(episode));
+  const [state, setState] = useState<GameState>(() => startEpisode(episode));
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
-  const choices = useMemo(() => node.choices ?? [], [node]);
+  const choices = useMemo<Command[]>(() => node.choices ?? [], [node]);
   const restart = () => setState(startEpisode(episode));
   const select = (id: string) => setState(prev => choose(episode, prev, id));
 
