@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import episode from '../../content/episodes/border-signal.json';
 import { startEpisode, choose, currentNode } from '../../src/episode.mjs';
 import { BridgeScene } from './components/BridgeScene';
+import { restoreSession, persistSession, localStorageOrNull } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
 type LogEntry = { nodeId: string; choiceId: string; next: string; effects: Record<string, number> };
@@ -38,7 +39,9 @@ const spanishChoices: Record<string, string> = {
 };
 
 export function App() {
-  const [state, setState] = useState<GameState>(() => startEpisode(episode));
+  const [initialSession] = useState(() => restoreSession(episode, localStorageOrNull()));
+  const [state, setState] = useState<GameState>(() => initialSession.state);
+  useEffect(() => { persistSession(episode, state, localStorageOrNull()); }, [state]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
   const choices = useMemo<Command[]>(() => node.choices ?? [], [node]);
@@ -115,7 +118,7 @@ export function App() {
         </section>
       </main>
 
-      <footer className="footer-line"><span>✦ SHADOWOPS <span className="footer-muted">/ UNIVERSO EN CONSTRUCCIÓN</span></span><span aria-live="polite">{last ? `ÚLTIMA ORDEN: ${spanishChoices[last.choiceId] ?? last.choiceId}` : 'BITÁCORA · SIN ÓRDENES EMITIDAS'}</span></footer>
+      <footer className="footer-line"><span>✦ SHADOWOPS <span className="footer-muted">/ UNIVERSO EN CONSTRUCCIÓN</span></span><span aria-live="polite">{last ? `ÚLTIMA ORDEN: ${spanishChoices[last.choiceId] ?? last.choiceId}` : initialSession.notice}</span></footer>
     </div>
   );
 }

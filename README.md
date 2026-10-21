@@ -12,7 +12,7 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. The current proof-of-play episode is **Ecos en la frontera**: play through science, diplomacy, or tactical intervention and see the decisions affect real domain state. Select orders with mouse/touch or press keys 1–3. Restart via the button, or `R` after an ending.
+Open the local URL printed by Vite. The current proof-of-play episode is **Ecos en la frontera**: play through science, diplomacy, or tactical intervention and see the decisions affect real domain state. Select orders with mouse/touch or press keys 1–3. Decisions are checkpointed locally, verified by replay on refresh, and recovered safely from corrupt saves. Restart via the button, or `R` after an ending.
 
 Run the core and UI quality checks from the repository root:
 
