@@ -1,0 +1,350 @@
+{
+  "version": 1,
+  "startArea": "bridge",
+  "scenes": {
+    "bridge": {
+      "title": "USS Meridian · Puente de mando",
+      "width": 9,
+      "height": 8,
+      "spawn": {
+        "x": 4,
+        "y": 5,
+        "heading": "N"
+      },
+      "walls": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 2,
+          "y": 7
+        },
+        {
+          "x": 3,
+          "y": 7
+        },
+        {
+          "x": 4,
+          "y": 7
+        },
+        {
+          "x": 5,
+          "y": 7
+        },
+        {
+          "x": 6,
+          "y": 7
+        },
+        {
+          "x": 7,
+          "y": 7
+        },
+        {
+          "x": 8,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 8,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": 8,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": 8,
+          "y": 5
+        },
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": 8,
+          "y": 6
+        }
+      ],
+      "objects": [
+        {
+          "id": "helm",
+          "label": "Consola de navegación",
+          "type": "station",
+          "action": "helm",
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "science",
+          "label": "Estación científica",
+          "type": "station",
+          "action": "science",
+          "x": 1,
+          "y": 3
+        },
+        {
+          "id": "comms",
+          "label": "Comunicaciones",
+          "type": "station",
+          "action": "communications",
+          "x": 5,
+          "y": 2
+        },
+        {
+          "id": "tactical",
+          "label": "Estación táctica",
+          "type": "station",
+          "action": "tactical",
+          "x": 7,
+          "y": 3
+        },
+        {
+          "id": "captain",
+          "label": "Sillón del capitán",
+          "type": "station",
+          "action": "command",
+          "x": 4,
+          "y": 4
+        },
+        {
+          "id": "transporter",
+          "label": "Acceso a la sala de transporte",
+          "type": "transition",
+          "to": "surface",
+          "x": 4,
+          "y": 6
+        }
+      ]
+    },
+    "surface": {
+      "title": "Superficie planetaria · Equipo de desembarco",
+      "width": 9,
+      "height": 8,
+      "spawn": {
+        "x": 4,
+        "y": 5,
+        "heading": "N"
+      },
+      "walls": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 7
+        },
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 2,
+          "y": 7
+        },
+        {
+          "x": 3,
+          "y": 7
+        },
+        {
+          "x": 4,
+          "y": 7
+        },
+        {
+          "x": 5,
+          "y": 7
+        },
+        {
+          "x": 6,
+          "y": 7
+        },
+        {
+          "x": 7,
+          "y": 7
+        },
+        {
+          "x": 8,
+          "y": 7
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 8,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 3
+        },
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": 8,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": 8,
+          "y": 5
+        },
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": 8,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 6,
+          "y": 4
+        }
+      ],
+      "objects": [
+        {
+          "id": "probe",
+          "label": "Sonda científica",
+          "type": "station",
+          "action": "inspect-probe",
+          "x": 4,
+          "y": 2
+        },
+        {
+          "id": "beam-out",
+          "label": "Solicitar teletransporte de regreso",
+          "type": "transition",
+          "to": "bridge",
+          "x": 4,
+          "y": 6
+        }
+      ]
+    }
+  }
+}
