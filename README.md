@@ -1,9 +1,22 @@
 # ShadowOps · Star Adventures
 
-Independent space-exploration tactical RPG. Repository bootstrap only; implementation will arrive through reviewed pull requests.
+An independent, narrative tactical space RPG under the ShadowOps label.
 
-- **Game code and content:** this repository.
-- **Infrastructure and deployments:** [`evilsysadmin/shadowops-infra`](https://github.com/evilsysadmin/shadowops-infra), after an explicit handoff.
-- **Status:** no runtime, CI or deployments yet.
+**Current status:** foundation slice only. The repo contains an executable, deterministic branching-story engine, one example mission, and tests. No UI, server or deploy yet.
 
-> Note: this repository is currently public. Keep third-party licensed assets and unreleased private fan content out of it until its visibility and rights have been reviewed.
+## Try the foundation
+
+Requirements: Node.js 22+.
+
+- Run tests: `npm test`
+- Verify syntax and tests: `npm run check`
+
+Start in `docs/PRODUCT.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md`.
+
+## Ownership
+
+- Game code, narrative content and CI: this repository.
+- Infrastructure, staging, deployments and observability: [shadowops-infra](https://github.com/evilsysadmin/shadowops-infra), through an **explicit verified adoption**, never implicitly.
+- Chess Studio and Chronicles remain completely independent.
+
+> Visibility warning: the repository is currently **public**. The planned private fan prototype may explore the Star Trek universe, but no unlicensed franchise artwork, copied dialogue, or third-party assets should be committed to a public repo. See `docs/CONTENT-AND-IP.md`.

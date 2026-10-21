@@ -1,0 +1,39 @@
+{
+  "id": "border-signal",
+  "version": 1,
+  "start": "distress",
+  "nodes": {
+    "distress": {
+      "text": "A damaged survey vessel broadcasts a warning near a disputed boundary. Your crew awaits orders.",
+      "choices": [
+        { "id": "scan", "label": "Examine the anomalous readings", "next": "analysis", "effects": { "science": 1 } },
+        { "id": "hail", "label": "Open a diplomatic channel", "next": "parley", "effects": { "diplomacy": 1 } },
+        { "id": "intercept", "label": "Move to shield the vessel", "next": "intervention", "effects": { "shipDamage": 1 } }
+      ]
+    },
+    "analysis": {
+      "text": "The supposed weapons discharge is a hazardous natural pulse. The vessels are reacting to bad sensor data.",
+      "choices": [
+        { "id": "broadcast", "label": "Transmit the corrected science to both ships", "next": "peace", "effects": { "science": 2 } },
+        { "id": "withdraw", "label": "Retreat with the evidence", "next": "withdrawal" }
+      ]
+    },
+    "parley": {
+      "text": "Both captains agree to a brief ceasefire if you can establish neutral communication.",
+      "choices": [
+        { "id": "mediate", "label": "Broker a mutual rescue operation", "next": "peace", "effects": { "diplomacy": 2 } },
+        { "id": "ultimatum", "label": "Issue an ultimatum", "next": "intervention" }
+      ]
+    },
+    "intervention": {
+      "text": "Your defensive interception saves the civilian crew, but a stray burst damages your ship.",
+      "choices": [
+        { "id": "disable", "label": "Disable the aggressor's engines", "next": "costly", "effects": { "shipDamage": 2 } },
+        { "id": "disengage", "label": "Disengage and escape", "next": "withdrawal" }
+      ]
+    },
+    "peace": { "text": "Evidence and diplomacy avert the fight. Both crews survive.", "outcome": "peaceful-resolution" },
+    "costly": { "text": "The threat ends, but your ship needs repairs.", "outcome": "tactical-resolution" },
+    "withdrawal": { "text": "You survive, but the dispute remains unresolved.", "outcome": "withdrawal" }
+  }
+}
