@@ -17,3 +17,18 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 @media(max-width:1000px){.app-shell{padding:0 22px}.bridge-layout{grid-template-columns:1fr;gap:30px;padding-top:35px}.hero-panel h1{font-size:clamp(36px,6vw,60px)}.narrative{min-height:auto}.orders-panel{max-width:none}.mission-summary{max-width:650px}}
 @media(max-width:520px){.app-shell{padding:0 14px}.masthead{height:79px;gap:10px}.brand-mark{font-size:21px;width:34px;height:34px;margin-right:0}.brand-name{font-size:13px;letter-spacing:.13em}.brand-caption{font-size:7px;letter-spacing:.1em}.masthead-right{font-size:0;gap:0}.masthead-right .status-dot{width:7px;height:7px}.masthead-separator{display:none}.bridge-layout{padding:29px 0 24px;gap:22px}.eyebrow{font-size:9px;gap:7px;letter-spacing:.11em}.eyebrow-line{width:14px}.hero-panel h1{font-size:clamp(34px,9vw,46px);margin:16px 0 12px}.mission-summary{font-size:13px;margin-bottom:21px}.scene-header,.scene-footer{padding:12px;font-size:8px;letter-spacing:.065em}.scene-mode{display:none}.sector-visual{min-height:160px}.stat{padding:14px 11px}.stat-heading{font-size:8px;letter-spacing:.04em}.stat-value{font-size:26px}.stat-sub{font-size:8px;letter-spacing:.05em}.panel-topline,.officer,.narrative{padding-left:16px;padding-right:16px}.divider-fine{margin:0 16px}.decision-section{padding:0 16px}.narrative{padding-top:22px;padding-bottom:22px}.narrative h2{font-size:22px}.officer-avatar{width:38px;height:38px}.comms-live{font-size:8px}.choice{padding:10px 12px;gap:10px}.orders-footer{margin:18px 16px}.shortcut-hint{font-size:8px;letter-spacing:0}.footer-line{font-size:8px;letter-spacing:.03em;padding:17px 0 26px;flex-wrap:wrap}.footer-line>span:last-child{text-align:left}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Crew assignment remains secondary to the core mission decision flow. */
+.crew-roster{margin:0 25px 17px;border:1px solid #2c4552;background:#0f2330}
+.crew-roster summary{display:flex;align-items:center;justify-content:space-between;gap:9px;list-style:none;cursor:pointer;padding:11px 13px;color:#a9ccc6;font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.09em}
+.crew-roster summary::-webkit-details-marker{display:none}
+.crew-roster summary:hover{background:#173344}.crew-roster-action{color:#dbc2a2;white-space:nowrap}
+.station-grid{padding:9px 12px 13px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.station-field{min-width:0;display:flex;flex-direction:column;gap:6px}
+.station-title{color:#c6dcd9;text-transform:uppercase;font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.12em}
+.station-field select{min-width:0;width:100%;border:1px solid #3b5967;background:#192e3c;color:#f0f3ed;font:500 12px 'DM Sans',sans-serif;padding:8px 7px;cursor:pointer}
+.station-field select:focus-visible{outline:2px solid #8ce2ce;outline-offset:2px}
+.station-rating{font:600 9px 'Space Grotesk',sans-serif;color:#83adb2;line-height:1.4}
+.choice-staff{font:600 10px 'DM Sans',sans-serif;color:#8fb4b5;line-height:1.4}
+.choice-staff.crew-risk{color:#eab28d}
+@media(max-width:520px){.crew-roster{margin:0 16px 16px}.station-grid{grid-template-columns:1fr}.crew-roster summary{letter-spacing:.02em;font-size:9px}}

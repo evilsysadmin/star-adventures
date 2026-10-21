@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import episode from '../../content/episodes/border-signal.json';
-import { startEpisode, choose, currentNode } from '../../src/episode.mjs';
+import { currentNode } from '../../src/episode.mjs';
+import { applyCrewAction } from '../../src/crewSession.mjs';
+import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.mjs';
 import { BridgeScene } from './components/BridgeScene';
-import { restoreSession, persistSession, localStorageOrNull } from './session';
+import { restoreSession, persistSession, localStorageOrNull, type SessionState } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
-type LogEntry = { nodeId: string; choiceId: string; next: string; effects: Record<string, number> };
-type GameState = { schemaVersion: number; episodeId: string; nodeId: string; stats: { science: number; diplomacy: number; shipDamage: number }; log: LogEntry[] };
+const stationNames: Record<string, string> = { command: 'Mando', science: 'Ciencia', diplomacy: 'Diplomacia', tactical: 'Táctica', engineering: 'Ingeniería', medicine: 'Medicina' };
 
 const outcomeText: Record<string, string> = {
   'peaceful-resolution': 'Paz negociada',
@@ -40,13 +41,14 @@ const spanishChoices: Record<string, string> = {
 
 export function App() {
   const [initialSession] = useState(() => restoreSession(episode, localStorageOrNull()));
-  const [state, setState] = useState<GameState>(() => initialSession.state);
-  useEffect(() => { persistSession(episode, state, localStorageOrNull()); }, [state]);
+  const [session, setSession] = useState<SessionState>(() => initialSession.state);
+  const state = session.episodeState;
+  useEffect(() => { persistSession(episode, session, localStorageOrNull()); }, [session]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
   const choices = useMemo<Command[]>(() => node.choices ?? [], [node]);
-  const restart = () => setState(startEpisode(episode));
-  const select = (id: string) => setState(prev => choose(episode, prev, id));
+  const restart = () => setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
+  const select = (id: string) => setSession(prev => applyCrewAction(episode, prev, { type: 'order', choiceId: id }));
 
   useEffect(() => {
     const keyHandler = (event: KeyboardEvent) => {
@@ -91,12 +93,27 @@ export function App() {
 
         <section className="orders-panel" id="orders" aria-labelledby="orders-title">
           <div className="panel-topline"><span>01 / ÓRDENES DEL CAPITÁN</span><span className="panel-diamond" aria-hidden="true">◆</span></div>
-          <div className="officer"><span className="officer-avatar" aria-hidden="true">C</span><div><div className="officer-role">OFICIAL DE GUARDIA</div><div className="officer-name">Puente de mando</div></div><span className="comms-live" aria-label="Canal activo">ENLACE ABIERTO</span></div>
+          <div className="officer"><span className="officer-avatar" aria-hidden="true">C</span><div><div className="officer-role">OFICIAL AL MANDO</div><div className="officer-name">{officerAt(session.crew, 'command').name}</div></div><span className="comms-live" aria-label="Canal activo">ENLACE ABIERTO</span></div>
+          <details className="crew-roster" data-testid="crew-roster">
+            <summary><span>TRIPULACIÓN · SEIS OFICIALES</span><span className="crew-roster-action">Gestionar puestos ▾</span></summary>
+            <div className="station-grid">
+              {STATIONS.map(station => {
+                const assigned = officerAt(session.crew, station);
+                return <label className="station-field" key={station}>
+                  <span className="station-title">{stationNames[station]}</span>
+                  <select data-testid={`station-${station}`} aria-label={`Asignar ${stationNames[station]}`} value={assigned.id} onChange={event => setSession(prev => applyCrewAction(episode, prev, { type: 'assign', station, officerId: event.target.value }))}>
+                    {OFFICERS.map(officer => <option key={officer.id} value={officer.id}>{officer.name}</option>)}
+                  </select>
+                  <span className="station-rating">HABILIDAD {assigned.skill}/5 · NIVEL {assigned.level} · {assigned.xp} XP</span>
+                </label>;
+              })}
+            </div>
+          </details>
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
             <div className="panel-label">{terminal ? 'INFORME FINAL' : 'SITUACIÓN ACTUAL'}</div>
             <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : 'Esperando instrucciones'}</h2>
-            <p>{spanishText[state.nodeId] ?? node.text}</p>
+            <p>{last?.check === 'failed' ? `La orden fracasa: ${last.officerId ? OFFICERS.find(officer => officer.id === last.officerId)?.name : 'el oficial'} carece de preparación para ejecutar esta maniobra. La misión queda sin resolver.` : (spanishText[state.nodeId] ?? node.text)}</p>
           </div>
           <div className="decision-section">
             <div className="decision-heading"><span>{terminal ? 'MISIÓN COMPLETADA' : 'SELECCIONA UNA ORDEN'}</span>{!terminal && <span>{choices.length} OPCIONES</span>}</div>
@@ -104,13 +121,13 @@ export function App() {
               <div className="ending" data-testid="ending"><span className="ending-icon" aria-hidden="true">✧</span><div><strong>Registro de misión cerrado</strong><p>{state.log.length} decisiones · {outcomeText[node.outcome!]}</p></div></div>
             ) : (
               <div className="choice-list">
-                {choices.map((choice, index) => (
+                {choices.map((choice, index) => { const assigned = officerAt(session.crew, stationForChoice(choice.id)); const pivotal = ['broadcast', 'mediate', 'disable'].includes(choice.id); return (
                   <button key={choice.id} type="button" className="choice" onClick={() => select(choice.id)} data-testid={`choice-${choice.id}`}>
                     <span className="choice-index">{String(index + 1).padStart(2, '0')}</span>
-                    <span className="choice-copy"><span className="choice-kind">{choiceKinds[choice.id] ?? 'MANDO'}</span><span className="choice-title">{spanishChoices[choice.id] ?? choice.label}</span></span>
+                    <span className="choice-copy"><span className="choice-kind">{choiceKinds[choice.id] ?? 'MANDO'}</span><span className="choice-title">{spanishChoices[choice.id] ?? choice.label}</span><span className={`choice-staff ${pivotal && assigned.skill < 3 ? 'crew-risk' : ''}`} data-testid={`staff-${choice.id}`}>{assigned.name} · {stationNames[assigned.station]} {assigned.skill}/5{pivotal ? (assigned.skill >= 3 ? ' · PREPARADO' : ' · NO PREPARADO') : ''}</span></span>
                     <span className="choice-arrow" aria-hidden="true">↗</span>
                   </button>
-                ))}
+                ); })}
               </div>
             )}
           </div>
