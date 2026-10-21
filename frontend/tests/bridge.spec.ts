@@ -46,3 +46,25 @@ test('keyboard choices and skip-navigation work', async ({ page }) => {
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Ir a las órdenes' })).toBeFocused();
 });
+
+
+test('a saved command history restores the same decision after refresh', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('choice-hail').click();
+  await expect(page.getByTestId('diplomacy-score')).toHaveText('01');
+  await page.reload();
+  await expect(page.getByTestId('choice-mediate')).toBeVisible();
+  await expect(page.getByTestId('diplomacy-score')).toHaveText('01');
+  await page.getByTestId('choice-mediate').click();
+  await page.reload();
+  await expect(page.getByTestId('ending')).toContainText('Paz negociada');
+  await expect(page.getByTestId('diplomacy-score')).toHaveText('03');
+});
+
+test('corrupt local checkpoint falls back to a new mission without crashing', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('shadowops.star-adventures.border-signal.v1', '{bad save'));
+  await page.reload();
+  await expect(page.getByTestId('choice-scan')).toBeVisible();
+  await expect(page.getByText('Guardado incompatible · misión reiniciada')).toBeVisible();
+});
