@@ -47,7 +47,7 @@ test('transition is opt-in: declining keeps tile, next use prompts again, confir
   assert.throws(() => dispatch(offered.state, 'forward'), SpatialError);
   const declined = dispatch(offered.state, 'decline');
   assert.equal(declined.state.pending, null);
-  assert.deepEqual({ x: declined.state.x, y: declined.state.y }, { x: start.x, y: start.y });
+  assert.deepEqual({ x: declined.state.x, y: declined.state.y }, { x: moved.x, y: moved.y });
   const promptedAgain = dispatch(declined.state, 'use');
   assert.equal(promptedAgain.event.type, 'transition-offered');
   const confirmed = dispatch(promptedAgain.state, 'confirm');
