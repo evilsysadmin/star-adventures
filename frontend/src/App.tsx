@@ -117,7 +117,7 @@ export function App() {
           <p className="mission-summary">Un SOS en territorio disputado. Dos capitanes al borde del combate. El próximo movimiento es tuyo.</p>
           <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
             onSpatialEvent={onSpatialEvent}
-            squad={awayTeam.squad.map(id => {
+            squad={awayTeam.squad.map((id: string) => {
               const officer = OFFICERS.find(candidate => candidate.id === id)!;
               return { id: officer.id, name: officer.name };
             })} />
@@ -152,7 +152,7 @@ export function App() {
               <span>3 OFICIALES</span>
             </div>
             <div className="away-squad-slots">
-              {awayTeam.squad.map((id, slot) => (
+              {awayTeam.squad.map((id: string, slot: number) => (
                 <label key={slot} className="away-squad-slot">
                   <span className="away-squad-number">0{slot + 1}</span>
                   <select data-testid={`away-slot-${slot}`} aria-label={`Oficial de desembarco ${slot + 1}`}
