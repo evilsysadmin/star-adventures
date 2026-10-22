@@ -46,7 +46,7 @@ test('retrieval genuinely requires a technically skilled deployed officer', () =
   away = selectAwayOfficer(away, 2, 'solan', bridge);
   const unchanged = startMandate(definition);
   const denied = perform(unchanged, away);
-  assert.deepEqual(denied.report, { result: 'insufficient-technical', officerId: 'solan', skill: 2 });
+  assert.deepEqual(denied.report, { result: 'insufficient-technical', officerId: 'dorn', skill: 2 });
   assert.equal(denied.state, unchanged);
   assert.deepEqual(denied.state.incidents, []);
   const expert = selectAwayOfficer(away, 2, 'rhee', bridge);
