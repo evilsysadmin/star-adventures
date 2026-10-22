@@ -22,9 +22,9 @@ for (const width of [360, 390, 430, 1280]) {
     expect(rect).not.toBeNull();
     const bounds = rect!;
     const camera = createIsoCamera(bounds.width / bounds.height);
-    const rect = { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height };
+    const canvasRect = { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height };
     for (const cell of cells()) {
-      const projected = projectCell(cell, camera, rect);
+      const projected = projectCell(cell, camera, canvasRect);
       await page.mouse.click(projected.x, projected.y);
       await expect(page.getByTestId('iso-selected')).toContainText(cell.id);
     }
