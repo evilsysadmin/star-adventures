@@ -1,0 +1,25 @@
+/* An optional captain's archive, not another permanent mission dashboard. */
+.mandate-archive{margin:12px 25px 22px;border:1px solid #345363;background:#112736;min-width:0}
+.mandate-archive>summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;color:#c3e3d9;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.10em}
+.mandate-archive>summary span{font-size:10px;letter-spacing:0;color:#9baebb;font-weight:500}
+.mandate-archive-body{padding:1px 14px 14px;min-width:0}
+.mandate-caveat{font-size:11px;line-height:1.6;color:#a0b5bb;margin:10px 0 14px}
+.mandate-record,.mandate-vault>section{background:#152d3c;padding:12px;border:1px solid #3a5b66;min-width:0}
+.mandate-record h3,.mandate-vault h3{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:0 0 8px;font-size:13px;color:#e1edec}
+.mandate-record h3 span,.mandate-vault h3 span{font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.11em;color:#c9b28c}
+.mandate-order{font-size:13px;line-height:1.55;color:#d3e4e5;margin:0 0 6px}
+.mandate-progress{font:700 11px 'Space Grotesk',sans-serif;color:#91cdb9;margin:0 0 10px}
+.mandate-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+.mandate-actions button,.mandate-secondary,.mandate-archive-footer button{border:1px solid #56847f;background:#214550;color:#e8f4f0;text-align:left;cursor:pointer;padding:9px 11px;font-size:11px;line-height:1.4}
+.mandate-actions button:hover,.mandate-secondary:hover,.mandate-archive-footer button:hover{background:#2b5960}
+.mandate-actions button:focus-visible,.mandate-secondary:focus-visible,.mandate-archive-footer button:focus-visible{outline:2px solid #94dfce;outline-offset:2px}
+.mandate-events{margin:12px 0 0;padding:0 0 0 18px;color:#c8e1dc;font-size:12px;line-height:1.6}
+.mandate-vault{margin-top:10px;border:1px solid #574d4a;background:#1b2936;min-width:0}
+.mandate-vault>summary{cursor:pointer;padding:11px 12px;color:#e3c69b;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}
+.mandate-vault>summary span{color:#b1a7a1;font-size:10px}
+.mandate-vault>section{border:0;border-top:1px solid #574d4a;background:#1b2e3b}
+.mandate-knowledge{font-size:12px;color:#c3cfcd;line-height:1.6}
+.mandate-secondary{display:block;margin-top:8px;width:100%;background:transparent;border-color:#665f53}
+.mandate-archive-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;color:#879da8;font-size:10px}
+.mandate-archive-footer button{background:transparent;font-size:10px;white-space:normal}
+@media(max-width:520px){.mandate-archive{margin:10px 16px 17px}.mandate-archive>summary{flex-wrap:wrap}.mandate-archive-footer{align-items:flex-start}.mandate-archive-footer button{width:100%}}

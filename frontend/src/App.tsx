@@ -5,6 +5,7 @@ import { applyCrewAction } from '../../src/crewSession.mjs';
 import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.mjs';
 import { FirstPersonView, type ViewState, type ExplorationEvent } from './components/FirstPersonView';
 import { TacticalProbe } from './components/TacticalProbe';
+import { DualMandatePanel } from './components/DualMandatePanel';
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
@@ -205,6 +206,7 @@ export function App() {
               </div>
             )}
           </div>
+          <DualMandatePanel />
           <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : openedConsole ? 'TECLAS 1–3 · ORDEN DE LA CONSOLA' : 'FLECHAS / WASD · E PARA USAR'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
         </section>
       </main>

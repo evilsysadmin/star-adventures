@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "id": "outpost-orders",
+  "actors": [
+    "captain",
+    "solan",
+    "venn",
+    "mira"
+  ],
+  "orders": [
+    {
+      "id": "evacuate",
+      "channel": "official",
+      "title": "Evacuación del puesto científico"
+    },
+    {
+      "id": "recover-core",
+      "channel": "covert",
+      "title": "Recuperación discreta del núcleo de sensores"
+    }
+  ]
+}
