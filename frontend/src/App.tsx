@@ -7,7 +7,8 @@ import { FirstPersonView, type ViewState, type ExplorationEvent } from './compon
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
-import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, localStorageOrNull, type SessionState } from './session';
+import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
+import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
 const stationNames: Record<string, string> = { command: 'Mando', science: 'Ciencia', diplomacy: 'Diplomacia', tactical: 'Táctica', engineering: 'Ingeniería', medicine: 'Medicina' };
@@ -47,11 +48,14 @@ export function App() {
   const [session, setSession] = useState<SessionState>(() => initialSession.state);
   const [initialSpatial] = useState(() => restoreSpatialSession(world, localStorageOrNull()));
   const [exploration, setExploration] = useState<ViewState>(() => initialSpatial.state);
+  const [initialAway] = useState(() => restoreAwaySession(localStorageOrNull()));
+  const [awayTeam, setAwayTeam] = useState(() => initialAway.state);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
   useEffect(() => { persistSession(episode, session, localStorageOrNull()); }, [session]);
   useEffect(() => { persistSpatialSession(world, exploration, localStorageOrNull()); }, [exploration]);
+  useEffect(() => { persistAwaySession(awayTeam, localStorageOrNull()); }, [awayTeam]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
   const access = availableConsoleOrders(world, exploration, episode, state);
@@ -59,10 +63,19 @@ export function App() {
   const choices: Command[] = openedConsole ? access.choices : [];
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
-    setActiveStation(event.type === 'station' ? (event.stationId ?? null) : null);
-  }, []);
+    setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
+    if (event.type === 'station' && event.action === 'inspect-probe') {
+      try {
+        const outcome = investigateProbe(world, position, session.crew, awayTeam);
+        setAwayTeam(outcome.state);
+      } catch {
+        // An already resolved probe cannot award the finding again.
+      }
+    }
+  }, [session.crew, awayTeam]);
   const restart = () => {
     setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
+    setAwayTeam(previous => ({ ...startAwayTeam(), squad: [...previous.squad] }));
     setExploration(startExploration(world));
     setActiveStation(null);
     setExplorationKey(key => key + 1);
@@ -102,7 +115,12 @@ export function App() {
           <div className="eyebrow"><span className="eyebrow-line" /> MISIÓN 001 <span className="eyebrow-muted">/ SECTOR DISPUTADO</span></div>
           <h1 id="mission-title">Ecos en la <em>frontera</em></h1>
           <p className="mission-summary">Un SOS en territorio disputado. Dos capitanes al borde del combate. El próximo movimiento es tuyo.</p>
-          <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration} onSpatialEvent={onSpatialEvent} />
+          <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
+            onSpatialEvent={onSpatialEvent}
+            squad={awayTeam.squad.map(id => {
+              const officer = OFFICERS.find(candidate => candidate.id === id)!;
+              return { id: officer.id, name: officer.name };
+            })} />
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
@@ -128,6 +146,34 @@ export function App() {
               })}
             </div>
           </details>
+          <section className="away-squad" data-testid="away-squad" aria-label="Equipo de desembarco">
+            <div className="away-squad-heading">
+              <span>{exploration.area === 'bridge' ? 'PREPARACIÓN · EQUIPO DE DESEMBARCO' : 'EQUIPO EN SUPERFICIE'}</span>
+              <span>3 OFICIALES</span>
+            </div>
+            <div className="away-squad-slots">
+              {awayTeam.squad.map((id, slot) => (
+                <label key={slot} className="away-squad-slot">
+                  <span className="away-squad-number">0{slot + 1}</span>
+                  <select data-testid={`away-slot-${slot}`} aria-label={`Oficial de desembarco ${slot + 1}`}
+                    value={id} disabled={exploration.area !== 'bridge' || !!exploration.pending}
+                    onChange={event => setAwayTeam(previous => selectAwayOfficer(previous, slot, event.target.value, exploration))}>
+                    {OFFICERS.map(officer => (
+                      <option key={officer.id} value={officer.id}
+                        disabled={awayTeam.squad.includes(officer.id) && officer.id !== id}>{officer.name}</option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <p className="away-finding" data-testid="away-finding">
+              {awayTeam.findings.includes(PROBE_FINDING)
+                ? 'Sonda investigada: firma mineral registrada en la bitácora.'
+                : awayTeam.lastReport?.result === 'insufficient-science'
+                  ? `Investigación insuficiente · habilidad científica ${awayTeam.lastReport.skill}/5. Regresa a la nave para cambiar de especialistas.`
+                  : 'Sonda pendiente de investigar. Selecciona especialistas antes del teletransporte.'}
+            </p>
+          </section>
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
             <div className="panel-label">{terminal ? 'INFORME FINAL' : 'SITUACIÓN ACTUAL'}</div>
