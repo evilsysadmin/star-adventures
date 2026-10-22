@@ -7,7 +7,7 @@ import { FirstPersonView, type ViewState, type ExplorationEvent } from './compon
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
-import { restoreSession, persistSession, localStorageOrNull, type SessionState } from './session';
+import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, localStorageOrNull, type SessionState } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
 const stationNames: Record<string, string> = { command: 'Mando', science: 'Ciencia', diplomacy: 'Diplomacia', tactical: 'Táctica', engineering: 'Ingeniería', medicine: 'Medicina' };
@@ -45,11 +45,13 @@ const spanishChoices: Record<string, string> = {
 export function App() {
   const [initialSession] = useState(() => restoreSession(episode, localStorageOrNull()));
   const [session, setSession] = useState<SessionState>(() => initialSession.state);
-  const [exploration, setExploration] = useState<ViewState>(() => startExploration(world));
+  const [initialSpatial] = useState(() => restoreSpatialSession(world, localStorageOrNull()));
+  const [exploration, setExploration] = useState<ViewState>(() => initialSpatial.state);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
   useEffect(() => { persistSession(episode, session, localStorageOrNull()); }, [session]);
+  useEffect(() => { persistSpatialSession(world, exploration, localStorageOrNull()); }, [exploration]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
   const access = availableConsoleOrders(world, exploration, episode, state);
@@ -100,7 +102,7 @@ export function App() {
           <div className="eyebrow"><span className="eyebrow-line" /> MISIÓN 001 <span className="eyebrow-muted">/ SECTOR DISPUTADO</span></div>
           <h1 id="mission-title">Ecos en la <em>frontera</em></h1>
           <p className="mission-summary">Un SOS en territorio disputado. Dos capitanes al borde del combate. El próximo movimiento es tuyo.</p>
-          <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} onSpatialEvent={onSpatialEvent} />
+          <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration} onSpatialEvent={onSpatialEvent} />
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
