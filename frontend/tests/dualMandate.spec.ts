@@ -10,6 +10,33 @@ async function openVault(page: Page) {
   await page.getByTestId('mandate-vault').locator('summary').first().click();
   await expect(page.getByTestId('mandate-classified-log')).toBeVisible();
 }
+async function performCoreFromBridge(page: Page) {
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-use').click();
+  await page.getByTestId('transport-confirm').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-left').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await expect(page.getByTestId('explore-target')).toContainText('Archivo de sensores');
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('core-report')).toContainText('Núcleo asegurado');
+}
+async function performCoreAfterRescue(page: Page) {
+  // From relief station (5:4, E), go west to 2:4 and north to 2:3.
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-right').click();
+  for (let i=0;i<3;i++) await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await expect(page.getByTestId('explore-target')).toContainText('Archivo de sensores');
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('core-report')).toContainText('Núcleo asegurado');
+}
 async function performPhysicalRescue(page: Page) {
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-forward').click();
@@ -58,7 +85,8 @@ test('only an explicitly informed officer knows the secret and deliberate disclo
   await page.goto('/');
   await openArchive(page);
   await openVault(page);
-  await page.getByTestId('mandate-recover').click();
+  await expect(page.getByTestId('mandate-recover')).toHaveCount(0);
+  await performCoreFromBridge(page);
   await expect(page.getByTestId('mandate-covert-status')).toHaveText('Completada');
   await expect(page.getByTestId('mandate-knowledge')).toContainText('La oficial científica conoce');
   await expect(page.getByTestId('mandate-knowledge')).not.toContainText('primer oficial');
@@ -107,7 +135,8 @@ for (const width of [360, 390, 1280]) {
     await openArchive(page);
     await performPhysicalRescue(page);
     await openVault(page);
-    await page.getByTestId('mandate-recover').click();
+    await performCoreAfterRescue(page);
+    await expect(page.getByTestId('mandate-covert-status')).toHaveText('Completada');
     await expect(page.getByTestId('mandate-public-log')).toBeVisible();
     await expect(page.getByTestId('mandate-classified-log')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
