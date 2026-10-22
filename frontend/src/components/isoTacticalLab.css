@@ -1,0 +1,52 @@
+/* Isolated visual experiment: no edits to Codex-owned tactical-camera styles. */
+.iso-mode-switcher{min-width:0;margin-top:1rem;border:1px solid #426879;background:#0c1e2b;padding:13px}
+.iso-mode-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.iso-mode-title>span{color:#c9ddd9;letter-spacing:.12em;font:700 10px 'Space Grotesk',sans-serif}
+.iso-mode-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.iso-mode-tabs button{background:#142b3a;border:1px solid #466675;color:#c1d6d8;padding:9px 12px;min-height:39px;cursor:pointer;font:600 11px 'Space Grotesk',sans-serif}
+.iso-mode-tabs button[aria-pressed=true]{background:#43665f;border-color:#95d5b9;color:#fff}
+.iso-mode-tabs button:focus-visible,.iso-lab button:focus-visible,.iso-lab-a11y:focus-visible{outline:2px solid #f0d397;outline-offset:3px}
+.iso-mode-switcher>.tactical-probe{margin-top:12px}
+.iso-lab{margin-top:12px;min-width:0;border:1px solid #52687b;background:linear-gradient(145deg,#0b1c2d,#06101c);color:#deeeeb;overflow:hidden}
+.iso-lab-header{padding:17px 19px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.iso-overline{color:#8cd3ca;letter-spacing:.17em;font:700 9px 'Space Grotesk',sans-serif}
+.iso-lab-header h2{font:600 clamp(19px,3vw,27px)/1.17 'Space Grotesk',sans-serif;margin:7px 0;color:#f7f1e4}
+.iso-lab-header p{color:#91acb5;font-size:11px;line-height:1.6;margin:0}
+.iso-badge{flex:none;border:1px solid #bda377;background:#403928;color:#f8dbab;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.1em;padding:8px}
+.iso-lab-viewport{position:relative;width:100%;height:clamp(330px,48vw,500px);background:#07121d;overflow:hidden;border-block:1px solid #385466}
+.iso-lab-viewport canvas{display:block;width:100%;height:100%;touch-action:none}
+.iso-lab-bar{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:13px 18px;background:#112b38}
+.iso-cell-readout{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.iso-cell-readout span{font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.11em;color:#9abfbd}
+.iso-cell-readout strong{font:700 23px 'Space Grotesk',sans-serif;color:#f5d795}
+.iso-cell-readout small{color:#b8cecd;font-size:10px}
+.iso-motion{flex:none;border:1px solid #648f88;background:#214b50;padding:10px 12px;color:#e0f6ea;font:600 11px 'Space Grotesk',sans-serif;cursor:pointer}
+.iso-lab-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding:11px 18px;border-top:1px solid #2a4b59}
+.iso-lab-bottom p,.iso-status{color:#94b7ba;font-size:10px;line-height:1.6;margin:0}
+.iso-lab-bottom p:first-child{color:#c8e6c9}
+.iso-lab-a11y{margin:0 17px 12px;border:1px solid #345969;color:#bed5d5;background:#102738;padding:10px 12px;font-size:11px;line-height:1.5}
+.iso-lab-grid{margin:0 17px 17px;border:1px solid #385566;background:#0e2431}
+.iso-lab-grid summary{cursor:pointer;padding:10px 12px;color:#bdccc9;font-size:11px}
+.iso-lab-grid>div{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px;padding:10px}
+.iso-lab-grid button{min-width:0;min-height:36px;border:1px solid #426472;background:#123042;color:#c9e1df;font:600 10px 'Space Grotesk',sans-serif;cursor:pointer;padding:3px}
+.iso-lab-grid button[aria-pressed=true]{background:#6a5736;border-color:#ebc979;color:white}
+@media(max-width:520px){
+ .iso-mode-switcher{padding:9px}
+ .iso-mode-title{align-items:stretch}
+ .iso-mode-title>span{font-size:9px;align-self:center}
+ .iso-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}
+ .iso-mode-tabs button{font-size:10px;padding:8px 3px}
+ .iso-lab-header{padding:13px 12px;gap:7px}
+ .iso-lab-header h2{font-size:18px}
+ .iso-lab-header p{font-size:10px}
+ .iso-lab-viewport{height:350px}
+ .iso-lab-bar{padding:11px 12px;align-items:flex-start;flex-wrap:wrap;gap:9px}
+ .iso-cell-readout{gap:6px}
+ .iso-cell-readout strong{font-size:20px}
+ .iso-motion{width:100%}
+ .iso-lab-bottom{padding:10px 12px}
+ .iso-lab-a11y{margin:0 11px 11px;font-size:10px}
+ .iso-lab-grid{margin:0 11px 11px}
+ .iso-lab-grid button{font-size:9px;min-height:32px}
+}
+@media(prefers-reduced-motion:reduce){.iso-lab *{animation:none!important;transition:none!important}}
