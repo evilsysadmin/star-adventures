@@ -23,6 +23,12 @@ requests the live animation atlases while remaining selectable during HTTP 503.
   late successful callbacks. No mutation of game state, crew stats or combat
   rules.
 
+## Atlas-frame compatibility contract
+
+The reusable fallback now supports `setFrame(frame)` for ordinary 3×2 animation atlases (walk/run/jump/crouch/fire can retain different FPS in the caller). This method is **frame-only**: it never reallocates geometry, re-fetches WebP, changes the scene root or repositions the officer. It remembers the latest frame while the initial atlas is downloading, then applies the same top-to-bottom UV convention as `walkFrameUv` on the first successful texture callback. After HTTP 503, frame calls leave the fallback fully visible, and after disposal they do not revive the scene.
+
+The integration will still require the current `TacticalProbe.tsx` camera/animation pipeline to adopt `mountResilientOfficer` in a separate conflict-free PR; this API does not claim that adaptation is already deployed. Atlas switching between named *motion types* remains a subsequent, separately validated concern.
+
 ## Evidence and limits
 
 `frontend/tests/r2OfficerFallback.spec.ts` checks visible-on-first-frame,
