@@ -43,13 +43,13 @@ test('a successful physical retrieval is classified, witnessed, replayable and c
 test('retrieval genuinely requires a technically skilled deployed officer', () => {
   let away = startAwayTeam();
   away = selectAwayOfficer(away, 0, 'varela', bridge);
-  away = selectAwayOfficer(away, 1, 'solan', bridge);
+  away = selectAwayOfficer(away, 2, 'solan', bridge);
   const unchanged = startMandate(definition);
   const denied = perform(unchanged, away);
   assert.deepEqual(denied.report, { result: 'insufficient-technical', officerId: 'solan', skill: 2 });
   assert.equal(denied.state, unchanged);
   assert.deepEqual(denied.state.incidents, []);
-  const expert = selectAwayOfficer(away, 1, 'rhee', bridge);
+  const expert = selectAwayOfficer(away, 2, 'rhee', bridge);
   const restored = perform(startMandate(definition), expert);
   assert.deepEqual(restored.report, { result: 'core-recovered', officerId: 'rhee', skill: 4 });
 });
