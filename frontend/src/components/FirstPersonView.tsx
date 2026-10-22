@@ -122,7 +122,7 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
   ctx.textAlign = 'right';ctx.fillText(`POS ${state.x}:${state.y}  ·  ${state.heading}`,WIDTH-19,HEIGHT-15);ctx.textAlign = 'left';
 }
 
-export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void }) {
+export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [] }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[] }) {
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -188,8 +188,17 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent 
             <button type="button" disabled={!!exploration.pending} data-testid="explore-right" onClick={() => dispatch('turn-right')}>Girar ↷</button>
             <button type="button" disabled={!!exploration.pending} data-testid="explore-use" className="firstperson-interact" onClick={() => dispatch('use')}>E · Usar</button>
           </div>
+          {exploration.area === 'surface' && <div className="away-party" data-testid="away-party">
+            <span className="away-party-label">EQUIPO DESPLEGADO</span>
+            <div className="away-party-members">
+              {squad.map(officer => <span key={officer.id} className="away-party-member">
+                <span className="away-party-portrait" aria-hidden="true">{officer.name.split(' ').map(part => part[0]).join('')}</span>
+                {officer.name}
+              </span>)}
+            </div>
+          </div>}
           <p className="firstperson-feedback" data-testid="explore-feedback" aria-live="polite">
-            {event?.type === 'station' ? `${event.label}: consola seleccionada. Consulta las órdenes de esta estación.` :
+            {event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' : `${event.label}: consola seleccionada. Consulta las órdenes de esta estación.` :
               event?.type === 'blocked' ? 'Paso bloqueado.' :
               event?.type === 'nothing-to-use' ? 'No hay nada a tu alcance.' :
               event?.type === 'transition-declined' ? 'Permaneces en la misma casilla. Puedes volver a usar el acceso.' :

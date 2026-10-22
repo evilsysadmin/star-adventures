@@ -60,3 +60,20 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .console-locked>span{flex:none;color:#c8ad7b;font-size:29px;line-height:1}
 .console-locked p{margin:0;font-size:13px;line-height:1.6;max-width:44ch}
 @media(max-width:520px){.console-locked{min-height:100px;padding:15px 13px;gap:10px}.console-locked p{font-size:12px}}
+
+/* Bridge squad prep and a compact ground-exploration crew HUD; no fake combat icons. */
+.away-squad{border:1px solid #314f5a;background:#101f2d;margin:0 25px 16px;padding:11px 12px}
+.away-squad-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#b8d4d3;letter-spacing:.07em;font:700 9px 'Space Grotesk',sans-serif}
+.away-squad-heading span:last-child{color:#d8bd91;white-space:nowrap}
+.away-squad-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:11px}
+.away-squad-slot{min-width:0;display:flex;align-items:center;gap:5px}
+.away-squad-number{font:700 10px 'Space Grotesk',sans-serif;color:#8fb2bb}
+.away-squad-slot select{min-width:0;width:100%;border:1px solid #345867;background:#1b3442;color:#e0f2eb;padding:8px 4px;font:600 11px 'DM Sans',sans-serif}
+.away-squad-slot select:disabled{opacity:.85;cursor:not-allowed}
+.away-finding{margin:9px 0 1px;font-size:11px;line-height:1.55;color:#b8c8c7}
+.away-party{background:#102833;border-top:1px solid #365765;padding:10px 13px}
+.away-party-label{font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.09em;color:#a1d7ce}
+.away-party-members{display:flex;gap:9px;flex-wrap:wrap;margin-top:9px}
+.away-party-member{display:flex;align-items:center;gap:7px;color:#d4ece9;font:600 11px 'DM Sans',sans-serif}
+.away-party-portrait{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#356170;border:1px solid #7bb3b4;font-size:9px;color:#eaf5ee}
+@media(max-width:520px){.away-squad{margin:0 16px 14px;padding:11px 8px}.away-squad-slots{grid-template-columns:1fr}.away-squad-slot select{font-size:12px}.away-party{padding:9px}.away-party-members{gap:7px}.away-party-member{font-size:10px}}

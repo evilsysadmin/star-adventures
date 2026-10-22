@@ -73,3 +73,22 @@ export function persistSpatialSession(world: Parameters<typeof startExploration>
     return true;
   } catch { return false; }
 }
+
+/** Third independent persistence key until campaign state can be committed atomically. */
+import { startAwayTeam } from '../../src/awayTeam.mjs';
+import { recoverAwayTeam, serializeAwayTeam } from '../../src/awayCheckpoint.mjs';
+
+export const AWAY_TEAM_KEY = 'shadowops.star-adventures.away-team.v1';
+
+export function restoreAwaySession(storage: Pick<Storage, 'getItem'> | null) {
+  if (!storage) return { state: startAwayTeam(), notice: 'temporary' };
+  try { return recoverAwayTeam(storage.getItem(AWAY_TEAM_KEY)); }
+  catch { return { state: startAwayTeam(), notice: 'temporary' }; }
+}
+
+export function persistAwaySession(team: ReturnType<typeof startAwayTeam>,
+  storage: Pick<Storage, 'setItem'> | null): boolean {
+  if (!storage) return false;
+  try { storage.setItem(AWAY_TEAM_KEY, serializeAwayTeam(team)); return true; }
+  catch { return false; }
+}
