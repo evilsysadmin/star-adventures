@@ -5,7 +5,10 @@
     "captain",
     "solan",
     "venn",
-    "mira"
+    "mira",
+    "dorn",
+    "rhee",
+    "varela"
   ],
   "orders": [
     {
@@ -17,6 +20,11 @@
       "id": "recover-core",
       "channel": "covert",
       "title": "Recuperación discreta del núcleo de sensores"
+    },
+    {
+      "id": "survey-probe",
+      "channel": "official",
+      "title": "Estudio de la sonda en superficie"
     }
   ]
 }

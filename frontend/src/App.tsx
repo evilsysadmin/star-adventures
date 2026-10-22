@@ -206,7 +206,7 @@ export function App() {
               </div>
             )}
           </div>
-          <DualMandatePanel />
+          <DualMandatePanel awayTeam={awayTeam} />
           <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : openedConsole ? 'TECLAS 1–3 · ORDEN DE LA CONSOLA' : 'FLECHAS / WASD · E PARA USAR'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
         </section>
       </main>
