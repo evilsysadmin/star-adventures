@@ -12,13 +12,7 @@ import { recoverSensorCore, CORE_STATION_ACTION, CORE_INCIDENT } from '../src/se
 
 const definition = JSON.parse(readFileSync(new URL('../content/mandates/outpost-orders.json', import.meta.url)));
 const originalWorld = JSON.parse(readFileSync(new URL('../content/scenes/meridian.json', import.meta.url)));
-const world = structuredClone(originalWorld);
-// Use a presently blocked tile: no old saved position is displaced when authored.
-world.scenes.surface.walls = world.scenes.surface.walls.filter(tile => tile.x !== 2 || tile.y !== 2);
-world.scenes.surface.objects.push({
-  id: 'sensor-vault', label: 'Archivo de sensores del puesto', type: 'station',
-  action: CORE_STATION_ACTION, x: 2, y: 2,
-});
+const world = originalWorld; // The permanent authored station now lives in the real scene.
 const atCore = { version: 1, area: 'surface', x: 2, y: 3, heading: 'N', pending: null };
 const bridge = { version: 1, area: 'bridge', x: 3, y: 5, heading: 'N', pending: null };
 const perform = (mandate = startMandate(definition), squad = startAwayTeam(), position = atCore, scene = world) =>
