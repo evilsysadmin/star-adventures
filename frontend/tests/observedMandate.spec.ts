@@ -31,7 +31,7 @@ test('public science report requires a real first-person away expedition and sur
   await visitProbe(page);
   await expect(page.getByTestId('away-finding')).toContainText('firma mineral registrada');
   await expect(page.getByTestId('mandate-survey-status')).toHaveText('Completada');
-  await expect(page.getByTestId('mandate-public-events')).toContainText('evidence');
+  await expect(page.getByTestId('mandate-public-events')).toContainText('Pruebas recuperadas');
   await expect.poll(() => page.evaluate(() => {
     const data = JSON.parse(localStorage.getItem('shadowops.star-adventures.outpost-orders.v1') || '{}');
     return data.actions?.filter((x: { incidentId?: string }) => x.incidentId === 'probe-signature-verified').length;
@@ -39,7 +39,7 @@ test('public science report requires a real first-person away expedition and sur
   await page.reload();
   await openOrders(page);
   await expect(page.getByTestId('mandate-survey-status')).toHaveText('Completada');
-  await expect(page.getByTestId('mandate-public-events')).toContainText('evidence');
+  await expect(page.getByTestId('mandate-public-events')).toContainText('Pruebas recuperadas');
   await expect(page.getByTestId('science-score')).toHaveText('00');
   await page.getByTestId('mandate-reset').click();
   await expect(page.getByTestId('mandate-survey-status')).toHaveText('Completada');
