@@ -79,4 +79,8 @@ test('authentic away finding opens one officer briefing only at the accessed cap
   await expect(page.getByTestId('science-score')).toHaveText('00');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/science-briefing-390.png', fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.getByTestId('mandate-field-knowledge')).toContainText('ha recibido el informe');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/science-briefing-1280.png', fullPage: true });
 });
