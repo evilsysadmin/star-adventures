@@ -7,6 +7,13 @@
       "sha256": "25a2e07e1517036b24918eb60505c43350d85a7afdb651fafa2f8c8b29d0f948",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-crouch-v1-25a2e07e1517036b.webp"
     },
+    "starAdventures.tactical.officerFemaleFireV1": {
+      "bytes": 183140,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-fire-v1-67653ac7097cf031.webp",
+      "sha256": "67653ac7097cf031f6753457c9b79ad188d1f553e2cef9419bcb27f61632fa15",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-fire-v1-67653ac7097cf031.webp"
+    },
     "starAdventures.tactical.officerFemaleJumpV1": {
       "bytes": 207348,
       "contentType": "image/webp",
@@ -41,6 +48,13 @@
       "key": "star-adventures/tactical/officer-male-crouch-v1-5d0fe7e40f7fc71e.webp",
       "sha256": "5d0fe7e40f7fc71e8be278057c46df9f8180f83b7e70c6c3444feaca9ac647c4",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-crouch-v1-5d0fe7e40f7fc71e.webp"
+    },
+    "starAdventures.tactical.officerMaleFireV1": {
+      "bytes": 187592,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-fire-v1-7ab0aa09a201fd95.webp",
+      "sha256": "7ab0aa09a201fd95bfe119491786f76e3c65b7eb7c703eb0e31027a573ea8958",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-fire-v1-7ab0aa09a201fd95.webp"
     },
     "starAdventures.tactical.officerMaleJumpV1": {
       "bytes": 280074,
