@@ -321,10 +321,6 @@
         {
           "x": 3,
           "y": 2
-        },
-        {
-          "x": 6,
-          "y": 4
         }
       ],
       "objects": [
@@ -335,6 +331,14 @@
           "action": "inspect-probe",
           "x": 4,
           "y": 2
+        },
+        {
+          "id": "relief-point",
+          "label": "Puesto de socorro del puesto científico",
+          "type": "station",
+          "action": "assist-evacuees",
+          "x": 6,
+          "y": 4
         },
         {
           "id": "beam-out",
