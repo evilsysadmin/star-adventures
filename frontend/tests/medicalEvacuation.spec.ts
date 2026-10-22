@@ -78,3 +78,29 @@ test('a deliberate archive reset erases rescue, while keeping the actual probe f
   await expect(page.getByTestId('mandate-official-status')).toHaveText('Completada');
   await expect(page.getByTestId('mandate-public-events')).toContainText('Civiles evacuados');
 });
+
+
+test('old simulated v1 rescue stays readable and distinct from physical rescue', async ({page}) => {
+  await page.goto('/');
+  const legacy = {
+    saveVersion: 1, mandateId: 'outpost-orders', actions: [
+      { type: 'record', incidentId: 'survivors-evacuated', orderId: 'evacuate',
+        kind: 'rescue', witnesses: ['mira'], public: true },
+      { type: 'resolve', orderId: 'evacuate', incidentId: 'survivors-evacuated',
+        status: 'completed' },
+    ],
+  };
+  await page.evaluate(checkpoint =>
+    localStorage.setItem('shadowops.star-adventures.outpost-orders.v1', JSON.stringify(checkpoint)), legacy);
+  await page.reload();
+  await openArchive(page);
+  await expect(page.getByTestId('mandate-official-status')).toHaveText('Completada');
+  await expect(page.getByTestId('mandate-legacy-rescue')).toContainText('antigua simulación');
+  await page.getByTestId('mandate-reset').click();
+  await expect(page.getByTestId('mandate-official-status')).toHaveText('Pendiente');
+  await expect(page.getByTestId('mandate-legacy-rescue')).toHaveCount(0);
+  await reachReliefStation(page);
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('mandate-official-status')).toHaveText('Completada');
+  await expect(page.getByTestId('mandate-legacy-rescue')).toHaveCount(0);
+});
