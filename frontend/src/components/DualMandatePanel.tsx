@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { applyMandateAction, classifiedMandateReport, publicMandateReport, startMandate } from '../../../src/dualMandate.mjs';
 import { canBriefScientificFinding, briefScientificFinding } from '../../../src/scientificBriefing.mjs';
 import { EVACUATION_INCIDENT } from '../../../src/medicalEvacuation.mjs';
+import { CORE_INCIDENT } from '../../../src/sensorCoreRecovery.mjs';
 import { PROBE_SURVEY_INCIDENT, reconcileObservedProbe, PROBE_SURVEY_ORDER } from '../../../src/observedMandate.mjs';
 import world from '../../../content/scenes/meridian.json';
 import type { ViewState } from './FirstPersonView';
@@ -46,6 +47,8 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
   const legacyRescue = openOrder.status !== 'active' && !realRescueVerified;
   const surveyOrder = publicLog.orders.find((order: { id: string }) => order.id === PROBE_SURVEY_ORDER)!;
   const hiddenOrder = classified.orders.find((order: { channel: string }) => order.channel === 'covert')!;
+  const physicalCore = classified.incidents.some((event: { id: string }) => event.id === CORE_INCIDENT);
+  const oldSimulatedCore = hiddenOrder.status === 'completed' && !physicalCore;
   const secretIncident = classified.incidents.find((incident: { orderId: string }) => incident.orderId === hiddenOrder.id);
   const informed = secretIncident !== undefined &&
     mandate.knowledge.solan.includes(secretIncident.id);
@@ -58,23 +61,18 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
     actions.reduce<MandateState>((state, action) => applyMandateAction(MANDATE_DEFINITION, state, action), before)
   );
 
-  const finishCovert = (result: 'success' | 'refused') => {
-    const success = result === 'success';
-    const incidentId = success ? 'sensor-core-recovered' : 'directive-declined';
-    run([
-      { type: 'record', incidentId, orderId: 'recover-core',
-        kind: success ? 'evidence' : 'refusal',
-        witnesses: success ? ['venn'] : [], public: false },
-      { type: 'resolve', orderId: 'recover-core', incidentId,
-        status: success ? 'completed' : 'refused' },
-    ]);
-  };
+  const refuseCovert = () => run([
+    { type: 'record', incidentId: 'directive-declined', orderId: 'recover-core',
+      kind: 'refusal', witnesses: [], public: false },
+    { type: 'resolve', orderId: 'recover-core',
+      incidentId: 'directive-declined', status: 'refused' },
+  ]);
 
   return (
     <details className="mandate-archive" data-testid="mandate-archive">
       <summary>ARCHIVO DE ÓRDENES <span>Servicio real · archivo reservado ▾</span></summary>
       <div className="mandate-archive-body">
-        <p className="mandate-caveat">El servicio científico y los rescates proceden de acciones en la superficie. El canal reservado sigue siendo un laboratorio narrativo independiente de «Ecos en la frontera».</p>
+        <p className="mandate-caveat">El estudio, la evacuación y la recuperación del núcleo exigen acciones reales en superficie. La negativa a la directiva y la publicación son decisiones del capitán; «Ecos en la frontera» conserva su partida independiente.</p>
         <section className="mandate-record" data-testid="mandate-public-log" aria-label="Registro de servicio público">
           <h3>Registro de servicio <span>OFICIAL</span></h3>
           <p className="mandate-order">{openOrder.title}</p>
@@ -115,9 +113,14 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
             <h3>Bitácora auténtica <span>RESERVADO</span></h3>
             <p className="mandate-order" data-testid="mandate-classified-order">{hiddenOrder.title}</p>
             <p className="mandate-progress" data-testid="mandate-covert-status">{resultText[hiddenOrder.status]}</p>
+            {oldSimulatedCore && <p className="mandate-caveat" data-testid="mandate-legacy-core">
+              Recuperación heredada de la simulación anterior, no de una extracción física. Reinicia el archivo si quieres realizar la misión real.
+            </p>}
             {hiddenOrder.status === 'active' && <div className="mandate-actions">
-              <button type="button" data-testid="mandate-recover" onClick={() => finishCovert('success')}>Registrar recuperación de pruebas</button>
-              <button type="button" data-testid="mandate-refuse" onClick={() => finishCovert('refused')}>Rechazar la directiva</button>
+              <p className="mandate-caveat" data-testid="mandate-core-guidance">
+                Recupera el núcleo en el archivo de sensores de la superficie con un equipo técnico competente, o rechaza deliberadamente la directiva.
+              </p>
+              <button type="button" data-testid="mandate-refuse" onClick={refuseCovert}>Rechazar la directiva</button>
             </div>}
             {secretIncident && <>
               <p className="mandate-knowledge" data-testid="mandate-knowledge">
