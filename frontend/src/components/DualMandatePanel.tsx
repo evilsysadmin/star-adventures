@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { applyMandateAction, classifiedMandateReport, publicMandateReport, startMandate } from '../../../src/dualMandate.mjs';
 import { localStorageOrNull } from '../session';
-import { MANDATE_DEFINITION, persistMandateSession, restoreMandateSession } from '../mandateSession';
+import { MANDATE_DEFINITION, persistMandateSession, restoreMandateSession, type MandateState } from '../mandateSession';
 import './dualMandatePanel.css';
 
 type MandateDecision = Record<string, unknown> & { type: string };
@@ -17,7 +17,7 @@ const resultText: Record<string, string> = {
 
 export function DualMandatePanel() {
   const [initial] = useState(() => restoreMandateSession(localStorageOrNull()));
-  const [mandate, setMandate] = useState<ReturnType<typeof startMandate>>(() => initial.state);
+  const [mandate, setMandate] = useState<MandateState>(() => initial.state);
   useEffect(() => { persistMandateSession(mandate, localStorageOrNull()); }, [mandate]);
 
   // Reports always come from the SAME canonical sequence, not from UI flags.
@@ -30,7 +30,7 @@ export function DualMandatePanel() {
     mandate.knowledge.solan.includes(secretIncident.id);
 
   const run = (actions: MandateDecision[]) => setMandate(before =>
-    actions.reduce((state, action) => applyMandateAction(MANDATE_DEFINITION, state, action), before)
+    actions.reduce<MandateState>((state, action) => applyMandateAction(MANDATE_DEFINITION, state, action), before)
   );
 
   const finishOfficial = (result: 'success' | 'failed') => {
