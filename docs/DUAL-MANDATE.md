@@ -54,6 +54,14 @@ The already shipped 'Border Signal' tutorial remains a valid mechanics/rollback 
 - The narrative layer is declarative content and campaign rules separate from renderer, deterministic episode engine, crew and save schema. Use explicit migrations and browser tests when implementing consequences.
 - Starting rollout: one fully replayable dual-track episode, then expand. No giant procedural galaxy or always-on backends until there's a real reason.
 
+## First implemented domain foundation (PR #39)
+
+The generic `src/dualMandate.mjs` module and `tests/dualMandate.test.mjs` establish **real, replay-validated events** for official and covert orders. They track witnesses and intentional information transfers, accept refusal grounded in an incident, and derive public and classified reports from **one** chronological record. A covert order never appears in the public orders list; deliberate publication of evidence strips its covert order association.
+
+This is a domain-only capability, not yet a mission UI, a full episode, a server security/authorization system or a final morality mechanic. The local player's classified report is in-universe fiction, not secrecy against someone inspecting browser storage. It uses a separate version-1 replay checkpoint, leaving crew v2, spatial and away-team persistence untouched.
+
+Next steps require contextual bridge briefings, actual choices bound to the current crew and a complete authored mission with meaningful outcomes. Do not claim that public/secret roles have gameplay consequences until those integrations are tested.
+
 ## Next narrative PRs (separate from the tactical camera POC)
 
 1. [ ] Domain contracts and event tests for official orders, hidden directives, scoped knowledge and incident consequences. No UI.
