@@ -1,0 +1,20 @@
+{
+  "assets": {
+    "starAdventures.tactical.officerFemaleMvsV1": {
+      "bytes": 24578,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-mvs-v1-678cdda4febdd8f0.webp",
+      "sha256": "678cdda4febdd8f0cd0bad7690b9c7601e715eb08646aeb00e5a578817dd8bb4",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-mvs-v1-678cdda4febdd8f0.webp"
+    },
+    "starAdventures.tactical.officerMaleMvsV1": {
+      "bytes": 27508,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-mvs-male-v1-8345a78a52e2e7b8.webp",
+      "sha256": "8345a78a52e2e7b883eff8c56f01ce6f75c9a14ebbc436a41862b4cd102b68f6",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-mvs-male-v1-8345a78a52e2e7b8.webp"
+    }
+  },
+  "baseUrl": "https://assets.chess-studio.shadowops.dpdns.org",
+  "version": 1
+}
