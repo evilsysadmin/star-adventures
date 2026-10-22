@@ -3,13 +3,13 @@ import world from '../../../content/scenes/meridian.json';
 import { startExploration, applyExploration, faceTile } from '../../../src/spatial.mjs';
 import { BridgeScene } from './BridgeScene';
 
-type ViewState = {
+export type ViewState = {
   version: number; area: string; x: number; y: number; heading: string;
   pending: null | { id: string; to: string };
 };
 type SceneObject = { id: string; x: number; y: number; label: string; type: string; action?: string; to?: string };
 type Scene = { title: string; width: number; height: number; walls: Array<{x:number;y:number}>; objects: SceneObject[] };
-type ExplorationEvent = { type: string; label?: string; area?: string; action?: string; stationId?: string };
+export type ExplorationEvent = { type: string; label?: string; area?: string; action?: string; stationId?: string };
 type Command = 'forward' | 'backward' | 'turn-left' | 'turn-right' | 'use' | 'confirm' | 'decline';
 const HEADINGS = ['N', 'E', 'S', 'W'];
 const ANGLES = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
@@ -91,7 +91,7 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean) 
   ctx.textAlign = 'right';ctx.fillText(`POS ${state.x}:${state.y}  ·  ${state.heading}`,WIDTH-19,HEIGHT-15);ctx.textAlign = 'left';
 }
 
-export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal: boolean }) {
+export function FirstPersonView({ alert, terminal, onSpatialEvent }: { alert: boolean; terminal: boolean; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void }) {
   const [exploration, setExploration] = useState<ViewState>(() => startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -107,7 +107,8 @@ export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal:
     stateRef.current = result.state;
     setExploration(result.state);
     setEvent(result.event);
-  }, []);
+    onSpatialEvent?.(result.state, result.event);
+  }, [onSpatialEvent]);
   useEffect(() => {
     if (canvas.current) drawScene(canvas.current, exploration, alert);
   }, [exploration, alert, showMap]);
@@ -157,7 +158,7 @@ export function FirstPersonView({ alert, terminal }: { alert: boolean; terminal:
             <button type="button" disabled={!!exploration.pending} data-testid="explore-use" className="firstperson-interact" onClick={() => dispatch('use')}>E · Usar</button>
           </div>
           <p className="firstperson-feedback" data-testid="explore-feedback" aria-live="polite">
-            {event?.type === 'station' ? `${event.label}: estación detectada. Las órdenes operativas siguen disponibles en el panel de mando.` :
+            {event?.type === 'station' ? `${event.label}: consola seleccionada. Consulta las órdenes de esta estación.` :
               event?.type === 'blocked' ? 'Paso bloqueado.' :
               event?.type === 'nothing-to-use' ? 'No hay nada a tu alcance.' :
               event?.type === 'transition-declined' ? 'Permaneces en la misma casilla. Puedes volver a usar el acceso.' :
