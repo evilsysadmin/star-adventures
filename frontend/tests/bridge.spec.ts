@@ -270,6 +270,18 @@ for(const width of [390,1280]) {
   });
 }
 
+for (const width of [360, 390, 430, 1280]) {
+  test(`tactical camera proof stays visible at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 1280 ? 820 : 850 });
+    await page.goto('/');
+    await expect(page.getByTestId('tactical-canvas')).toBeVisible();
+    await page.getByRole('button', { name: '7:7' }).click();
+    await expect(page.getByTestId('tactical-selected')).toContainText('7:7');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/tactical-camera-${width}.png`, fullPage: true });
+  });
+}
+
 test('F5 restores bridge heading and walkable tile without replaying movement', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto('/');

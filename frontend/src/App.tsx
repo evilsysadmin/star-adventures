@@ -4,6 +4,7 @@ import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
 import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.mjs';
 import { FirstPersonView, type ViewState, type ExplorationEvent } from './components/FirstPersonView';
+import { TacticalProbe } from './components/TacticalProbe';
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
@@ -121,6 +122,7 @@ export function App() {
               const officer = OFFICERS.find(candidate => candidate.id === id)!;
               return { id: officer.id, name: officer.name };
             })} />
+          <TacticalProbe />
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
