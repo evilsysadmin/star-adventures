@@ -14,12 +14,12 @@ import {
 
 const definition = JSON.parse(readFileSync(new URL('../content/mandates/outpost-orders.json', import.meta.url)));
 const originalWorld = JSON.parse(readFileSync(new URL('../content/scenes/meridian.json', import.meta.url)));
-const world = structuredClone(originalWorld);
-world.scenes.surface.objects.push({
-  id: 'relief-point', label: 'Puesto de socorro', type: 'station',
-  action: EVACUATION_STATION_ACTION, x: 5, y: 4,
-});
-const front = { version: 1, area: 'surface', x: 4, y: 4, heading: 'E', pending: null };
+const world = originalWorld;
+const noReliefStation = structuredClone(world);
+noReliefStation.scenes.surface.objects = noReliefStation.scenes.surface.objects.filter(
+  item => item.action !== EVACUATION_STATION_ACTION
+);
+const front = { version: 1, area: 'surface', x: 5, y: 4, heading: 'E', pending: null };
 const onBridge = { ...front, area: 'bridge' };
 const fromOtherSide = { ...front, heading: 'W' };
 
@@ -58,7 +58,7 @@ test('underqualified squad cannot turn a rescue request into reported success', 
 test('bridge, incorrect orientation, missing relief station and pending transition fail closed', () => {
   const baseline = startMandate(definition);
   for (const [scene, position] of [
-    [world, onBridge], [world, fromOtherSide], [originalWorld, front],
+    [world, onBridge], [world, fromOtherSide], [noReliefStation, front],
     [world, { ...front, pending: { id:'beam-out', to:'bridge' } }],
   ]) {
     assert.throws(() => performMedicalEvacuation(definition, baseline, scene, position,
