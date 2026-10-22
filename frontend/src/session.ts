@@ -65,7 +65,8 @@ export function restoreSpatialSession(world: Parameters<typeof startExploration>
 }
 
 export function persistSpatialSession(world: Parameters<typeof startExploration>[0],
-  position: ReturnType<typeof startExploration>, storage: Pick<Storage, 'setItem'> | null) {
+  position: { version: number; area: string; x: number; y: number; heading: string; pending: null | { id: string; to: string } },
+  storage: Pick<Storage, 'setItem'> | null) {
   if (!storage) return false;
   try {
     storage.setItem(SPATIAL_CHECKPOINT_KEY, serializeSpatialCheckpoint(world, position));
