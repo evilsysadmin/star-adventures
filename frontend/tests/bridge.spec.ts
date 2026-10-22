@@ -341,3 +341,86 @@ test('corrupt spatial state resets only exploration, preserving crew XP and miss
   await page.getByTestId('crew-roster').locator('summary').click();
   await expect(page.getByTestId('station-science').locator('..')).toContainText('75 XP');
 });
+
+async function beamDown(page: Page) {
+  // From authored bridge spawn 3:5 N, approach transport at 4:6.
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-use').click();
+  await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
+}
+
+async function inspectProbe(page: Page) {
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-forward').click();
+  await expect(page.getByTestId('explore-target')).toContainText('Sonda científica');
+  await page.getByTestId('explore-use').click();
+}
+
+test('selected three-person squad survives F5, deploys and makes a real scientific discovery', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 850 });
+  await page.goto('/');
+  await page.getByTestId('away-slot-1').selectOption('rhee');
+  await expect(page.getByTestId('away-slot-1')).toHaveValue('rhee');
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('shadowops.star-adventures.away-team.v1') || '{}').squad?.[1])).toBe('rhee');
+  await page.reload();
+  await expect(page.getByTestId('away-slot-1')).toHaveValue('rhee');
+  await beamDown(page);
+  await expect(page.getByTestId('away-party')).toContainText('Nara Venn');
+  await expect(page.getByTestId('away-party')).toContainText('Tao Rhee');
+  await expect(page.getByTestId('away-party')).toContainText('Isa Mira');
+  await expect(page.getByTestId('away-slot-0')).toBeDisabled();
+  await inspectProbe(page);
+  await expect(page.getByTestId('away-finding')).toContainText('firma mineral registrada');
+  await expect(page.getByTestId('science-score')).toHaveText('00');
+  await page.screenshot({ path: 'test-results/away-discovery-390.png', fullPage: true });
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('shadowops.star-adventures.away-team.v1') || '{}').findings?.length)).toBe(1);
+  await page.reload();
+  await expect(page.getByTestId('away-party')).toContainText('Tao Rhee');
+  await expect(page.getByTestId('away-finding')).toContainText('firma mineral registrada');
+  await expect(page.getByTestId('science-score')).toHaveText('00');
+  await expect(page.getByTestId('explore-heading')).toContainText('4:3');
+});
+
+test('a squad without a scientist cannot conjure a probe finding', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('away-slot-0').selectOption('varela');
+  await page.getByTestId('away-slot-2').selectOption('solan');
+  await beamDown(page);
+  await inspectProbe(page);
+  await expect(page.getByTestId('away-finding')).toContainText('Investigación insuficiente');
+  await expect(page.getByTestId('away-finding')).toContainText('2/5');
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('shadowops.star-adventures.away-team.v1') || '{}').findings?.length)).toBe(0);
+  await page.reload();
+  await expect(page.getByTestId('away-finding')).toContainText('Investigación insuficiente');
+  await expect(page.getByTestId('away-slot-0')).toHaveValue('varela');
+});
+
+test('corrupted away-team save resets safely without erasing ship mission history', async ({ page }) => {
+  await page.goto('/');
+  await openStation(page, 'science');
+  await page.getByTestId('choice-scan').click();
+  await expect(page.getByTestId('science-score')).toHaveText('02');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('shadowops.star-adventures.border-signal.v2')?.includes('scan'))).toBe(true);
+  await page.evaluate(() => localStorage.setItem('shadowops.star-adventures.away-team.v1', '{broken'));
+  await page.reload();
+  await expect(page.getByTestId('away-slot-0')).toHaveValue('venn');
+  await expect(page.getByTestId('away-slot-1')).toHaveValue('dorn');
+  await expect(page.getByTestId('science-score')).toHaveText('02');
+  await expect(page.getByTestId('explore-heading')).toContainText('3:3');
+});
+
+test('surface away-party layout remains within mobile and desktop widths', async ({ page }) => {
+  for(const width of [360, 390, 430, 1280]) {
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto('/');
+    await beamDown(page);
+    await expect(page.getByTestId('away-party')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/away-party-${width}.png`, fullPage: true });
+    await page.goto('/');
+    await page.evaluate(() => { localStorage.removeItem('shadowops.star-adventures.spatial.v1'); });
+  }
+});
