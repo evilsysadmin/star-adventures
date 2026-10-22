@@ -10,6 +10,19 @@ async function openVault(page: Page) {
   await page.getByTestId('mandate-vault').locator('summary').first().click();
   await expect(page.getByTestId('mandate-classified-log')).toBeVisible();
 }
+async function performPhysicalRescue(page: Page) {
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-use').click();
+  await page.getByTestId('transport-confirm').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await expect(page.getByTestId('explore-target')).toContainText('Puesto de socorro');
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('medical-report')).toContainText('Evacuación completada');
+}
 
 test('official rescue and refused hidden directive create two different records and survive F5', async ({ page }) => {
   await page.goto('/');
@@ -18,7 +31,8 @@ test('official rescue and refused hidden directive create two different records 
   await openArchive(page);
   await expect(page.getByTestId('mandate-official-status')).toHaveText('Pendiente');
   await expect(page.getByTestId('mandate-classified-order')).not.toBeVisible();
-  await page.getByTestId('mandate-rescue').click();
+  await expect(page.getByTestId('mandate-rescue')).toHaveCount(0);
+  await performPhysicalRescue(page);
   await expect(page.getByTestId('mandate-official-status')).toHaveText('Completada');
   await expect(page.getByTestId('mandate-public-events')).toContainText('Civiles evacuados');
   await openVault(page);
@@ -65,14 +79,15 @@ test('only an explicitly informed officer knows the secret and deliberate disclo
 test('reset/corrupt experimental archive is isolated from saved Border Signal mission and squad', async ({ page }) => {
   await page.goto('/');
   await openArchive(page);
-  await page.getByTestId('mandate-failure').click();
-  await expect(page.getByTestId('mandate-official-status')).toHaveText('Fallida');
+  await openVault(page);
+  await page.getByTestId('mandate-refuse').click();
+  await expect(page.getByTestId('mandate-covert-status')).toHaveText('Rechazada');
   const old = await page.evaluate(() => ({
     crew: localStorage.getItem('shadowops.star-adventures.border-signal.v2'),
     away: localStorage.getItem('shadowops.star-adventures.away-team.v1'),
   }));
   await page.getByTestId('mandate-reset').click();
-  await expect(page.getByTestId('mandate-official-status')).toHaveText('Pendiente');
+  await expect(page.getByTestId('mandate-covert-status')).toHaveText('Pendiente');
   await page.evaluate(() => localStorage.setItem('shadowops.star-adventures.outpost-orders.v1', '{invalid'));
   await page.reload();
   await openArchive(page);
@@ -90,7 +105,7 @@ for (const width of [360, 390, 1280]) {
     await page.setViewportSize({ width, height: 880 });
     await page.goto('/');
     await openArchive(page);
-    await page.getByTestId('mandate-rescue').click();
+    await performPhysicalRescue(page);
     await openVault(page);
     await page.getByTestId('mandate-recover').click();
     await expect(page.getByTestId('mandate-public-log')).toBeVisible();

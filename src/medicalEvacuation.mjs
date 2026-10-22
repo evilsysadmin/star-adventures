@@ -7,7 +7,7 @@ import { MandateError, applyMandateAction, replayMandateActions } from './dualMa
 
 export const EVACUATION_STATION_ACTION = 'assist-evacuees';
 export const EVACUATION_ORDER = 'evacuate';
-export const EVACUATION_INCIDENT = 'survivors-evacuated';
+export const EVACUATION_INCIDENT = 'field-medical-evacuation';
 const MEDICAL_THRESHOLD = 3;
 const fail = message => { throw new MandateError(message); };
 

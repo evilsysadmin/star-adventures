@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { applyMandateAction, classifiedMandateReport, publicMandateReport, startMandate } from '../../../src/dualMandate.mjs';
-import { localStorageOrNull } from '../session';
-import { PROBE_FINDING } from '../../../src/awayTeam.mjs';
 import { canBriefScientificFinding, briefScientificFinding } from '../../../src/scientificBriefing.mjs';
-import { PROBE_SURVEY_INCIDENT } from '../../../src/observedMandate.mjs';
+import { EVACUATION_INCIDENT } from '../../../src/medicalEvacuation.mjs';
+import { PROBE_SURVEY_INCIDENT, reconcileObservedProbe, PROBE_SURVEY_ORDER } from '../../../src/observedMandate.mjs';
 import world from '../../../content/scenes/meridian.json';
 import type { ViewState } from './FirstPersonView';
-import { reconcileObservedProbe, PROBE_SURVEY_ORDER } from '../../../src/observedMandate.mjs';
-import { MANDATE_DEFINITION, persistMandateSession, restoreMandateSession, type MandateState } from '../mandateSession';
+import { MANDATE_DEFINITION, type MandateState } from '../mandateSession';
 import './dualMandatePanel.css';
 
 type MandateDecision = Record<string, unknown> & { type: string };
@@ -29,26 +27,23 @@ type ActualAwayFinding = {
   lastReport: null | { officerId: string; skill: number; result: string };
 };
 
-export function DualMandatePanel({ awayTeam, exploration, accessedStationId }: {
+export function DualMandatePanel({ awayTeam, exploration, accessedStationId, mandate, setMandate, initialNotice }: {
   awayTeam: ActualAwayFinding;
   exploration: ViewState;
   accessedStationId: string | null;
+  mandate: MandateState;
+  setMandate: Dispatch<SetStateAction<MandateState>>;
+  initialNotice: string;
 }) {
-  const [initial] = useState(() => restoreMandateSession(localStorageOrNull()));
-  const [mandate, setMandate] = useState<MandateState>(() => initial.state);
-  useEffect(() => { persistMandateSession(mandate, localStorageOrNull()); }, [mandate]);
-  // The only automatic evidence is an actual, validated first-person expedition.
-  // On F5 the independently persisted away-team checkpoint replays into this log.
-  useEffect(() => {
-    if (awayTeam.findings.includes(PROBE_FINDING)) {
-      setMandate(before => reconcileObservedProbe(MANDATE_DEFINITION, before, awayTeam));
-    }
-  }, [awayTeam]);
 
   // Reports always come from the SAME canonical sequence, not from UI flags.
   const publicLog = publicMandateReport(MANDATE_DEFINITION, mandate);
   const classified = classifiedMandateReport(MANDATE_DEFINITION, mandate);
   const openOrder = publicLog.orders.find((order: { id: string }) => order.id === 'evacuate')!;
+  const realRescueVerified = publicLog.incidents.some((item: { id: string }) =>
+    item.id === EVACUATION_INCIDENT
+  );
+  const legacyRescue = openOrder.status !== 'active' && !realRescueVerified;
   const surveyOrder = publicLog.orders.find((order: { id: string }) => order.id === PROBE_SURVEY_ORDER)!;
   const hiddenOrder = classified.orders.find((order: { channel: string }) => order.channel === 'covert')!;
   const secretIncident = classified.incidents.find((incident: { orderId: string }) => incident.orderId === hiddenOrder.id);
@@ -62,17 +57,6 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId }: {
   const run = (actions: MandateDecision[]) => setMandate(before =>
     actions.reduce<MandateState>((state, action) => applyMandateAction(MANDATE_DEFINITION, state, action), before)
   );
-
-  const finishOfficial = (result: 'success' | 'failed') => {
-    const success = result === 'success';
-    const incidentId = success ? 'survivors-evacuated' : 'evacuation-incomplete';
-    run([
-      { type: 'record', incidentId, orderId: 'evacuate',
-        kind: success ? 'rescue' : 'failure', witnesses: ['mira'], public: true },
-      { type: 'resolve', orderId: 'evacuate', incidentId,
-        status: success ? 'completed' : 'failed' },
-    ]);
-  };
 
   const finishCovert = (result: 'success' | 'refused') => {
     const success = result === 'success';
@@ -88,13 +72,16 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId }: {
 
   return (
     <details className="mandate-archive" data-testid="mandate-archive">
-      <summary>ARCHIVO DE ÓRDENES <span>Simulación narrativa ▾</span></summary>
+      <summary>ARCHIVO DE ÓRDENES <span>Servicio real · archivo reservado ▾</span></summary>
       <div className="mandate-archive-body">
-        <p className="mandate-caveat">Prototipo autónomo de decisiones y bitácoras. Aún no representa acciones realizadas en el escenario 3D ni modifica la misión «Ecos en la frontera».</p>
+        <p className="mandate-caveat">El servicio científico y los rescates proceden de acciones en la superficie. El canal reservado sigue siendo un laboratorio narrativo independiente de «Ecos en la frontera».</p>
         <section className="mandate-record" data-testid="mandate-public-log" aria-label="Registro de servicio público">
           <h3>Registro de servicio <span>OFICIAL</span></h3>
           <p className="mandate-order">{openOrder.title}</p>
           <p className="mandate-progress" data-testid="mandate-official-status">{resultText[openOrder.status]}</p>
+          {legacyRescue && <p className="mandate-caveat" data-testid="mandate-legacy-rescue">
+            Estado heredado de la antigua simulación narrativa, no de una evacuación en la superficie. Reinicia el archivo para realizar el rescate real.
+          </p>}
           <p className="mandate-order" data-testid="mandate-real-survey">{surveyOrder.title} · <strong data-testid="mandate-survey-status">{resultText[surveyOrder.status]}</strong></p>
           <p className="mandate-caveat">El estudio científico se completa solo tras investigar la sonda con un equipo competente en el escenario 3D; no puede adjudicarse desde aquí.</p>
           {surveyOrder.status === 'completed' && <div data-testid="mandate-field-briefing">
@@ -112,10 +99,9 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId }: {
               Regresa al puente y usa el sillón del capitán para transmitirle el informe.
             </p>}
           </div>}
-          {openOrder.status === 'active' && <div className="mandate-actions">
-            <button type="button" data-testid="mandate-rescue" onClick={() => finishOfficial('success')}>Registrar evacuación realizada</button>
-            <button type="button" data-testid="mandate-failure" onClick={() => finishOfficial('failed')}>Registrar evacuación fallida</button>
-          </div>}
+          {openOrder.status === 'active' && <p className="mandate-caveat" data-testid="mandate-rescue-guidance">
+            Para evacuar a los civiles, despliega un equipo con capacidad médica y accede al puesto de socorro en la superficie. El resultado se registra al interactuar allí.
+          </p>}
           {publicLog.incidents.length > 0 &&
             <ul className="mandate-events" data-testid="mandate-public-events">
               {publicLog.incidents.map((incident: { id: string; kind: string }) =>
@@ -151,8 +137,8 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId }: {
         </details>
 
         <div className="mandate-archive-footer">
-          <span data-testid="mandate-save-notice">{initial.notice} · {mandate.actions.length} eventos</span>
-          <button type="button" data-testid="mandate-reset" onClick={() => setMandate(reconcileObservedProbe(MANDATE_DEFINITION, startMandate(MANDATE_DEFINITION), awayTeam))}>Reiniciar simulación (conservar hallazgos reales)</button>
+          <span data-testid="mandate-save-notice">{initialNotice} · {mandate.actions.length} eventos</span>
+          <button type="button" data-testid="mandate-reset" onClick={() => setMandate(reconcileObservedProbe(MANDATE_DEFINITION, startMandate(MANDATE_DEFINITION), awayTeam))}>Reiniciar archivo (conservar sonda; borrar rescates y decisiones)</button>
         </div>
       </div>
     </details>
