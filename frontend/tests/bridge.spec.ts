@@ -1,13 +1,28 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+// Route to a station from the bridge spawn (3:5 N). No warp/remote cheats.
+async function openStation(page: Page, station: 'science' | 'communications' | 'tactical' | 'helm' | 'command') {
+  const act = async (id: string, n = 1) => {
+    for(let i=0;i<n;i++) await page.getByTestId('explore-' + id).click();
+  };
+  if(station === 'science') { await act('left'); await act('forward',2); await act('right'); await act('forward'); }
+  else if(station === 'communications') { await act('right'); await act('forward',2); await act('left'); await act('forward',2); }
+  else if(station === 'tactical') { await act('right'); await act('forward',3); await act('left'); await act('forward',2); await act('right'); }
+  else if(station === 'helm') { await act('forward',2); }
+  else { await act('right'); await act('forward'); await act('left'); }
+  await act('use');
+  await expect(page.getByTestId('console-locked').or(page.locator('.choice-list'))).toBeVisible();
+}
+
 
 for (const width of [360, 390, 430, 1280]) {
-  test(`bridge fits ${width}px and displays actionable choices`, async ({ page }) => {
+  test(`bridge fits ${width}px and requires an actual console`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 1280 ? 820 : 850 });
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /Ecos en la frontera/i })).toBeVisible();
-    await expect(page.getByTestId('choice-scan')).toBeVisible();
-    await expect(page.getByTestId('choice-hail')).toBeVisible();
-    await expect(page.getByTestId('choice-intercept')).toBeVisible();
+    await expect(page.getByTestId('console-locked')).toBeVisible();
+    await expect(page.getByTestId('choice-scan')).toHaveCount(0);
+    await expect(page.getByTestId('choice-hail')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
     await page.screenshot({ path: `test-results/bridge-${width}.png`, fullPage: true });
   });
@@ -15,6 +30,7 @@ for (const width of [360, 390, 430, 1280]) {
 
 test('science, diplomacy and tactical choices produce distinct genuine outcomes', async ({ page }) => {
   await page.goto('/');
+  await openStation(page, 'science');
   await page.getByTestId('choice-scan').click();
   await expect(page.getByTestId('science-score')).toHaveText('02');
   await page.getByTestId('choice-broadcast').click();
@@ -23,11 +39,13 @@ test('science, diplomacy and tactical choices produce distinct genuine outcomes'
   await expect(page.getByRole('button', { name: /Nueva misión/i })).toBeVisible();
   await page.getByRole('button', { name: /Nueva misión/i }).click();
   await expect(page.getByTestId('science-score')).toHaveText('00');
+  await openStation(page, 'communications');
   await page.getByTestId('choice-hail').click();
   await page.getByTestId('choice-mediate').click();
   await expect(page.getByTestId('diplomacy-score')).toHaveText('05');
   await expect(page.getByTestId('ending')).toContainText('Paz negociada');
   await page.getByRole('button', { name: /Nueva misión/i }).click();
+  await openStation(page, 'tactical');
   await page.getByTestId('choice-intercept').click();
   await page.getByTestId('choice-disable').click();
   await expect(page.getByTestId('damage-score')).toHaveText('01');
@@ -36,13 +54,17 @@ test('science, diplomacy and tactical choices produce distinct genuine outcomes'
 
 test('keyboard choices and skip-navigation work', async ({ page }) => {
   await page.goto('/');
+  await page.keyboard.press('1');
+  await expect(page.getByTestId('diplomacy-score')).toHaveText('00');
+  await openStation(page, 'communications');
   await expect(page.getByTestId('choice-hail')).toBeVisible();
-  await page.keyboard.press('2');
+  await page.keyboard.press('1');
   await expect(page.getByTestId('diplomacy-score')).toHaveText('02');
   await page.keyboard.press('1');
   await expect(page.getByTestId('ending')).toContainText('Paz negociada');
   await page.keyboard.press('r');
-  await expect(page.getByTestId('choice-scan')).toBeVisible();
+  await expect(page.getByTestId('console-locked')).toBeVisible();
+  await page.reload();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Ir a las órdenes' })).toBeFocused();
 });
@@ -50,9 +72,12 @@ test('keyboard choices and skip-navigation work', async ({ page }) => {
 
 test('a saved command history restores the same decision after refresh', async ({ page }) => {
   await page.goto('/');
+  await openStation(page, 'communications');
   await page.getByTestId('choice-hail').click();
   await expect(page.getByTestId('diplomacy-score')).toHaveText('02');
   await page.reload();
+  await expect(page.getByTestId('console-locked')).toBeVisible();
+  await openStation(page, 'communications');
   await expect(page.getByTestId('choice-mediate')).toBeVisible();
   await expect(page.getByTestId('diplomacy-score')).toHaveText('02');
   await page.getByTestId('choice-mediate').click();
@@ -65,7 +90,7 @@ test('corrupt local checkpoint falls back to a new mission without crashing', as
   await page.goto('/');
   await page.evaluate(() => localStorage.setItem('shadowops.star-adventures.border-signal.v2', '{bad save'));
   await page.reload();
-  await expect(page.getByTestId('choice-scan')).toBeVisible();
+  await expect(page.getByTestId('console-locked')).toBeVisible();
   await expect(page.getByText('Guardado incompatible · misión reiniciada')).toBeVisible();
 });
 
@@ -74,6 +99,7 @@ test('station swaps change narrative outcomes and survive reload', async ({ page
   await page.getByTestId('crew-roster').locator('summary').click();
   await page.getByTestId('station-science').selectOption('dorn');
   await expect(page.getByTestId('station-tactical')).toHaveValue('venn');
+  await openStation(page, 'science');
   await expect(page.getByTestId('staff-scan')).toContainText('Kael Dorn');
   await page.getByTestId('choice-scan').click();
   await page.getByTestId('choice-broadcast').click();
@@ -87,13 +113,14 @@ test('station swaps change narrative outcomes and survive reload', async ({ page
 
 test('crew XP survives a new mission and F5', async ({ page }) => {
   await page.goto('/');
+  await openStation(page, 'science');
   await page.getByTestId('choice-scan').click();
   await page.getByTestId('choice-broadcast').click();
   await page.getByRole('button', { name: /Nueva misión/i }).click();
   await page.reload();
   await page.getByTestId('crew-roster').locator('summary').click();
   await expect(page.getByTestId('station-science').locator('..')).toContainText('75 XP');
-  await expect(page.getByTestId('choice-scan')).toBeVisible();
+  await expect(page.getByTestId('console-locked')).toBeVisible();
 });
 
 test('legacy v1 progress migrates exactly without retroactive XP', async ({ page }) => {
@@ -106,6 +133,7 @@ test('legacy v1 progress migrates exactly without retroactive XP', async ({ page
   });
   await page.reload();
   await expect(page.getByTestId('science-score')).toHaveText('01');
+  await openStation(page, 'science');
   await expect(page.getByTestId('choice-broadcast')).toBeVisible();
   await page.getByTestId('crew-roster').locator('summary').click();
   await expect(page.getByTestId('station-science').locator('..')).toContainText('0 XP');
@@ -200,3 +228,42 @@ test('keyboard navigation reaches the transporter without stealing focus from se
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByTestId('explore-heading')).toContainText('4:5');
 });
+
+test('moving away from a console immediately closes mission orders', async ({ page }) => {
+  await page.goto('/');
+  await openStation(page, 'science');
+  await expect(page.getByTestId('choice-scan')).toBeVisible();
+  await page.getByTestId('explore-backward').click();
+  await expect(page.getByTestId('console-locked')).toBeVisible();
+  await expect(page.getByTestId('choice-scan')).toHaveCount(0);
+  await page.keyboard.press('1');
+  await expect(page.getByTestId('science-score')).toHaveText('00');
+});
+
+test('surface exploration cannot execute ship orders using a stale station UI', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-forward').click();
+  await page.getByTestId('explore-right').click();
+  await page.getByTestId('explore-use').click();
+  await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('explore-area')).toContainText('Superficie');
+  await expect(page.getByTestId('console-locked')).toContainText('Las operaciones de la nave');
+  await expect(page.getByTestId('choice-scan')).toHaveCount(0);
+  await page.keyboard.press('1');
+  await expect(page.getByTestId('science-score')).toHaveText('00');
+});
+
+for(const width of [390,1280]) {
+  test(`real science-console state has responsive orders at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width===390?850:820 });
+    await page.goto('/');
+    await openStation(page, 'science');
+    await expect(page.getByTestId('choice-scan')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/console-science-${width}.png`, fullPage:true });
+    await page.getByTestId('choice-scan').click();
+    await expect(page.getByTestId('science-score')).toHaveText('02');
+    await expect(page.getByTestId('choice-broadcast')).toBeVisible();
+  });
+}
