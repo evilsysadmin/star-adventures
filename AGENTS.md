@@ -36,3 +36,9 @@ This is an independent ShadowOps game. Follow these rules for every repository c
 - No backend until remote sync, account or actual server authority requires one. Go is the likely backend when that need arrives.
 
 Read docs/PRODUCT.md, docs/ARCHITECTURE.md, docs/ROADMAP.md and docs/CONTENT-AND-IP.md before extending the game.
+
+## Tactical combat camera — mandatory skill
+- For elevated combat, orthographic projection, picking, camera controls or 3D combat QA, read `.agents/skills/tactical-camera/SKILL.md` and `docs/TACTICAL-CAMERA-GATE.md` first.
+- Ground exploration remains first-person; tactical elevated view is only for turn-based combat.
+- Prove grid-cell ID selection by browser tests on mobile and desktop *before* introducing 3D combat art or a free-rotating camera.
+- External community skills are references, not silently installed code or authority to expand task scope.
