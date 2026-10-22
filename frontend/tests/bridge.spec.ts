@@ -77,7 +77,8 @@ test('a saved command history restores the same decision after refresh', async (
   await expect(page.getByTestId('diplomacy-score')).toHaveText('02');
   await page.reload();
   await expect(page.getByTestId('console-locked')).toBeVisible();
-  await openStation(page, 'communications');
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 5:3');
+  await page.getByTestId('explore-use').click();
   await expect(page.getByTestId('choice-mediate')).toBeVisible();
   await expect(page.getByTestId('diplomacy-score')).toHaveText('02');
   await page.getByTestId('choice-mediate').click();
