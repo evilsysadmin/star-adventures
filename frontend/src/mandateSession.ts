@@ -3,6 +3,17 @@ import {
   startMandate, serializeMandateCheckpoint, deserializeMandateCheckpoint,
 } from '../../src/dualMandate.mjs';
 
+// JS core starts with empty arrays; give React a stable evolving state shape
+// instead of inferring never[] from the initial empty history.
+export type MandateState = {
+  version: number;
+  mandateId: string;
+  orders: Record<string, string>;
+  incidents: Array<{ id: string; orderId: string; kind: string; public: boolean; witnesses: string[] }>;
+  knowledge: Record<string, string[]>;
+  actions: Array<{ type: string; [key: string]: unknown }>;
+};
+
 export const MANDATE_SAVE_KEY = 'shadowops.star-adventures.outpost-orders.v1';
 export const MANDATE_DEFINITION = definition;
 
@@ -21,7 +32,7 @@ export function restoreMandateSession(storage: Pick<Storage, 'getItem'> | null) 
 }
 
 export function persistMandateSession(
-  state: ReturnType<typeof startMandate>,
+  state: MandateState,
   storage: Pick<Storage, 'setItem'> | null,
 ): boolean {
   if (!storage) return false;
