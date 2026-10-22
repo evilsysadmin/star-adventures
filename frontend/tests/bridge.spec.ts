@@ -409,7 +409,7 @@ test('corrupted away-team save resets safely without erasing ship mission histor
   await expect(page.getByTestId('away-slot-0')).toHaveValue('venn');
   await expect(page.getByTestId('away-slot-1')).toHaveValue('dorn');
   await expect(page.getByTestId('science-score')).toHaveText('02');
-  await expect(page.getByTestId('explore-heading')).toContainText('3:3');
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 1:4');
 });
 
 test('surface away-party layout remains within mobile and desktop widths', async ({ page }) => {
