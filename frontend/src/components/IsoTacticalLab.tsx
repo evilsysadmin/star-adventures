@@ -4,6 +4,7 @@ import assets from '../assets/r2-assets-manifest.json';
 import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { WALK_ATLAS, walkFrameAt, walkFrameUv } from '../tacticalAnimation';
+import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
 import './isoTacticalLab.css';
 
 const cover = new Set(['3:3', '4:3']);
@@ -27,6 +28,7 @@ export function IsoTacticalLab() {
   const animateEnabled = useRef(true);
   const [active, setActive] = useState<Cell>(initial);
   const [playing, setPlaying] = useState(true);
+  const [inspecting, setInspecting] = useState(false);
   const [assetStatus, setAssetStatus] = useState('Conectando con los atlas originales en R2…');
   const [rendererStatus, setRendererStatus] = useState<string | null>(null);
 
@@ -274,6 +276,11 @@ export function IsoTacticalLab() {
       <p role="status" data-testid="iso-atlas-status">{assetStatus}</p>
       <p>3 oficiales · 2 blancos geométricos · 2 obstáculos · cámara sin orbitación</p>
     </div>
+    <button type="button" className="iso-inspect-toggle" data-testid="iso-inspect-toggle"
+      aria-expanded={inspecting} onClick={() => setInspecting(value => !value)}>
+      {inspecting ? 'Cerrar visor de atlas' : 'Ampliar y comparar los 2 atlas originales'}
+    </button>
+    {inspecting && <IsoAtlasMagnifier playing={playing} />}
     <div className="iso-lab-a11y" tabIndex={0} onKeyDown={keyboard}
       aria-label="Control de casilla con flechas" data-testid="iso-keyboard">
       <span>Seleccionar casilla: clic, toque o enfoca aquí y usa las flechas.</span>
