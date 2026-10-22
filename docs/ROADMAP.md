@@ -9,7 +9,7 @@ Status below is a **plan**, not a claim of implemented features.
 **Implementation separation:** current tactical-camera Three.js 8×8 raycast proof remains under development in the **Codex CLI** session; this documentation PR must not touch its branch, dependencies, tests or runtime. Preserve existing first-person navigation and crew/saves, rather than replacing a working path with a giant narrative rewrite.
 
 Narrative delivery sequence (small focused PRs **after** the product contract is accepted):
-1. [ ] Event model for two independent but coupled mission tracks (official order / clandestine directive), officer knowledge, evidence, cover exposure and consequences. No gameplay UI.
+1. [x] First pure dual-track event and replay contract: official/covert orders, real incidents, scoped officer knowledge, deliberate disclosure, refused orders, and derived public/classified reports (`src/dualMandate.mjs`). No gameplay UI yet; cover suspicion and long-term faction consequences remain separate future work.
 2. [ ] In-universe briefings plus dual logs: public captain's service report and private classified account grounded in identical observed events, with access through appropriate bridge stations.
 3. [ ] One complete dual-track evacuation/intelligence episode (`Signals Under Orders`, provisional) with reachable distinct endings and real nonviolent choices. Keep the original Border Signal episode/save as a fixture and tested rollback.
 4. [ ] Persistent trust, faction and handler consequences with explicit state migration and real browser/F5 journeys.
