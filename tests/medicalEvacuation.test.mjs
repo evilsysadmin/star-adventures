@@ -5,7 +5,7 @@ import { startCrew } from '../src/crew.mjs';
 import { startAwayTeam, selectAwayOfficer } from '../src/awayTeam.mjs';
 import { validateWorld } from '../src/spatial.mjs';
 import {
-  MandateError, startMandate, publicMandateReport, classifiedMandateReport,
+  MandateError, startMandate, applyMandateAction, publicMandateReport, classifiedMandateReport,
   serializeMandateCheckpoint, deserializeMandateCheckpoint,
 } from '../src/dualMandate.mjs';
 import {
@@ -79,4 +79,23 @@ test('duplicate awards, inconsistent history and wrong source schema are rejecte
   const withoutEvacuation = { ...definition, orders: definition.orders.filter(x => x.id !== 'evacuate') };
   assert.throws(() => performMedicalEvacuation(withoutEvacuation, startMandate(withoutEvacuation),
     world, front, startCrew(), startAwayTeam()), MandateError);
+});
+
+test('legacy narrative-lab rescue history is preserved but never treated as physical evidence', () => {
+  let legacy = startMandate(definition);
+  legacy = applyMandateAction(definition, legacy, {
+    type: 'record', incidentId: 'survivors-evacuated', orderId: 'evacuate',
+    kind: 'rescue', witnesses: ['mira'], public: true,
+  });
+  legacy = applyMandateAction(definition, legacy, {
+    type: 'resolve', orderId: 'evacuate', incidentId: 'survivors-evacuated', status: 'completed',
+  });
+  const restored = deserializeMandateCheckpoint(definition, serializeMandateCheckpoint(definition, legacy));
+  assert.deepEqual(restored, legacy, 'historic v1 saves must remain loadable');
+  assert.notEqual(legacy.incidents[0].id, EVACUATION_INCIDENT);
+  assert.throws(() => performMedicalEvacuation(definition, legacy, world, front,
+    startCrew(), startAwayTeam()), MandateError, 'legacy closure must not silently award physical proof');
+  const physical = performMedicalEvacuation(definition, startMandate(definition), world, front,
+    startCrew(), startAwayTeam()).state;
+  assert.equal(physical.incidents[0].id, EVACUATION_INCIDENT);
 });
