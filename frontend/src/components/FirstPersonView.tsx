@@ -198,7 +198,9 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             </div>
           </div>}
           <p className="firstperson-feedback" data-testid="explore-feedback" aria-live="polite">
-            {event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' : `${event.label}: consola seleccionada. Consulta las órdenes de esta estación.` :
+            {event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
+              event.action === 'assist-evacuees' ? 'Puesto de socorro: consulta el resultado del equipo médico en el diario.' :
+                `${event.label}: consola seleccionada. Consulta las órdenes de esta estación.` :
               event?.type === 'blocked' ? 'Paso bloqueado.' :
               event?.type === 'nothing-to-use' ? 'No hay nada a tu alcance.' :
               event?.type === 'transition-declined' ? 'Permaneces en la misma casilla. Puedes volver a usar el acceso.' :
