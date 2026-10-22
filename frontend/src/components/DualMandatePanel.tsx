@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { applyMandateAction, classifiedMandateReport, publicMandateReport, startMandate } from '../../../src/dualMandate.mjs';
 import { localStorageOrNull } from '../session';
+import { PROBE_FINDING } from '../../../src/awayTeam.mjs';
+import { reconcileObservedProbe, PROBE_SURVEY_ORDER } from '../../../src/observedMandate.mjs';
 import { MANDATE_DEFINITION, persistMandateSession, restoreMandateSession, type MandateState } from '../mandateSession';
 import './dualMandatePanel.css';
 
@@ -15,15 +17,31 @@ const resultText: Record<string, string> = {
   active: 'Pendiente', completed: 'Completada', failed: 'Fallida', refused: 'Rechazada',
 };
 
-export function DualMandatePanel() {
+type ActualAwayFinding = {
+  version: number;
+  squad: string[];
+  findings: string[];
+  attempts: number;
+  lastReport: null | { officerId: string; skill: number; result: string };
+};
+
+export function DualMandatePanel({ awayTeam }: { awayTeam: ActualAwayFinding }) {
   const [initial] = useState(() => restoreMandateSession(localStorageOrNull()));
   const [mandate, setMandate] = useState<MandateState>(() => initial.state);
   useEffect(() => { persistMandateSession(mandate, localStorageOrNull()); }, [mandate]);
+  // The only automatic evidence is an actual, validated first-person expedition.
+  // On F5 the independently persisted away-team checkpoint replays into this log.
+  useEffect(() => {
+    if (awayTeam.findings.includes(PROBE_FINDING)) {
+      setMandate(before => reconcileObservedProbe(MANDATE_DEFINITION, before, awayTeam));
+    }
+  }, [awayTeam]);
 
   // Reports always come from the SAME canonical sequence, not from UI flags.
   const publicLog = publicMandateReport(MANDATE_DEFINITION, mandate);
   const classified = classifiedMandateReport(MANDATE_DEFINITION, mandate);
-  const openOrder = publicLog.orders[0];
+  const openOrder = publicLog.orders.find((order: { id: string }) => order.id === 'evacuate')!;
+  const surveyOrder = publicLog.orders.find((order: { id: string }) => order.id === PROBE_SURVEY_ORDER)!;
   const hiddenOrder = classified.orders.find((order: { channel: string }) => order.channel === 'covert')!;
   const secretIncident = classified.incidents.find((incident: { orderId: string }) => incident.orderId === hiddenOrder.id);
   const informed = secretIncident !== undefined &&
@@ -65,6 +83,8 @@ export function DualMandatePanel() {
           <h3>Registro de servicio <span>OFICIAL</span></h3>
           <p className="mandate-order">{openOrder.title}</p>
           <p className="mandate-progress" data-testid="mandate-official-status">{resultText[openOrder.status]}</p>
+          <p className="mandate-order" data-testid="mandate-real-survey">{surveyOrder.title} · <strong data-testid="mandate-survey-status">{resultText[surveyOrder.status]}</strong></p>
+          <p className="mandate-caveat">El estudio científico se completa solo tras investigar la sonda con un equipo competente en el escenario 3D; no puede adjudicarse desde aquí.</p>
           {openOrder.status === 'active' && <div className="mandate-actions">
             <button type="button" data-testid="mandate-rescue" onClick={() => finishOfficial('success')}>Registrar evacuación realizada</button>
             <button type="button" data-testid="mandate-failure" onClick={() => finishOfficial('failed')}>Registrar evacuación fallida</button>
@@ -105,7 +125,7 @@ export function DualMandatePanel() {
 
         <div className="mandate-archive-footer">
           <span data-testid="mandate-save-notice">{initial.notice} · {mandate.actions.length} eventos</span>
-          <button type="button" data-testid="mandate-reset" onClick={() => setMandate(startMandate(MANDATE_DEFINITION))}>Reiniciar solo este archivo</button>
+          <button type="button" data-testid="mandate-reset" onClick={() => setMandate(reconcileObservedProbe(MANDATE_DEFINITION, startMandate(MANDATE_DEFINITION), awayTeam))}>Reiniciar simulación (conservar hallazgos reales)</button>
         </div>
       </div>
     </details>
