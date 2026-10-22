@@ -128,3 +128,85 @@ test('isolated offline fallback model is visibly rendered at mobile width', asyn
   await expect(element).toBeVisible();
   await element.screenshot({path:'test-results/r2-officer-fallback-390.png'});
 });
+
+test('atlas frame selection survives delayed loading and uses the same UV orientation as tactical animation', async ({ page }) => {
+  await page.goto('/');
+  const outcome = await page.evaluate(async () => {
+    const THREE = await import('/node_modules/.vite/deps/three.js');
+    const { mountResilientOfficer } = await import('/src/tacticalOfficerFallback.ts');
+    const { walkFrameUv } = await import('/src/tacticalAnimation.ts');
+    const scene = new THREE.Scene();
+    let loaded!: (texture: THREE.Texture) => void;
+    const unit = mountResilientOfficer({
+      scene, id: 'frames', assetUrl: 'test://delayed', at: { x: -1, z: 3 },
+      loadTexture: (_url, onLoad) => {
+        loaded = onLoad;
+        return new THREE.Texture();
+      },
+    });
+    unit.setFrame(5);
+    const pending = { status: unit.status(), placeholder: unit.placeholder.visible, sprite: unit.sprite.visible };
+    const texture = new THREE.Texture();
+    loaded(texture);
+    const first = { x: texture.offset.x, y: texture.offset.y,
+      repeatX: texture.repeat.x, repeatY: texture.repeat.y,
+      intended: walkFrameUv(5), foot: unit.root.position.y };
+    const frames: Array<{frame:number, x:number, y:number, expected:{x:number,y:number}}> = [];
+    for (const frame of [0, 1, 2, 3, 4, 5, 6, -1, 12]) {
+      unit.setFrame(frame);
+      frames.push({
+        frame, x: texture.offset.x, y: texture.offset.y,
+        expected: walkFrameUv(frame),
+      });
+    }
+    let throwsOnBadFrame = false;
+    try { unit.setFrame(1.5); } catch { throwsOnBadFrame = true; }
+    const beforeDispose = { status: unit.status(), sprite: unit.sprite.visible, placeholder: unit.placeholder.visible };
+    unit.dispose();
+    unit.setFrame(4);
+    const afterDispose = { status: unit.status(), removed: !scene.children.includes(unit.root) };
+    return { pending, first, frames, throwsOnBadFrame, beforeDispose, afterDispose };
+  });
+  expect(outcome.pending).toEqual({ status: 'loading', placeholder: true, sprite: false });
+  expect(outcome.first).toMatchObject({
+    x: 2/3, y: 0, repeatX: 1/3, repeatY: 1/2,
+    intended: {x: 2/3, y: 0}, foot: 0,
+  });
+  for (const frame of outcome.frames) {
+    expect(frame.x, `wrong column at frame ${frame.frame}`).toBeCloseTo(frame.expected.x, 12);
+    expect(frame.y, `wrong row at frame ${frame.frame}`).toBeCloseTo(frame.expected.y, 12);
+  }
+  expect(outcome.throwsOnBadFrame).toBe(true);
+  expect(outcome.beforeDispose).toEqual({ status: 'loaded', sprite: true, placeholder: false });
+  expect(outcome.afterDispose).toEqual({ status: 'disposed', removed: true });
+});
+
+test('atlas animation cannot make an officer invisible during an HTTP-like load failure', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const THREE = await import('/node_modules/.vite/deps/three.js');
+    const { mountResilientOfficer } = await import('/src/tacticalOfficerFallback.ts');
+    const scene = new THREE.Scene();
+    let onFailure!: (error: unknown) => void;
+    const unit = mountResilientOfficer({
+      scene, id: 'failure', assetUrl:'test://failed', at:{x:2,z:-1},
+      loadTexture: (_url, _load, fail) => {
+        onFailure = fail;
+        return new THREE.Texture();
+      },
+    });
+    unit.setFrame(3);
+    onFailure(new Error('HTTP 503'));
+    unit.setFrame(5);
+    const snapshot = {
+      status:unit.status(), placeholder:unit.placeholder.visible, sprite:unit.sprite.visible,
+      x:unit.root.position.x, z:unit.root.position.z, y:unit.root.position.y,
+      nodeInScene:scene.children.includes(unit.root),
+    };
+    unit.dispose();
+    return snapshot;
+  });
+  expect(result).toEqual({
+    status:'failed',placeholder:true,sprite:false,x:2,z:-1,y:0,nodeInScene:true,
+  });
+});
