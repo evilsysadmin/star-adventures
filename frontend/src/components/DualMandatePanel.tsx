@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { applyMandateAction, classifiedMandateReport, publicMandateReport, startMandate } from '../../../src/dualMandate.mjs';
 import { canBriefScientificFinding, briefScientificFinding } from '../../../src/scientificBriefing.mjs';
+import { EVACUATION_INCIDENT } from '../../../src/medicalEvacuation.mjs';
 import { PROBE_SURVEY_INCIDENT, reconcileObservedProbe, PROBE_SURVEY_ORDER } from '../../../src/observedMandate.mjs';
 import world from '../../../content/scenes/meridian.json';
 import type { ViewState } from './FirstPersonView';
@@ -39,6 +40,10 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
   const publicLog = publicMandateReport(MANDATE_DEFINITION, mandate);
   const classified = classifiedMandateReport(MANDATE_DEFINITION, mandate);
   const openOrder = publicLog.orders.find((order: { id: string }) => order.id === 'evacuate')!;
+  const realRescueVerified = publicLog.incidents.some((item: { id: string }) =>
+    item.id === EVACUATION_INCIDENT
+  );
+  const legacyRescue = openOrder.status !== 'active' && !realRescueVerified;
   const surveyOrder = publicLog.orders.find((order: { id: string }) => order.id === PROBE_SURVEY_ORDER)!;
   const hiddenOrder = classified.orders.find((order: { channel: string }) => order.channel === 'covert')!;
   const secretIncident = classified.incidents.find((incident: { orderId: string }) => incident.orderId === hiddenOrder.id);
@@ -74,6 +79,9 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
           <h3>Registro de servicio <span>OFICIAL</span></h3>
           <p className="mandate-order">{openOrder.title}</p>
           <p className="mandate-progress" data-testid="mandate-official-status">{resultText[openOrder.status]}</p>
+          {legacyRescue && <p className="mandate-caveat" data-testid="mandate-legacy-rescue">
+            Estado heredado de la antigua simulación narrativa, no de una evacuación en la superficie. Reinicia el archivo para realizar el rescate real.
+          </p>}
           <p className="mandate-order" data-testid="mandate-real-survey">{surveyOrder.title} · <strong data-testid="mandate-survey-status">{resultText[surveyOrder.status]}</strong></p>
           <p className="mandate-caveat">El estudio científico se completa solo tras investigar la sonda con un equipo competente en el escenario 3D; no puede adjudicarse desde aquí.</p>
           {surveyOrder.status === 'completed' && <div data-testid="mandate-field-briefing">
