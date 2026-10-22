@@ -62,6 +62,12 @@ This is a domain-only capability, not yet a mission UI, a full episode, a server
 
 Next steps require contextual bridge briefings, actual choices bound to the current crew and a complete authored mission with meaningful outcomes. Do not claim that public/secret roles have gameplay consequences until those integrations are tested.
 
+## First real physical-action bridge (PR #41)
+
+The separate captain's archive now records the **real scientific finding** already obtainable by the away team when the player travels physically to the surface, faces the probe and successfully passes its skill check. The event is reconciled into a third **official scientific survey** order with the actual reporting officer as the named witness, and it survives F5 via replay-only checkpointing. Failed investigations earn no credit. Repeated events and a story-lab reset cannot mint or erase the verified achievement.
+
+This does **not** imply that the evacuation or covert-core retrieval has a real 3D interaction yet. Those still belong to the explicitly labelled narrative simulation. Do not silently map the generic probe finding onto a nonexistent civilian rescue or an extracted sensor core. The new reconciliation module remains pure, with no React, Three.js or network imports.
+
 ## Next narrative PRs (separate from the tactical camera POC)
 
 1. [ ] Domain contracts and event tests for official orders, hidden directives, scoped knowledge and incident consequences. No UI.
