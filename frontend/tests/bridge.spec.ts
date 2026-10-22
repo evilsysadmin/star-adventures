@@ -199,7 +199,8 @@ test('walk the first-person bridge, operate a console, and cancel/confirm transp
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-use').click();
-  await expect(page.getByTestId('explore-feedback')).toContainText('Sonda científica');
+  await expect(page.getByTestId('explore-feedback')).toContainText('Sonda investigada');
+  await expect(page.getByTestId('away-finding')).toContainText('firma mineral registrada');
 });
 
 for (const width of [360, 390, 430, 1280]) {
