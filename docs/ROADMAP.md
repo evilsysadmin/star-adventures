@@ -2,6 +2,30 @@
 
 Status below is a **plan**, not a claim of implemented features.
 
+## Product pivot — Section 31, two lives aboard the Meridian (2026-10-22)
+
+**Approved narrative direction, not yet a shipped feature:** the USS Meridian is *publicly* an ordinary Starfleet exploration / relief ship, while the captain secretly receives Section 31 instructions. The ship must carry out legitimate official missions, not merely use them as empty cover; covert assignments create conflicting responsibilities, evidence, risk to civilians, crew suspicion and pressure from a handler. The player can comply, negotiate or refuse. See [DUAL-MANDATE.md](DUAL-MANDATE.md) and the revised [PRODUCT.md](PRODUCT.md).
+
+**Implementation separation:** current tactical-camera Three.js 8×8 raycast proof remains under development in the **Codex CLI** session; this documentation PR must not touch its branch, dependencies, tests or runtime. Preserve existing first-person navigation and crew/saves, rather than replacing a working path with a giant narrative rewrite.
+
+Narrative delivery sequence (small focused PRs **after** the product contract is accepted):
+1. [ ] Event model for two independent but coupled mission tracks (official order / clandestine directive), officer knowledge, evidence, cover exposure and consequences. No gameplay UI.
+2. [ ] In-universe briefings plus dual logs: public captain's service report and private classified account grounded in identical observed events, with access through appropriate bridge stations.
+3. [ ] One complete dual-track evacuation/intelligence episode (`Signals Under Orders`, provisional) with reachable distinct endings and real nonviolent choices. Keep the original Border Signal episode/save as a fixture and tested rollback.
+4. [ ] Persistent trust, faction and handler consequences with explicit state migration and real browser/F5 journeys.
+5. [ ] Expand episodic campaign only when the first full mission is replayable end-to-end.
+
+## Infrastructure and URLs — staging before production
+
+**Owner:** [`shadowops-infra` issue #174](https://github.com/evilsysadmin/shadowops-infra/issues/174). Star Adventures itself does **not** manage DNS, deployments, tunnel routes or production secrets.
+
+1. [ ] **Read-only infrastructure inventory and ownership confirmation:** current `shadowops.dpdns.org` portal, DNS control/hostname support, tunnels/Pages routing, HTTPS/TLS, available staging capacity and deployment contract. Preserve existing Chess Studio/Chronicles/portal identities.
+2. [ ] **Staging first:** propose `staging.staradvs.shadowops.dpdns.org` (verify nested DNS support), build from reviewed `star-adventures/main` SHA and ship immutable artifact digest through infra-owned allowlisted deployment. Confirm real HTTP/TLS, SPA navigation, smoke, basic browser gameplay, isolation and rollback before calling it available.
+3. [ ] **Production later:** propose `staradvs.shadowops.dpdns.org`, only after staging has validated a known immutable digest; require explicit promotion gate, separate prod config, health tests and rollback. Never auto-deploy every main merge to prod.
+4. [ ] Add a link to the ShadowOps 3D portal **only after** the production URL works and TLS/browser smoke is proven.
+
+The two names are **proposed URLs, not live deployed endpoints**. If the actual DNS authority cannot support them, confirm a supported alternative rather than inventing a record or hijacking another route. No backend is required for an offline-first frontend unless a concrete feature needs it.
+
 ## Immediate priority — tactical camera, then canonical officer (2026-10-22)
 
 **Baseline when this plan was agreed:** `main` at `3cb4449` (PR #17, tactical-camera skill/gates). No tactical-camera implementation had landed after that commit. The active implementation work is being carried out separately in the Codex CLI session; this entry is **roadmap only**.
@@ -42,6 +66,6 @@ Findings reported from the **local game resources** (not a REA binary-analysis r
 8. **Random encounters**: seed-based generation without replacing handcrafted narrative.
 9. **Audiovisual polish**: diegetic bridge, crew portraits and measured graphics budgets; validated physical screenshots.
 10. **Backend decision**: add Go API only for confirmed account, multiplayer or server-owned save requirements.
-11. **Staging adoption**: a separate PR in shadowops-infra, with immutable artifacts, health checks and rollback, once the app contract is proven.
+11. **Staging then production adoption**: separate, gated PRs in shadowops-infra for read-only inventory, staging admission/smoke/rollback and later digest-based production promotion/DNS. See issue #174.
 
 Each PR must link to its test evidence. Infrastructure modifications must never be smuggled into application PRs.
