@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BOARD_SIZE } from './tacticalGrid';
+import { BOARD_SIZE } from './tacticalGrid.ts';
 
 // A fixed, mathematically isometric orthographic view (35.264° elevation).
 // Frustum is fitted to board corners AND the tallest cutout sprites,
