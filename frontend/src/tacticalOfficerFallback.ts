@@ -33,6 +33,8 @@ export interface OfficerVisualHandle {
   readonly sprite: THREE.Sprite;
   status(): OfficerTextureStatus;
   setTile(x: number, z: number): void;
+  /** Update atlas frame without recreating scene objects or network requests. */
+  setFrame(frame: number): void;
   dispose(): void;
 }
 
@@ -84,6 +86,15 @@ export function mountResilientOfficer(options: OfficerVisualOptions): OfficerVis
   let state: OfficerTextureStatus = 'loading';
   let disposed = false;
   const textures = new Set<THREE.Texture>();
+  const frameCount = columns * rows;
+  let currentFrame = 0;
+  const applyFrame = (texture: THREE.Texture) => {
+    const column = currentFrame % columns;
+    const row = Math.floor(currentFrame / columns);
+    texture.repeat.set(1 / columns, 1 / rows);
+    // WebP atlas rows are laid out top-to-bottom; Three's UV V grows upward.
+    texture.offset.set(column / columns, 1 - (row + 1) / rows);
+  };
   const report = (next: OfficerTextureStatus) => {
     if (disposed && next !== 'disposed') return;
     state = next;
@@ -105,7 +116,7 @@ export function mountResilientOfficer(options: OfficerVisualOptions): OfficerVis
         return;
       }
       loaded.colorSpace = THREE.SRGBColorSpace;
-      loaded.repeat.set(1 / columns, 1 / rows);
+      applyFrame(loaded);
       material.map = loaded;
       material.needsUpdate = true;
       textures.add(loaded);
@@ -123,6 +134,12 @@ export function mountResilientOfficer(options: OfficerVisualOptions): OfficerVis
     setTile(x, z) {
       if (disposed || !Number.isFinite(x) || !Number.isFinite(z)) return;
       root.position.set(x, 0, z);
+    },
+    setFrame(frame) {
+      if (disposed) return;
+      if (!Number.isSafeInteger(frame)) throw new Error('Invalid officer atlas frame');
+      currentFrame = ((frame % frameCount) + frameCount) % frameCount;
+      if (material.map) applyFrame(material.map);
     },
     dispose() {
       if (disposed) return;
