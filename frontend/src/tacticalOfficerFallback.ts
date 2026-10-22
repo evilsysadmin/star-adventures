@@ -35,6 +35,8 @@ export interface OfficerVisualHandle {
   setTile(x: number, z: number): void;
   /** Update atlas frame without recreating scene objects or network requests. */
   setFrame(frame: number): void;
+  /** Retry after an atlas failure; returns false when already loaded/loading/disposed. */
+  retryTexture(): boolean;
   dispose(): void;
 }
 
@@ -85,6 +87,8 @@ export function mountResilientOfficer(options: OfficerVisualOptions): OfficerVis
 
   let state: OfficerTextureStatus = 'loading';
   let disposed = false;
+  let attempt = 0;
+  let pendingTexture: THREE.Texture | null = null;
   const textures = new Set<THREE.Texture>();
   const frameCount = columns * rows;
   let currentFrame = 0;
@@ -100,34 +104,54 @@ export function mountResilientOfficer(options: OfficerVisualOptions): OfficerVis
     state = next;
     onStatus?.(next);
   };
-  const fail = () => {
-    if (disposed) return;
-    sprite.visible = false;
-    placeholder.visible = true;
-    report('failed');
-  };
-
-  try {
-    const load = options.loadTexture ?? normalLoader;
-    const pending = load(assetUrl, loaded => {
-      if (disposed) {
-        // If an HTTP response races unmount, it must never resurrect the unit.
-        loaded.dispose();
-        return;
+  const loadTexture = (retry: boolean) => {
+    const currentAttempt = ++attempt;
+    if (retry) {
+      // Once a previous request has failed it no longer owns a live map.
+      // Release its pending placeholder texture before allocating the next.
+      if (pendingTexture && pendingTexture !== material.map) {
+        pendingTexture.dispose();
+        textures.delete(pendingTexture);
       }
-      loaded.colorSpace = THREE.SRGBColorSpace;
-      applyFrame(loaded);
-      material.map = loaded;
-      material.needsUpdate = true;
-      textures.add(loaded);
-      sprite.visible = true;
-      placeholder.visible = false;
-      report('loaded');
-    }, fail);
-    textures.add(pending);
-  } catch {
-    fail();
-  }
+      pendingTexture = null;
+      sprite.visible = false;
+      placeholder.visible = true;
+      report('loading');
+    }
+    const fail = () => {
+      if (disposed || currentAttempt !== attempt) return;
+      sprite.visible = false;
+      placeholder.visible = true;
+      report('failed');
+    };
+    try {
+      const load = options.loadTexture ?? normalLoader;
+      const pending = load(assetUrl, loaded => {
+        if (disposed || currentAttempt !== attempt) {
+          // Ignore an old response after a new retry, or after unmount.
+          if (!textures.has(loaded)) loaded.dispose();
+          return;
+        }
+        loaded.colorSpace = THREE.SRGBColorSpace;
+        applyFrame(loaded);
+        if (material.map && material.map !== loaded) {
+          textures.delete(material.map);
+          material.map.dispose();
+        }
+        material.map = loaded;
+        material.needsUpdate = true;
+        textures.add(loaded);
+        sprite.visible = true;
+        placeholder.visible = false;
+        report('loaded');
+      }, fail);
+      pendingTexture = pending;
+      textures.add(pending);
+    } catch {
+      fail();
+    }
+  };
+  loadTexture(false);
   return {
     root, placeholder, sprite,
     status: () => state,
@@ -140,6 +164,11 @@ export function mountResilientOfficer(options: OfficerVisualOptions): OfficerVis
       if (!Number.isSafeInteger(frame)) throw new Error('Invalid officer atlas frame');
       currentFrame = ((frame % frameCount) + frameCount) % frameCount;
       if (material.map) applyFrame(material.map);
+    },
+    retryTexture() {
+      if (disposed || state !== 'failed') return false;
+      loadTexture(true);
+      return true;
     },
     dispose() {
       if (disposed) return;
