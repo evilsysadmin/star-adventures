@@ -17,7 +17,7 @@ const HORIZON = 240;
 const WIDTH = 960;
 const HEIGHT = 480;
 
-function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean) {
+function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, activeStation: string | null) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const scene = (world.scenes as Record<string, Scene>)[state.area];
@@ -63,7 +63,7 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean) 
     const top = HORIZON - height/2;
     const fog = Math.max(.18, 1 - corrected/12);
     const edge = (Math.floor(distance*10)%4===0) ? 1.04 : 1;
-    const base = hitObject ? (hitObject.type === 'transition' ? [66,181,173] : [194,147,96]) :
+    const base = hitObject ? (hitObject.type === 'transition' ? [45,117,117] : [43,89,101]) :
       state.area === 'bridge' ? [73,112,136] : [87,118,118];
     ctx.fillStyle = `rgb(${base.map(channel=>Math.round(channel*fog*edge)).join(',')})`;
     ctx.fillRect(col, top, wallColumn+1, height);
@@ -75,6 +75,37 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean) 
       ctx.fillRect(col, top+height*.32, wallColumn+1, Math.max(2,height*.04));
       ctx.globalAlpha = 1;
     }
+  }
+  // Adjacent live station gets a readable embedded console; no fabricated telemetry.
+  const front = faceTile(state);
+  const station = scene.objects.find(item => item.type === 'station' &&
+    item.x === front.x && item.y === front.y && item.id === activeStation);
+  if (station) {
+    const isScience = station.action === 'science';
+    const accent = isScience ? '#8ee9df' : station.action === 'tactical' ? '#ffb899' : '#cfdfb0';
+    const display = ctx.createLinearGradient(140, 65, 760, 370);
+    display.addColorStop(0, '#061923'); display.addColorStop(1, '#153947');
+    ctx.fillStyle = '#06101df0'; ctx.fillRect(108, 52, 744, 331);
+    ctx.fillStyle = display; ctx.fillRect(127, 69, 706, 295);
+    ctx.strokeStyle = '#668f98'; ctx.lineWidth = 3; ctx.strokeRect(127, 69, 706, 295);
+    ctx.fillStyle = accent; ctx.fillRect(148, 92, 4, 46);
+    ctx.font = 'bold 24px system-ui'; ctx.fillText(station.label.toUpperCase(), 170, 113);
+    ctx.font = 'bold 13px system-ui'; ctx.fillStyle = '#9cb9bf';
+    ctx.fillText('INTERFAZ DE ESTACIÓN · ÓRDENES DISPONIBLES A LA DERECHA', 170, 137);
+    ctx.strokeStyle = '#92bac444'; ctx.lineWidth = 1;
+    for(let x = 154; x <= 810; x += 26) {
+      ctx.beginPath(); ctx.moveTo(x, 172); ctx.lineTo(x, 334); ctx.stroke();
+    }
+    for(let y = 180; y < 336; y += 26) {
+      ctx.beginPath(); ctx.moveTo(155, y); ctx.lineTo(806, y); ctx.stroke();
+    }
+    ctx.strokeStyle = accent; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(482, 253, 108, 65, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = .55;
+    ctx.beginPath(); ctx.ellipse(482, 253, 68, 43, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#0c2e3c'; ctx.fillRect(158, 343, 645, 8);
+    ctx.fillStyle = accent; ctx.fillRect(158, 343, 146, 8);
   }
   const edge = ctx.createLinearGradient(0, 0, WIDTH, 0);
   edge.addColorStop(0, '#020610d9');edge.addColorStop(.25, '#02061000');
@@ -110,8 +141,8 @@ export function FirstPersonView({ alert, terminal, onSpatialEvent }: { alert: bo
     onSpatialEvent?.(result.state, result.event);
   }, [onSpatialEvent]);
   useEffect(() => {
-    if (canvas.current) drawScene(canvas.current, exploration, alert);
-  }, [exploration, alert, showMap]);
+    if (canvas.current) drawScene(canvas.current, exploration, alert, event?.type === 'station' ? (event.stationId ?? null) : null);
+  }, [exploration, alert, showMap, event]);
   useEffect(() => {
     const onKey = (key: KeyboardEvent) => {
       if (showMap || key.repeat || key.defaultPrevented || key.altKey || key.ctrlKey || key.metaKey) return;
