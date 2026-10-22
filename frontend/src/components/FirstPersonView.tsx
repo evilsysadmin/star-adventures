@@ -122,8 +122,8 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
   ctx.textAlign = 'right';ctx.fillText(`POS ${state.x}:${state.y}  ·  ${state.heading}`,WIDTH-19,HEIGHT-15);ctx.textAlign = 'left';
 }
 
-export function FirstPersonView({ alert, terminal, onSpatialEvent }: { alert: boolean; terminal: boolean; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void }) {
-  const [exploration, setExploration] = useState<ViewState>(() => startExploration(world));
+export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void }) {
+  const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
