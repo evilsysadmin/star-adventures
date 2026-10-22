@@ -65,21 +65,37 @@ for (const [id, entry] of Object.entries(manifest.assets) as Array<[string, Mani
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
 
-    if (id.endsWith('WalkV1')) {
-      // Animation code uses 3 columns x 2 rows. Each frame must be whole.
+    if (/officer(?:Female|Male)(?:Walk|Run|Jump|Crouch|Fire)V[1-9]\d*$/.test(id)) {
+      // All authored motion atlases use 3 columns x 2 rows, not just walk.
+      // Validate every new motion Codex adds without modifying this test.
       expect(result.width % 3).toBe(0);
       expect(result.height % 2).toBe(0);
     }
   });
 }
 
-test('manifest has both sexes, animation atlases and no duplicate immutable keys', () => {
-  expect(Object.keys(manifest.assets).sort()).toEqual([
+test('manifest retains mandatory originals and pairs every additional motion for both officers', () => {
+  // New animation cycles should add independently verifiable atlas URLs,
+  // not break the CI just because the total grew beyond the original four.
+  const ids = Object.keys(manifest.assets);
+  const names = new Set(ids);
+  for (const baseline of [
     'starAdventures.tactical.officerFemaleMvsV1',
     'starAdventures.tactical.officerFemaleWalkV1',
     'starAdventures.tactical.officerMaleMvsV1',
     'starAdventures.tactical.officerMaleWalkV1',
-  ].sort());
+  ]) {
+    expect(names.has(baseline), `Mandatory asset missing: ${baseline}`).toBe(true);
+  }
+  for (const id of ids) {
+    expect(id).toMatch(/^starAdventures\.tactical\.officer(?:Female|Male)[A-Z][A-Za-z0-9]*V[1-9]\d*$/);
+    const partner = id.includes('officerFemale')
+      ? id.replace('officerFemale', 'officerMale')
+      : id.replace('officerMale', 'officerFemale');
+    expect(names.has(partner), `Missing matching gender atlas for ${id}`).toBe(true);
+  }
   const keys = Object.values(manifest.assets).map(asset => asset.key);
+  const urls = Object.values(manifest.assets).map(asset => asset.url);
   expect(new Set(keys).size).toBe(keys.length);
+  expect(new Set(urls).size).toBe(urls.length);
 });
