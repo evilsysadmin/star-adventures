@@ -1,4 +1,6 @@
 import { startCrewSession, serializeCrewCheckpoint, deserializeCrewCheckpoint, migrateLegacyCheckpoint } from '../../src/crewSession.mjs';
+import { startExploration } from '../../src/spatial.mjs';
+import { recoverSpatialCheckpoint, serializeSpatialCheckpoint } from '../../src/spatialCheckpoint.mjs';
 
 export type SessionState = {
   episodeState: {
@@ -51,4 +53,22 @@ export function persistSession(episode: Parameters<typeof startCrewSession>[0], 
 
 export function localStorageOrNull(): Storage | null {
   try { return window.localStorage; } catch { return null; }
+}
+
+/** Standalone v1 location snapshot. The mission/crew v2 checkpoint is never altered. */
+export const SPATIAL_CHECKPOINT_KEY = 'shadowops.star-adventures.spatial.v1';
+
+export function restoreSpatialSession(world: Parameters<typeof startExploration>[0], storage: Pick<Storage, 'getItem'> | null) {
+  if (!storage) return { state: startExploration(world), notice: 'temporary' };
+  try { return recoverSpatialCheckpoint(world, storage.getItem(SPATIAL_CHECKPOINT_KEY)); }
+  catch { return { state: startExploration(world), notice: 'temporary' }; }
+}
+
+export function persistSpatialSession(world: Parameters<typeof startExploration>[0],
+  position: ReturnType<typeof startExploration>, storage: Pick<Storage, 'setItem'> | null) {
+  if (!storage) return false;
+  try {
+    storage.setItem(SPATIAL_CHECKPOINT_KEY, serializeSpatialCheckpoint(world, position));
+    return true;
+  } catch { return false; }
 }
