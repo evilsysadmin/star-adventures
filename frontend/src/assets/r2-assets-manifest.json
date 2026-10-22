@@ -1,5 +1,19 @@
 {
   "assets": {
+    "starAdventures.tactical.officerFemaleCrouchV1": {
+      "bytes": 208296,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-crouch-v1-25a2e07e1517036b.webp",
+      "sha256": "25a2e07e1517036b24918eb60505c43350d85a7afdb651fafa2f8c8b29d0f948",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-crouch-v1-25a2e07e1517036b.webp"
+    },
+    "starAdventures.tactical.officerFemaleJumpV1": {
+      "bytes": 207348,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-jump-v1-40bf8c99d86966ae.webp",
+      "sha256": "40bf8c99d86966ae6862176f10b8c12b477b9dd9101edd10217d1de8f46c0e1e",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-jump-v1-40bf8c99d86966ae.webp"
+    },
     "starAdventures.tactical.officerFemaleMvsV1": {
       "bytes": 24578,
       "contentType": "image/webp",
@@ -20,6 +34,20 @@
       "key": "star-adventures/tactical/officer-female-walk-v1-30b501bad90fd4a2.webp",
       "sha256": "30b501bad90fd4a2b84f0d55e0d5e3f37b57716573806ab58906fdcfb61cb221",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-walk-v1-30b501bad90fd4a2.webp"
+    },
+    "starAdventures.tactical.officerMaleCrouchV1": {
+      "bytes": 238852,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-crouch-v1-5d0fe7e40f7fc71e.webp",
+      "sha256": "5d0fe7e40f7fc71e8be278057c46df9f8180f83b7e70c6c3444feaca9ac647c4",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-crouch-v1-5d0fe7e40f7fc71e.webp"
+    },
+    "starAdventures.tactical.officerMaleJumpV1": {
+      "bytes": 280074,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-jump-v1-7ce1049816925102.webp",
+      "sha256": "7ce1049816925102c240b14a34bfe9ea79197091236e67d070e2bf50629e7692",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-jump-v1-7ce1049816925102.webp"
     },
     "starAdventures.tactical.officerMaleMvsV1": {
       "bytes": 27508,
