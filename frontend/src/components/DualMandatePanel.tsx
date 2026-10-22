@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { applyMandateAction, classifiedMandateReport, publicMandateReport, startMandate } from '../../../src/dualMandate.mjs';
 import { localStorageOrNull } from '../session';
 import { PROBE_FINDING } from '../../../src/awayTeam.mjs';
+import { canBriefScientificFinding, briefScientificFinding } from '../../../src/scientificBriefing.mjs';
+import { PROBE_SURVEY_INCIDENT } from '../../../src/observedMandate.mjs';
+import world from '../../../content/scenes/meridian.json';
+import type { ViewState } from './FirstPersonView';
 import { reconcileObservedProbe, PROBE_SURVEY_ORDER } from '../../../src/observedMandate.mjs';
 import { MANDATE_DEFINITION, persistMandateSession, restoreMandateSession, type MandateState } from '../mandateSession';
 import './dualMandatePanel.css';
@@ -25,7 +29,11 @@ type ActualAwayFinding = {
   lastReport: null | { officerId: string; skill: number; result: string };
 };
 
-export function DualMandatePanel({ awayTeam }: { awayTeam: ActualAwayFinding }) {
+export function DualMandatePanel({ awayTeam, exploration, accessedStationId }: {
+  awayTeam: ActualAwayFinding;
+  exploration: ViewState;
+  accessedStationId: string | null;
+}) {
   const [initial] = useState(() => restoreMandateSession(localStorageOrNull()));
   const [mandate, setMandate] = useState<MandateState>(() => initial.state);
   useEffect(() => { persistMandateSession(mandate, localStorageOrNull()); }, [mandate]);
@@ -46,6 +54,10 @@ export function DualMandatePanel({ awayTeam }: { awayTeam: ActualAwayFinding }) 
   const secretIncident = classified.incidents.find((incident: { orderId: string }) => incident.orderId === hiddenOrder.id);
   const informed = secretIncident !== undefined &&
     mandate.knowledge.solan.includes(secretIncident.id);
+  const scienceBriefed = mandate.knowledge.solan.includes(PROBE_SURVEY_INCIDENT);
+  const canBriefScience = canBriefScientificFinding(
+    MANDATE_DEFINITION, mandate, awayTeam, world, exploration, accessedStationId
+  );
 
   const run = (actions: MandateDecision[]) => setMandate(before =>
     actions.reduce<MandateState>((state, action) => applyMandateAction(MANDATE_DEFINITION, state, action), before)
@@ -85,6 +97,21 @@ export function DualMandatePanel({ awayTeam }: { awayTeam: ActualAwayFinding }) 
           <p className="mandate-progress" data-testid="mandate-official-status">{resultText[openOrder.status]}</p>
           <p className="mandate-order" data-testid="mandate-real-survey">{surveyOrder.title} · <strong data-testid="mandate-survey-status">{resultText[surveyOrder.status]}</strong></p>
           <p className="mandate-caveat">El estudio científico se completa solo tras investigar la sonda con un equipo competente en el escenario 3D; no puede adjudicarse desde aquí.</p>
+          {surveyOrder.status === 'completed' && <div data-testid="mandate-field-briefing">
+            <p className="mandate-knowledge" data-testid="mandate-field-knowledge">
+              {scienceBriefed ? 'Idris Solan ha recibido el informe científico del capitán.' :
+                'El hallazgo consta en la bitácora. Idris Solan todavía no ha recibido un informe personal.'}
+            </p>
+            {canBriefScience ? <button type="button" className="mandate-secondary"
+              data-testid="mandate-brief-science"
+              onClick={() => setMandate(before => briefScientificFinding(
+                MANDATE_DEFINITION, before, awayTeam, world, exploration, accessedStationId
+              ))}>
+              Informar a Idris Solan desde el puesto de mando
+            </button> : !scienceBriefed && <p className="mandate-caveat">
+              Regresa al puente y usa el sillón del capitán para transmitirle el informe.
+            </p>}
+          </div>}
           {openOrder.status === 'active' && <div className="mandate-actions">
             <button type="button" data-testid="mandate-rescue" onClick={() => finishOfficial('success')}>Registrar evacuación realizada</button>
             <button type="button" data-testid="mandate-failure" onClick={() => finishOfficial('failed')}>Registrar evacuación fallida</button>
