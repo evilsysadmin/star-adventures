@@ -190,3 +190,36 @@ test('bounded event histories cannot grow indefinitely', () => {
     kind: 'support', witnesses: [], public: false,
   }), MandateError);
 });
+
+
+test('harm is a real reported incident but cannot prove that either order was completed', () => {
+  const harm = {
+    type: 'record', incidentId: 'evacuation-harm', orderId: 'evacuate',
+    kind: 'harm', witnesses: ['medic'], public: true,
+  };
+  const damaged = act([harm]);
+  assert.deepEqual(publicMandateReport(definition, damaged).incidents, [
+    { id: 'evacuation-harm', kind: 'harm', orderId: 'evacuate' },
+  ]);
+  assert.throws(() => applyMandateAction(definition, damaged, {
+    type: 'resolve', orderId: 'evacuate', incidentId: 'evacuation-harm', status: 'completed',
+  }), MandateError);
+  assert.equal(damaged.orders.evacuate, 'active');
+
+  // A different genuine rescue incident can still prove success; harm remains in the log.
+  const resolved = act([harm, publicRescue, {
+    type: 'resolve', orderId: 'evacuate',
+    incidentId: 'survivors-evacuated', status: 'completed',
+  }]);
+  assert.equal(resolved.orders.evacuate, 'completed');
+  assert.equal(resolved.incidents.length, 2);
+
+  const covertHarm = {
+    type: 'record', incidentId: 'covert-harm', orderId: 'recover-core',
+    kind: 'harm', witnesses: [], public: false,
+  };
+  assert.throws(() => act([covertHarm, {
+    type: 'resolve', orderId: 'recover-core',
+    incidentId: 'covert-harm', status: 'completed',
+  }]), MandateError);
+});

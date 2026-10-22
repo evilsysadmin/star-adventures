@@ -111,7 +111,7 @@ function applyCommand(definition, state, action) {
     const incident = incidents.find(item => item.id === event.incidentId);
     if (orders[event.orderId] !== 'active' || !incident ||
         incident.orderId !== event.orderId ||
-        (event.status === 'completed' && ['failure', 'refusal'].includes(incident.kind)) ||
+        (event.status === 'completed' && ['failure', 'refusal', 'harm'].includes(incident.kind)) ||
         (event.status === 'refused' && incident.kind !== 'refusal') ||
         (event.status === 'failed' && incident.kind !== 'failure')) {
       fail('Order outcome must reference a real compatible incident');
