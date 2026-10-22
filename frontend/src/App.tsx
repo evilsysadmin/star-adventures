@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import episode from '../../content/episodes/border-signal.json';
 import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
 import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.mjs';
-import { FirstPersonView } from './components/FirstPersonView';
+import { FirstPersonView, type ViewState, type ExplorationEvent } from './components/FirstPersonView';
+import world from '../../content/scenes/meridian.json';
+import { startExploration } from '../../src/spatial.mjs';
+import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
 import { restoreSession, persistSession, localStorageOrNull, type SessionState } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
@@ -42,13 +45,27 @@ const spanishChoices: Record<string, string> = {
 export function App() {
   const [initialSession] = useState(() => restoreSession(episode, localStorageOrNull()));
   const [session, setSession] = useState<SessionState>(() => initialSession.state);
+  const [exploration, setExploration] = useState<ViewState>(() => startExploration(world));
+  const [activeStation, setActiveStation] = useState<string | null>(null);
+  const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
   useEffect(() => { persistSession(episode, session, localStorageOrNull()); }, [session]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
-  const choices = useMemo<Command[]>(() => node.choices ?? [], [node]);
-  const restart = () => setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
-  const select = (id: string) => setSession(prev => applyCrewAction(episode, prev, { type: 'order', choiceId: id }));
+  const access = availableConsoleOrders(world, exploration, episode, state);
+  const openedConsole = access.console?.id === activeStation ? access.console : null;
+  const choices: Command[] = openedConsole ? access.choices : [];
+  const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
+    setExploration(position);
+    setActiveStation(event.type === 'station' ? (event.stationId ?? null) : null);
+  }, []);
+  const restart = () => {
+    setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
+    setExploration(startExploration(world));
+    setActiveStation(null);
+    setExplorationKey(key => key + 1);
+  };
+  const select = (id: string) => setSession(prev => issueConsoleOrder(world, exploration, episode, prev, id));
 
   useEffect(() => {
     const keyHandler = (event: KeyboardEvent) => {
@@ -83,7 +100,7 @@ export function App() {
           <div className="eyebrow"><span className="eyebrow-line" /> MISIÓN 001 <span className="eyebrow-muted">/ SECTOR DISPUTADO</span></div>
           <h1 id="mission-title">Ecos en la <em>frontera</em></h1>
           <p className="mission-summary">Un SOS en territorio disputado. Dos capitanes al borde del combate. El próximo movimiento es tuyo.</p>
-          <FirstPersonView alert={showDamage} terminal={terminal} />
+          <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} onSpatialEvent={onSpatialEvent} />
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
@@ -92,7 +109,7 @@ export function App() {
         </section>
 
         <section className="orders-panel" id="orders" aria-labelledby="orders-title">
-          <div className="panel-topline"><span>01 / ÓRDENES DEL CAPITÁN</span><span className="panel-diamond" aria-hidden="true">◆</span></div>
+          <div className="panel-topline"><span>{openedConsole ? `01 / ${openedConsole.label.toUpperCase()}` : '01 / DIARIO DE MISIÓN'}</span><span className="panel-diamond" aria-hidden="true">◆</span></div>
           <div className="officer"><span className="officer-avatar" aria-hidden="true">C</span><div><div className="officer-role">OFICIAL AL MANDO</div><div className="officer-name">{officerAt(session.crew, 'command').name}</div></div><span className="comms-live" aria-label="Canal activo">ENLACE ABIERTO</span></div>
           <details className="crew-roster" data-testid="crew-roster">
             <summary><span>TRIPULACIÓN · SEIS OFICIALES</span><span className="crew-roster-action">Gestionar puestos ▾</span></summary>
@@ -112,13 +129,20 @@ export function App() {
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
             <div className="panel-label">{terminal ? 'INFORME FINAL' : 'SITUACIÓN ACTUAL'}</div>
-            <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : 'Esperando instrucciones'}</h2>
+            <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : openedConsole ? `Consola · ${openedConsole.label}` : 'Accede a una estación del puente'}</h2>
             <p>{last?.check === 'failed' ? `La orden fracasa: ${last.officerId ? OFFICERS.find(officer => officer.id === last.officerId)?.name : 'el oficial'} carece de preparación para ejecutar esta maniobra. La misión queda sin resolver.` : (spanishText[state.nodeId] ?? node.text)}</p>
           </div>
           <div className="decision-section">
-            <div className="decision-heading"><span>{terminal ? 'MISIÓN COMPLETADA' : 'SELECCIONA UNA ORDEN'}</span>{!terminal && <span>{choices.length} OPCIONES</span>}</div>
+            <div className="decision-heading"><span>{terminal ? 'MISIÓN COMPLETADA' : openedConsole ? 'ÓRDENES DE ESTA ESTACIÓN' : 'ACÉRCATE A UNA CONSOLA'}</span>{!terminal && openedConsole && <span>{choices.length} OPCIONES</span>}</div>
             {terminal ? (
               <div className="ending" data-testid="ending"><span className="ending-icon" aria-hidden="true">✧</span><div><strong>Registro de misión cerrado</strong><p>{state.log.length} decisiones · {outcomeText[node.outcome!]}</p></div></div>
+            ) : !openedConsole || choices.length === 0 ? (
+              <div className="console-locked" data-testid="console-locked">
+                <span aria-hidden="true">⌁</span>
+                <p>{openedConsole ? 'Esta estación no dispone de órdenes para la situación actual. Busca otro puesto del puente.' :
+                  exploration.area === 'bridge' ? 'Muévete por el puente y pulsa E delante de Ciencia, Comunicaciones, Táctica o el timón para dar una orden real.' :
+                  'Estás en la superficie. Las operaciones de la nave solo se realizan desde el puente.'}</p>
+              </div>
             ) : (
               <div className="choice-list">
                 {choices.map((choice, index) => { const assigned = officerAt(session.crew, stationForChoice(choice.id)); const pivotal = ['broadcast', 'mediate', 'disable'].includes(choice.id); return (
@@ -131,7 +155,7 @@ export function App() {
               </div>
             )}
           </div>
-          <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : 'TECLAS 1–3 · ELEGIR ORDEN'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
+          <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : openedConsole ? 'TECLAS 1–3 · ORDEN DE LA CONSOLA' : 'FLECHAS / WASD · E PARA USAR'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
         </section>
       </main>
 

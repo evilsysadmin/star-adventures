@@ -54,3 +54,9 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .firstperson-dialog-actions button{flex:1;border:1px solid #628a8c;background:#214353;color:#f2f3e8;padding:11px 9px;cursor:pointer}
 .firstperson-dialog-actions button:last-child{background:#3b655e;border-color:#91c4a9}
 @media(max-width:520px){.firstperson-top{font-size:9px;padding:8px}.firstperson-map-toggle{font-size:9px;padding:7px}.firstperson-hud{font-size:9px;padding:9px 7px}.firstperson-controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px}.firstperson-controls button{min-height:44px;font-size:10px}.firstperson-controls .firstperson-interact{grid-column:span 2}.firstperson-feedback{font-size:10px}}
+
+/* Orders are station-local; the inactive mission log is informational only. */
+.console-locked{min-height:112px;padding:22px 18px;display:flex;align-items:center;gap:15px;background:#132632;border:1px dashed #416370;color:#b0cbd0}
+.console-locked>span{flex:none;color:#c8ad7b;font-size:29px;line-height:1}
+.console-locked p{margin:0;font-size:13px;line-height:1.6;max-width:44ch}
+@media(max-width:520px){.console-locked{min-height:100px;padding:15px 13px;gap:10px}.console-locked p{font-size:12px}}
