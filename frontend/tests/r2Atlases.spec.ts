@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import manifest from '../src/assets/r2-assets-manifest.json';
+import { readFileSync } from 'node:fs';
+
+const manifest = JSON.parse(readFileSync(new URL('../src/assets/r2-assets-manifest.json', import.meta.url), 'utf8')) as { assets: Record<string, ManifestEntry> };
 
 /*
  * Live CDN integrity gate. Browser fetch (CORS) and Image decode are both
