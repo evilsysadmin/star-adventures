@@ -171,13 +171,13 @@ export function App() {
                 ? 'Sonda investigada: firma mineral registrada en la bitácora.'
                 : awayTeam.lastReport?.result === 'insufficient-science'
                   ? `Investigación insuficiente · habilidad científica ${awayTeam.lastReport.skill}/5. Regresa a la nave para cambiar de especialistas.`
-                  : 'Sonda pendiente de investigar. Selecciona especialistas antes del teletransporte.'}
+                  : exploration.area === 'bridge' ? 'Sonda pendiente. Selecciona especialistas antes del teletransporte.' : 'Sonda pendiente. Acércate e investígala con el equipo desplegado.'}
             </p>
           </section>
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
             <div className="panel-label">{terminal ? 'INFORME FINAL' : 'SITUACIÓN ACTUAL'}</div>
-            <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : openedConsole ? `Consola · ${openedConsole.label}` : 'Accede a una estación del puente'}</h2>
+            <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : openedConsole ? `Consola · ${openedConsole.label}` : exploration.area === 'bridge' ? 'Accede a una estación del puente' : 'Exploración de superficie'}</h2>
             <p>{last?.check === 'failed' ? `La orden fracasa: ${last.officerId ? OFFICERS.find(officer => officer.id === last.officerId)?.name : 'el oficial'} carece de preparación para ejecutar esta maniobra. La misión queda sin resolver.` : (spanishText[state.nodeId] ?? node.text)}</p>
           </div>
           <div className="decision-section">
