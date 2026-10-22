@@ -12,6 +12,7 @@ import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrde
 import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
 import { performMedicalEvacuation } from '../../src/medicalEvacuation.mjs';
+import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
 
@@ -58,6 +59,7 @@ export function App() {
   const [initialMandate] = useState(() => restoreMandateSession(localStorageOrNull()));
   const [mandate, setMandate] = useState<MandateState>(() => initialMandate.state);
   const [medicalNotice, setMedicalNotice] = useState<string | null>(null);
+  const [coreNotice, setCoreNotice] = useState<string | null>(null);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
@@ -86,6 +88,22 @@ export function App() {
         // An already resolved probe cannot award the finding again.
       }
     }
+    if (event.type === 'station' && event.action === 'extract-sensor-core') {
+      try {
+        const outcome = recoverSensorCore(
+          MANDATE_DEFINITION, mandate, world, position, session.crew, awayTeam
+        );
+        setMandate(outcome.state);
+        const officer = OFFICERS.find(item => item.id === outcome.report.officerId)?.name;
+        setCoreNotice(outcome.report.result === 'core-recovered'
+          ? `Núcleo asegurado por ${officer}. Registro clasificado actualizado.`
+          : `Acceso insuficiente: ${officer}, capacidad técnica ${outcome.report.skill}/5. Cambia especialistas en el puente.`);
+      } catch {
+        setCoreNotice(mandate.orders['recover-core'] !== 'active'
+          ? 'La directiva ya está resuelta; el núcleo no puede recuperarse dos veces.'
+          : 'No es posible completar la extracción de este archivo.');
+      }
+    }
     if (event.type === 'station' && event.action === 'assist-evacuees') {
       try {
         const outcome = performMedicalEvacuation(
@@ -109,6 +127,7 @@ export function App() {
     setExploration(startExploration(world));
     setActiveStation(null);
     setMedicalNotice(null);
+    setCoreNotice(null);
     setExplorationKey(key => key + 1);
   };
   const select = (id: string) => setSession(prev => issueConsoleOrder(world, exploration, episode, prev, id));
@@ -206,6 +225,7 @@ export function App() {
                   : exploration.area === 'bridge' ? 'Sonda pendiente. Selecciona especialistas antes del teletransporte.' : 'Sonda pendiente. Acércate e investígala con el equipo desplegado.'}
             </p>
             {medicalNotice && <p className="away-finding" data-testid="medical-report" aria-live="polite">{medicalNotice}</p>}
+            {coreNotice && <p className="away-finding" data-testid="core-report" aria-live="polite">{coreNotice}</p>}
           </section>
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
