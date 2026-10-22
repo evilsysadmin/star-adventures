@@ -22,8 +22,9 @@ for (const width of [360, 390, 430, 1280]) {
     expect(rect).not.toBeNull();
     const bounds = rect!;
     const camera = createIsoCamera(bounds.width / bounds.height);
+    const rect = { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height };
     for (const cell of cells()) {
-      const projected = projectCell(cell, camera, bounds);
+      const projected = projectCell(cell, camera, rect);
       await page.mouse.click(projected.x, projected.y);
       await expect(page.getByTestId('iso-selected')).toContainText(cell.id);
     }
@@ -47,8 +48,9 @@ test('keyboard grid, drag rejection, accessibility and switching back preserve c
   await canvas.scrollIntoViewIfNeeded();
   const rect = (await canvas.boundingBox())!;
   const camera = createIsoCamera(rect.width / rect.height);
-  const origin = projectCell({ col:1,row:2,id:'1:2' }, camera, rect);
-  const to = projectCell({ col:4,row:6,id:'4:6' }, camera, rect);
+  const bounds = { left: rect.x, top: rect.y, width: rect.width, height: rect.height };
+  const origin = projectCell({ col:1,row:2,id:'1:2' }, camera, bounds);
+  const to = projectCell({ col:4,row:6,id:'4:6' }, camera, bounds);
   await page.mouse.move(origin.x, origin.y);
   await page.mouse.down();
   await page.mouse.move(to.x, to.y, { steps: 6 });
@@ -72,7 +74,7 @@ test('real touch selection works at 390px without relying on sprite hitbox', asy
     const rect = (await canvas.boundingBox())!;
     const camera = createIsoCamera(rect.width / rect.height);
     for (const cell of [{col:0,row:0,id:'0:0'},{col:1,row:1,id:'1:1'}, {col:6,row:5,id:'6:5'}, {col:7,row:7,id:'7:7'}] as Cell[]) {
-      const point = projectCell(cell,camera,rect);
+      const point = projectCell(cell,camera,{left:rect.x,top:rect.y,width:rect.width,height:rect.height});
       await page.touchscreen.tap(point.x,point.y);
       await expect(page.getByTestId('iso-selected')).toContainText(cell.id);
     }
