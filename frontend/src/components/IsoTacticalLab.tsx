@@ -5,14 +5,17 @@ import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { WALK_ATLAS, walkFrameAt, walkFrameUv } from '../tacticalAnimation';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
+import { TRAINING_START, planTrainingMove, commitTrainingMove, type TrainingUnit } from '../isoTrainingMovement';
 import './isoTacticalLab.css';
 
 const cover = new Set(['3:3', '4:3']);
 const deployments = [
-  { cell: '1:1', sex: 'female', label: 'Oficial científica' },
-  { cell: '2:5', sex: 'male', label: 'Oficial de seguridad' },
-  { cell: '1:6', sex: 'female', label: 'Médica' },
+  { id:'science' as const, sex:'female', label:'Oficial científica' },
+  { id:'security' as const, sex:'male', label:'Oficial de seguridad' },
+  { id:'medic' as const, sex:'female', label:'Médica' },
 ] as const;
+type Motion = { unitId: TrainingUnit['id']; cells: readonly string[]; start: number | null };
+const STEP_MS = 360;
 const targets = ['6:2', '6:5'] as const;
 const femaleUrl = assets.assets['starAdventures.tactical.officerFemaleWalkV1'].url;
 const maleUrl = assets.assets['starAdventures.tactical.officerMaleWalkV1'].url;
@@ -26,13 +29,36 @@ export function IsoTacticalLab() {
   const host = useRef<HTMLDivElement>(null);
   const selection = useRef<THREE.Object3D | null>(null);
   const animateEnabled = useRef(true);
+  const unitsVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
+  const routeVisual = useRef(new Map<string, THREE.Mesh>());
+  const moveRef = useRef<Motion | null>(null);
+  const committed = useRef(TRAINING_START);
   const [active, setActive] = useState<Cell>(initial);
   const [playing, setPlaying] = useState(true);
   const [inspecting, setInspecting] = useState(false);
+  const [units, setUnits] = useState(TRAINING_START);
+  const [officer, setOfficer] = useState<TrainingUnit['id']>('science');
+  const [moving, setMoving] = useState(false);
+  const [motionInfo, setMotionInfo] = useState('Selecciona un oficial y una casilla libre para ensayar su recorrido.');
   const [assetStatus, setAssetStatus] = useState('Conectando con los atlas originales en R2…');
   const [rendererStatus, setRendererStatus] = useState<string | null>(null);
 
+  const path = moving ? null : planTrainingMove(units, officer, active.id);
   useEffect(() => { animateEnabled.current = playing; }, [playing]);
+  useEffect(() => {
+    for (const [cellId, tile] of routeVisual.current)
+      tile.visible = !moving && !!path && path.cells.length > 1 && path.cells.includes(cellId);
+  }, [active.id, officer, moving, units]);
+  useEffect(() => {
+    if (moveRef.current) return;
+    for (const unit of units.units) {
+      const visual = unitsVisual.current.get(unit.id);
+      if (!visual) continue;
+      const p = cellFromId(unit.cell);
+      visual.sprite.position.set(p.x, .13, p.z);
+      visual.shadow.position.set(p.x, .105, p.z);
+    }
+  }, [units]);
   useEffect(() => {
     if (!selection.current) return;
     const p = cellCenter(active);
@@ -96,6 +122,22 @@ export function IsoTacticalLab() {
         edge.position.copy(tile.position); add(edge);
       }
     }
+    const routeCells = new Map<string, THREE.Mesh>();
+    const routeShape = new THREE.CircleGeometry(.29, 22);
+    for (const cell of cells()) {
+      const tile = new THREE.Mesh(
+        routeShape,
+        new THREE.MeshBasicMaterial({ color:'#81e6c2', transparent:true, opacity:.54,
+          depthWrite:false, depthTest:true, side:THREE.DoubleSide })
+      );
+      const p = cellCenter(cell);
+      tile.rotation.x = -Math.PI / 2;
+      tile.position.set(p.x, .119, p.z);
+      tile.visible = false;
+      add(tile);
+      routeCells.set(cell.id, tile);
+    }
+    routeVisual.current = routeCells;
     const marker = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.BoxGeometry(.98, .17, .98)),
       new THREE.LineBasicMaterial({ color: '#ffdf92', depthTest: false })
@@ -154,8 +196,9 @@ export function IsoTacticalLab() {
       atlasTextures.push(tex);
     }
 
+    const initialCells = new Map(TRAINING_START.units.map(unit => [unit.id, unit.cell]));
     for (const unit of deployments) {
-      const p = cellFromId(unit.cell);
+      const p = cellFromId(initialCells.get(unit.id)!);
       const ground = new THREE.Mesh(
         new THREE.CircleGeometry(.42, 28),
         new THREE.MeshBasicMaterial({ color: '#88ddca', transparent: true, opacity: .28, depthWrite: false })
@@ -171,6 +214,7 @@ export function IsoTacticalLab() {
       sprite.scale.set(1.48, 2.28, 1);
       sprite.position.set(p.x, .13, p.z);
       add(sprite);
+      unitsVisual.current.set(unit.id, { sprite, shadow:ground });
     }
 
     const resize = () => {
@@ -204,6 +248,30 @@ export function IsoTacticalLab() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) setPlaying(false);
     const frame = (time: number) => {
+      const motion = moveRef.current;
+      if (motion) {
+        if (motion.start === null) motion.start = time;
+        const progress = Math.min(motion.cells.length - 1, (time - motion.start) / STEP_MS);
+        const leg = Math.min(Math.floor(progress), motion.cells.length - 2);
+        const t = Math.min(1, progress - leg);
+        const from = cellFromId(motion.cells[leg]);
+        const to = cellFromId(motion.cells[leg + 1]);
+        const visual = unitsVisual.current.get(motion.unitId);
+        if (visual) {
+          const x = from.x + (to.x - from.x) * t;
+          const z = from.z + (to.z - from.z) * t;
+          visual.sprite.position.set(x, .13, z);
+          visual.shadow.position.set(x, .105, z);
+        }
+        if (progress >= motion.cells.length - 1) {
+          const destination = motion.cells[motion.cells.length - 1];
+          committed.current = commitTrainingMove(committed.current, motion.unitId, destination);
+          moveRef.current = null;
+          setUnits(committed.current);
+          setMotionInfo(`Recorrido completado: ${motion.unitId} en ${destination} (${motion.cells.length - 1} pasos).`);
+          setMoving(false);
+        }
+      }
       const index = reduced || !animateEnabled.current ? 0 : walkFrameAt(time);
       if (index !== previousFrame) {
         const uv = walkFrameUv(index);
@@ -222,6 +290,9 @@ export function IsoTacticalLab() {
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointercancel', onCancel);
       selection.current = null;
+      moveRef.current = null;
+      unitsVisual.current.clear();
+      routeVisual.current.clear();
       scene.traverse(obj => {
         const m = obj as THREE.Mesh;
         m.geometry?.dispose();
@@ -235,6 +306,19 @@ export function IsoTacticalLab() {
     };
   }, []);
 
+  const moveOfficer = () => {
+    if (moving || !path || path.cells.length < 2 || moveRef.current) return;
+    if (!unitsVisual.current.size || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const next = commitTrainingMove(units, officer, active.id);
+      committed.current = next;
+      setUnits(next);
+      setMotionInfo(`Recorrido completado: ${officer} en ${active.id} (${path.cells.length - 1} pasos).`);
+      return;
+    }
+    moveRef.current = { unitId:officer, cells:path.cells, start:null };
+    setMoving(true);
+    setMotionInfo(`Desplazando ${officer}: ${path.cells.length - 1} pasos por casillas transitables.`);
+  };
   const choose = (col: number, row: number) => {
     if (col < 0 || col > 7 || row < 0 || row > 7) return;
     setActive({ col, row, id: `${col}:${row}` });
@@ -265,16 +349,41 @@ export function IsoTacticalLab() {
         <span>CASILLA SELECCIONADA</span>
         <strong>{active.id}</strong>
         <small>{cover.has(active.id) ? 'Cobertura · no transitable' :
-          deployments.some(unit => unit.cell === active.id) ? 'Oficial desplegado' :
+          units.units.some(unit => unit.cell === active.id) ? 'Oficial desplegado' :
           targets.includes(active.id as typeof targets[number]) ? 'Blanco de entrenamiento' : 'Suelo transitable'}</small>
       </div>
       <button className="iso-motion" type="button" onClick={() => setPlaying(v => !v)} data-testid="iso-motion">
         {playing ? 'Pausar caminata' : 'Reproducir caminata'}
       </button>
     </div>
+    <div className="iso-squad-movement" data-testid="iso-squad-movement">
+      <div className="iso-squad-list" role="group" aria-label="Elegir oficial para el ensayo">
+        {deployments.map(unit => {
+          const at = units.units.find(entry => entry.id === unit.id)!;
+          return <button key={unit.id} type="button" data-testid={`iso-unit-${unit.id}`}
+            aria-pressed={officer === unit.id} disabled={moving}
+            onClick={() => { setOfficer(unit.id); setMotionInfo(`Oficial seleccionado: ${unit.label}.`); }}>
+            <strong>{unit.label}</strong><span>{at.cell}</span>
+          </button>;
+        })}
+      </div>
+      <div className="iso-move-order">
+        <div data-testid="iso-route" aria-live="polite">
+          {moving ? 'Recorriendo ruta…' :
+            path && path.cells.length > 1 ? `Ruta: ${path.cells.length - 1} pasos · ${path.cells.join(' → ')}` :
+            path ? 'El oficial ya está en esa casilla.' :
+            'No hay ruta: cobertura, blanco u otro oficial bloquea el destino.'}
+        </div>
+        <button type="button" data-testid="iso-move" onClick={moveOfficer}
+          disabled={moving || !path || path.cells.length < 2}>
+          {moving ? 'Desplazando oficial…' : 'Mover oficial a la casilla seleccionada'}
+        </button>
+        <p data-testid="iso-motion-status" role="status">{motionInfo}</p>
+      </div>
+    </div>
     <div className="iso-lab-bottom">
       <p role="status" data-testid="iso-atlas-status">{assetStatus}</p>
-      <p>3 oficiales · 2 blancos geométricos · 2 obstáculos · cámara sin orbitación</p>
+      <p>Ensayo de desplazamiento, sin turnos ni combate · 2 blancos · cámara fija</p>
     </div>
     <button type="button" className="iso-inspect-toggle" data-testid="iso-inspect-toggle"
       aria-expanded={inspecting} onClick={() => setInspecting(value => !value)}>

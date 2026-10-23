@@ -73,3 +73,26 @@
 .iso-atlas-card strong{font-size:10px}
 .iso-atlas-card span{font-size:9px}
 }
+
+
+/* Small, explicit squad order panel; actual grid path is the sole movement authority. */
+.iso-squad-movement{border-top:1px solid #41616d;background:#0c2230;padding:13px 17px;display:grid;gap:12px}
+.iso-squad-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.iso-squad-list button{min-width:0;padding:10px 9px;border:1px solid #41626c;background:#162f3e;color:#d8e9e5;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left}
+.iso-squad-list button strong{font:600 11px 'Space Grotesk',sans-serif;line-height:1.45}
+.iso-squad-list button span{font:700 15px 'Space Grotesk',sans-serif;color:#b2c4bd}
+.iso-squad-list button[aria-pressed=true]{background:#28514d;border-color:#84d7bd}
+.iso-squad-list button[aria-pressed=true] span{color:#f9e0a7}
+.iso-squad-list button:disabled{opacity:.7;cursor:default}
+.iso-move-order{display:flex;flex-direction:column;gap:8px}
+.iso-move-order>div{font-size:11px;line-height:1.65;color:#a3d4c4;overflow-wrap:anywhere}
+.iso-move-order>button{min-height:44px;cursor:pointer;background:#48634d;color:#f4f2db;border:1px solid #8ecba4;font:700 11px 'Space Grotesk',sans-serif}
+.iso-move-order>button:disabled{background:#203844;border-color:#426171;color:#869da6;cursor:not-allowed}
+.iso-move-order p{margin:0;color:#8caeb6;font-size:10px;line-height:1.5}
+@media(max-width:520px){.iso-squad-movement{padding:11px}
+.iso-squad-list{gap:5px}
+.iso-squad-list button{padding:8px 5px}
+.iso-squad-list button strong{font-size:9px}
+.iso-squad-list button span{font-size:13px}
+.iso-move-order>div{font-size:10px}
+}
