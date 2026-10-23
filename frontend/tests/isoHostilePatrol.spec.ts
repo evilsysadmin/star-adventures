@@ -37,6 +37,11 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await page.waitForTimeout(500);
   expect(await page.getByTestId('iso-hostile-cells').textContent()).toBe(frozenCells);
   await expect(page.getByTestId('iso-motion-status')).toContainText('Recorrido completado', { timeout: 10_000 });
+  // Patrol has resumed by now; freeze the observed snapshot before projecting
+  // a pointer to it, otherwise a slow desktop runner can advance one tile
+  // between text read and canvas click.
+  await page.getByTestId('iso-patrol').click();
+  await expect(page.getByTestId('iso-patrol')).toContainText('Activar patrulla');
   const resumedHostile = (await page.getByTestId('iso-hostile-cells').textContent())?.match(/[0-7]:[0-7]/)?.[0];
   await choose(page, resumedHostile!);
   expect(await page.getByTestId('iso-selected').textContent()).toContain('Hostil de entrenamiento');
