@@ -125,3 +125,10 @@
  .iso-touch-stepper button{min-width:0;flex:1;max-width:58px;min-height:48px}
  .iso-touch-stepper strong{min-width:51px;font-size:17px}
 }
+
+/* The fire control is a non-combat atlas demonstration, never a damage action. */
+.iso-aim-panel .iso-fire-button{border:1px solid #c3a16b;background:#473d2d;color:#fff0cd;min-height:44px;padding:10px 14px;cursor:pointer;font:700 11px 'Space Grotesk',sans-serif;align-self:flex-start}
+.iso-aim-panel .iso-fire-button:disabled{background:#1c3340;border-color:#48616b;color:#829ca4;cursor:not-allowed}
+.iso-aim-panel .iso-fire-button:focus-visible{outline:2px solid #f2d391;outline-offset:3px}
+.iso-aim-panel p[data-testid="iso-fire-report"]{color:#c4d7cf;font-size:10px}
+@media(max-width:520px){.iso-aim-panel .iso-fire-button{width:100%;min-height:48px}}

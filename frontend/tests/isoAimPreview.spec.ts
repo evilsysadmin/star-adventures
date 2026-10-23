@@ -26,7 +26,7 @@ for(const width of [390,1280]){
     await expect(page.getByTestId('iso-aim-status')).toContainText('Selecciona uno de los dos blancos');
     await choose(page,'6:2');
     await expect(page.getByTestId('iso-aim-status')).toContainText('línea despejada');
-    await expect(page.getByTestId('iso-aim-status')).toContainText('Disparo aún no disponible');
+    await expect(page.getByTestId('iso-aim-status')).toContainText('Sin daños ni impactos');
     await page.getByTestId('iso-render-canvas').screenshot({path:`test-results/iso-aim-clear-${width}.png`});
     await choose(page,'6:5');
     await expect(page.getByTestId('iso-aim-status')).toContainText('Tiro bloqueado por cobertura en 3:3');
