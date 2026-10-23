@@ -39,6 +39,9 @@ export function IsoTacticalLab() {
   const routeVisual = useRef(new Map<string, THREE.Mesh>());
   const moveRef = useRef<Motion | null>(null);
   const committed = useRef(TRAINING_START);
+  // Pointer listeners are mounted only once; read the current squad instead of
+  // closing over a stale initial placement after any training movement.
+  const latestSquad = useRef({ units: TRAINING_START, moving: false });
   const [active, setActive] = useState<Cell>(initial);
   const [detail, setDetail] = useState(false);
   useEffect(() => {
@@ -53,6 +56,7 @@ export function IsoTacticalLab() {
   const [motionInfo, setMotionInfo] = useState('Selecciona un oficial y una casilla libre para ensayar su recorrido.');
   const [assetStatus, setAssetStatus] = useState('Conectando con los atlas originales en R2…');
   const [rendererStatus, setRendererStatus] = useState<string | null>(null);
+  useEffect(() => { latestSquad.current = { units, moving }; }, [units,moving]);
 
   const path = moving ? null : planTrainingMove(units, officer, active.id);
   const aim = !moving && targets.includes(active.id as typeof targets[number])
@@ -308,7 +312,14 @@ export function IsoTacticalLab() {
       down = null;
       if (drag > 8) return;
       const picked = pickCell(event.clientX, event.clientY, camera, canvas.getBoundingClientRect());
-      if (picked) setActive(picked);
+      if (picked) {
+        setActive(picked);
+        const roster=latestSquad.current;
+        if (!roster.moving) {
+          const selected=roster.units.units.find(unit=>unit.cell===picked.id);
+          if (selected) setOfficer(selected.id);
+        }
+      }
     };
     const onCancel = () => { down = null; };
     canvas.addEventListener('pointerdown', onDown);
@@ -404,7 +415,12 @@ export function IsoTacticalLab() {
   };
   const choose = (col: number, row: number) => {
     if (col < 0 || col > 7 || row < 0 || row > 7) return;
-    setActive({ col, row, id: `${col}:${row}` });
+    const cell: Cell={ col, row, id: `${col}:${row}` };
+    setActive(cell);
+    if(!moving) {
+      const selected=units.units.find(unit=>unit.cell===cell.id);
+      if(selected) setOfficer(selected.id);
+    }
   };
   const keyboard = (event: KeyboardEvent<HTMLElement>) => {
     const deltas: Record<string, [number, number]> = {
@@ -467,7 +483,14 @@ export function IsoTacticalLab() {
           return <button key={unit.id} type="button" data-testid={`iso-unit-${unit.id}`}
             aria-pressed={officer === unit.id} disabled={moving}
             data-clip={moving && officer === unit.id ? 'walk' : 'idle'}
-            onClick={() => { setOfficer(unit.id); setMotionInfo(`Oficial seleccionado: ${unit.label}.`); }}>
+            onClick={() => {
+              setOfficer(unit.id);
+              if (detail) {
+                const p = at.cell.split(':').map(Number);
+                choose(p[0],p[1]);
+              }
+              setMotionInfo(`Oficial seleccionado: ${unit.label}.`);
+            }}>
             <strong>{unit.label}</strong><span>{at.cell}</span>
           </button>;
         })}
@@ -509,7 +532,7 @@ export function IsoTacticalLab() {
       <div role="group" aria-label="Casillas del tablero">
         {cells().map(cell => <button key={cell.id} type="button"
           aria-label={`Casilla ${cell.id}`} aria-pressed={active.id === cell.id}
-          onClick={() => setActive(cell)}>{cell.id}</button>)}
+          onClick={() => choose(cell.col,cell.row)}>{cell.id}</button>)}
       </div>
     </details>
   </section>;
