@@ -6,14 +6,14 @@ const { assets } = JSON.parse(
   readFileSync(new URL('../src/assets/r2-assets-manifest.json', import.meta.url), 'utf8'),
 ) as { assets: Record<string, Asset> };
 
-const walkIds = [
-  'starAdventures.tactical.officerFemaleWalkV1',
-  'starAdventures.tactical.officerMaleWalkV1',
+const activeMotionIds = [
+  'starAdventures.tactical.officerFemaleRunV1',
+  'starAdventures.tactical.officerMaleRunV1',
 ] as const;
 
-test('actual tactical viewport requests both published R2 walk atlases', async ({ page }) => {
+test('actual tactical viewport requests both published R2 default-motion atlases', async ({ page }) => {
   test.setTimeout(50_000);
-  const expected = walkIds.map(id => {
+  const expected = activeMotionIds.map(id => {
     const value = assets[id];
     expect(value?.url, `${id} missing in reviewed manifest`).toMatch(/^https:\/\/assets\.chess-studio\.shadowops\.dpdns\.org\/star-adventures\/tactical\//);
     return value;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { cells, createCamera, pickCell, type Cell } from '../tacticalGrid';
-import { RUN_ATLAS, WALK_ATLAS, runFrameAt, walkFrameAt, walkFrameUv } from '../tacticalAnimation';
+import { CROUCH_ATLAS, JUMP_ATLAS, RUN_ATLAS, WALK_ATLAS, atlasFrameAt, walkFrameUv } from '../tacticalAnimation';
 import assets from '../assets/r2-assets-manifest.json';
 
 const blocked = new Set(['3:3', '4:3']);
@@ -9,11 +9,22 @@ const officerWalkUrl = assets.assets['starAdventures.tactical.officerFemaleWalkV
 const officerMaleWalkUrl = assets.assets['starAdventures.tactical.officerMaleWalkV1'].url;
 const officerRunUrl = assets.assets['starAdventures.tactical.officerFemaleRunV1'].url;
 const officerMaleRunUrl = assets.assets['starAdventures.tactical.officerMaleRunV1'].url;
+const officerJumpUrl = assets.assets['starAdventures.tactical.officerFemaleJumpV1'].url;
+const officerMaleJumpUrl = assets.assets['starAdventures.tactical.officerMaleJumpV1'].url;
+const officerCrouchUrl = assets.assets['starAdventures.tactical.officerFemaleCrouchV1'].url;
+const officerMaleCrouchUrl = assets.assets['starAdventures.tactical.officerMaleCrouchV1'].url;
+const motions = ['walk', 'run', 'jump', 'crouch'] as const;
+type Motion = typeof motions[number];
+const motionLabel: Record<Motion, string> = { walk: 'caminar', run: 'correr', jump: 'saltar', crouch: 'agacharse' };
+const motionFps: Record<Motion, number> = { walk: WALK_ATLAS.fps, run: RUN_ATLAS.fps, jump: JUMP_ATLAS.fps, crouch: CROUCH_ATLAS.fps };
+const motionAtlas: Record<Motion, { columns: number; rows: number }> = { walk: WALK_ATLAS, run: RUN_ATLAS, jump: JUMP_ATLAS, crouch: CROUCH_ATLAS };
+const femaleMotionUrl: Record<Motion, string> = { walk: officerWalkUrl, run: officerRunUrl, jump: officerJumpUrl, crouch: officerCrouchUrl };
+const maleMotionUrl: Record<Motion, string> = { walk: officerMaleWalkUrl, run: officerMaleRunUrl, jump: officerMaleJumpUrl, crouch: officerMaleCrouchUrl };
 
 export function TacticalProbe() {
   const host = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<Cell>({ col: 0, row: 0, id: '0:0' });
-  const [motion, setMotion] = useState<'walk' | 'run'>('run');
+  const [motion, setMotion] = useState<Motion>('run');
   useEffect(() => {
     const element = host.current;
     if (!element) return;
@@ -31,13 +42,13 @@ export function TacticalProbe() {
     const render = () => renderer.render(scene, camera);
     const markers = ['6:2', '2:6'];
     markers.forEach(id => { const [col, row] = id.split(':').map(Number); const marker = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, .35, 12), new THREE.MeshBasicMaterial({ color: '#e8b85b' })); marker.position.set(col - 3.5, .24, row - 3.5); scene.add(marker); });
-    const atlas = motion === 'run' ? RUN_ATLAS : WALK_ATLAS;
-    const spriteTexture = new THREE.TextureLoader().load(motion === 'run' ? officerRunUrl : officerWalkUrl, render);
+    const atlas = motionAtlas[motion];
+    const spriteTexture = new THREE.TextureLoader().load(femaleMotionUrl[motion], render);
     spriteTexture.colorSpace = THREE.SRGBColorSpace;
     spriteTexture.repeat.set(1 / atlas.columns, 1 / atlas.rows);
     const officer = new THREE.Sprite(new THREE.SpriteMaterial({ map: spriteTexture, transparent: true, depthWrite: false }));
     officer.name = 'officer-female-walk-v1'; officer.scale.set(1.55, 2.4, 1); officer.position.set(-2.5, 1.2, -2.5); scene.add(officer);
-    const officerMaleTexture = new THREE.TextureLoader().load(motion === 'run' ? officerMaleRunUrl : officerMaleWalkUrl, render);
+    const officerMaleTexture = new THREE.TextureLoader().load(maleMotionUrl[motion], render);
     officerMaleTexture.colorSpace = THREE.SRGBColorSpace;
     officerMaleTexture.repeat.set(1 / atlas.columns, 1 / atlas.rows);
     const officerMale = new THREE.Sprite(new THREE.SpriteMaterial({ map: officerMaleTexture, transparent: true, depthWrite: false }));
@@ -50,7 +61,7 @@ export function TacticalProbe() {
     let previousFrame = -1;
     let animationFrame = 0;
     const animate = (now: number) => {
-      const frame = motion === 'run' ? runFrameAt(now) : walkFrameAt(now);
+      const frame = atlasFrameAt(now, motionFps[motion]);
       if (frame !== previousFrame) {
         const uv = walkFrameUv(frame);
         spriteTexture.offset.set(uv.x, uv.y);
@@ -64,7 +75,7 @@ export function TacticalProbe() {
     return () => { cancelAnimationFrame(animationFrame); observer.disconnect(); renderer.domElement.removeEventListener('pointerup', pointer); spriteTexture.dispose(); officerMaleTexture.dispose(); board.traverse(object => { const mesh = object as THREE.Mesh; mesh.geometry?.dispose(); (mesh.material as THREE.Material)?.dispose(); }); renderer.dispose(); renderer.domElement.remove(); };
   }, [motion]);
   return <section className="tactical-probe" aria-labelledby="tactical-title">
-    <div><span>PRUEBA TÁCTICA / CÁMARA FIJA</span><h2 id="tactical-title">Tablero de selección</h2><p data-testid="tactical-selected">Celda seleccionada: {selected.id}{blocked.has(selected.id) ? ' · obstáculo, no transitable' : ''}</p><p className="tactical-mvs" data-testid="tactical-mvs">MVS · {motion === 'run' ? 'correr 10 FPS' : 'caminar 6 FPS'} · oficial mujer 1:1 · oficial hombre 5:2</p><button className="tactical-motion" type="button" onClick={() => setMotion(current => current === 'walk' ? 'run' : 'walk')} aria-pressed={motion === 'run'}>Movimiento: {motion === 'run' ? 'correr' : 'caminar'}</button></div>
+    <div><span>PRUEBA TÁCTICA / CÁMARA FIJA</span><h2 id="tactical-title">Tablero de selección</h2><p data-testid="tactical-selected">Celda seleccionada: {selected.id}{blocked.has(selected.id) ? ' · obstáculo, no transitable' : ''}</p><p className="tactical-mvs" data-testid="tactical-mvs">MVS · {motionLabel[motion]} {motionFps[motion]} FPS · oficial mujer 1:1 · oficial hombre 5:2</p><button className="tactical-motion" type="button" onClick={() => setMotion(current => motions[(motions.indexOf(current) + 1) % motions.length])} aria-pressed={motion === 'run'}>Movimiento: {motionLabel[motion]}</button></div>
     <div ref={host} className="tactical-canvas" data-testid="tactical-canvas" aria-label="Tablero táctico 8 por 8" />
     <div className="tactical-controls" aria-label="Controles alternativos del tablero">{cells().map(cell => <button key={cell.id} type="button" onClick={() => setSelected(cell)} aria-pressed={selected.id === cell.id}>{cell.id}</button>)}</div>
   </section>;
