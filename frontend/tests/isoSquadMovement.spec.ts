@@ -47,7 +47,7 @@ for (const width of [390,1280]) {
     await expect(page.getByTestId('iso-route')).toContainText('Ruta: 1 pasos');
     await page.getByTestId('iso-move').click();
     await expect(page.getByTestId('iso-unit-security')).toContainText('3:5',{timeout:6_000});
-    await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 2/2',{timeout:20_000});
+    await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 4/4',{timeout:20_000});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:`test-results/iso-walking-${width}.png`,fullPage:true});
   });
