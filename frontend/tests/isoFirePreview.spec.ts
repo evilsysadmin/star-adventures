@@ -81,3 +81,77 @@ test('reduced-motion mode can complete a legal fire preview without looping fram
  await page.getByTestId('tactical-view-current').click();
  await expect(page.getByTestId('tactical-selected')).toBeVisible();
 });
+
+
+for (const [width, sex, officerId, target] of [
+  [390, 'female', 'science', '6:2'],
+  [1280, 'male', 'security', '6:5'],
+] as const) {
+  test(`authored ${sex} firing atlas can be visually inspected at frame 4/6 on ${width}px canvas`,async({page})=>{
+    test.setTimeout(80_000);
+    await openLab(page,width);
+    if(officerId==='security')await page.getByTestId('iso-unit-security').click();
+    await choose(page,target);
+    await expect(page.getByTestId('iso-aim-status')).toContainText('línea despejada');
+    await page.getByTestId('iso-review-toggle').click();
+    await expect(page.getByTestId('iso-review-toggle')).toHaveAttribute('aria-pressed','true');
+    const response=page.waitForResponse(r=>
+      r.url().includes(`officer-${sex}-fire-v1-`) &&
+      r.request().resourceType()==='image',{timeout:25_000});
+    await page.getByTestId('iso-fire').click();
+    expect((await response).status()).toBe(200);
+    const canvas=page.getByTestId('iso-render-canvas');
+    await expect(canvas).toHaveAttribute('data-fire-mode','manual');
+    await expect(canvas).toHaveAttribute('data-fire-unit',officerId);
+    await expect(canvas).toHaveAttribute('data-fire-frame','0');
+    await expect(page.getByTestId('iso-fire-frame')).toContainText('Fotograma 1 / 6');
+    await expect(page.getByTestId('iso-move')).toBeDisabled();
+    await expect(page.getByTestId('iso-fire')).toBeDisabled();
+    await expect(page.getByTestId('iso-review-toggle')).toBeDisabled();
+    for(let i=1;i<=3;i++){
+      await page.getByTestId('iso-fire-next').click();
+      await expect(canvas).toHaveAttribute('data-fire-frame',String(i));
+      await expect(page.getByTestId('iso-fire-frame')).toContainText(`Fotograma ${i+1} / 6`);
+    }
+    // Actual live WebGL sprite frame is pinned, not captured by racing a 9fps timer.
+    await canvas.screenshot({path:`test-results/iso-fire-real-frame4-${sex}-${width}.png`});
+    await page.screenshot({path:`test-results/iso-fire-review-frame4-${sex}-${width}.png`,fullPage:true});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    for(let i=4;i<=5;i++){
+      await page.getByTestId('iso-fire-next').click();
+      await expect(canvas).toHaveAttribute('data-fire-frame',String(i));
+    }
+    await expect(page.getByTestId('iso-fire-next')).toContainText('Finalizar revisión');
+    await page.getByTestId('iso-fire-next').click();
+    await expect(canvas).not.toHaveAttribute('data-fire-frame',/./);
+    await expect(page.getByTestId('iso-fire-review')).toHaveCount(0);
+    await expect(page.getByTestId('iso-fire-report')).toContainText('Ensayo visual completado');
+    await expect(page.getByTestId('iso-fire-report')).toContainText('Sin impactos, daños ni consumo de munición');
+    await expect(page.getByTestId('iso-fire')).toBeEnabled();
+    await expect(page.getByTestId('iso-review-toggle')).toBeEnabled();
+    await page.getByTestId('iso-review-toggle').click();
+    await expect(page.getByTestId('iso-review-toggle')).toHaveAttribute('aria-pressed','false');
+  });
+}
+
+test('frame review cannot authorize a blocked shot and survives reduced motion',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await openLab(page,390);
+  await page.getByTestId('iso-review-toggle').click();
+  await choose(page,'6:5');
+  await expect(page.getByTestId('iso-fire')).toBeDisabled();
+  await expect(page.getByTestId('iso-fire-review')).toHaveCount(0);
+  await choose(page,'6:2');
+  await page.getByTestId('iso-fire').click();
+  await expect(page.getByTestId('iso-render-canvas')).toHaveAttribute('data-fire-frame','0');
+  await page.getByTestId('iso-fire-next').click();
+  await expect(page.getByTestId('iso-render-canvas')).toHaveAttribute('data-fire-frame','1');
+  for(let i=2;i<6;i++){
+    await page.getByTestId('iso-fire-next').click();
+    await expect(page.getByTestId('iso-render-canvas')).toHaveAttribute('data-fire-frame',String(i));
+  }
+  await page.getByTestId('iso-fire-next').click();
+  await expect(page.getByTestId('iso-fire-report')).toContainText('Ensayo visual completado');
+  await page.getByTestId('tactical-view-current').click();
+  await expect(page.getByTestId('tactical-selected')).toBeVisible();
+});
