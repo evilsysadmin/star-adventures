@@ -22,6 +22,8 @@ const STEP_MS = 360;
 const targets = ['6:2', '6:5'] as const;
 const femaleUrl = assets.assets['starAdventures.tactical.officerFemaleWalkV1'].url;
 const maleUrl = assets.assets['starAdventures.tactical.officerMaleWalkV1'].url;
+const aegisRaiderUrl = assets.assets['starAdventures.tactical.aegisRaiderIdleV1'].url;
+const veilAgentUrl = assets.assets['starAdventures.tactical.veilAgentIdleV1'].url;
 const cellFromId = (id: string) => {
   const [col, row] = id.split(':').map(Number);
   return cellCenter({ col, row });
@@ -196,19 +198,10 @@ export function IsoTacticalLab() {
     const start = cellCenter(initial);
     marker.position.set(start.x, .21, start.z);
 
-    // Training targets are deliberately simple geometry, not fabricated enemy atlas art.
+    // Target cells retain their authored geometry for sight/range rules; their visible
+    // occupants are original R2 hostile sprites loaded below.
     for (const id of targets) {
       const center = cellFromId(id);
-      const stand = new THREE.Mesh(
-        new THREE.CylinderGeometry(.23, .31, .9, 10),
-        new THREE.MeshStandardMaterial({ color: '#a36555', metalness: .58, roughness: .34 })
-      );
-      stand.position.set(center.x, .52, center.z); add(stand);
-      const beacon = new THREE.Mesh(
-        new THREE.SphereGeometry(.14, 12, 10),
-        new THREE.MeshBasicMaterial({ color: '#ffc398' })
-      );
-      beacon.position.set(center.x, 1.05, center.z); add(beacon);
       const ground = new THREE.Mesh(
         new THREE.CircleGeometry(.39, 24),
         new THREE.MeshBasicMaterial({ color: '#e4946f', transparent: true, opacity: .19, depthWrite: false })
@@ -231,9 +224,9 @@ export function IsoTacticalLab() {
       if (disposed) return;
       settled += 1;
       if (success) succeeded += 1;
-      setAssetStatus(settled === 2
-        ? `Atlas R2 reales: ${succeeded}/2 cargados${succeeded !== 2 ? ' · fichas geométricas de reserva' : ''}`
-        : `Cargando atlas R2: ${settled}/2…`);
+      setAssetStatus(settled === 4
+        ? `Atlas R2 reales: ${succeeded}/4 cargados${succeeded !== 4 ? ' · fichas geométricas de reserva' : ''}`
+        : `Cargando atlas R2: ${settled}/4…`);
       render();
     };
     for (const [sex, url] of [['female', femaleUrl], ['male', maleUrl]] as const) {
@@ -263,6 +256,29 @@ export function IsoTacticalLab() {
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       textures[sex] = tex;
       atlasTextures.push(tex);
+    }
+    const hostileAssets = [
+      { id: '6:2', name: 'Incursor Aegis', url: aegisRaiderUrl, scale: [1.64, 2.52] as const },
+      { id: '6:5', name: 'Agente Velo', url: veilAgentUrl, scale: [1.46, 2.34] as const },
+    ];
+    for (const hostile of hostileAssets) {
+      const p = cellFromId(hostile.id);
+      const texture = loader.load(hostile.url, loaded => {
+        if (disposed) return;
+        const isolated = loaded.clone();
+        isolated.repeat.set(1 / WALK_ATLAS.columns, 1 / WALK_ATLAS.rows);
+        isolated.offset.set(walkFrameUv(0).x, walkFrameUv(0).y);
+        isolated.needsUpdate = true;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: isolated, transparent: true, depthWrite: false, alphaTest: .06 }));
+        sprite.name = hostile.name;
+        sprite.center.set(.5, 0);
+        sprite.scale.set(hostile.scale[0], hostile.scale[1], 1);
+        sprite.position.set(p.x, .13, p.z);
+        add(sprite); atlasTextures.push(isolated);
+        finishAsset(true);
+      }, undefined, () => finishAsset(false));
+      texture.colorSpace = THREE.SRGBColorSpace;
+      atlasTextures.push(texture);
     }
 
     const initialCells = new Map(TRAINING_START.units.map(unit => [unit.id, unit.cell]));
