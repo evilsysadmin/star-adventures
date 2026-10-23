@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { cells, createCamera, pickCell, type Cell } from '../tacticalGrid';
-import { CROUCH_ATLAS, FIRE_ATLAS, HIT_ATLAS, JUMP_ATLAS, RUN_ATLAS, WALK_ATLAS, atlasFrameAt, walkFrameUv } from '../tacticalAnimation';
+import { CROUCH_ATLAS, FIRE_ATLAS, HIT_ATLAS, JUMP_ATLAS, KIA_ATLAS, RUN_ATLAS, WALK_ATLAS, atlasFrameAt, walkFrameUv } from '../tacticalAnimation';
 import assets from '../assets/r2-assets-manifest.json';
 
 const blocked = new Set(['3:3', '4:3']);
@@ -17,13 +17,15 @@ const officerFireUrl = assets.assets['starAdventures.tactical.officerFemaleFireV
 const officerMaleFireUrl = assets.assets['starAdventures.tactical.officerMaleFireV1'].url;
 const officerHitUrl = assets.assets['starAdventures.tactical.officerFemaleHitV1'].url;
 const officerMaleHitUrl = assets.assets['starAdventures.tactical.officerMaleHitV1'].url;
-const motions = ['walk', 'run', 'jump', 'crouch', 'fire', 'hit'] as const;
+const officerKiaUrl = assets.assets['starAdventures.tactical.officerFemaleKiaV1'].url;
+const officerMaleKiaUrl = assets.assets['starAdventures.tactical.officerMaleKiaV1'].url;
+const motions = ['walk', 'run', 'jump', 'crouch', 'fire', 'hit', 'kia'] as const;
 type Motion = typeof motions[number];
-const motionLabel: Record<Motion, string> = { walk: 'caminar', run: 'correr', jump: 'saltar', crouch: 'agacharse', fire: 'disparar', hit: 'recibir impacto' };
-const motionFps: Record<Motion, number> = { walk: WALK_ATLAS.fps, run: RUN_ATLAS.fps, jump: JUMP_ATLAS.fps, crouch: CROUCH_ATLAS.fps, fire: FIRE_ATLAS.fps, hit: HIT_ATLAS.fps };
-const motionAtlas: Record<Motion, { columns: number; rows: number }> = { walk: WALK_ATLAS, run: RUN_ATLAS, jump: JUMP_ATLAS, crouch: CROUCH_ATLAS, fire: FIRE_ATLAS, hit: HIT_ATLAS };
-const femaleMotionUrl: Record<Motion, string> = { walk: officerWalkUrl, run: officerRunUrl, jump: officerJumpUrl, crouch: officerCrouchUrl, fire: officerFireUrl, hit: officerHitUrl };
-const maleMotionUrl: Record<Motion, string> = { walk: officerMaleWalkUrl, run: officerMaleRunUrl, jump: officerMaleJumpUrl, crouch: officerMaleCrouchUrl, fire: officerMaleFireUrl, hit: officerMaleHitUrl };
+const motionLabel: Record<Motion, string> = { walk: 'caminar', run: 'correr', jump: 'saltar', crouch: 'agacharse', fire: 'disparar', hit: 'recibir impacto', kia: 'KIA' };
+const motionFps: Record<Motion, number> = { walk: WALK_ATLAS.fps, run: RUN_ATLAS.fps, jump: JUMP_ATLAS.fps, crouch: CROUCH_ATLAS.fps, fire: FIRE_ATLAS.fps, hit: HIT_ATLAS.fps, kia: KIA_ATLAS.fps };
+const motionAtlas: Record<Motion, { columns: number; rows: number }> = { walk: WALK_ATLAS, run: RUN_ATLAS, jump: JUMP_ATLAS, crouch: CROUCH_ATLAS, fire: FIRE_ATLAS, hit: HIT_ATLAS, kia: KIA_ATLAS };
+const femaleMotionUrl: Record<Motion, string> = { walk: officerWalkUrl, run: officerRunUrl, jump: officerJumpUrl, crouch: officerCrouchUrl, fire: officerFireUrl, hit: officerHitUrl, kia: officerKiaUrl };
+const maleMotionUrl: Record<Motion, string> = { walk: officerMaleWalkUrl, run: officerMaleRunUrl, jump: officerMaleJumpUrl, crouch: officerMaleCrouchUrl, fire: officerMaleFireUrl, hit: officerMaleHitUrl, kia: officerMaleKiaUrl };
 
 export function TacticalProbe() {
   const host = useRef<HTMLDivElement>(null);

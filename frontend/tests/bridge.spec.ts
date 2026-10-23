@@ -284,6 +284,8 @@ for (const width of [360, 390, 430, 1280]) {
     await expect(page.getByTestId('tactical-mvs')).toContainText('disparar 9 FPS');
     await page.getByRole('button', { name: 'Movimiento: disparar' }).click();
     await expect(page.getByTestId('tactical-mvs')).toContainText('recibir impacto 8 FPS');
+    await page.getByRole('button', { name: 'Movimiento: recibir impacto' }).click();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('KIA 5 FPS');
     await page.getByRole('button', { name: '7:7' }).click();
     await expect(page.getByTestId('tactical-selected')).toContainText('7:7');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();

@@ -42,6 +42,13 @@
       "sha256": "40bf8c99d86966ae6862176f10b8c12b477b9dd9101edd10217d1de8f46c0e1e",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-jump-v1-40bf8c99d86966ae.webp"
     },
+    "starAdventures.tactical.officerFemaleKiaV1": {
+      "bytes": 136032,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-kia-v1-4f6ae3c57144d747.webp",
+      "sha256": "4f6ae3c57144d7474f96fda2bb2adb1bf0da0c9228a2b1195dafcabda4e1a370",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-kia-v1-4f6ae3c57144d747.webp"
+    },
     "starAdventures.tactical.officerFemaleMvsV1": {
       "bytes": 24578,
       "contentType": "image/webp",
@@ -90,6 +97,13 @@
       "key": "star-adventures/tactical/officer-male-jump-v1-7ce1049816925102.webp",
       "sha256": "7ce1049816925102c240b14a34bfe9ea79197091236e67d070e2bf50629e7692",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-jump-v1-7ce1049816925102.webp"
+    },
+    "starAdventures.tactical.officerMaleKiaV1": {
+      "bytes": 106246,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-kia-v1-6b05fc3ad60cf7e7.webp",
+      "sha256": "6b05fc3ad60cf7e7b09b56f6fbf366b554493521746bb7b87c5fc806ee8dc22d",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-kia-v1-6b05fc3ad60cf7e7.webp"
     },
     "starAdventures.tactical.officerMaleMvsV1": {
       "bytes": 27508,
