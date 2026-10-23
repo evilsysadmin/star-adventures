@@ -64,3 +64,9 @@ test('out of range, non-target cells, unknown shooters and corrupt squads fail c
   ]};
   assert.throws(()=>evaluatePracticeShot(corrupted,'science','6:2'),TypeError);
 });
+
+test('the authorized hostile snapshot drives aiming, not the initial decorative target cells', () => {
+  const patrolling = ['6:1', '6:6'];
+  assert.equal(evaluatePracticeShot(TRAINING_START, 'science', '6:1', patrolling).allowed, true);
+  assert.equal(evaluatePracticeShot(TRAINING_START, 'science', '6:2', patrolling).reason, 'invalid-target');
+});
