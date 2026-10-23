@@ -4,6 +4,12 @@ import { createIsoCamera } from '../src/tacticalIsoCamera';
 import { createIsoDetailCamera } from '../src/tacticalIsoFocus';
 import { SCENARIOS, createMission, missionPath, applyMissionAction, type SquadId, type MissionAction } from '../src/isoScenarioCampaign';
 
+test('the playable tactical mission loop is the initial tactical view', async ({ page }) => {
+ await page.goto('/');
+ await expect(page.getByTestId('scenario-lab')).toBeVisible();
+ await expect(page.getByTestId('scenario-move')).toBeVisible();
+});
+
 async function openMissions(page:Page,width:number) {
  await page.setViewportSize({width,height:850});
  await page.goto('/');

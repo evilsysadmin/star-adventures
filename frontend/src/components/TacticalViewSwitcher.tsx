@@ -9,7 +9,9 @@ const IsoScenarioLab = lazy(() => import('./IsoScenarioLab').then(x => ({ defaul
 
 
 export function TacticalViewSwitcher() {
-  const [mode, setMode] = useState<'existing' | 'iso' | 'missions'>('existing');
+  // Lead with the complete stateful loop. The other two views remain explicit,
+  // reversible inspection tools rather than leaving a new player in a probe.
+  const [mode, setMode] = useState<'existing' | 'iso' | 'missions'>('missions');
   return <div className="iso-mode-switcher" data-testid="tactical-mode-switcher">
     <div className="iso-mode-title">
       <span>EXPERIMENTO · COMPARAR CÁMARAS</span>
