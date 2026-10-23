@@ -50,6 +50,16 @@ export function IsoTacticalLab() {
       tile.visible = !moving && !!path && path.cells.length > 1 && path.cells.includes(cellId);
   }, [active.id, officer, moving, units]);
   useEffect(() => {
+    if (moveRef.current) return;
+    for (const unit of units.units) {
+      const visual = unitsVisual.current.get(unit.id);
+      if (!visual) continue;
+      const p = cellFromId(unit.cell);
+      visual.sprite.position.set(p.x, .13, p.z);
+      visual.shadow.position.set(p.x, .105, p.z);
+    }
+  }, [units]);
+  useEffect(() => {
     if (!selection.current) return;
     const p = cellCenter(active);
     selection.current.position.set(p.x, 0.21, p.z);
