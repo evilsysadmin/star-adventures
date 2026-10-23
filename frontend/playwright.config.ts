@@ -6,6 +6,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    // Most browser specs exercise an explicitly selected diagnostics view.
+    // Product default remains the playable mission for an unconfigured player.
+    storageState: './tests/tactical-existing.storageState.json',
     ...devices['Desktop Chrome'],
     channel: 'chrome',
     launchOptions: process.env.PLAYWRIGHT_CHROME_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROME_PATH } : undefined,
