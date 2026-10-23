@@ -9,3 +9,12 @@ export function isoFireFrame(elapsedMs: number, animate = true): number | null {
   return animate ? Math.min(FIRE_ATLAS.frames - 1,
     Math.floor(elapsedMs * FIRE_ATLAS.fps / 1000)) : 0;
 }
+
+/** One authored frame per deliberate user action; null means return to idle.
+ * Invalid/out-of-sequence steps cannot silently wrap to frame zero.
+ */
+export function nextFireReviewFrame(frame: number): number | null {
+  if (!Number.isInteger(frame) || frame < 0 || frame >= FIRE_ATLAS.frames)
+    throw new RangeError('Invalid fire review frame');
+  return frame === FIRE_ATLAS.frames - 1 ? null : frame + 1;
+}
