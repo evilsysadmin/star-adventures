@@ -28,6 +28,13 @@
       "sha256": "67653ac7097cf031f6753457c9b79ad188d1f553e2cef9419bcb27f61632fa15",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-fire-v1-67653ac7097cf031.webp"
     },
+    "starAdventures.tactical.officerFemaleHitV1": {
+      "bytes": 202136,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-hit-v1-5b1bae3f5a1aa867.webp",
+      "sha256": "5b1bae3f5a1aa8673398d1ada441d07ef54c3835515c863ccc2df31aa2ddc9bb",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-hit-v1-5b1bae3f5a1aa867.webp"
+    },
     "starAdventures.tactical.officerFemaleJumpV1": {
       "bytes": 207348,
       "contentType": "image/webp",
@@ -69,6 +76,13 @@
       "key": "star-adventures/tactical/officer-male-fire-v1-7ab0aa09a201fd95.webp",
       "sha256": "7ab0aa09a201fd95bfe119491786f76e3c65b7eb7c703eb0e31027a573ea8958",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-fire-v1-7ab0aa09a201fd95.webp"
+    },
+    "starAdventures.tactical.officerMaleHitV1": {
+      "bytes": 236044,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-hit-v1-33c2d98ccf8ec939.webp",
+      "sha256": "33c2d98ccf8ec939175fba648a8a2fd68b0e2c11df4187f548ed4c6973947307",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-hit-v1-33c2d98ccf8ec939.webp"
     },
     "starAdventures.tactical.officerMaleJumpV1": {
       "bytes": 280074,
