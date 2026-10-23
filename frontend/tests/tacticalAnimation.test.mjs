@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WALK_ATLAS, walkFrameAt, walkFrameUv } from '../src/tacticalAnimation.ts';
+import { RUN_ATLAS, WALK_ATLAS, runFrameAt, walkFrameAt, walkFrameUv } from '../src/tacticalAnimation.ts';
 
 test('walk animation advances through all six atlas cells and loops', () => {
   assert.equal(WALK_ATLAS.frames, 6);
@@ -11,4 +11,5 @@ test('walk animation advances through all six atlas cells and loops', () => {
   assert.equal(walkFrameAt(0), 0);
   assert.equal(walkFrameAt(1_000), 0);
   assert.equal(walkFrameAt(1_000 / WALK_ATLAS.fps), 1);
+  assert.equal(runFrameAt(1_000 / RUN_ATLAS.fps), 1);
 });
