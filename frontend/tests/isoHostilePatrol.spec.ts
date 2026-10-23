@@ -30,5 +30,15 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await expect(page.getByTestId('iso-selected')).toContainText('Hostil de entrenamiento');
   await expect(page.getByTestId('iso-aim-status')).toContainText('línea despejada');
   await expect(page.getByTestId('iso-move')).toBeDisabled();
+  await choose(page, '4:1');
+  await expect(page.getByTestId('iso-move')).toBeEnabled();
+  await page.getByTestId('iso-move').click();
+  const frozenCells = await page.getByTestId('iso-hostile-cells').textContent();
+  await page.waitForTimeout(500);
+  expect(await page.getByTestId('iso-hostile-cells').textContent()).toBe(frozenCells);
+  await expect(page.getByTestId('iso-motion-status')).toContainText('Recorrido completado', { timeout: 10_000 });
+  const resumedHostile = (await page.getByTestId('iso-hostile-cells').textContent())?.match(/[0-7]:[0-7]/)?.[0];
+  await choose(page, resumedHostile!);
+  expect(await page.getByTestId('iso-selected').textContent()).toContain('Hostil de entrenamiento');
   await page.screenshot({ path: `test-results/iso-hostile-patrol-${width}.png`, fullPage: true });
 });

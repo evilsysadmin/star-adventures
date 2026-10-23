@@ -39,6 +39,7 @@ export function IsoTacticalLab() {
   const aimVisual = useRef<THREE.Line | null>(null);
   const animateEnabled = useRef(true);
   const patrolEnabled = useRef(false);
+  const patrolSuspended = useRef(false);
   const unitsVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
   const hostileVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
   const routeVisual = useRef(new Map<string, THREE.Mesh>());
@@ -358,6 +359,7 @@ export function IsoTacticalLab() {
     if (reduced) setPlaying(false);
     const frame = (time: number) => {
       const motion = moveRef.current;
+      let completedMove = false;
       if (motion) {
         if (motion.start === null) motion.start = time;
         const progress = Math.min(motion.cells.length - 1, (time - motion.start) / STEP_MS);
@@ -378,6 +380,7 @@ export function IsoTacticalLab() {
             committed.current, motion.unitId, destination, currentHostileCells.current,
           );
           moveRef.current = null;
+          completedMove = true;
           setUnits(committed.current);
           setMotionInfo(`Recorrido completado: ${motion.unitId} en ${destination} (${motion.cells.length - 1} pasos).`);
           setMoving(false);
@@ -395,10 +398,17 @@ export function IsoTacticalLab() {
           lastFrames.set(unit.id, index);
         }
       }
-      const patrolActive = patrolEnabled.current && !moveRef.current && !reduced;
-      if (patrolActive) {
-        if (patrolStarted === null) patrolStarted = time;
-        const elapsed = patrolElapsed + time - patrolStarted;
+      const patrolEnabledNow = patrolEnabled.current && !reduced;
+      if (patrolEnabledNow) {
+        if (patrolSuspended.current || moveRef.current) {
+          // A squad move owns its discrete occupancy snapshot. Hold the hostile
+          // interpolation exactly where it was, then resume this same segment.
+          if (patrolStarted !== null) {
+            patrolElapsed += time - patrolStarted;
+            patrolStarted = null;
+          }
+        } else if (patrolStarted === null) patrolStarted = time;
+        const elapsed = patrolElapsed + (patrolStarted === null ? 0 : time - patrolStarted);
         const cellsAtStep = hostilePatrolCellsAt(elapsed);
         const nextKey = cellsAtStep.join(',');
         if (nextKey !== hostileCellKey) {
@@ -438,6 +448,7 @@ export function IsoTacticalLab() {
           visual.shadow.position.set(p.x, .106, p.z);
         }
       }
+      if (completedMove) patrolSuspended.current = false;
       render();
       frameHandle = requestAnimationFrame(frame);
     };
@@ -453,6 +464,7 @@ export function IsoTacticalLab() {
       aimVisual.current = null;
       cameraRefresh.current = null;
       moveRef.current = null;
+      patrolSuspended.current = false;
       unitsVisual.current.clear();
       hostileVisual.current.clear();
       unitTextures.clear();
@@ -482,6 +494,7 @@ export function IsoTacticalLab() {
       setMotionInfo(`Recorrido completado: ${officer} en ${active.id} (${path.cells.length - 1} pasos).`);
       return;
     }
+    patrolSuspended.current = true;
     moveRef.current = { unitId:officer, cells:path.cells, start:null };
     setMoving(true);
     setMotionInfo(`Desplazando ${officer}: ${path.cells.length - 1} pasos por casillas transitables.`);
@@ -593,7 +606,7 @@ export function IsoTacticalLab() {
     </div>
     <div className="iso-lab-bottom">
       <p role="status" data-testid="iso-atlas-status">{assetStatus}</p>
-      <p>Ensayo de desplazamiento, sin turnos ni combate · 2 blancos · cámara fija</p>
+      <p data-testid="iso-hostile-cells">Patrulla: {hostileCells.join(' · ')} · sin turnos ni combate</p>
     </div>
     <button type="button" className="iso-inspect-toggle" data-testid="iso-inspect-toggle"
       aria-expanded={inspecting} onClick={() => setInspecting(value => !value)}>
