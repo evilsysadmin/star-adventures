@@ -36,8 +36,8 @@ jobs:
           node-version: '22'
       - name: Install frontend dependencies
         run: npm ci --prefix frontend --no-audit --no-fund
-      - name: Install Playwright Chromium
-        run: npx --prefix frontend playwright install --with-deps chromium
+      - name: Verify runner-installed Chrome
+        run: google-chrome --version
       - name: Tactical camera, grid and animation contracts
         run: npm run test:grid --prefix frontend
       - name: Typecheck and bundle
