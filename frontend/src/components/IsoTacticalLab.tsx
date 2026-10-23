@@ -38,8 +38,8 @@ const initial: Cell = { col: 0, row: 0, id: '0:0' };
 
 export function IsoTacticalLab() {
   const host = useRef<HTMLDivElement>(null);
-  const cameraRefresh = useRef<((focus: boolean, cell: Cell) => void) | null>(null);
-  const currentView = useRef({ focus: false, cell: initial });
+  const cameraRefresh = useRef<((focus: boolean, cell: Cell, inspecting: boolean) => void) | null>(null);
+  const currentView = useRef({ focus: false, cell: initial, inspecting: false });
   const selection = useRef<THREE.Object3D | null>(null);
   const aimVisual = useRef<THREE.Line | null>(null);
   const animateEnabled = useRef(true);
@@ -56,10 +56,6 @@ export function IsoTacticalLab() {
   const latestSquad = useRef({ units: TRAINING_START, moving: false });
   const [active, setActive] = useState<Cell>(initial);
   const [detail, setDetail] = useState(false);
-  useEffect(() => {
-    currentView.current = {focus:detail,cell:active};
-    cameraRefresh.current?.(detail, active);
-  }, [detail,active]);
   const [playing, setPlaying] = useState(true);
   const [inspecting, setInspecting] = useState(false);
   const [units, setUnits] = useState(TRAINING_START);
@@ -68,11 +64,25 @@ export function IsoTacticalLab() {
   const [firing, setFiring] = useState(false);
   const [review, setReview] = useState(false);
   const [reviewFrame, setReviewFrame] = useState<number | null>(null);
+  const [inspectionUnit, setInspectionUnit] = useState<TrainingUnit['id'] | null>(null);
   const [fireReport, setFireReport] = useState('Sin disparos. Selecciona un blanco despejado.');
   const [motionInfo, setMotionInfo] = useState('Selecciona un oficial y una casilla libre para ensayar su recorrido.');
   const [assetStatus, setAssetStatus] = useState('Conectando con los atlas originales en R2…');
   const [rendererStatus, setRendererStatus] = useState<string | null>(null);
   useEffect(() => { latestSquad.current = { units, moving }; }, [units,moving]);
+  // During opt-in frame inspection only, the lens follows the shooter rather
+  // than the selected distant target. The logical target/LOS stay unchanged.
+  const inspectionPosition = firing && reviewFrame !== null && inspectionUnit
+    ? units.units.find(unit => unit.id === inspectionUnit)?.cell : null;
+  const inspectionCell: Cell | null = inspectionPosition ? (() => {
+    const [col,row] = inspectionPosition.split(':').map(Number);
+    return { col, row, id: inspectionPosition };
+  })() : null;
+  useEffect(() => {
+    const focusCell = inspectionCell ?? active;
+    currentView.current = { focus: detail, cell: focusCell, inspecting: !!inspectionCell };
+    cameraRefresh.current?.(detail, focusCell, !!inspectionCell);
+  }, [detail, active, inspectionCell?.id]);
 
   const path = moving || firing ? null : planTrainingMove(units, officer, active.id);
   const aim = !moving && targets.includes(active.id as typeof targets[number])
@@ -315,6 +325,7 @@ export function IsoTacticalLab() {
         const manual=reviewEnabled.current;
         fireRef.current={unitId,sex,start:null,review:manual,frame:0};
         setReviewFrame(manual ? 0 : null);
+        setInspectionUnit(manual ? unitId : null);
         setFiring(true);
         setFireReport(`${manual ? 'Inspeccionando' : 'Reproduciendo'} disparo original de ${deploy.label}. No registra impactos.`);
       };
@@ -362,11 +373,11 @@ export function IsoTacticalLab() {
       unitsVisual.current.set(unit.id, { sprite, shadow:ground });
     }
 
-    const setView = (focused: boolean, cell: Cell) => {
+    const setView = (focused: boolean, cell: Cell, inspecting: boolean) => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
       camera = focused
-        ? createIsoDetailCamera(rect.width / rect.height, cell)
+        ? createIsoDetailCamera(rect.width / rect.height, cell, inspecting ? 2 : undefined)
         : createIsoCamera(rect.width / rect.height);
       render();
     };
@@ -376,7 +387,7 @@ export function IsoTacticalLab() {
       if (rect.width <= 0 || rect.height <= 0) return;
       renderer.setSize(rect.width, rect.height, false);
       const view=currentView.current;
-      setView(view.focus,view.cell);
+      setView(view.focus,view.cell,view.inspecting);
     };
     let down: { id: number; x: number; y: number } | null = null;
     const onDown = (event: PointerEvent) => {
@@ -451,6 +462,7 @@ export function IsoTacticalLab() {
           canvas.removeAttribute('data-fire-unit');
           canvas.removeAttribute('data-fire-mode');
           setReviewFrame(null);
+          setInspectionUnit(null);
           setFiring(false);
           setFireReport(`Ensayo visual completado: ${burst.unitId}. Sin impactos, daños ni consumo de munición.`);
         }else if(visual&&fireAtlas){
@@ -577,7 +589,10 @@ export function IsoTacticalLab() {
         {detail ? 'Vista completa · 8 × 8' : 'Ampliar zona seleccionada'}
       </button>
       <span data-testid="iso-camera-mode">{detail
-        ? `Detalle ampliado · centro en ${active.id}` : 'Tablero completo · selección 64/64'}</span>
+        ? inspectionCell
+          ? `Detalle del disparo · oficial en ${inspectionCell.id} · blanco ${active.id}`
+          : `Detalle ampliado · centro en ${active.id}`
+        : 'Tablero completo · selección 64/64'}</span>
     </div>
     <div className="iso-lab-viewport" ref={host} data-testid="iso-canvas" />
     {detail && <div className="iso-touch-stepper" role="group"
