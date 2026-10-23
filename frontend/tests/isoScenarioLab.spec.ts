@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { cells, projectCell } from '../src/tacticalGrid';
 import { createIsoCamera } from '../src/tacticalIsoCamera';
 import { createIsoDetailCamera } from '../src/tacticalIsoFocus';
-import { SCENARIOS, createMission, missionPath, applyMissionAction, type SquadId, type MissionState } from '../src/isoScenarioCampaign';
+import { SCENARIOS, createMission, missionPath, applyMissionAction, type SquadId, type MissionAction } from '../src/isoScenarioCampaign';
 
 async function openMissions(page:Page,width:number) {
  await page.setViewportSize({width,height:850});
@@ -38,7 +38,7 @@ test('12×12 derelict scene raycasts every one of 144 cells at mobile width',asy
  for(const cell of cells(12))await clickBoard(page,cell.id,12);
  await page.screenshot({path:'test-results/scenario-derelict-12x12-mobile-390.png',fullPage:true});
  await page.getByTestId('scenario-focus-toggle').click();
- await clickBoard(page,'7:7',12,'11:11');
+ await clickBoard(page,'10:11',12,'11:11');
  await expect(page.getByTestId('scenario-camera-mode')).toContainText('Detalle de casilla');
  await page.getByTestId('scenario-focus-toggle').click();
  await clickBoard(page,'0:0',12);
@@ -128,7 +128,7 @@ test('evacuation scenario can actually be completed by science, medic and extrac
    expect(path).not.toBeNull();
   }
  };
- const perform=async(command,button)=>{
+ const perform=async(command:MissionAction,button:string)=>{
   if(state.ap===0)await doTurn();
   await page.getByTestId(button).click();
   state=applyMissionAction(state,command);
