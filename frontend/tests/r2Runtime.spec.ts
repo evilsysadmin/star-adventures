@@ -22,8 +22,10 @@ test('actual tactical viewport loads run and walk R2 atlases for both officers',
   };
   const expected = (ids: readonly string[]) => ids.map(id => {
     const asset = assets[id];
-    expect(asset?.url, `${id} missing in reviewed manifest`)
-      .toMatch(/^https:\\/\\/assets\\.chess-studio\\.shadowops\\.dpdns\\.org\\/star-adventures\\/tactical\\//);
+    expect(asset?.url, `${id} missing in reviewed manifest`).toBeTruthy();
+    expect(asset.url.startsWith(
+      'https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/',
+    )).toBe(true);
     return asset;
   });
   const onRequests = (items: Asset[]) => items.map(asset => page.waitForResponse(
