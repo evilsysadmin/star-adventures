@@ -4,6 +4,7 @@ export const JUMP_ATLAS = Object.freeze({ ...WALK_ATLAS, fps: 8 });
 export const CROUCH_ATLAS = Object.freeze({ ...WALK_ATLAS, fps: 4 });
 export const FIRE_ATLAS = Object.freeze({ ...WALK_ATLAS, fps: 9 });
 export const HIT_ATLAS = Object.freeze({ ...WALK_ATLAS, fps: 8 });
+export const KIA_ATLAS = Object.freeze({ ...WALK_ATLAS, fps: 5 });
 
 export function atlasFrameAt(elapsedMs: number, fps: number): number {
   return Math.floor((elapsedMs * fps) / 1_000) % WALK_ATLAS.frames;
