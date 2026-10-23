@@ -4,7 +4,8 @@ import assets from '../assets/r2-assets-manifest.json';
 import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
-import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
+import { WALK_ATLAS, FIRE_ATLAS, walkFrameUv } from '../tacticalAnimation';
+import { isoFireFrame } from '../isoFirePlayback';
 import { isoOfficerFrame } from '../isoOfficerAnimation';
 import { evaluatePracticeShot } from '../isoTrainingLineOfSight';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
@@ -18,10 +19,15 @@ const deployments = [
   { id:'medic' as const, sex:'female', label:'Médica' },
 ] as const;
 type Motion = { unitId: TrainingUnit['id']; cells: readonly string[]; start: number | null };
+type FireMotion = { unitId: TrainingUnit['id']; sex: 'female' | 'male'; start: number | null };
 const STEP_MS = 360;
 const targets = ['6:2', '6:5'] as const;
 const femaleUrl = assets.assets['starAdventures.tactical.officerFemaleWalkV1'].url;
 const maleUrl = assets.assets['starAdventures.tactical.officerMaleWalkV1'].url;
+const fireUrls = {
+  female: assets.assets['starAdventures.tactical.officerFemaleFireV1'].url,
+  male: assets.assets['starAdventures.tactical.officerMaleFireV1'].url,
+} as const;
 const aegisRaiderUrl = assets.assets['starAdventures.tactical.aegisRaiderIdleV1'].url;
 const veilAgentUrl = assets.assets['starAdventures.tactical.veilAgentIdleV1'].url;
 const cellFromId = (id: string) => {
@@ -40,6 +46,8 @@ export function IsoTacticalLab() {
   const unitsVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
   const routeVisual = useRef(new Map<string, THREE.Mesh>());
   const moveRef = useRef<Motion | null>(null);
+  const fireRef = useRef<FireMotion | null>(null);
+  const fireRequest = useRef<((unitId: TrainingUnit['id']) => void) | null>(null);
   const committed = useRef(TRAINING_START);
   // Pointer listeners are mounted only once; read the current squad instead of
   // closing over a stale initial placement after any training movement.
@@ -55,16 +63,18 @@ export function IsoTacticalLab() {
   const [units, setUnits] = useState(TRAINING_START);
   const [officer, setOfficer] = useState<TrainingUnit['id']>('science');
   const [moving, setMoving] = useState(false);
+  const [firing, setFiring] = useState(false);
+  const [fireReport, setFireReport] = useState('Sin disparos. Selecciona un blanco despejado.');
   const [motionInfo, setMotionInfo] = useState('Selecciona un oficial y una casilla libre para ensayar su recorrido.');
   const [assetStatus, setAssetStatus] = useState('Conectando con los atlas originales en R2…');
   const [rendererStatus, setRendererStatus] = useState<string | null>(null);
   useEffect(() => { latestSquad.current = { units, moving }; }, [units,moving]);
 
-  const path = moving ? null : planTrainingMove(units, officer, active.id);
+  const path = moving || firing ? null : planTrainingMove(units, officer, active.id);
   const aim = !moving && targets.includes(active.id as typeof targets[number])
     ? evaluatePracticeShot(units, officer, active.id) : null;
   const aimMessage = !aim ? 'Selecciona uno de los dos blancos geométricos para ver la línea de tiro.' :
-    aim.allowed ? `Blanco ${active.id} visible: línea despejada. Disparo aún no disponible en esta POC.` :
+    aim.allowed ? `Blanco ${active.id} visible: línea despejada. Puedes probar el atlas de disparo original. Sin daños ni impactos.` :
     aim.reason === 'cover-blocked' ? `Tiro bloqueado por cobertura en ${aim.blocker}.` :
     aim.reason === 'ally-blocked' ? `Tiro bloqueado: compañero en ${aim.blocker}.` :
     aim.reason === 'out-of-range' ? 'Blanco fuera del alcance de entrenamiento.' :
@@ -214,6 +224,8 @@ export function IsoTacticalLab() {
     const render = () => renderer.render(scene, camera);
     const atlasTextures: THREE.Texture[] = [];
     const unitTextures = new Map<string, THREE.Texture>();
+    const fireAtlases = new Map<'female'|'male', THREE.Texture>();
+    let loadingFire = false;
     const lastFrames = new Map<string, number>();
     const loader = new THREE.TextureLoader();
     const textures: Record<string, THREE.Texture> = {};
@@ -280,6 +292,41 @@ export function IsoTacticalLab() {
       texture.colorSpace = THREE.SRGBColorSpace;
       atlasTextures.push(texture);
     }
+
+    const showFire = (unitId: TrainingUnit['id']) => {
+      if (disposed || loadingFire || fireRef.current || moveRef.current) return;
+      const deploy=deployments.find(unit=>unit.id===unitId);
+      if(!deploy || !unitTextures.has(unitId)) return;
+      const sex=deploy.sex;
+      const start=() => {
+        if(disposed) return;
+        loadingFire=false;
+        fireRef.current={unitId,sex,start:null};
+        setFiring(true);
+        setFireReport(`Reproduciendo disparo original de ${deploy.label}. No registra impactos.`);
+      };
+      if(fireAtlases.has(sex)){start();return;}
+      loadingFire=true;
+      setFiring(true);
+      setFireReport(`Cargando atlas de disparo R2 de ${deploy.label}…`);
+      const tex=loader.load(fireUrls[sex],()=>{
+        if(disposed)return;
+        fireAtlases.set(sex,tex);
+        start();
+      },undefined,()=>{
+        if(disposed)return;
+        loadingFire=false;
+        setFiring(false);
+        setFireReport(`No se pudo cargar el atlas de disparo de ${deploy.label}; no se ha simulado ningún tiro.`);
+      });
+      tex.colorSpace=THREE.SRGBColorSpace;
+      tex.repeat.set(1/FIRE_ATLAS.columns,1/FIRE_ATLAS.rows);
+      tex.offset.set(walkFrameUv(0).x,walkFrameUv(0).y);
+      tex.magFilter=THREE.LinearFilter;
+      tex.minFilter=THREE.LinearMipmapLinearFilter;
+      atlasTextures.push(tex);
+    };
+    fireRequest.current=showFire;
 
     const initialCells = new Map(TRAINING_START.units.map(unit => [unit.id, unit.cell]));
     for (const unit of deployments) {
@@ -372,6 +419,30 @@ export function IsoTacticalLab() {
           setMoving(false);
         }
       }
+      const burst=fireRef.current;
+      if(burst){
+        if(burst.start===null)burst.start=time;
+        const index=isoFireFrame(time-burst.start,!reduced&&animateEnabled.current);
+        const visual=unitsVisual.current.get(burst.unitId);
+        const fireAtlas=fireAtlases.get(burst.sex);
+        if(index===null){
+          const idle=unitTextures.get(burst.unitId);
+          if(visual&&idle){
+            visual.sprite.material.map=idle;
+            visual.sprite.material.needsUpdate=true;
+          }
+          fireRef.current=null;
+          setFiring(false);
+          setFireReport(`Ensayo visual completado: ${burst.unitId}. Sin impactos, daños ni consumo de munición.`);
+        }else if(visual&&fireAtlas){
+          const uv=walkFrameUv(index);
+          fireAtlas.offset.set(uv.x,uv.y);
+          if(visual.sprite.material.map!==fireAtlas){
+            visual.sprite.material.map=fireAtlas;
+            visual.sprite.material.needsUpdate=true;
+          }
+        }
+      }
       for (const unit of deployments) {
         const isolated = unitTextures.get(unit.id);
         if (!isolated) continue;
@@ -399,6 +470,8 @@ export function IsoTacticalLab() {
       aimVisual.current = null;
       cameraRefresh.current = null;
       moveRef.current = null;
+      fireRef.current = null;
+      fireRequest.current = null;
       unitsVisual.current.clear();
       unitTextures.clear();
       lastFrames.clear();
@@ -417,7 +490,7 @@ export function IsoTacticalLab() {
   }, []);
 
   const moveOfficer = () => {
-    if (moving || !path || path.cells.length < 2 || moveRef.current) return;
+    if (moving || firing || !path || path.cells.length < 2 || moveRef.current || fireRef.current) return;
     if (!unitsVisual.current.size || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const next = commitTrainingMove(units, officer, active.id);
       committed.current = next;
@@ -428,6 +501,13 @@ export function IsoTacticalLab() {
     moveRef.current = { unitId:officer, cells:path.cells, start:null };
     setMoving(true);
     setMotionInfo(`Desplazando ${officer}: ${path.cells.length - 1} pasos por casillas transitables.`);
+  };
+  const fireOfficer = () => {
+    if(moving||firing||!aim?.allowed||!fireRequest.current||!assetStatus.startsWith('Atlas R2 reales: 4/4'))
+      return;
+    // Recheck current immutable squad and target immediately before display.
+    if(!evaluatePracticeShot(units,officer,active.id).allowed)return;
+    fireRequest.current(officer);
   };
   const choose = (col: number, row: number) => {
     if (col < 0 || col > 7 || row < 0 || row > 7) return;
@@ -497,7 +577,7 @@ export function IsoTacticalLab() {
         {deployments.map(unit => {
           const at = units.units.find(entry => entry.id === unit.id)!;
           return <button key={unit.id} type="button" data-testid={`iso-unit-${unit.id}`}
-            aria-pressed={officer === unit.id} disabled={moving}
+            aria-pressed={officer === unit.id} disabled={moving || firing}
             data-clip={moving && officer === unit.id ? 'walk' : 'idle'}
             onClick={() => {
               setOfficer(unit.id);
@@ -519,16 +599,20 @@ export function IsoTacticalLab() {
             'No hay ruta: cobertura, blanco u otro oficial bloquea el destino.'}
         </div>
         <button type="button" data-testid="iso-move" onClick={moveOfficer}
-          disabled={moving || !path || path.cells.length < 2}>
+          disabled={moving || firing || !path || path.cells.length < 2}>
           {moving ? 'Desplazando oficial…' : 'Mover oficial a la casilla seleccionada'}
         </button>
         <p data-testid="iso-motion-status" role="status">{motionInfo}</p>
       </div>
     </div>
     <div className="iso-aim-panel" data-testid="iso-aim-panel">
-      <span className="iso-aim-heading">VISOR DE PUNTERÍA · ENSAYO SIN DISPARO</span>
+      <span className="iso-aim-heading">VISOR DE PUNTERÍA · PRUEBA VISUAL SIN IMPACTOS</span>
       <p className={aim ? aim.allowed ? 'iso-aim-clear' : 'iso-aim-blocked' : ''}
         data-testid="iso-aim-status" role="status">{aimMessage}</p>
+      <button type="button" className="iso-fire-button" data-testid="iso-fire"
+        disabled={moving||firing||!aim?.allowed||!assetStatus.startsWith('Atlas R2 reales: 4/4')}
+        onClick={fireOfficer}>{firing?'Reproduciendo disparo…':'Ensayar ciclo de disparo original'}</button>
+      <p data-testid="iso-fire-report" role="status">{fireReport}</p>
     </div>
     <div className="iso-lab-bottom">
       <p role="status" data-testid="iso-atlas-status">{assetStatus}</p>
