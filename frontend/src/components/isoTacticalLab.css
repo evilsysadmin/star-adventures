@@ -132,3 +132,15 @@
 .iso-aim-panel .iso-fire-button:focus-visible{outline:2px solid #f2d391;outline-offset:3px}
 .iso-aim-panel p[data-testid="iso-fire-report"]{color:#c4d7cf;font-size:10px}
 @media(max-width:520px){.iso-aim-panel .iso-fire-button{width:100%;min-height:48px}}
+
+
+/* Accessible, opt-in inspection: camera/board remain truthful, one authored
+   R2 frame is held until the player advances. Normal playback is unchanged. */
+.iso-aim-panel .iso-review-toggle{align-self:flex-start;min-height:44px;padding:10px 14px;border:1px solid #678e94;background:#1d3c48;color:#d5e9e7;cursor:pointer;font:700 11px 'Space Grotesk',sans-serif}
+.iso-aim-panel .iso-review-toggle[aria-pressed=true]{background:#4b472f;border-color:#cbb57c;color:#ffe5b1}
+.iso-aim-panel .iso-review-toggle:disabled{opacity:.55;cursor:not-allowed}
+.iso-fire-review{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.iso-fire-review span{font:700 12px 'Space Grotesk',sans-serif;color:#f5dc9c;font-variant-numeric:tabular-nums}
+.iso-fire-review button{min-height:44px;padding:10px 13px;border:1px solid #9dcab2;background:#285447;color:#f2faec;cursor:pointer;font:700 11px 'Space Grotesk',sans-serif}
+.iso-aim-panel .iso-review-toggle:focus-visible,.iso-fire-review button:focus-visible{outline:2px solid #f0d397;outline-offset:3px}
+@media(max-width:520px){.iso-aim-panel .iso-review-toggle,.iso-fire-review button{width:100%;min-height:48px}.iso-fire-review{gap:7px}}
