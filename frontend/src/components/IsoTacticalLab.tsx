@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import assets from '../assets/r2-assets-manifest.json';
 import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
-import { WALK_ATLAS, walkFrameAt, walkFrameUv } from '../tacticalAnimation';
+import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
+import { isoOfficerFrame } from '../isoOfficerAnimation';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
 import { TRAINING_START, planTrainingMove, commitTrainingMove, type TrainingUnit } from '../isoTrainingMovement';
 import './isoTacticalLab.css';
@@ -172,6 +173,8 @@ export function IsoTacticalLab() {
     let camera = createIsoCamera(1);
     const render = () => renderer.render(scene, camera);
     const atlasTextures: THREE.Texture[] = [];
+    const unitTextures = new Map<string, THREE.Texture>();
+    const lastFrames = new Map<string, number>();
     const loader = new THREE.TextureLoader();
     const textures: Record<string, THREE.Texture> = {};
     let settled = 0;
@@ -187,9 +190,28 @@ export function IsoTacticalLab() {
       render();
     };
     for (const [sex, url] of [['female', femaleUrl], ['male', maleUrl]] as const) {
-      const tex = loader.load(url, () => finishAsset(true), undefined, () => finishAsset(false));
+      // Fetch only TWO source WebPs from R2. Once each one is decoded, clone its
+      // texture for each matching officer, so UV offsets never bleed across units.
+      const tex = loader.load(url, loaded => {
+        if (disposed) return;
+        for (const unit of deployments.filter(unit => unit.sex === sex)) {
+          const visual = unitsVisual.current.get(unit.id);
+          if (!visual) continue;
+          const isolated = loaded.clone();
+          isolated.repeat.set(1 / WALK_ATLAS.columns, 1 / WALK_ATLAS.rows);
+          isolated.offset.set(walkFrameUv(0).x, walkFrameUv(0).y);
+          isolated.needsUpdate = true;
+          unitTextures.set(unit.id, isolated);
+          atlasTextures.push(isolated);
+          visual.sprite.material.map = isolated;
+          visual.sprite.material.needsUpdate = true;
+          lastFrames.delete(unit.id);
+        }
+        finishAsset(true);
+      }, undefined, () => finishAsset(false));
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.repeat.set(1 / WALK_ATLAS.columns, 1 / WALK_ATLAS.rows);
+      tex.offset.set(walkFrameUv(0).x, walkFrameUv(0).y);
       tex.magFilter = THREE.LinearFilter;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       textures[sex] = tex;
@@ -244,7 +266,6 @@ export function IsoTacticalLab() {
     observer.observe(element);
     resize();
     let frameHandle = 0;
-    let previousFrame = -1;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) setPlaying(false);
     const frame = (time: number) => {
@@ -272,11 +293,17 @@ export function IsoTacticalLab() {
           setMoving(false);
         }
       }
-      const index = reduced || !animateEnabled.current ? 0 : walkFrameAt(time);
-      if (index !== previousFrame) {
-        const uv = walkFrameUv(index);
-        for (const texture of atlasTextures) texture.offset.set(uv.x, uv.y);
-        previousFrame = index;
+      for (const unit of deployments) {
+        const isolated = unitTextures.get(unit.id);
+        if (!isolated) continue;
+        const index = isoOfficerFrame(
+          unit.id, moveRef.current, time, !reduced && animateEnabled.current
+        );
+        if (lastFrames.get(unit.id) !== index) {
+          const uv = walkFrameUv(index);
+          isolated.offset.set(uv.x, uv.y);
+          lastFrames.set(unit.id, index);
+        }
       }
       render();
       frameHandle = requestAnimationFrame(frame);
@@ -292,6 +319,8 @@ export function IsoTacticalLab() {
       selection.current = null;
       moveRef.current = null;
       unitsVisual.current.clear();
+      unitTextures.clear();
+      lastFrames.clear();
       routeVisual.current.clear();
       scene.traverse(obj => {
         const m = obj as THREE.Mesh;
@@ -362,6 +391,7 @@ export function IsoTacticalLab() {
           const at = units.units.find(entry => entry.id === unit.id)!;
           return <button key={unit.id} type="button" data-testid={`iso-unit-${unit.id}`}
             aria-pressed={officer === unit.id} disabled={moving}
+            data-clip={moving && officer === unit.id ? 'walk' : 'idle'}
             onClick={() => { setOfficer(unit.id); setMotionInfo(`Oficial seleccionado: ${unit.label}.`); }}>
             <strong>{unit.label}</strong><span>{at.cell}</span>
           </button>;
