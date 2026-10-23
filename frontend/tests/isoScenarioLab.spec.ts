@@ -5,9 +5,12 @@ import { createIsoDetailCamera } from '../src/tacticalIsoFocus';
 import { SCENARIOS, createMission, missionPath, applyMissionAction, type SquadId, type MissionAction } from '../src/isoScenarioCampaign';
 
 test('the playable tactical mission loop is the initial tactical view', async ({ page }) => {
+ await page.setViewportSize({width:390,height:850});
+ await page.addInitScript(() => localStorage.removeItem('shadowops.star-adventures.tactical-view.v1'));
  await page.goto('/');
  await expect(page.getByTestId('scenario-lab')).toBeVisible();
  await expect(page.getByTestId('scenario-move')).toBeVisible();
+ await page.screenshot({path:'test-results/scenario-initial-390.png',fullPage:true});
 });
 
 async function openMissions(page:Page,width:number) {

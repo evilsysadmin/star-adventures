@@ -7,21 +7,38 @@ import './isoTacticalLab.css';
 const IsoTacticalLab = lazy(() => import('./IsoTacticalLab').then(x => ({ default: x.IsoTacticalLab })));
 const IsoScenarioLab = lazy(() => import('./IsoScenarioLab').then(x => ({ default: x.IsoScenarioLab })));
 
+type TacticalViewMode = 'existing' | 'iso' | 'missions';
+const TACTICAL_VIEW_PREFERENCE = 'shadowops.star-adventures.tactical-view.v1';
+
+function initialMode(): TacticalViewMode {
+  try {
+    const saved = localStorage.getItem(TACTICAL_VIEW_PREFERENCE);
+    if (saved === 'existing' || saved === 'iso' || saved === 'missions') return saved;
+  } catch {
+    // Private browsing/storage denial must still leave the playable mission usable.
+  }
+  return 'missions';
+}
+
 
 export function TacticalViewSwitcher() {
   // Lead with the complete stateful loop. The other two views remain explicit,
   // reversible inspection tools rather than leaving a new player in a probe.
-  const [mode, setMode] = useState<'existing' | 'iso' | 'missions'>('missions');
+  const [mode, setMode] = useState<TacticalViewMode>(initialMode);
+  const chooseMode = (next: TacticalViewMode) => {
+    setMode(next);
+    try { localStorage.setItem(TACTICAL_VIEW_PREFERENCE, next); } catch { /* non-persistent fallback */ }
+  };
   return <div className="iso-mode-switcher" data-testid="tactical-mode-switcher">
     <div className="iso-mode-title">
       <span>EXPERIMENTO · COMPARAR CÁMARAS</span>
       <div className="iso-mode-tabs" role="group" aria-label="Comparar vistas tácticas">
         <button type="button" aria-pressed={mode === 'existing'} data-testid="tactical-view-current"
-          onClick={() => setMode('existing')}>Vista actual</button>
+          onClick={() => chooseMode('existing')}>Vista actual</button>
         <button type="button" aria-pressed={mode === 'iso'} data-testid="tactical-view-iso"
-          onClick={() => setMode('iso')}>Laboratorio isométrico</button>
+          onClick={() => chooseMode('iso')}>Laboratorio isométrico</button>
         <button type="button" aria-pressed={mode === 'missions'} data-testid="tactical-view-missions"
-          onClick={() => setMode('missions')}>Misiones tácticas</button>
+          onClick={() => chooseMode('missions')}>Misiones tácticas</button>
       </div>
     </div>
     {mode === 'existing' ? <TacticalProbe /> : <Suspense fallback={<p role="status">Preparando escena táctica…</p>}>
