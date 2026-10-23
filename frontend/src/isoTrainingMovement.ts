@@ -29,12 +29,15 @@ const neighbors = (id: string): string[] => {
     .map(p => `${p.x}:${p.y}`);
 };
 
-export function validateTrainingState(state: TrainingState): void {
+export function validateTrainingState(
+  state: TrainingState, blockedCells: readonly string[] = TRAINING_TARGETS,
+): void {
   if (!state || !Array.isArray(state.units) || state.units.length !== 3)
     throw new TypeError('Training roster must have exactly three units');
   const ids = new Set<string>();
   const tiles = new Set<string>();
-  const obstacles = new Set([...TRAINING_COVER, ...TRAINING_TARGETS]);
+  if (!blockedCells.every(coordinate)) throw new TypeError('Invalid blocked training cell');
+  const obstacles = new Set([...TRAINING_COVER, ...blockedCells]);
   for (const unit of state.units) {
     if (!unit || !['science', 'security', 'medic'].includes(unit.id) || ids.has(unit.id) ||
         !coordinate(unit.cell) || obstacles.has(unit.cell) || tiles.has(unit.cell))
@@ -49,13 +52,14 @@ export function validateTrainingState(state: TrainingState): void {
  */
 export function planTrainingMove(
   state: TrainingState, unitId: TrainingUnit['id'], destination: string,
+  blockedCells: readonly string[] = TRAINING_TARGETS,
 ): TrainingPlan | null {
-  validateTrainingState(state);
+  validateTrainingState(state, blockedCells);
   const officer = state.units.find(unit => unit.id === unitId);
   if (!officer || !coordinate(destination)) return null;
   if (destination === officer.cell) return { unitId, cells: [officer.cell] };
   const blocked = new Set([
-    ...TRAINING_COVER, ...TRAINING_TARGETS,
+    ...TRAINING_COVER, ...blockedCells,
     ...state.units.filter(unit => unit.id !== unitId).map(unit => unit.cell),
   ]);
   if (blocked.has(destination)) return null;
@@ -83,12 +87,13 @@ export function planTrainingMove(
 /** Commit only the end of a freshly recomputed path; never trust UI-provided paths. */
 export function commitTrainingMove(
   state: TrainingState, unitId: TrainingUnit['id'], destination: string,
+  blockedCells: readonly string[] = TRAINING_TARGETS,
 ): TrainingState {
-  const plan = planTrainingMove(state, unitId, destination);
+  const plan = planTrainingMove(state, unitId, destination, blockedCells);
   if (!plan || plan.cells.length < 2) throw new RangeError('Training move is blocked or has no distance');
   const next: TrainingState = { units: state.units.map(unit =>
     unit.id === unitId ? { ...unit, cell: destination } : { ...unit }
   ) };
-  validateTrainingState(next);
+  validateTrainingState(next, blockedCells);
   return next;
 }
