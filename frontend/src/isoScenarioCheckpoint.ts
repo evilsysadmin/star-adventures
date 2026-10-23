@@ -3,7 +3,7 @@
 import {
   SCENARIOS, createMission, applyMissionAction,
   type ScenarioId, type SquadId, type MissionAction, type MissionState,
-} from './isoScenarioCampaign';
+} from './isoScenarioCampaign.ts';
 
 export const SCENARIO_CHECKPOINT_VERSION = 1;
 export const MAX_SCENARIO_COMMANDS = 256;
