@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoFireFrame } from '../src/isoFirePlayback.ts';
+import { isoFireFrame, nextFireReviewFrame } from '../src/isoFirePlayback.ts';
 import { FIRE_ATLAS } from '../src/tacticalAnimation.ts';
 
 test('one authored fire burst advances through all six frames exactly once',()=>{
@@ -23,4 +23,21 @@ test('invalid values fail closed rather than retriggering animated frames',()=>{
  for(const value of [Infinity,-Infinity,NaN])assert.equal(isoFireFrame(value),null);
  assert.equal(isoFireFrame(-10),0);
  assert.equal(isoFireFrame(0),0);
+});
+
+test('manual review reaches each original frame once, then explicitly returns to idle',()=>{
+ const seen=[0];
+ let frame=0;
+ while(true){
+   const next=nextFireReviewFrame(frame);
+   if(next===null)break;
+   seen.push(next);
+   frame=next;
+ }
+ assert.deepEqual(seen,[0,1,2,3,4,5]);
+ assert.equal(nextFireReviewFrame(5),null);
+});
+test('manual review rejects invalid and out-of-order frame indices instead of wrapping',()=>{
+ for(const frame of [-1,1.5,6,Infinity,NaN])assert.throws(()=>nextFireReviewFrame(frame),RangeError);
+ assert.equal(nextFireReviewFrame(0),1);
 });

@@ -5,7 +5,7 @@ import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, FIRE_ATLAS, walkFrameUv } from '../tacticalAnimation';
-import { isoFireFrame } from '../isoFirePlayback';
+import { isoFireFrame, nextFireReviewFrame } from '../isoFirePlayback';
 import { isoOfficerFrame } from '../isoOfficerAnimation';
 import { evaluatePracticeShot } from '../isoTrainingLineOfSight';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
@@ -19,7 +19,7 @@ const deployments = [
   { id:'medic' as const, sex:'female', label:'Médica' },
 ] as const;
 type Motion = { unitId: TrainingUnit['id']; cells: readonly string[]; start: number | null };
-type FireMotion = { unitId: TrainingUnit['id']; sex: 'female' | 'male'; start: number | null };
+type FireMotion = { unitId: TrainingUnit['id']; sex: 'female' | 'male'; start: number | null; review: boolean; frame: number };
 const STEP_MS = 360;
 const targets = ['6:2', '6:5'] as const;
 const femaleUrl = assets.assets['starAdventures.tactical.officerFemaleWalkV1'].url;
@@ -48,6 +48,8 @@ export function IsoTacticalLab() {
   const moveRef = useRef<Motion | null>(null);
   const fireRef = useRef<FireMotion | null>(null);
   const fireRequest = useRef<((unitId: TrainingUnit['id']) => void) | null>(null);
+  const fireStepRequest = useRef<(() => void) | null>(null);
+  const reviewEnabled = useRef(false);
   const committed = useRef(TRAINING_START);
   // Pointer listeners are mounted only once; read the current squad instead of
   // closing over a stale initial placement after any training movement.
@@ -64,6 +66,8 @@ export function IsoTacticalLab() {
   const [officer, setOfficer] = useState<TrainingUnit['id']>('science');
   const [moving, setMoving] = useState(false);
   const [firing, setFiring] = useState(false);
+  const [review, setReview] = useState(false);
+  const [reviewFrame, setReviewFrame] = useState<number | null>(null);
   const [fireReport, setFireReport] = useState('Sin disparos. Selecciona un blanco despejado.');
   const [motionInfo, setMotionInfo] = useState('Selecciona un oficial y una casilla libre para ensayar su recorrido.');
   const [assetStatus, setAssetStatus] = useState('Conectando con los atlas originales en R2…');
@@ -293,6 +297,13 @@ export function IsoTacticalLab() {
       atlasTextures.push(texture);
     }
 
+    fireStepRequest.current = () => {
+      const burst=fireRef.current;
+      if (!burst || !burst.review || disposed) return;
+      const next=nextFireReviewFrame(burst.frame);
+      burst.frame=next === null ? FIRE_ATLAS.frames : next;
+      setReviewFrame(next);
+    };
     const showFire = (unitId: TrainingUnit['id']) => {
       if (disposed || loadingFire || fireRef.current || moveRef.current) return;
       const deploy=deployments.find(unit=>unit.id===unitId);
@@ -301,9 +312,11 @@ export function IsoTacticalLab() {
       const start=() => {
         if(disposed) return;
         loadingFire=false;
-        fireRef.current={unitId,sex,start:null};
+        const manual=reviewEnabled.current;
+        fireRef.current={unitId,sex,start:null,review:manual,frame:0};
+        setReviewFrame(manual ? 0 : null);
         setFiring(true);
-        setFireReport(`Reproduciendo disparo original de ${deploy.label}. No registra impactos.`);
+        setFireReport(`${manual ? 'Inspeccionando' : 'Reproduciendo'} disparo original de ${deploy.label}. No registra impactos.`);
       };
       if(fireAtlases.has(sex)){start();return;}
       loadingFire=true;
@@ -422,7 +435,9 @@ export function IsoTacticalLab() {
       const burst=fireRef.current;
       if(burst){
         if(burst.start===null)burst.start=time;
-        const index=isoFireFrame(time-burst.start,!reduced&&animateEnabled.current);
+        const index=burst.review
+          ? burst.frame === FIRE_ATLAS.frames ? null : burst.frame
+          : isoFireFrame(time-burst.start,!reduced&&animateEnabled.current);
         const visual=unitsVisual.current.get(burst.unitId);
         const fireAtlas=fireAtlases.get(burst.sex);
         if(index===null){
@@ -432,9 +447,18 @@ export function IsoTacticalLab() {
             visual.sprite.material.needsUpdate=true;
           }
           fireRef.current=null;
+          canvas.removeAttribute('data-fire-frame');
+          canvas.removeAttribute('data-fire-unit');
+          canvas.removeAttribute('data-fire-mode');
+          setReviewFrame(null);
           setFiring(false);
           setFireReport(`Ensayo visual completado: ${burst.unitId}. Sin impactos, daños ni consumo de munición.`);
         }else if(visual&&fireAtlas){
+          // Instrument the actual WebGL-backed sprite UV applied this frame.
+          // Chrome screenshots can assert the photographed pose is frame N.
+          canvas.setAttribute('data-fire-frame', String(index));
+          canvas.setAttribute('data-fire-unit', burst.unitId);
+          canvas.setAttribute('data-fire-mode', burst.review ? 'manual' : 'auto');
           const uv=walkFrameUv(index);
           fireAtlas.offset.set(uv.x,uv.y);
           if(visual.sprite.material.map!==fireAtlas){
@@ -472,6 +496,7 @@ export function IsoTacticalLab() {
       moveRef.current = null;
       fireRef.current = null;
       fireRequest.current = null;
+      fireStepRequest.current = null;
       unitsVisual.current.clear();
       unitTextures.clear();
       lastFrames.clear();
@@ -502,6 +527,14 @@ export function IsoTacticalLab() {
     setMoving(true);
     setMotionInfo(`Desplazando ${officer}: ${path.cells.length - 1} pasos por casillas transitables.`);
   };
+  const toggleFireReview = () => {
+    if (firing || moving) return;
+    setReview(value => {
+      reviewEnabled.current = !value;
+      return !value;
+    });
+  };
+  const advanceFireReview = () => fireStepRequest.current?.();
   const fireOfficer = () => {
     if(moving||firing||!aim?.allowed||!fireRequest.current||!assetStatus.startsWith('Atlas R2 reales: 4/4'))
       return;
@@ -612,6 +645,20 @@ export function IsoTacticalLab() {
       <button type="button" className="iso-fire-button" data-testid="iso-fire"
         disabled={moving||firing||!aim?.allowed||!assetStatus.startsWith('Atlas R2 reales: 4/4')}
         onClick={fireOfficer}>{firing?'Reproduciendo disparo…':'Ensayar ciclo de disparo original'}</button>
+      <button type="button" className="iso-review-toggle" data-testid="iso-review-toggle"
+        aria-pressed={review} disabled={firing || moving}
+        onClick={toggleFireReview}>
+        {review ? 'Revisión fotograma a fotograma activada' : 'Revisar disparo fotograma a fotograma'}
+      </button>
+      {reviewFrame !== null && firing && (
+        <div className="iso-fire-review" data-testid="iso-fire-review" role="group"
+          aria-label="Fotogramas del disparo original">
+          <span data-testid="iso-fire-frame">Fotograma {reviewFrame + 1} / {FIRE_ATLAS.frames}</span>
+          <button type="button" data-testid="iso-fire-next" onClick={advanceFireReview}>
+            {reviewFrame === FIRE_ATLAS.frames - 1 ? 'Finalizar revisión' : 'Siguiente fotograma →'}
+          </button>
+        </div>
+      )}
       <p data-testid="iso-fire-report" role="status">{fireReport}</p>
     </div>
     <div className="iso-lab-bottom">
