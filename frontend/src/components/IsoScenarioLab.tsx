@@ -143,6 +143,7 @@ export function IsoScenarioLab(){
     <span> <i className="scenario-dot sci"/> Ciencia</span>
     <span> <i className="scenario-dot tech"/> Terminal</span>
     <span> <i className="scenario-dot evac"/> Extracción</span>
+    <span> <i className="scenario-dot hostile"/> Contacto hostil</span>
    </div>
   </div>
   <div className="scenario-roster" role="group" aria-label="Seleccionar oficial">
@@ -208,6 +209,6 @@ export function IsoScenarioLab(){
    <ol>{mission.events.map((event,index)=><li key={index}>{event}</li>)}</ol>
   </details>
   <p className="scenario-disclaimer">Simulador local de entrenamiento · progreso guardado independientemente de la campaña si el navegador lo permite.
-   Sin enemigos activos; las patrullas y animaciones de combate se integrarán por separado.</p>
+   Los contactos hostiles están desplegados visualmente; su ocupación, patrullas y combate llegarán en el siguiente ejercicio táctico.</p>
  </section>;
 }
