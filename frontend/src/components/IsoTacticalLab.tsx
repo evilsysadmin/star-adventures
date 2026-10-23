@@ -391,6 +391,7 @@ export function IsoTacticalLab() {
           const at = units.units.find(entry => entry.id === unit.id)!;
           return <button key={unit.id} type="button" data-testid={`iso-unit-${unit.id}`}
             aria-pressed={officer === unit.id} disabled={moving}
+            data-clip={moving && officer === unit.id ? 'walk' : 'idle'}
             onClick={() => { setOfficer(unit.id); setMotionInfo(`Oficial seleccionado: ${unit.label}.`); }}>
             <strong>{unit.label}</strong><span>{at.cell}</span>
           </button>;
