@@ -1,10 +1,12 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
 import { IsoScenarioBoard } from './IsoScenarioBoard';
 import {
  SCENARIOS, applyMissionAction, missionPath,
  type MissionAction, type ScenarioId, type SquadId,
 } from '../isoScenarioCampaign';
 import { MAX_SCENARIO_COMMANDS } from '../isoScenarioCheckpoint';
+import { addTrainingResult, trainingResult, type TrainingArchive } from '../isoTrainingRecords';
+import { restoreTrainingRecords, persistTrainingRecords } from '../isoTrainingSession';
 import { localStorageOrNull } from '../session';
 import { newScenarioSession, restoreScenarioSession, persistScenarioSession } from '../isoScenarioSession';
 import './isoScenarioLab.css';
@@ -20,12 +22,23 @@ const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 export function IsoScenarioLab(){
  const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
  const [history,setHistory]=useState(startup.history);
+ const [initialRecords]=useState(()=>{
+  const stored=restoreTrainingRecords(localStorageOrNull());
+  if(!startup.history.state.completed)return stored;
+  const archive=addTrainingResult(stored.archive,startup.history);
+  const saved=persistTrainingRecords(archive,localStorageOrNull());
+  return {archive,notice:saved?'':(stored.notice||'Récord no guardado · almacenamiento no disponible')};
+ });
+ const [records,setRecords]=useState<TrainingArchive>(initialRecords.archive);
+ const [recordNotice,setRecordNotice]=useState(initialRecords.notice);
  const { scenarioId, state: mission }=history;
  const [officer,setOfficer]=useState<SquadId>('science');
  const [selected,setSelected]=useState(startup.history.state.locations.science);
  const [focus,setFocus]=useState(false);
  const [notice,setNotice]=useState(startup.notice);
  const scenario=SCENARIOS[scenarioId];
+ const completedResult=useMemo(()=>mission.completed?trainingResult({scenarioId,actions:history.actions}):null,[history]);
+ const bestResults=useMemo(()=>records.runs.map(trainingResult),[records]);
  const route=missionPath(mission,officer,selected);
  const move:MissionAction={type:'move',officer,cell:selected};
  const scan:MissionAction={type:'scan',officer:'science'};
@@ -44,6 +57,14 @@ export function IsoScenarioLab(){
    const state=applyMissionAction(mission,command);
    const next={scenarioId,actions:[...history.actions,command],state};
    const saved=persistScenarioSession(next,localStorageOrNull());
+   if(state.completed){
+    const updated=addTrainingResult(records,next);
+    setRecords(updated);
+    if(JSON.stringify(updated)!==JSON.stringify(records)){
+     const recorded=persistTrainingRecords(updated,localStorageOrNull());
+     setRecordNotice(recorded?'':'Récord no guardado · el historial permanecerá temporal');
+    }
+   }
    setHistory(next);
    setNotice((saved?'':'Progreso no guardado · ')+(state.events.at(-1)||'Orden ejecutada'));
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
@@ -155,9 +176,23 @@ export function IsoScenarioLab(){
     <span>{item.text} <small>{item.at}</small></span>
    </div>)}
   </div>
-  {mission.completed&&<p className="scenario-success" data-testid="scenario-success" role="status">
-   Misión completada. El registro confirma que todos los objetivos obligatorios se han cumplido.
-  </p>}
+  {completedResult&&<section className="scenario-debrief" data-testid="scenario-debrief" aria-label="Informe táctico de entrenamiento">
+   <span className="scenario-eyebrow">EXTRACCIÓN CONFIRMADA · INFORME DE MANIOBRAS</span>
+   <h3>{completedResult.label}</h3>
+   <p className="scenario-success" data-testid="scenario-success" role="status">Misión completada. Objetivos y extracción confirmados por el historial de órdenes.</p>
+   <p data-testid="scenario-debrief-metrics">Ronda {completedResult.rounds} · {completedResult.orders} órdenes · {completedResult.moves} movimientos</p>
+   <p>Telemetría {completedResult.scanned?'recuperada':'no recuperada'}{scenario.console?' · Terminal '+(completedResult.operated?'restablecida':'pendiente'):''}{scenario.survivor?' · Superviviente '+(completedResult.rescued?'rescatada':'pendiente'):''}</p>
+   <p className="scenario-debrief-scope">Simulación de entrenamiento; no acredita rescates ni órdenes de la campaña.</p>
+   {recordNotice&&<p data-testid="scenario-record-notice">{recordNotice}</p>}
+   <button type="button" data-testid="scenario-retry" onClick={()=>change(scenarioId)}>Repetir esta maniobra</button>
+  </section>}
+  {records.runs.length>0&&<details className="scenario-training-records" data-testid="scenario-training-records">
+   <summary>Archivo de maniobras · {records.runs.length} de 3 misiones acreditadas</summary>
+   <ul>{bestResults.map(result=><li key={result.scenarioId} data-testid={`scenario-record-${result.scenarioId}`}>
+    <strong>{result.label}</strong> · Ronda {result.rounds} · {result.orders} órdenes
+   </li>)}</ul>
+   <p>Récords reconstruidos a partir de maniobras completadas, separados de la campaña principal.</p>
+  </details>}
   <details className="scenario-grid" data-testid="scenario-accessible-grid">
    <summary>Seleccionar una de las {scenario.size*scenario.size} casillas por teclado</summary>
    <div style={{gridTemplateColumns:`repeat(${scenario.size},minmax(33px,1fr))`}}>
