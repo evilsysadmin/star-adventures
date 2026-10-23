@@ -11,32 +11,49 @@ const walkIds = [
   'starAdventures.tactical.officerMaleWalkV1',
 ] as const;
 
-test('actual tactical viewport requests both published R2 walk atlases', async ({ page }) => {
-  test.setTimeout(50_000);
-  const expected = walkIds.map(id => {
-    const value = assets[id];
-    expect(value?.url, `${id} missing in reviewed manifest`).toMatch(/^https:\/\/assets\.chess-studio\.shadowops\.dpdns\.org\/star-adventures\/tactical\//);
-    return value;
+test('actual tactical viewport loads run and walk R2 atlases for both officers', async ({ page }) => {
+  test.setTimeout(95_000);
+  const manifests = {
+    run: [
+      'starAdventures.tactical.officerFemaleRunV1',
+      'starAdventures.tactical.officerMaleRunV1',
+    ],
+    walk: walkIds,
+  };
+  const expected = (ids: readonly string[]) => ids.map(id => {
+    const asset = assets[id];
+    expect(asset?.url, `${id} missing in reviewed manifest`)
+      .toMatch(/^https:\\/\\/assets\\.chess-studio\\.shadowops\\.dpdns\\.org\\/star-adventures\\/tactical\\//);
+    return asset;
   });
-
-  // Register listeners *before* the page loads: app TextureLoader fires during
-  // mount, and waiting until the canvas appears would miss the requests.
-  const loaded = expected.map(asset => page.waitForResponse(
-    response => response.url() === asset.url && response.request().resourceType() === 'image',
+  const onRequests = (items: Asset[]) => items.map(asset => page.waitForResponse(
+    response => response.url() === asset.url &&
+      response.request().resourceType() === 'image',
     { timeout: 25_000 },
   ));
+  const assertResponses = async (promises: ReturnType<typeof onRequests>, items: Asset[]) => {
+    const responses = await Promise.all(promises);
+    for (let i = 0; i < responses.length; i++) {
+      expect(responses[i].status(), items[i].url).toBe(200);
+      expect(responses[i].headers()['content-type']?.split(';')[0].trim()).toBe('image/webp');
+    }
+  };
+  // Codex's run cycles are now the default in the current tactical viewport.
+  // Register listeners before mount, then explicitly switch to walk and verify
+  // the second pair of real network fetches, rather than assuming a stale mode.
+  const runAssets = expected(manifests.run);
+  const running = onRequests(runAssets);
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto('/');
   await expect(page.getByTestId('tactical-canvas')).toBeVisible();
+  await expect(page.getByTestId('tactical-mvs')).toContainText('correr 10 FPS');
+  await assertResponses(running,runAssets);
 
-  const responses = await Promise.all(loaded);
-  for (let index = 0; index < responses.length; index++) {
-    const response = responses[index];
-    expect(response.status(), expected[index].url).toBe(200);
-    expect(response.headers()['content-type']?.split(';')[0].trim()).toBe('image/webp');
-    // The independently tested manifest SHA/byte integrity gate is in
-    // r2Atlases.spec.ts. Here we prove the real game requests those URLs.
-  }
+  const walkAssets = expected(manifests.walk);
+  const walking = onRequests(walkAssets);
+  await page.getByRole('button',{name:'Movimiento: correr'}).click();
+  await expect(page.getByTestId('tactical-mvs')).toContainText('caminar 6 FPS');
+  await assertResponses(walking,walkAssets);
   await expect(page.getByTestId('tactical-mvs')).toContainText('oficial hombre');
   await page.getByRole('button', { name: '7:7' }).click();
   await expect(page.getByTestId('tactical-selected')).toContainText('7:7');
