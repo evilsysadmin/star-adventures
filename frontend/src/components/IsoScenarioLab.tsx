@@ -1,9 +1,12 @@
 import { useState, type KeyboardEvent } from 'react';
 import { IsoScenarioBoard } from './IsoScenarioBoard';
 import {
- SCENARIOS, createMission, applyMissionAction, missionPath,
+ SCENARIOS, applyMissionAction, missionPath,
  type MissionAction, type ScenarioId, type SquadId,
 } from '../isoScenarioCampaign';
+import { MAX_SCENARIO_COMMANDS } from '../isoScenarioCheckpoint';
+import { localStorageOrNull } from '../session';
+import { newScenarioSession, restoreScenarioSession, persistScenarioSession } from '../isoScenarioSession';
 import './isoScenarioLab.css';
 
 const order: readonly ScenarioId[]=['relay','derelict','evacuation'];
@@ -15,12 +18,13 @@ const officers: readonly {id:SquadId;name:string;role:string}[]=[
 const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 
 export function IsoScenarioLab(){
- const [scenarioId,setScenarioId]=useState<ScenarioId>('relay');
- const [mission,setMission]=useState(()=>createMission('relay'));
+ const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
+ const [history,setHistory]=useState(startup.history);
+ const { scenarioId, state: mission }=history;
  const [officer,setOfficer]=useState<SquadId>('science');
- const [selected,setSelected]=useState('1:1');
+ const [selected,setSelected]=useState(startup.history.state.locations.science);
  const [focus,setFocus]=useState(false);
- const [notice,setNotice]=useState('Selecciona un oficial, una casilla o un objetivo para comenzar.');
+ const [notice,setNotice]=useState(startup.notice);
  const scenario=SCENARIOS[scenarioId];
  const route=missionPath(mission,officer,selected);
  const move:MissionAction={type:'move',officer,cell:selected};
@@ -29,20 +33,28 @@ export function IsoScenarioLab(){
  const rescue:MissionAction={type:'rescue',officer:'medic'};
  const extract:MissionAction={type:'extract',officer};
  const available=(command:MissionAction)=>{
+  if(history.actions.length>=MAX_SCENARIO_COMMANDS)return false;
   try{applyMissionAction(mission,command);return true;}catch{return false;}
  };
  const execute=(command:MissionAction)=>{
+  if(history.actions.length>=MAX_SCENARIO_COMMANDS){
+   setNotice('Límite de órdenes alcanzado · inicia otra misión');return;
+  }
   try{
-   const result=applyMissionAction(mission,command);
-   setMission(result);
-   setNotice(result.events.at(-1)||'Orden ejecutada');
+   const state=applyMissionAction(mission,command);
+   const next={scenarioId,actions:[...history.actions,command],state};
+   const saved=persistScenarioSession(next,localStorageOrNull());
+   setHistory(next);
+   setNotice((saved?'':'Progreso no guardado · ')+(state.events.at(-1)||'Orden ejecutada'));
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
  };
  const change=(id:ScenarioId)=>{
-  const state=createMission(id);
-  setScenarioId(id);setMission(state);
-  setOfficer('science');setSelected(state.locations.science);setFocus(false);
-  setNotice('Nuevo escenario. Estado reiniciado; las otras misiones no se han modificado.');
+  const next=newScenarioSession(id);
+  const saved=persistScenarioSession(next,localStorageOrNull());
+  setHistory(next);
+  setOfficer('science');setSelected(next.state.locations.science);setFocus(false);
+  setNotice(saved?'Nuevo escenario · progreso guardado en este navegador':
+    'Nuevo escenario · almacenamiento no disponible, sesión temporal');
  };
  const choose=(cell:string)=>{
   setSelected(cell);
@@ -160,7 +172,7 @@ export function IsoScenarioLab(){
    <summary>Diario de acciones verificadas · {mission.events.length} eventos</summary>
    <ol>{mission.events.map((event,index)=><li key={index}>{event}</li>)}</ol>
   </details>
-  <p className="scenario-disclaimer">Simulador local de entrenamiento · sin guardados ni enemigos activos.
-   Las patrullas y animaciones de combate se integrarán por separado.</p>
+  <p className="scenario-disclaimer">Simulador local de entrenamiento · progreso guardado independientemente de la campaña si el navegador lo permite.
+   Sin enemigos activos; las patrullas y animaciones de combate se integrarán por separado.</p>
  </section>;
 }
