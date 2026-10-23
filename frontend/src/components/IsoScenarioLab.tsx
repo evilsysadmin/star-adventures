@@ -168,7 +168,7 @@ export function IsoScenarioLab(){
     })}
    </div>
   </details>
-  <details className="scenario-log">
+  <details className="scenario-log" data-testid="scenario-log">
    <summary>Diario de acciones verificadas · {mission.events.length} eventos</summary>
    <ol>{mission.events.map((event,index)=><li key={index}>{event}</li>)}</ol>
   </details>

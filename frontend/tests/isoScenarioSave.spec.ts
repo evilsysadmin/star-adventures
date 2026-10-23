@@ -76,5 +76,5 @@ test('storage writes denied: orders remain playable and never pretend to be save
   await page.getByRole('button',{name:'Casilla 2:1'}).click();
   await page.getByTestId('scenario-move').click();
   await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
-  await expect(page.getByTestId('scenario-notice')).toContainText('no guardada');
+  await expect(page.getByTestId('scenario-notice')).toContainText('no guardado');
 });
