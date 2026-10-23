@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test:grid": "node --experimental-strip-types --test tests/tacticalGrid.test.mjs tests/tacticalAnimation.test.mjs tests/tacticalIsoCamera.test.mjs tests/isoTrainingMovement.test.mjs tests/isoOfficerAnimation.test.mjs tests/isoTrainingLineOfSight.test.mjs tests/tacticalIsoFocus.test.mjs",
+    "test:grid": "node --experimental-strip-types --test tests/tacticalGrid.test.mjs tests/tacticalAnimation.test.mjs tests/tacticalIsoCamera.test.mjs tests/isoTrainingMovement.test.mjs tests/isoOfficerAnimation.test.mjs tests/isoTrainingLineOfSight.test.mjs tests/tacticalIsoFocus.test.mjs tests/isoFirePlayback.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
