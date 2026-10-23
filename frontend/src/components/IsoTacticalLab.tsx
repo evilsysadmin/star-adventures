@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import assets from '../assets/r2-assets-manifest.json';
 import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
+import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { isoOfficerFrame } from '../isoOfficerAnimation';
 import { evaluatePracticeShot } from '../isoTrainingLineOfSight';
@@ -29,6 +30,8 @@ const initial: Cell = { col: 0, row: 0, id: '0:0' };
 
 export function IsoTacticalLab() {
   const host = useRef<HTMLDivElement>(null);
+  const cameraRefresh = useRef<((focus: boolean, cell: Cell) => void) | null>(null);
+  const currentView = useRef({ focus: false, cell: initial });
   const selection = useRef<THREE.Object3D | null>(null);
   const aimVisual = useRef<THREE.Line | null>(null);
   const animateEnabled = useRef(true);
@@ -37,6 +40,11 @@ export function IsoTacticalLab() {
   const moveRef = useRef<Motion | null>(null);
   const committed = useRef(TRAINING_START);
   const [active, setActive] = useState<Cell>(initial);
+  const [detail, setDetail] = useState(false);
+  useEffect(() => {
+    currentView.current = {focus:detail,cell:active};
+    cameraRefresh.current?.(detail, active);
+  }, [detail,active]);
   const [playing, setPlaying] = useState(true);
   const [inspecting, setInspecting] = useState(false);
   const [units, setUnits] = useState(TRAINING_START);
@@ -274,12 +282,21 @@ export function IsoTacticalLab() {
       unitsVisual.current.set(unit.id, { sprite, shadow:ground });
     }
 
+    const setView = (focused: boolean, cell: Cell) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      camera = focused
+        ? createIsoDetailCamera(rect.width / rect.height, cell)
+        : createIsoCamera(rect.width / rect.height);
+      render();
+    };
+    cameraRefresh.current = setView;
     const resize = () => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
       renderer.setSize(rect.width, rect.height, false);
-      camera = createIsoCamera(rect.width / rect.height);
-      render();
+      const view=currentView.current;
+      setView(view.focus,view.cell);
     };
     let down: { id: number; x: number; y: number } | null = null;
     const onDown = (event: PointerEvent) => {
@@ -353,6 +370,7 @@ export function IsoTacticalLab() {
       canvas.removeEventListener('pointercancel', onCancel);
       selection.current = null;
       aimVisual.current = null;
+      cameraRefresh.current = null;
       moveRef.current = null;
       unitsVisual.current.clear();
       unitTextures.clear();
@@ -398,7 +416,8 @@ export function IsoTacticalLab() {
     choose(active.col + delta[0], active.row + delta[1]);
   };
 
-  return <section className="iso-lab" aria-labelledby="iso-lab-title" data-testid="iso-lab">
+  return <section className={detail ? 'iso-lab iso-lab-detail' : 'iso-lab'}
+    aria-labelledby="iso-lab-title" data-testid="iso-lab">
     <header className="iso-lab-header">
       <div>
         <span className="iso-overline">SHADOWOPS / PRUEBA VISUAL / 8 × 8</span>
@@ -407,7 +426,27 @@ export function IsoTacticalLab() {
       </div>
       <span className="iso-badge">POC</span>
     </header>
+    <div className="iso-focus-controls" role="group" aria-label="Detalle de cámara isométrica">
+      <button type="button" data-testid="iso-focus-toggle" aria-pressed={detail}
+        onClick={() => setDetail(value => !value)}>
+        {detail ? 'Vista completa · 8 × 8' : 'Ampliar zona seleccionada'}
+      </button>
+      <span data-testid="iso-camera-mode">{detail
+        ? `Detalle ampliado · centro en ${active.id}` : 'Tablero completo · selección 64/64'}</span>
+    </div>
     <div className="iso-lab-viewport" ref={host} data-testid="iso-canvas" />
+    {detail && <div className="iso-touch-stepper" role="group"
+      aria-label="Desplazar la casilla seleccionada para recentrar la vista">
+      <button type="button" data-testid="iso-step-left" aria-label="Seleccionar casilla izquierda"
+        disabled={active.col === 0} onClick={() => choose(active.col - 1,active.row)}>←</button>
+      <button type="button" data-testid="iso-step-up" aria-label="Seleccionar casilla superior"
+        disabled={active.row === 0} onClick={() => choose(active.col,active.row - 1)}>↑</button>
+      <strong data-testid="iso-focus-cell">{active.id}</strong>
+      <button type="button" data-testid="iso-step-down" aria-label="Seleccionar casilla inferior"
+        disabled={active.row === 7} onClick={() => choose(active.col,active.row + 1)}>↓</button>
+      <button type="button" data-testid="iso-step-right" aria-label="Seleccionar casilla derecha"
+        disabled={active.col === 7} onClick={() => choose(active.col + 1,active.row)}>→</button>
+    </div>}
     {rendererStatus && <p role="status" className="iso-status">{rendererStatus}</p>}
     <div className="iso-lab-bar">
       <div className="iso-cell-readout" data-testid="iso-selected" aria-live="polite">
