@@ -7,6 +7,13 @@
       "sha256": "8bd3392d4dbfc92be9047b3ff4e52859f01ba98c85d38d5dde2ad28f9931709f",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/aegis-raider-idle-v1-8bd3392d4dbfc92b.webp"
     },
+    "starAdventures.tactical.aegisRaiderWalkV1": {
+      "bytes": 153536,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/aegis-raider-walk-v1-bcae8d9b26eea62d.webp",
+      "sha256": "bcae8d9b26eea62d65eb55d6bfb49487f9407a50f0247b01ad5fab05bf51780a",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/aegis-raider-walk-v1-bcae8d9b26eea62d.webp"
+    },
     "starAdventures.tactical.officerFemaleCrouchV1": {
       "bytes": 208296,
       "contentType": "image/webp",
@@ -97,6 +104,13 @@
       "key": "star-adventures/tactical/veil-agent-idle-v1-bff4d3446dfe9b86.webp",
       "sha256": "bff4d3446dfe9b86da7c960de085acaba1e1022a4bfcd0d0fe48c2ea0991f1d1",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/veil-agent-idle-v1-bff4d3446dfe9b86.webp"
+    },
+    "starAdventures.tactical.veilAgentWalkV1": {
+      "bytes": 111202,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/veil-agent-walk-v1-f1623f55c1218296.webp",
+      "sha256": "f1623f55c121829673ca1b432ba646d33c9b00ca446ab49e6e31b3c0f9efacc0",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/veil-agent-walk-v1-f1623f55c1218296.webp"
     }
   },
   "baseUrl": "https://assets.chess-studio.shadowops.dpdns.org",
