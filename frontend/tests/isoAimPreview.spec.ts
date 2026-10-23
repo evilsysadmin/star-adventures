@@ -17,7 +17,7 @@ async function start(page:Page,width:number) {
   await page.goto('/');
   await page.getByTestId('tactical-view-iso').click();
   await expect(page.getByTestId('iso-render-canvas')).toBeVisible();
-  await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 2/2',{timeout:20000});
+  await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 4/4',{timeout:20000});
 }
 
 for(const width of [390,1280]){

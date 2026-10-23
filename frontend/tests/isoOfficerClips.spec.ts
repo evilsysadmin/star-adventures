@@ -21,7 +21,7 @@ for(const width of [390,1280]){
     await page.getByTestId('tactical-view-iso').click();
     const canvas=page.getByTestId('iso-render-canvas');
     await expect(canvas).toBeVisible();
-    await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 2/2',{timeout:20000});
+    await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 4/4',{timeout:20000});
     for (const id of ['science','security','medic'])
       await expect(page.getByTestId(`iso-unit-${id}`)).toHaveAttribute('data-clip','idle');
     await selectCell(page,'7:7');
