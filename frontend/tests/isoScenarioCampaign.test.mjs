@@ -57,6 +57,18 @@ for(const id of ['relay','derelict','evacuation']){
   assert.ok(state.events.length>5);
  });
 }
+test('each authored mission exposes two distinct original hostile contacts without granting render authority',()=>{
+ for(const scenario of Object.values(SCENARIOS)){
+  validateScenario(scenario);
+  assert.deepEqual([...new Set(scenario.hostiles.map(hostile=>hostile.id))].sort(),['aegis','veil']);
+  assert.equal(new Set(scenario.hostiles.map(hostile=>hostile.cell)).size,2);
+  const state=createMission(scenario.id);
+  for(const hostile of scenario.hostiles){
+   assert.notEqual(state.locations.science,hostile.cell);
+   assert.match(hostile.label,/^(Incursor Aegis|Agente Velo)$/);
+  }
+ }
+});
 test('orders cost real action points, honor roles and prevent teleporting through cover',()=>{
  const state=createMission('relay');
  assert.throws(()=>applyMissionAction(state,{type:'scan',officer:'science'}),RangeError);

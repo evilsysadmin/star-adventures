@@ -2,6 +2,9 @@
 // Existing 8×8 tactical-training contract remains authoritative for the legacy POC.
 export type ScenarioId = 'relay' | 'derelict' | 'evacuation';
 export type SquadId = 'science' | 'security' | 'medic';
+export type ScenarioHostile = Readonly<{
+  id: 'aegis' | 'veil'; label: string; cell: string;
+}>;
 export type MissionAction =
   | { type: 'move'; officer: SquadId; cell: string }
   | { type: 'scan'; officer: 'science' }
@@ -13,6 +16,7 @@ export type Scenario = Readonly<{
   id: ScenarioId; label: string; briefing: string;
   size: 8 | 10 | 12; walls: readonly string[]; cover: readonly string[];
   start: Readonly<Record<SquadId,string>>;
+  hostiles: readonly ScenarioHostile[];
   sensor: string; console: string | null; survivor: string | null; extraction: string;
 }>;
 export type MissionState = Readonly<{
@@ -29,6 +33,7 @@ export const SCENARIOS: Readonly<Record<ScenarioId,Scenario>> = Object.freeze({
   briefing:'Recupera telemetría, restablece el repetidor y alcanza la baliza de extracción.',
   walls:wall(4,[0,1,2,3,4,5,6]),cover:['2:3','3:6','6:4','7:4','7:8'],
   start:{science:'1:1',security:'1:4',medic:'1:7'},
+  hostiles:[{id:'aegis',label:'Incursor Aegis',cell:'6:6'},{id:'veil',label:'Agente Velo',cell:'8:5'}],
   sensor:'8:1',console:'8:7',survivor:null,extraction:'9:9',
  },
  derelict:{
@@ -37,6 +42,7 @@ export const SCENARIOS: Readonly<Record<ScenarioId,Scenario>> = Object.freeze({
   walls:[...wall(5,[1,2,3,4,6,7,8,9]),...wall(8,[3,4,5,6])],
   cover:['3:3','4:7','6:8','7:2','9:7','10:4','2:9'],
   start:{science:'1:1',security:'2:1',medic:'1:3'},
+  hostiles:[{id:'aegis',label:'Incursor Aegis',cell:'7:6'},{id:'veil',label:'Agente Velo',cell:'10:6'}],
   sensor:'9:1',console:'9:9',survivor:'10:10',extraction:'11:11',
  },
  evacuation:{
@@ -45,6 +51,7 @@ export const SCENARIOS: Readonly<Record<ScenarioId,Scenario>> = Object.freeze({
   walls:[...wall(4,[2,3,4,6,7]),'6:3','6:4'],
   cover:['2:4','3:7','5:5','7:6','8:2'],
   start:{science:'1:1',security:'1:3',medic:'2:1'},
+  hostiles:[{id:'aegis',label:'Incursor Aegis',cell:'7:7'},{id:'veil',label:'Agente Velo',cell:'8:5'}],
   sensor:'7:1',console:null,survivor:'8:7',extraction:'9:9',
  },
 });
@@ -67,9 +74,13 @@ export function validateScenario(scenario:Scenario):void {
  if(!scenario||![8,10,12].includes(scenario.size))throw new TypeError('Unsupported scenario board');
  const occupied=[...scenario.walls,...scenario.cover,scenario.sensor,scenario.extraction,
   ...(scenario.console?[scenario.console]:[]),...(scenario.survivor?[scenario.survivor]:[]),
-  ...ids.map(id=>scenario.start[id])];
+  ...ids.map(id=>scenario.start[id]),...scenario.hostiles.map(hostile=>hostile.cell)];
  if(occupied.some(at=>!point(at,scenario.size))||new Set(occupied).size!==occupied.length)
   throw new TypeError('Scenario objects must be on unique valid tiles');
+ if(!Array.isArray(scenario.hostiles)||scenario.hostiles.length!==2||
+   new Set(scenario.hostiles.map(hostile=>hostile.id)).size!==2||
+   scenario.hostiles.some(hostile=>!hostile||!['aegis','veil'].includes(hostile.id)||!hostile.label))
+  throw new TypeError('Scenario must define two original hostile contacts');
 }
 export function createMission(scenarioId:ScenarioId):MissionState {
  const scenario=SCENARIOS[scenarioId];

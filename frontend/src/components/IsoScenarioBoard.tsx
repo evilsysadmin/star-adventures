@@ -160,6 +160,28 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:
    texture.magFilter=THREE.LinearFilter;
    textures.push(texture);
   }
+  // Contacts deliberately remain presentation-only in this slice. Their cells
+  // are authored scenario data, ready for the next rules PR to turn into
+  // occupancy, turns and combat without deriving authority from Three.js.
+  const hostileAssets={
+   aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[1.72,2.62] as const,color:'#e4946f'},
+   veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.52,2.42] as const,color:'#b59be8'},
+  } as const;
+  for(const hostile of scenario.hostiles){
+   const asset=hostileAssets[hostile.id];
+   const p=atCell(hostile.cell,scenario.size);
+   const ground=add(new THREE.Mesh(new THREE.CircleGeometry(.39,24),new THREE.MeshBasicMaterial({
+    color:asset.color,transparent:true,opacity:.24,depthWrite:false,
+   })));
+   ground.rotation.x=-Math.PI/2;ground.position.set(p.x,.107,p.z);
+   const sprite=add(new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,alphaTest:.06})));
+   sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
+   const texture=loader.load(assets.assets[asset.key].url,loaded=>{
+    if(disposed)return;
+    sprite.material.map=loaded;sprite.material.needsUpdate=true;render();
+   },undefined,()=>{if(!disposed)render();});
+   texture.colorSpace=THREE.SRGBColorSpace;textures.push(texture);
+  }
   let view={mission,selected,focus,route};
   const sync=()=>{
    const b=element.getBoundingClientRect();
