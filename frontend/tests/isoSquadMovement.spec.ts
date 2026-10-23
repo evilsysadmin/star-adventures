@@ -34,7 +34,10 @@ for (const width of [390,1280]) {
     await expect(page.getByTestId('iso-unit-science')).toContainText('4:1');
     await page.getByTestId('iso-unit-security').click();
     await selectOnBoard(page,'4:1');
+    // A real squad tap now selects the occupied officer, even after it moved.
+    await expect(page.getByTestId('iso-unit-science')).toHaveAttribute('aria-pressed','true');
     await expect(page.getByTestId('iso-move')).toBeDisabled();
+    await page.getByTestId('iso-unit-security').click();
     await selectOnBoard(page,'3:3');
     await expect(page.getByTestId('iso-route')).toContainText('No hay ruta');
     await expect(page.getByTestId('iso-move')).toBeDisabled();
