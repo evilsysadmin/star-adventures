@@ -98,10 +98,6 @@ test('touch review focus persists after viewport resize, never changes logical t
    await expect(page.getByTestId('iso-camera-mode')).toContainText('oficial en 1:1',{timeout:12_000});
    await page.setViewportSize({width:430,height:900});
    const canvas=page.getByTestId('iso-render-canvas');
-   const box=(await canvas.boundingBox())!;
-   const p=projectCell({id:'2:1',col:2,row:1},
-     createIsoDetailCamera(box.width/box.height,{col:1,row:1},2),
-     {left:box.x,top:box.y,width:box.width,height:box.height});
    await canvas.scrollIntoViewIfNeeded();
    // Re-measure rectangle after scrolling to avoid stale page offsets.
    const updated=(await canvas.boundingBox())!;
