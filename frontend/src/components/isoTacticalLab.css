@@ -96,3 +96,12 @@
 .iso-squad-list button span{font-size:13px}
 .iso-move-order>div{font-size:10px}
 }
+
+
+/* Truthful line-of-sight feedback: the dashed line is a preview, not a projectile. */
+.iso-aim-panel{padding:12px 17px;border-top:1px solid #355766;background:#0d2530;display:flex;flex-direction:column;gap:6px}
+.iso-aim-heading{font:700 9px 'Space Grotesk',sans-serif;color:#a8c7cf;letter-spacing:.13em}
+.iso-aim-panel p{margin:0;min-height:1.7em;color:#9bb6b9;line-height:1.6;font-size:11px}
+.iso-aim-panel p.iso-aim-clear{color:#85e3bd}
+.iso-aim-panel p.iso-aim-blocked{color:#ffbc8e}
+@media(max-width:520px){.iso-aim-panel{padding:10px 11px}.iso-aim-panel p{font-size:10px}}

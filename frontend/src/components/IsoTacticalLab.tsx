@@ -5,6 +5,7 @@ import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { isoOfficerFrame } from '../isoOfficerAnimation';
+import { evaluatePracticeShot } from '../isoTrainingLineOfSight';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
 import { TRAINING_START, planTrainingMove, commitTrainingMove, type TrainingUnit } from '../isoTrainingMovement';
 import './isoTacticalLab.css';
@@ -29,6 +30,7 @@ const initial: Cell = { col: 0, row: 0, id: '0:0' };
 export function IsoTacticalLab() {
   const host = useRef<HTMLDivElement>(null);
   const selection = useRef<THREE.Object3D | null>(null);
+  const aimVisual = useRef<THREE.Line | null>(null);
   const animateEnabled = useRef(true);
   const unitsVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
   const routeVisual = useRef(new Map<string, THREE.Mesh>());
@@ -45,6 +47,30 @@ export function IsoTacticalLab() {
   const [rendererStatus, setRendererStatus] = useState<string | null>(null);
 
   const path = moving ? null : planTrainingMove(units, officer, active.id);
+  const aim = !moving && targets.includes(active.id as typeof targets[number])
+    ? evaluatePracticeShot(units, officer, active.id) : null;
+  const aimMessage = !aim ? 'Selecciona uno de los dos blancos geométricos para ver la línea de tiro.' :
+    aim.allowed ? `Blanco ${active.id} visible: línea despejada. Disparo aún no disponible en esta POC.` :
+    aim.reason === 'cover-blocked' ? `Tiro bloqueado por cobertura en ${aim.blocker}.` :
+    aim.reason === 'ally-blocked' ? `Tiro bloqueado: compañero en ${aim.blocker}.` :
+    aim.reason === 'out-of-range' ? 'Blanco fuera del alcance de entrenamiento.' :
+    'Blanco no autorizado para el ensayo.';
+  useEffect(() => {
+    const line=aimVisual.current;
+    if(!line) return;
+    line.visible=!!aim;
+    if(!aim) return;
+    const unit=units.units.find(item=>item.id===officer)!;
+    const start=cellFromId(unit.cell);
+    const end=cellFromId(aim.blocker ?? active.id);
+    line.geometry.dispose();
+    line.geometry=new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(start.x,1.28,start.z),
+      new THREE.Vector3(end.x,.83,end.z),
+    ]);
+    (line.material as THREE.LineDashedMaterial).color.set(aim.allowed ? '#75eacb' : '#f1a573');
+    line.computeLineDistances();
+  }, [active.id,officer,units,moving]);
   useEffect(() => { animateEnabled.current = playing; }, [playing]);
   useEffect(() => {
     for (const [cellId, tile] of routeVisual.current)
@@ -139,6 +165,15 @@ export function IsoTacticalLab() {
       routeCells.set(cell.id, tile);
     }
     routeVisual.current = routeCells;
+    const beam=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,.1,0)]),
+      new THREE.LineDashedMaterial({color:'#75eacb',dashSize:.16,gapSize:.10,
+        depthTest:false,transparent:true,opacity:.95})
+    );
+    beam.visible=false;
+    beam.renderOrder=55;
+    add(beam);
+    aimVisual.current=beam;
     const marker = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.BoxGeometry(.98, .17, .98)),
       new THREE.LineBasicMaterial({ color: '#ffdf92', depthTest: false })
@@ -317,6 +352,7 @@ export function IsoTacticalLab() {
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointercancel', onCancel);
       selection.current = null;
+      aimVisual.current = null;
       moveRef.current = null;
       unitsVisual.current.clear();
       unitTextures.clear();
@@ -410,6 +446,11 @@ export function IsoTacticalLab() {
         </button>
         <p data-testid="iso-motion-status" role="status">{motionInfo}</p>
       </div>
+    </div>
+    <div className="iso-aim-panel" data-testid="iso-aim-panel">
+      <span className="iso-aim-heading">VISOR DE PUNTERÍA · ENSAYO SIN DISPARO</span>
+      <p className={aim ? aim.allowed ? 'iso-aim-clear' : 'iso-aim-blocked' : ''}
+        data-testid="iso-aim-status" role="status">{aimMessage}</p>
     </div>
     <div className="iso-lab-bottom">
       <p role="status" data-testid="iso-atlas-status">{assetStatus}</p>
