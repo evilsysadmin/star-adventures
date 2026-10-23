@@ -143,8 +143,27 @@ test('evacuation scenario can actually be completed by science, medic and extrac
  await expect(page.getByTestId('scenario-success')).toContainText('Misión completada');
  await expect(page.getByTestId('scenario-ap')).toContainText(`${state.ap} / 3`);
  await expect(page.getByTestId('scenario-notice')).toContainText('Extracción confirmada');
+ await expect(page.getByTestId('scenario-debrief')).toContainText('Evacuación en el cañón');
+ await expect(page.getByTestId('scenario-debrief-metrics')).toContainText(`Ronda ${state.round}`);
+ await expect(page.getByTestId('scenario-record-evacuation')).toContainText('Evacuación en el cañón');
  await page.screenshot({path:'test-results/scenario-evacuation-real-victory-390.png',fullPage:true});
+ await page.setViewportSize({width:1280,height:850});
+ await page.screenshot({path:'test-results/scenario-verified-debrief-desktop-1280.png',fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.setViewportSize({width:390,height:850});
  expect(state.completed).toBe(true);
+ await page.reload();
+ await page.getByTestId('tactical-view-missions').click();
+ await expect(page.getByTestId('scenario-debrief')).toContainText('Superviviente rescatada');
+ await expect(page.getByTestId('scenario-record-evacuation')).toContainText(`Ronda ${state.round}`);
+ await page.getByTestId('scenario-retry').click();
+ await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 1');
+ await expect(page.getByTestId('scenario-debrief')).toHaveCount(0);
+ await expect(page.getByTestId('scenario-record-evacuation')).toContainText('Evacuación en el cañón');
+ await page.getByTestId('scenario-training-records').locator('summary').click();
+ await expect(page.getByTestId('scenario-record-evacuation')).toBeVisible();
+ await page.screenshot({path:'test-results/scenario-personal-best-after-retry-mobile-390.png',fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
 test('touch controls and a resized 12×12 camera preserve the same logical selected cell',async({browser})=>{

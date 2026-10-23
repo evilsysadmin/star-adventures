@@ -92,3 +92,16 @@
  .scenario-grid>div{grid-auto-rows:minmax(34px,auto)}
 }
 @media(prefers-reduced-motion:reduce){.scenario-lab *{animation:none!important;transition:none!important}}
+
+/* Compact debrief follows an actual extraction; the bests remain folded away. */
+.scenario-debrief{padding:16px 18px;border-top:1px solid #67987f;background:linear-gradient(130deg,#153d3a,#102634);color:#cde8dd}
+.scenario-debrief h3{margin:6px 0;font:600 20px 'Space Grotesk',sans-serif;color:#fae8bf}
+.scenario-debrief p{margin:5px 0;font-size:11px;line-height:1.65}
+.scenario-debrief .scenario-success{border:0;padding:0;background:transparent}
+.scenario-debrief .scenario-debrief-scope{color:#abc8c6}
+.scenario-debrief button{margin-top:9px;padding:11px 16px;min-height:44px;background:#275a50;border:1px solid #94d7b4;color:#e9f6e7;font-weight:700}
+.scenario-training-records{margin:10px 17px;border:1px solid #476b66;background:#11312f}
+.scenario-training-records summary{padding:12px;cursor:pointer;color:#c5e4d7;font-size:11px}
+.scenario-training-records ul{padding:0 16px 0 33px;font-size:11px;line-height:1.9}
+.scenario-training-records p{padding:0 16px 12px;color:#9bbdb9;font-size:10px}
+@media(max-width:520px){.scenario-debrief{padding:14px 11px}.scenario-training-records{margin:9px}}
