@@ -66,3 +66,12 @@ test('forged state, unit duplicates, impossible coordinates and invalid unit IDs
   assert.throws(()=>commitTrainingMove(TRAINING_START,'alien','2:2'),RangeError);
   assert.throws(()=>commitTrainingMove(unknown,'science','4:4'), TypeError);
 });
+
+test('a supplied hostile snapshot, rather than a decorative mesh, blocks its current cells', () => {
+  const patrolling = ['6:1', '6:6'];
+  assert.equal(planTrainingMove(TRAINING_START, 'science', '6:1', patrolling), null);
+  const route = planTrainingMove(TRAINING_START, 'science', '5:1', patrolling);
+  assert.ok(route);
+  assert.equal(route.cells.includes('6:1'), false);
+  assert.throws(() => validateTrainingState(TRAINING_START, ['not-a-cell']), TypeError);
+});

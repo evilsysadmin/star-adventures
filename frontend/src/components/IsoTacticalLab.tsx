@@ -4,10 +4,11 @@ import assets from '../assets/r2-assets-manifest.json';
 import { cells, cellCenter, pickCell, type Cell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
-import { WALK_ATLAS, FIRE_ATLAS, walkFrameUv } from '../tacticalAnimation';
+import { WALK_ATLAS, FIRE_ATLAS, walkFrameAt, walkFrameUv } from '../tacticalAnimation';
 import { isoFireFrame, nextFireReviewFrame } from '../isoFirePlayback';
 import { isoOfficerFrame } from '../isoOfficerAnimation';
 import { evaluatePracticeShot } from '../isoTrainingLineOfSight';
+import { HOSTILE_PATROLS, hostilePatrolCellsAt, hostilePatrolPositionAt } from '../isoHostilePatrol';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
 import { TRAINING_START, planTrainingMove, commitTrainingMove, type TrainingUnit } from '../isoTrainingMovement';
 import './isoTacticalLab.css';
@@ -21,15 +22,15 @@ const deployments = [
 type Motion = { unitId: TrainingUnit['id']; cells: readonly string[]; start: number | null };
 type FireMotion = { unitId: TrainingUnit['id']; sex: 'female' | 'male'; start: number | null; review: boolean; frame: number };
 const STEP_MS = 360;
-const targets = ['6:2', '6:5'] as const;
 const femaleUrl = assets.assets['starAdventures.tactical.officerFemaleWalkV1'].url;
 const maleUrl = assets.assets['starAdventures.tactical.officerMaleWalkV1'].url;
 const fireUrls = {
   female: assets.assets['starAdventures.tactical.officerFemaleFireV1'].url,
   male: assets.assets['starAdventures.tactical.officerMaleFireV1'].url,
 } as const;
-const aegisRaiderUrl = assets.assets['starAdventures.tactical.aegisRaiderIdleV1'].url;
-const veilAgentUrl = assets.assets['starAdventures.tactical.veilAgentIdleV1'].url;
+const aegisRaiderUrl = assets.assets['starAdventures.tactical.aegisRaiderWalkV1'].url;
+const veilAgentUrl = assets.assets['starAdventures.tactical.veilAgentWalkV1'].url;
+const initialHostileCells = hostilePatrolCellsAt(0);
 const cellFromId = (id: string) => {
   const [col, row] = id.split(':').map(Number);
   return cellCenter({ col, row });
@@ -43,7 +44,9 @@ export function IsoTacticalLab() {
   const selection = useRef<THREE.Object3D | null>(null);
   const aimVisual = useRef<THREE.Line | null>(null);
   const animateEnabled = useRef(true);
+  const patrolEnabled = useRef(false);
   const unitsVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
+  const hostileVisual = useRef(new Map<string, { sprite: THREE.Sprite; shadow: THREE.Mesh }>());
   const routeVisual = useRef(new Map<string, THREE.Mesh>());
   const moveRef = useRef<Motion | null>(null);
   const fireRef = useRef<FireMotion | null>(null);
@@ -57,6 +60,9 @@ export function IsoTacticalLab() {
   const [active, setActive] = useState<Cell>(initial);
   const [detail, setDetail] = useState(false);
   const [playing, setPlaying] = useState(true);
+  const [patrolling, setPatrolling] = useState(false);
+  const [hostileCells, setHostileCells] = useState<readonly string[]>(initialHostileCells);
+  const currentHostileCells = useRef<readonly string[]>(initialHostileCells);
   const [inspecting, setInspecting] = useState(false);
   const [units, setUnits] = useState(TRAINING_START);
   const [officer, setOfficer] = useState<TrainingUnit['id']>('science');
@@ -84,9 +90,11 @@ export function IsoTacticalLab() {
     cameraRefresh.current?.(detail, focusCell, !!inspectionCell);
   }, [detail, active, inspectionCell?.id]);
 
-  const path = moving || firing ? null : planTrainingMove(units, officer, active.id);
-  const aim = !moving && targets.includes(active.id as typeof targets[number])
-    ? evaluatePracticeShot(units, officer, active.id) : null;
+  useEffect(() => { patrolEnabled.current = patrolling; }, [patrolling]);
+  useEffect(() => { currentHostileCells.current = hostileCells; }, [hostileCells]);
+  const path = moving || firing ? null : planTrainingMove(units, officer, active.id, hostileCells);
+  const aim = !moving && !firing && hostileCells.includes(active.id)
+    ? evaluatePracticeShot(units, officer, active.id, hostileCells) : null;
   const aimMessage = !aim ? 'Selecciona uno de los dos blancos geométricos para ver la línea de tiro.' :
     aim.allowed ? `Blanco ${active.id} visible: línea despejada. Puedes probar el atlas de disparo original. Sin daños ni impactos.` :
     aim.reason === 'cover-blocked' ? `Tiro bloqueado por cobertura en ${aim.blocker}.` :
@@ -108,7 +116,7 @@ export function IsoTacticalLab() {
     ]);
     (line.material as THREE.LineDashedMaterial).color.set(aim.allowed ? '#75eacb' : '#f1a573');
     line.computeLineDistances();
-  }, [active.id,officer,units,moving]);
+  }, [active.id,officer,units,moving,hostileCells]);
   useEffect(() => { animateEnabled.current = playing; }, [playing]);
   useEffect(() => {
     for (const [cellId, tile] of routeVisual.current)
@@ -222,18 +230,6 @@ export function IsoTacticalLab() {
     const start = cellCenter(initial);
     marker.position.set(start.x, .21, start.z);
 
-    // Target cells retain their authored geometry for sight/range rules; their visible
-    // occupants are original R2 hostile sprites loaded below.
-    for (const id of targets) {
-      const center = cellFromId(id);
-      const ground = new THREE.Mesh(
-        new THREE.CircleGeometry(.39, 24),
-        new THREE.MeshBasicMaterial({ color: '#e4946f', transparent: true, opacity: .19, depthWrite: false })
-      );
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.set(center.x, .106, center.z); add(ground);
-    }
-
     let camera = createIsoCamera(1);
     const render = () => renderer.render(scene, camera);
     const atlasTextures: THREE.Texture[] = [];
@@ -283,12 +279,14 @@ export function IsoTacticalLab() {
       textures[sex] = tex;
       atlasTextures.push(tex);
     }
+    const hostileTextures = new Map<string, THREE.Texture>();
+    const hostileLastFrames = new Map<string, number>();
     const hostileAssets = [
-      { id: '6:2', name: 'Incursor Aegis', url: aegisRaiderUrl, scale: [1.64, 2.52] as const },
-      { id: '6:5', name: 'Agente Velo', url: veilAgentUrl, scale: [1.46, 2.34] as const },
+      { id: 'aegis' as const, name: 'Incursor Aegis', url: aegisRaiderUrl, scale: [1.64, 2.52] as const },
+      { id: 'veil' as const, name: 'Agente Velo', url: veilAgentUrl, scale: [1.46, 2.34] as const },
     ];
     for (const hostile of hostileAssets) {
-      const p = cellFromId(hostile.id);
+      const p = cellFromId(hostilePatrolPositionAt(hostile.id, 0).from);
       const texture = loader.load(hostile.url, loaded => {
         if (disposed) return;
         const isolated = loaded.clone();
@@ -301,6 +299,14 @@ export function IsoTacticalLab() {
         sprite.scale.set(hostile.scale[0], hostile.scale[1], 1);
         sprite.position.set(p.x, .13, p.z);
         add(sprite); atlasTextures.push(isolated);
+        const ground = new THREE.Mesh(
+          new THREE.CircleGeometry(.39, 24),
+          new THREE.MeshBasicMaterial({ color: '#e4946f', transparent: true, opacity: .19, depthWrite: false })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(p.x, .106, p.z); add(ground);
+        hostileVisual.current.set(hostile.id, { sprite, shadow: ground });
+        hostileTextures.set(hostile.id, isolated);
         finishAsset(true);
       }, undefined, () => finishAsset(false));
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -416,6 +422,9 @@ export function IsoTacticalLab() {
     observer.observe(element);
     resize();
     let frameHandle = 0;
+    let patrolElapsed = 0;
+    let patrolStarted: number | null = null;
+    let hostileCellKey = initialHostileCells.join(',');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) setPlaying(false);
     const frame = (time: number) => {
@@ -436,7 +445,9 @@ export function IsoTacticalLab() {
         }
         if (progress >= motion.cells.length - 1) {
           const destination = motion.cells[motion.cells.length - 1];
-          committed.current = commitTrainingMove(committed.current, motion.unitId, destination);
+          committed.current = commitTrainingMove(
+            committed.current, motion.unitId, destination, currentHostileCells.current,
+          );
           moveRef.current = null;
           setUnits(committed.current);
           setMotionInfo(`Recorrido completado: ${motion.unitId} en ${destination} (${motion.cells.length - 1} pasos).`);
@@ -491,6 +502,49 @@ export function IsoTacticalLab() {
           lastFrames.set(unit.id, index);
         }
       }
+      const patrolActive = patrolEnabled.current && !moveRef.current && !reduced;
+      if (patrolActive) {
+        if (patrolStarted === null) patrolStarted = time;
+        const elapsed = patrolElapsed + time - patrolStarted;
+        const cellsAtStep = hostilePatrolCellsAt(elapsed);
+        const nextKey = cellsAtStep.join(',');
+        if (nextKey !== hostileCellKey) {
+          hostileCellKey = nextKey;
+          setHostileCells(cellsAtStep);
+        }
+        for (const patrol of HOSTILE_PATROLS) {
+          const visual = hostileVisual.current.get(patrol.id);
+          if (!visual) continue;
+          const position = hostilePatrolPositionAt(patrol.id, elapsed);
+          const from = cellFromId(position.from), to = cellFromId(position.to);
+          const x = from.x + (to.x - from.x) * position.fraction;
+          const z = from.z + (to.z - from.z) * position.fraction;
+          visual.sprite.position.set(x, .13, z);
+          visual.shadow.position.set(x, .106, z);
+          const texture = hostileTextures.get(patrol.id);
+          const frameIndex = walkFrameAt(elapsed);
+          if (texture && hostileLastFrames.get(patrol.id) !== frameIndex) {
+            const uv = walkFrameUv(frameIndex);
+            texture.offset.set(uv.x, uv.y);
+            hostileLastFrames.set(patrol.id, frameIndex);
+          }
+        }
+      } else {
+        patrolElapsed = 0;
+        patrolStarted = null;
+        const initialKey = initialHostileCells.join(',');
+        if (hostileCellKey !== initialKey) {
+          hostileCellKey = initialKey;
+          setHostileCells(initialHostileCells);
+        }
+        for (const patrol of HOSTILE_PATROLS) {
+          const visual = hostileVisual.current.get(patrol.id);
+          if (!visual) continue;
+          const p = cellFromId(hostilePatrolPositionAt(patrol.id, 0).from);
+          visual.sprite.position.set(p.x, .13, p.z);
+          visual.shadow.position.set(p.x, .106, p.z);
+        }
+      }
       render();
       frameHandle = requestAnimationFrame(frame);
     };
@@ -510,8 +564,11 @@ export function IsoTacticalLab() {
       fireRequest.current = null;
       fireStepRequest.current = null;
       unitsVisual.current.clear();
+      hostileVisual.current.clear();
       unitTextures.clear();
+      hostileTextures.clear();
       lastFrames.clear();
+      hostileLastFrames.clear();
       routeVisual.current.clear();
       scene.traverse(obj => {
         const m = obj as THREE.Mesh;
@@ -529,7 +586,7 @@ export function IsoTacticalLab() {
   const moveOfficer = () => {
     if (moving || firing || !path || path.cells.length < 2 || moveRef.current || fireRef.current) return;
     if (!unitsVisual.current.size || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const next = commitTrainingMove(units, officer, active.id);
+      const next = commitTrainingMove(units, officer, active.id, hostileCells);
       committed.current = next;
       setUnits(next);
       setMotionInfo(`Recorrido completado: ${officer} en ${active.id} (${path.cells.length - 1} pasos).`);
@@ -614,10 +671,14 @@ export function IsoTacticalLab() {
         <strong>{active.id}</strong>
         <small>{cover.has(active.id) ? 'Cobertura · no transitable' :
           units.units.some(unit => unit.cell === active.id) ? 'Oficial desplegado' :
-          targets.includes(active.id as typeof targets[number]) ? 'Blanco de entrenamiento' : 'Suelo transitable'}</small>
+          hostileCells.includes(active.id) ? 'Hostil de entrenamiento' : 'Suelo transitable'}</small>
       </div>
       <button className="iso-motion" type="button" onClick={() => setPlaying(v => !v)} data-testid="iso-motion">
         {playing ? 'Pausar caminata' : 'Reproducir caminata'}
+      </button>
+      <button className="iso-motion" type="button" data-testid="iso-patrol" aria-pressed={patrolling}
+        onClick={() => setPatrolling(value => !value)}>
+        {patrolling ? 'Detener patrulla' : 'Activar patrulla'}
       </button>
     </div>
     <div className="iso-squad-movement" data-testid="iso-squad-movement">

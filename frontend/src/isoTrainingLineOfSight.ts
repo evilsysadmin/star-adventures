@@ -59,11 +59,12 @@ export function traceTrainingRay(from: string, to: string): readonly string[] {
  */
 export function evaluatePracticeShot(
   state: TrainingState, unitId: TrainingUnit['id'], target: string,
+  authorizedTargets: readonly string[] = TRAINING_TARGETS,
 ): PracticeShotResult {
-  validateTrainingState(state);
+  validateTrainingState(state, authorizedTargets);
   const unit=state.units.find(u=>u.id===unitId);
   if(!unit) return {allowed:false,reason:'unknown-officer',cells:[],blocker:null};
-  if(!TRAINING_TARGETS.includes(target))
+  if(!authorizedTargets.includes(target))
     return {allowed:false,reason:'invalid-target',cells:[],blocker:null};
   const a=coords(unit.cell)!,b=coords(target)!;
   if(Math.hypot(b.x-a.x,b.y-a.y)>MAX_RANGE)
