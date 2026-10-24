@@ -74,7 +74,7 @@ for (const [id, entry] of Object.entries(manifest.assets) as Array<[string, Mani
   });
 }
 
-test('manifest retains mandatory originals and pairs every additional motion for both officers', () => {
+test('manifest retains mandatory originals, paired officer motions and original hostile atlases', () => {
   // New animation cycles should add independently verifiable atlas URLs,
   // not break the CI just because the total grew beyond the original four.
   const ids = Object.keys(manifest.assets);
@@ -87,13 +87,18 @@ test('manifest retains mandatory originals and pairs every additional motion for
   ]) {
     expect(names.has(baseline), `Mandatory asset missing: ${baseline}`).toBe(true);
   }
-  for (const id of ids) {
+  const officerIds = ids.filter(id => id.startsWith('starAdventures.tactical.officer'));
+  for (const id of officerIds) {
     expect(id).toMatch(/^starAdventures\.tactical\.officer(?:Female|Male)[A-Z][A-Za-z0-9]*V[1-9]\d*$/);
     const partner = id.includes('officerFemale')
       ? id.replace('officerFemale', 'officerMale')
       : id.replace('officerMale', 'officerFemale');
     expect(names.has(partner), `Missing matching gender atlas for ${id}`).toBe(true);
   }
+  for (const hostile of [
+    'starAdventures.tactical.aegisRaiderIdleV1',
+    'starAdventures.tactical.veilAgentIdleV1',
+  ]) expect(names.has(hostile), `Mandatory original hostile asset missing: ${hostile}`).toBe(true);
   const keys = Object.values(manifest.assets).map(asset => asset.key);
   const urls = Object.values(manifest.assets).map(asset => asset.url);
   expect(new Set(keys).size).toBe(keys.length);
