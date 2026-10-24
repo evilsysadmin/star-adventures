@@ -20,6 +20,7 @@ for (const scenario of Object.values(SCENARIOS)) {
       const before = JSON.stringify({ squad, positions });
       const result = planHostileTurn(scenario, squad, positions);
       assert.deepEqual(result, planHostileTurn(scenario, squad, positions));
+      if (turn === 0) assert.ok(result.moves.length > 0, 'the first enemy turn must advance at least one hostile');
       assert.equal(JSON.stringify({ squad, positions }), before, 'planner cannot mutate caller state');
       assert.equal(new Set(Object.values(result.positions)).size, 2);
       for (const cell of Object.values(result.positions)) {
