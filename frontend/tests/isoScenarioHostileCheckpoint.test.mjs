@@ -7,9 +7,10 @@ import {
   deserializeHostileEncounterCheckpoint,
 } from '../src/isoScenarioHostileCheckpoint.ts';
 import {
-  SCENARIO_SAVE_KEY, serializeScenarioCheckpoint, deserializeScenarioCheckpoint,
+  serializeScenarioCheckpoint, deserializeScenarioCheckpoint,
   MAX_SCENARIO_CHECKPOINT_BYTES,
 } from '../src/isoScenarioCheckpoint.ts';
+import { SCENARIO_SAVE_KEY } from '../src/isoScenarioSession.ts';
 
 test('hostile checkpoints have a separate key and explicit v2 schema', () => {
   assert.equal(HOSTILE_ENCOUNTER_CHECKPOINT_VERSION, 2);
