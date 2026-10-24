@@ -5,6 +5,7 @@ import { cells, cellCenter, pickCell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
+import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
 import type { MissionState, Scenario, SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
@@ -168,7 +169,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[1.72,2.62] as const,color:'#e4946f'},
    veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.52,2.42] as const,color:'#b59be8'},
   } as const;
-  const hostileVisuals=new Map<HostileId,{ground:THREE.Mesh;sprite:THREE.Sprite}>();
+  type HostileVisual={ground:THREE.Mesh;sprite:THREE.Sprite;idle:THREE.Texture|null;walk:THREE.Texture|null};
+  const hostileVisuals=new Map<HostileId,HostileVisual>();
   for(const hostile of scenario.hostiles){
    const asset=hostileAssets[hostile.id];
    const p=atCell(hostile.cell,scenario.size);
@@ -178,20 +180,42 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    ground.rotation.x=-Math.PI/2;ground.position.set(p.x,.107,p.z);
    const sprite=add(new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,alphaTest:.06})));
    sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
-   const texture=loader.load(assets.assets[asset.key].url,loaded=>{
-    if(disposed)return;
-    // Idle contact assets are 3×2 atlases, not single portraits. Showing the
-    // whole texture produces six phantom enemies at one logical position.
-    loaded.repeat.set(1/WALK_ATLAS.columns,1/WALK_ATLAS.rows);
-    const uv=walkFrameUv(0);
-    loaded.offset.set(uv.x,uv.y);
-    loaded.needsUpdate=true;
-    sprite.material.map=loaded;sprite.material.needsUpdate=true;render();
-   },undefined,()=>{if(!disposed)render();});
-   texture.colorSpace=THREE.SRGBColorSpace;textures.push(texture);
-   hostileVisuals.set(hostile.id,{ground,sprite});
+   const visual:HostileVisual={ground,sprite,idle:null,walk:null};
+   hostileVisuals.set(hostile.id,visual);
+   // Both atlases contain six frames. Each hostile owns its own UV offsets:
+   // a shared texture would make two independent sprites animate in lockstep.
+   for(const [clip,key] of [
+    ['idle',asset.key],
+    ['walk',hostile.id==='aegis'?'starAdventures.tactical.aegisRaiderWalkV1':'starAdventures.tactical.veilAgentWalkV1'],
+   ] as const){
+    const texture=loader.load(assets.assets[key].url,()=>{
+     if(disposed)return;
+     visual[clip]=texture;
+     if(clip==='idle'){sprite.material.map=texture;sprite.material.needsUpdate=true;}
+     render();
+    },undefined,()=>{if(!disposed)render();});
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.repeat.set(1/WALK_ATLAS.columns,1/WALK_ATLAS.rows);
+    const uv=walkFrameUv(0);texture.offset.set(uv.x,uv.y);
+    texture.magFilter=THREE.LinearFilter;
+    textures.push(texture);
+   }
   }
   let view={mission,selected,focus,route,hostilePositions};
+  type Motion={from:THREE.Vector3;to:THREE.Vector3;started:number};
+  const motions=new Map<HostileId,Motion>();
+  const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let inViewport=true;
+  let frameRequest=0;
+  const showFrame=(visual:HostileVisual,clip:'idle'|'walk',frame:number)=>{
+   const texture=(clip==='walk'?visual.walk:null)??visual.idle;
+   if(!texture)return;
+   if(visual.sprite.material.map!==texture){
+    visual.sprite.material.map=texture;visual.sprite.material.needsUpdate=true;
+   }
+   const uv=walkFrameUv(frame);
+   texture.offset.set(uv.x,uv.y);
+  };
   const sync=()=>{
    const b=element.getBoundingClientRect();
    if(b.width<=0||b.height<=0)return;
@@ -210,8 +234,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    for(const hostile of scenario.hostiles){
     const visual=hostileVisuals.get(hostile.id)!;
     const p=atCell(view.hostilePositions?.[hostile.id]??hostile.cell,scenario.size);
-    visual.ground.position.set(p.x,.107,p.z);
-    visual.sprite.position.set(p.x,.14,p.z);
+    if(!motions.has(hostile.id)){
+     visual.ground.position.set(p.x,.107,p.z);
+     visual.sprite.position.set(p.x,.14,p.z);
+    }
    }
    for(const [key,mesh] of routeTiles)mesh.visible=!!view.route?.includes(key)&&view.route.length>1;
    objectiveMaterials.get('sensor')?.color.set(view.mission.scanned?'#4d836c':'#70ddf4');
@@ -220,7 +246,63 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    objectiveMaterials.get('extraction')?.color.set(view.mission.completed?'#f4dc93':'#98eba2');
    render();
   };
-  runtime.current={sync:(m,s,f,r,h)=>{view={mission:m,selected:s,focus:f,route:r,hostilePositions:h};sync();}};
+  const animate=(now:number)=>{
+   frameRequest=0;
+   if(disposed)return;
+   if(reduceMotion||document.hidden){
+    motions.clear();sync();return;
+   }
+   for(const [id,motion] of motions){
+    const visual=hostileVisuals.get(id)!;
+    const step=hostileStepAt(now-motion.started);
+    const x=THREE.MathUtils.lerp(motion.from.x,motion.to.x,step.progress);
+    const z=THREE.MathUtils.lerp(motion.from.z,motion.to.z,step.progress);
+    visual.sprite.position.set(x,.14,z);
+    visual.ground.position.set(x,.107,z);
+    if(step.done){
+     motions.delete(id);
+     showFrame(visual,'idle',0);
+    }else showFrame(visual,'walk',step.frame);
+    canvas.dataset.hostileWalkFrame=String(step.frame);
+   }
+   canvas.dataset.hostileMoving=String(motions.size);
+   render();
+   if(motions.size)frameRequest=requestAnimationFrame(animate);
+  };
+  runtime.current={sync:(m,s,f,r,h)=>{
+   const previous=view.hostilePositions;
+   // Training -> encounter and F5 restore are instantaneous: only a real
+   // subsequent change in replayed cells can start a visual walk.
+   if(!reduceMotion&&!document.hidden&&previous&&h){
+    for(const hostile of scenario.hostiles){
+     if(previous[hostile.id]===h[hostile.id])continue;
+     const from=atCell(previous[hostile.id],scenario.size);
+     const to=atCell(h[hostile.id],scenario.size);
+     motions.set(hostile.id,{from:new THREE.Vector3(from.x,.14,from.z),
+      to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
+    }
+   }else motions.clear();
+   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h};
+   sync();
+   if(motions.size&&!frameRequest)frameRequest=requestAnimationFrame(animate);
+  }};
+  const idleTimer=window.setInterval(()=>{
+   if(disposed||document.hidden||!inViewport||reduceMotion)return;
+   const now=performance.now();
+   let changed=false;
+   scenario.hostiles.forEach((hostile,index)=>{
+    if(motions.has(hostile.id))return;
+    const frame=hostileIdleFrameAt(now,index*2);
+    showFrame(hostileVisuals.get(hostile.id)!,'idle',frame);
+    canvas.dataset.hostileIdleFrame=String(frame);
+    changed=true;
+   });
+   if(changed)render();
+  },HOSTILE_IDLE_FRAME_MS);
+  const viewportObserver=new IntersectionObserver(entries=>{
+   inViewport=entries[0]?.isIntersecting??true;
+  });
+  viewportObserver.observe(element);
   const resize=()=>{
    const b=element.getBoundingClientRect();
    if(b.width<=0||b.height<=0)return;
@@ -245,7 +327,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   canvas.addEventListener('pointercancel',onCancel);
   resize();
   return ()=>{
-   disposed=true;observer.disconnect();
+   disposed=true;observer.disconnect();viewportObserver.disconnect();
+   window.clearInterval(idleTimer);
+   if(frameRequest)cancelAnimationFrame(frameRequest);
    canvas.removeEventListener('pointerdown',onDown);
    canvas.removeEventListener('pointerup',onUp);
    canvas.removeEventListener('pointercancel',onCancel);
