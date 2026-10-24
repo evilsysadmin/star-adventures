@@ -48,9 +48,8 @@ export function IsoScenarioLab(){
  const completedResult=useMemo(()=>!hostileMode&&mission.completed
   ?trainingResult({scenarioId:history.scenarioId,actions:history.actions}):null,[history,hostileMode]);
  const bestResults=useMemo(()=>records.runs.map(trainingResult),[records]);
- const rawRoute=missionPath(mission,officer,selected);
- const route=hostilePositions&&rawRoute?.some(cell=>Object.values(hostilePositions).includes(cell))
-  ?null:rawRoute;
+ const route=missionPath(mission,officer,selected,
+  hostilePositions?Object.values(hostilePositions):[]);
  const move:MissionAction={type:'move',officer,cell:selected};
  const scan:MissionAction={type:'scan',officer:'science'};
  const operate:MissionAction={type:'operate',officer:'security'};

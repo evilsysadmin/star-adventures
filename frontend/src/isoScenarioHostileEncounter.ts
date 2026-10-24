@@ -46,12 +46,14 @@ export function replayHostileEncounter(
   for (const command of commands) {
     if (!command || typeof command !== 'object')
       throw new TypeError('Invalid encounter command');
+    const occupied = Object.values(positions);
     if (command.type === 'move') {
-      const path = missionPath(mission, command.officer, command.cell);
-      if (path?.some(cell => Object.values(positions).includes(cell)))
+      const original = missionPath(mission, command.officer, command.cell);
+      const safe = missionPath(mission, command.officer, command.cell, occupied);
+      if (original && original.length <= 6 && (!safe || safe.length > 6))
         throw new RangeError('Hostile contact blocks this movement route');
     }
-    mission = applyMissionAction(mission, command);
+    mission = applyMissionAction(mission, command, occupied);
     if (command.type === 'end-turn') {
       const turn = planHostileTurn(scenario, mission.locations, positions);
       positions = { ...turn.positions };

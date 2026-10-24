@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SCENARIOS } from '../src/isoScenarioCampaign.ts';
+import { SCENARIOS, createMission, missionPath, applyMissionAction } from '../src/isoScenarioCampaign.ts';
 import { planHostileTurn } from '../src/isoScenarioHostileTurn.ts';
 import { replayHostileEncounter } from '../src/isoScenarioHostileEncounter.ts';
 import {
@@ -45,6 +45,22 @@ for (const scenario of Object.values(SCENARIOS)) {
       assert.equal(terrain.has(cell), false);
   });
 }
+
+test('a hostile on the shortest route forces a legal detour instead of blocking movement', () => {
+  const mission = createMission('relay');
+  const direct = missionPath(mission, 'science', '3:1');
+  assert.deepEqual(direct, ['1:1', '2:1', '3:1']);
+  const detour = missionPath(mission, 'science', '3:1', ['2:1']);
+  assert.deepEqual(detour, ['1:1', '1:0', '2:0', '3:0', '3:1']);
+  const moved = applyMissionAction(mission, { type: 'move', officer: 'science', cell: '3:1' }, ['2:1']);
+  assert.equal(moved.locations.science, '3:1');
+  assert.match(moved.events.at(-1), /4 casillas/);
+  assert.equal(mission.locations.science, '1:1', 'the source mission stays immutable');
+  assert.equal(missionPath(mission, 'science', '3:1', ['2:1', '1:2', '1:0', '0:1']), null);
+  assert.throws(() => applyMissionAction(mission, { type: 'move', officer: 'science', cell: '3:1' },
+    ['2:1', '1:2', '1:0', '0:1']), /Destination blocked/);
+  assert.deepEqual(missionPath(mission, 'science', '3:1'), direct, 'v1 route is unchanged');
+});
 
 test('enemy occupancy rejects player movement without altering legacy v1 saves', () => {
   const commands = [];
