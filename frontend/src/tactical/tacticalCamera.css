@@ -1,0 +1,18 @@
+.camera-spike-page{max-width:1120px;min-height:1120px;margin:auto;padding:38px 28px 120px;color:#e2ecea}
+.camera-spike-heading{max-width:780px;margin:0 auto 22px}
+.camera-spike-heading>span{font-size:11px;letter-spacing:.16em;color:#b4d3d1;font-weight:700}
+.camera-spike-heading h1{font-size:clamp(22px,4vw,35px);margin:10px 0;color:#e6d4ad;line-height:1.15}
+.camera-spike-heading p{font-size:14px;line-height:1.6;color:#9db9c0;margin:0 0 12px}
+.camera-spike-heading a{color:#9bdad4;text-underline-offset:3px}
+.camera-spike-stage{width:100%;max-width:780px;margin:0 auto;border:1px solid #477487;background:#0d1a26;padding:0;box-shadow:0 16px 55px #0005}
+.camera-spike-canvas{display:block;width:100%;height:auto;aspect-ratio:4/3;touch-action:none;cursor:crosshair}
+.camera-spike-status{max-width:780px;margin:0 auto;padding:16px;display:flex;align-items:center;gap:15px;flex-wrap:wrap;border:1px solid #405d67;border-top:0;background:#102534;color:#a9caca;font-size:13px}
+.camera-spike-status output{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;color:#e3d6ae;min-width:55px}
+.camera-spike-status span:last-child{margin-left:auto}
+.camera-spike-keyboard{max-width:780px;margin:16px auto;border:1px solid #355460;padding:13px;color:#c3d9dc}
+.camera-spike-keyboard summary{cursor:pointer;font-weight:700;font-size:13px}
+.camera-spike-cellgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;margin-top:15px}
+.camera-spike-cellgrid button{min-width:0;border:1px solid #527582;background:#203d4b;color:#e8ece5;padding:8px 0;cursor:pointer;font-size:11px}
+.camera-spike-cellgrid button[aria-pressed=true]{background:#77633f;color:white}
+.camera-spike-footnote{max-width:780px;margin:12px auto;color:#91a7b0;font-size:12px}
+@media(max-width:520px){.camera-spike-page{padding:24px 12px 120px}.camera-spike-canvas{aspect-ratio:1/1}.camera-spike-status{gap:7px;font-size:12px;padding:11px}.camera-spike-status span:last-child{width:100%;margin-left:0}.camera-spike-cellgrid{gap:3px}.camera-spike-cellgrid button{font-size:9px;padding:8px 0}}
