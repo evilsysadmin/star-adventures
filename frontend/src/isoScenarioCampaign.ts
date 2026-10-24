@@ -107,13 +107,19 @@ export function validateMission(state:MissionState):void {
      (!!scenario.survivor&&!state.rescued))))throw new TypeError('Impossible mission progress');
 }
 const steps=[[0,-1],[1,0],[0,1],[-1,0]] as const;
-export function missionPath(state:MissionState,officer:SquadId,destination:string):readonly string[]|null {
+export function missionPath(
+ state:MissionState,officer:SquadId,destination:string,
+ additionalBlocked:readonly string[]=[]
+):readonly string[]|null {
  validateMission(state);
  const def=SCENARIOS[state.scenarioId],origin=state.locations[officer];
  if(!origin||!point(destination,def.size))return null;
  if(origin===destination)return [origin];
  const obstacles=blocked(def);
  for(const id of ids)if(id!==officer)obstacles.add(state.locations[id]);
+ // Opt-in occupied cells (e.g. hostile contacts) participate in BFS itself.
+ // Legacy callers omit this argument and keep the original route contract.
+ for(const cell of additionalBlocked)obstacles.add(cell);
  if(obstacles.has(destination))return null;
  const parent=new Map<string,string|null>([[origin,null]]),queue=[origin];
  for(let i=0;i<queue.length;i++){
@@ -132,7 +138,9 @@ export function missionPath(state:MissionState,officer:SquadId,destination:strin
  while(at!==null){route.push(at);at=parent.get(at)??null;}
  return route.reverse();
 }
-export function applyMissionAction(state:MissionState,action:MissionAction):MissionState {
+export function applyMissionAction(
+ state:MissionState,action:MissionAction,additionalBlocked:readonly string[]=[]
+):MissionState {
  validateMission(state);
  if(state.completed)throw new RangeError('Mission already completed');
  const def=SCENARIOS[state.scenarioId];
@@ -145,7 +153,7 @@ export function applyMissionAction(state:MissionState,action:MissionAction):Miss
  let update:Partial<MissionState>={};let log:string;
  switch(action.type){
   case 'move':{
-   const route=missionPath(state,officer,action.cell);
+   const route=missionPath(state,officer,action.cell,additionalBlocked);
    if(!route||route.length<2||route.length>6)
     throw new RangeError('Destination blocked, unchanged or beyond 5-step allowance');
    update={locations:{...state.locations,[officer]:action.cell}};
