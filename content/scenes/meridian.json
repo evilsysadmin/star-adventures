@@ -315,10 +315,6 @@
           "y": 6
         },
         {
-          "x": 2,
-          "y": 2
-        },
-        {
           "x": 3,
           "y": 2
         }
@@ -330,6 +326,14 @@
           "type": "station",
           "action": "inspect-probe",
           "x": 4,
+          "y": 2
+        },
+        {
+          "id": "sensor-vault",
+          "label": "Archivo de sensores del puesto científico",
+          "type": "station",
+          "action": "extract-sensor-core",
+          "x": 2,
           "y": 2
         },
         {
