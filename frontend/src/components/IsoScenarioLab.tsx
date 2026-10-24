@@ -9,6 +9,8 @@ import { addTrainingResult, trainingResult, type TrainingArchive } from '../isoT
 import { restoreTrainingRecords, persistTrainingRecords } from '../isoTrainingSession';
 import { localStorageOrNull } from '../session';
 import { newScenarioSession, restoreScenarioSession, persistScenarioSession } from '../isoScenarioSession';
+import { newHostileEncounterSession, restoreHostileEncounterSession, persistHostileEncounterSession } from '../isoScenarioHostileSession';
+import { replayHostileEncounterCommands } from '../isoScenarioHostileCheckpoint';
 import './isoScenarioLab.css';
 
 const order: readonly ScenarioId[]=['relay','derelict','evacuation'];
@@ -22,6 +24,9 @@ const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 export function IsoScenarioLab(){
  const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
  const [history,setHistory]=useState(startup.history);
+ const [hostileStartup]=useState(()=>restoreHostileEncounterSession(localStorageOrNull()));
+ const [hostileHistory,setHostileHistory]=useState(hostileStartup.history);
+ const [hostileMode,setHostileMode]=useState(false);
  const [initialRecords]=useState(()=>{
   const stored=restoreTrainingRecords(localStorageOrNull());
   if(!startup.history.state.completed)return stored;
@@ -31,29 +36,51 @@ export function IsoScenarioLab(){
  });
  const [records,setRecords]=useState<TrainingArchive>(initialRecords.archive);
  const [recordNotice,setRecordNotice]=useState(initialRecords.notice);
- const { scenarioId, state: mission }=history;
+ const scenarioId=hostileMode?hostileHistory.scenarioId:history.scenarioId;
+ const mission=hostileMode?hostileHistory.encounter.mission:history.state;
+ const hostilePositions=hostileMode?hostileHistory.encounter.positions:undefined;
+ const activeActions=hostileMode?hostileHistory.actions:history.actions;
  const [officer,setOfficer]=useState<SquadId>('science');
  const [selected,setSelected]=useState(startup.history.state.locations.science);
  const [focus,setFocus]=useState(false);
  const [notice,setNotice]=useState(startup.notice);
  const scenario=SCENARIOS[scenarioId];
- const completedResult=useMemo(()=>mission.completed?trainingResult({scenarioId,actions:history.actions}):null,[history]);
+ const completedResult=useMemo(()=>!hostileMode&&mission.completed
+  ?trainingResult({scenarioId:history.scenarioId,actions:history.actions}):null,[history,hostileMode]);
  const bestResults=useMemo(()=>records.runs.map(trainingResult),[records]);
- const route=missionPath(mission,officer,selected);
+ const rawRoute=missionPath(mission,officer,selected);
+ const route=hostilePositions&&rawRoute?.some(cell=>Object.values(hostilePositions).includes(cell))
+  ?null:rawRoute;
  const move:MissionAction={type:'move',officer,cell:selected};
  const scan:MissionAction={type:'scan',officer:'science'};
  const operate:MissionAction={type:'operate',officer:'security'};
  const rescue:MissionAction={type:'rescue',officer:'medic'};
  const extract:MissionAction={type:'extract',officer};
  const available=(command:MissionAction)=>{
-  if(history.actions.length>=MAX_SCENARIO_COMMANDS)return false;
-  try{applyMissionAction(mission,command);return true;}catch{return false;}
+  if(activeActions.length>=MAX_SCENARIO_COMMANDS)return false;
+  try{
+   if(hostileMode)replayHostileEncounterCommands(scenarioId,[...hostileHistory.actions,command]);
+   else applyMissionAction(mission,command);
+   return true;
+  }catch{return false;}
  };
  const execute=(command:MissionAction)=>{
-  if(history.actions.length>=MAX_SCENARIO_COMMANDS){
+  if(activeActions.length>=MAX_SCENARIO_COMMANDS){
    setNotice('Límite de órdenes alcanzado · inicia otra misión');return;
   }
   try{
+   if(hostileMode){
+    const next=replayHostileEncounterCommands(scenarioId,[...hostileHistory.actions,command]);
+    const saved=persistHostileEncounterSession(next,localStorageOrNull());
+    setHostileHistory(next);
+    const movements=next.encounter.moves.map(move=>`${move.hostile}: ${move.from} → ${move.to}`);
+    const threats=next.encounter.threats.map(threat=>`${threat.hostile} amenaza a ${threat.officer}`);
+    setNotice((saved?'':'Encuentro no guardado · ')+[
+     next.encounter.mission.events.at(-1)||'Orden ejecutada',
+     ...movements,...threats,
+    ].join(' · '));
+    return;
+   }
    const state=applyMissionAction(mission,command);
    const next={scenarioId,actions:[...history.actions,command],state};
    const saved=persistScenarioSession(next,localStorageOrNull());
@@ -70,12 +97,26 @@ export function IsoScenarioLab(){
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
  };
  const change=(id:ScenarioId)=>{
+  if(hostileMode){
+   const next=newHostileEncounterSession(id);
+   const saved=persistHostileEncounterSession(next,localStorageOrNull());
+   setHostileHistory(next);
+   setOfficer('science');setSelected(next.encounter.mission.locations.science);setFocus(false);
+   setNotice(saved?'Nuevo encuentro hostil · progreso guardado':'Encuentro temporal · no guardado');
+   return;
+  }
   const next=newScenarioSession(id);
   const saved=persistScenarioSession(next,localStorageOrNull());
   setHistory(next);
   setOfficer('science');setSelected(next.state.locations.science);setFocus(false);
   setNotice(saved?'Nuevo escenario · progreso guardado en este navegador':
     'Nuevo escenario · almacenamiento no disponible, sesión temporal');
+ };
+ const switchEncounter=(enabled:boolean)=>{
+  setHostileMode(enabled);
+  const target=enabled?hostileHistory.encounter.mission:history.state;
+  setOfficer('science');setSelected(target.locations.science);setFocus(false);
+  setNotice(enabled?hostileStartup.notice:startup.notice);
  };
  const choose=(cell:string)=>{
   setSelected(cell);
@@ -123,6 +164,12 @@ export function IsoScenarioLab(){
    </div>
   </div>
   <div className="scenario-viewtools">
+   <div className="scenario-mode-select" role="group" aria-label="Tipo de ejercicio táctico">
+    <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode}
+     onClick={()=>switchEncounter(false)}>Entrenamiento</button>
+    <button type="button" data-testid="scenario-hostile-toggle" aria-pressed={hostileMode}
+     onClick={()=>switchEncounter(true)}>Encuentro hostil · experimental</button>
+   </div>
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
@@ -130,7 +177,7 @@ export function IsoScenarioLab(){
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
-    selected={selected} focus={focus} route={route} onPick={choose}/>
+    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} onPick={choose}/>
   </div>
   <div className="scenario-cell-bar">
    <div><span>CASILLA ELEGIDA</span>
@@ -139,6 +186,11 @@ export function IsoScenarioLab(){
      ?`Ruta: ${route.length-1} casillas${route.length>6?' · necesitas un destino intermedio':''}`
      :route?'Oficial en su casilla':'Sin ruta disponible'}</small>
    </div>
+   {hostilePositions&&<div className="scenario-hostile-status" data-testid="scenario-hostile-status"
+    aria-label="Posiciones enemigas verificadas">
+    <span data-testid="scenario-hostile-aegis">Aegis {hostilePositions.aegis}</span>
+    <span data-testid="scenario-hostile-veil">Velo {hostilePositions.veil}</span>
+   </div>}
    <div className="scenario-legend">
     <span> <i className="scenario-dot sci"/> Ciencia</span>
     <span> <i className="scenario-dot tech"/> Terminal</span>
@@ -187,7 +239,7 @@ export function IsoScenarioLab(){
    {recordNotice&&<p data-testid="scenario-record-notice">{recordNotice}</p>}
    <button type="button" data-testid="scenario-retry" onClick={()=>change(scenarioId)}>Repetir esta maniobra</button>
   </section>}
-  {records.runs.length>0&&<details className="scenario-training-records" data-testid="scenario-training-records">
+  {!hostileMode&&records.runs.length>0&&<details className="scenario-training-records" data-testid="scenario-training-records">
    <summary>Archivo de maniobras · {records.runs.length} de 3 misiones acreditadas</summary>
    <ul>{bestResults.map(result=><li key={result.scenarioId} data-testid={`scenario-record-${result.scenarioId}`}>
     <strong>{result.label}</strong> · Ronda {result.rounds} · {result.orders} órdenes
@@ -208,7 +260,8 @@ export function IsoScenarioLab(){
    <summary>Diario de acciones verificadas · {mission.events.length} eventos</summary>
    <ol>{mission.events.map((event,index)=><li key={index}>{event}</li>)}</ol>
   </details>
-  <p className="scenario-disclaimer">Simulador local de entrenamiento · progreso guardado independientemente de la campaña si el navegador lo permite.
-   Los contactos hostiles están desplegados visualmente; su ocupación, patrullas y combate llegarán en el siguiente ejercicio táctico.</p>
+  <p className="scenario-disclaimer">{hostileMode
+   ?'Encuentro hostil experimental · los enemigos avanzan al terminar el turno y bloquean rutas. Las amenazas no causan heridas todavía. Guardado v2 separado del entrenamiento y de la campaña.'
+   :'Simulador local de entrenamiento · progreso guardado independientemente de la campaña si el navegador lo permite. Los contactos hostiles son visuales; activa el encuentro experimental para probar sus turnos.'}</p>
  </section>;
 }
