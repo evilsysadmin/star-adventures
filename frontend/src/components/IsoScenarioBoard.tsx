@@ -180,6 +180,12 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
    const texture=loader.load(assets.assets[asset.key].url,loaded=>{
     if(disposed)return;
+    // Idle contact assets are 3×2 atlases, not single portraits. Showing the
+    // whole texture produces six phantom enemies at one logical position.
+    loaded.repeat.set(1/WALK_ATLAS.columns,1/WALK_ATLAS.rows);
+    const uv=walkFrameUv(0);
+    loaded.offset.set(uv.x,uv.y);
+    loaded.needsUpdate=true;
     sprite.material.map=loaded;sprite.material.needsUpdate=true;render();
    },undefined,()=>{if(!disposed)render();});
    texture.colorSpace=THREE.SRGBColorSpace;textures.push(texture);
