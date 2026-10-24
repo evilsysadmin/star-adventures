@@ -4,7 +4,7 @@ import { BOARD_SIZE, assertBoardSize, type TacticalBoardSize } from './tacticalG
 // A fixed, mathematically isometric orthographic view (35.264° elevation).
 // Frustum is fitted to board corners AND the tallest cutout sprites,
 // including the actual canvas aspect ratio. Logical tile coordinates stay untouched.
-export function createIsoCamera(aspect: number, size: TacticalBoardSize = BOARD_SIZE): THREE.OrthographicCamera {
+export function createIsoCamera(aspect: number, size: TacticalBoardSize = BOARD_SIZE, maxActorHeight = 2.45): THREE.OrthographicCamera {
   assertBoardSize(size);
   if (!Number.isFinite(aspect) || aspect <= 0) throw new RangeError('Invalid iso aspect');
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
@@ -12,8 +12,10 @@ export function createIsoCamera(aspect: number, size: TacticalBoardSize = BOARD_
   camera.lookAt(0, 0, 0);
   camera.updateMatrixWorld();
   const extent = size / 2 + 0.28;
+  if (!Number.isFinite(maxActorHeight) || maxActorHeight <= 0 || maxActorHeight > 4)
+    throw new RangeError('Invalid actor height');
   const corners = [-extent, extent].flatMap(x =>
-    [-extent, extent].flatMap(z => [0, 2.45].map(y =>
+    [-extent, extent].flatMap(z => [0, maxActorHeight].map(y =>
       new THREE.Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse)
     ))
   );

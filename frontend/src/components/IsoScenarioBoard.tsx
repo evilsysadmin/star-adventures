@@ -125,7 +125,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   const loader=new THREE.TextureLoader();
   let disposed=false;
   const render=()=>{if(!disposed)renderer.render(scene,camera);};
-  let camera=createIsoCamera(1,scenario.size);
+  let camera=createIsoCamera(1,scenario.size,3.18);
   for(const officer of officers){
    const position=atCell(mission.locations[officer.id],scenario.size);
    const fallback=add(new THREE.Mesh(
@@ -183,8 +183,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   // The v1 training view keeps authored contact cells. Opt-in v2 encounters
   // supply replayed hostile positions; Three.js never owns simulation state.
   const hostileAssets={
-   aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[1.72,2.62] as const,color:'#e4946f'},
-   veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.52,2.42] as const,color:'#b59be8'},
+   // Contacts must read as threats at the whole-board lens, not as extra crew.
+   aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[2.02,3.04] as const,color:'#e4946f'},
+   veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.74,2.68] as const,color:'#b59be8'},
   } as const;
   type HostileVisual={ground:THREE.Mesh;sprite:THREE.Sprite;idle:THREE.Texture|null;walk:THREE.Texture|null};
   const hostileVisuals=new Map<HostileId,HostileVisual>();
@@ -241,7 +242,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    highlight.position.set(center.x,.28,center.z);
    camera=view.focus
     ?createIsoDetailCamera(b.width/b.height,{col,row},1.75,scenario.size)
-    :createIsoCamera(b.width/b.height,scenario.size);
+    :createIsoCamera(b.width/b.height,scenario.size,3.18);
    for(const unit of officers){
     const p=atCell(view.mission.locations[unit.id],scenario.size);
     const actor=squad.get(unit.id)!;

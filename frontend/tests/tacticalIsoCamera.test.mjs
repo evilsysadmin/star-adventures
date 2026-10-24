@@ -21,6 +21,8 @@ for (const [width, height] of [[310, 350], [340, 350], [380, 350], [760, 500], [
 test('isometric camera rejects impossible viewport and supports extreme mobile/desktop ratios', () => {
   for (const aspect of [0, -1, Number.NaN, Number.POSITIVE_INFINITY])
     assert.throws(() => createIsoCamera(aspect), RangeError);
+  for (const height of [0, -1, Number.NaN, 4.1])
+    assert.throws(() => createIsoCamera(1, 10, height), RangeError);
   for (const [w, h] of [[230, 600], [1280, 260], [500, 500]]) {
     const camera = createIsoCamera(w / h);
     const rect = { left: 15, top: 45, width: w, height: h };
