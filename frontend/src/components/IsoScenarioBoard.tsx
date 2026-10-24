@@ -143,8 +143,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    squad.set(officer.id,{sprite,fallback});
   }
   for(const sex of ['female','male'] as const){
-   const key=sex==='female'?'starAdventures.tactical.officerFemaleWalkV1'
-     :'starAdventures.tactical.officerMaleWalkV1';
+   // Resting squad members use the dedicated one-frame MVS portraits. A walk
+   // atlas makes an idle officer look mid-stride even when no move is active.
+   const key=sex==='female'?'starAdventures.tactical.officerFemaleMvsV1'
+     :'starAdventures.tactical.officerMaleMvsV1';
    const texture=loader.load(assets.assets[key].url,()=>{
     if(disposed)return;
     for(const officer of officers.filter(unit=>unit.sex===sex)){
@@ -157,9 +159,6 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     render();
    },undefined,()=>{if(!disposed)render();});
    texture.colorSpace=THREE.SRGBColorSpace;
-   texture.repeat.set(1/WALK_ATLAS.columns,1/WALK_ATLAS.rows);
-   const uv=walkFrameUv(0);
-   texture.offset.set(uv.x,uv.y);
    texture.magFilter=THREE.LinearFilter;
    textures.push(texture);
   }
