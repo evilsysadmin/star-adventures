@@ -106,3 +106,9 @@
 .scenario-training-records ul{padding:0 16px 0 33px;font-size:11px;line-height:1.9}
 .scenario-training-records p{padding:0 16px 12px;color:#9bbdb9;font-size:10px}
 @media(max-width:520px){.scenario-debrief{padding:14px 11px}.scenario-training-records{margin:9px}}
+
+/* Keep encounter choice compact without obscuring the tactical viewport. */
+.scenario-mode-select{display:flex;gap:5px;flex-wrap:wrap}
+.scenario-mode-select button{min-height:44px}
+.scenario-hostile-status{display:flex;gap:10px;flex-wrap:wrap;font:700 11px 'Space Grotesk',sans-serif;color:#efbb9f}
+@media(max-width:520px){.scenario-mode-select{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.scenario-mode-select button{font-size:10px;padding:8px 5px}}

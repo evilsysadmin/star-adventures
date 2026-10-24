@@ -6,12 +6,14 @@ import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import type { MissionState, Scenario, SquadId } from '../isoScenarioCampaign';
+import type { HostileId } from '../isoScenarioHostileTurn';
 
 type BoardProps = {
   scenario: Scenario; mission: MissionState; selected: string; focus: boolean;
-  route: readonly string[] | null; onPick: (cell: string) => void;
+  route: readonly string[] | null; hostilePositions?: Readonly<Record<HostileId,string>>;
+  onPick: (cell: string) => void;
 };
-type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null)=>void };
+type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>)=>void };
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
   {id:'security' as const,sex:'male',color:'#e7c47d'},
@@ -22,7 +24,7 @@ const atCell=(id:string,size:Scenario['size'])=>{
   return cellCenter({col,row},size);
 };
 
-export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:BoardProps){
+export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,onPick}:BoardProps){
  const host=useRef<HTMLDivElement>(null);
  const runtime=useRef<BoardRuntime|null>(null);
  const onPickRef=useRef(onPick);
@@ -160,13 +162,13 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:
    texture.magFilter=THREE.LinearFilter;
    textures.push(texture);
   }
-  // Contacts deliberately remain presentation-only in this slice. Their cells
-  // are authored scenario data, ready for the next rules PR to turn into
-  // occupancy, turns and combat without deriving authority from Three.js.
+  // The v1 training view keeps authored contact cells. Opt-in v2 encounters
+  // supply replayed hostile positions; Three.js never owns simulation state.
   const hostileAssets={
    aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[1.72,2.62] as const,color:'#e4946f'},
    veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.52,2.42] as const,color:'#b59be8'},
   } as const;
+  const hostileVisuals=new Map<HostileId,{ground:THREE.Mesh;sprite:THREE.Sprite}>();
   for(const hostile of scenario.hostiles){
    const asset=hostileAssets[hostile.id];
    const p=atCell(hostile.cell,scenario.size);
@@ -178,11 +180,18 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:
    sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
    const texture=loader.load(assets.assets[asset.key].url,loaded=>{
     if(disposed)return;
+    // Idle contact assets are 3×2 atlases, not single portraits. Showing the
+    // whole texture produces six phantom enemies at one logical position.
+    loaded.repeat.set(1/WALK_ATLAS.columns,1/WALK_ATLAS.rows);
+    const uv=walkFrameUv(0);
+    loaded.offset.set(uv.x,uv.y);
+    loaded.needsUpdate=true;
     sprite.material.map=loaded;sprite.material.needsUpdate=true;render();
    },undefined,()=>{if(!disposed)render();});
    texture.colorSpace=THREE.SRGBColorSpace;textures.push(texture);
+   hostileVisuals.set(hostile.id,{ground,sprite});
   }
-  let view={mission,selected,focus,route};
+  let view={mission,selected,focus,route,hostilePositions};
   const sync=()=>{
    const b=element.getBoundingClientRect();
    if(b.width<=0||b.height<=0)return;
@@ -198,6 +207,12 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:
     actor.sprite.position.set(p.x,.14,p.z);
     actor.fallback.position.set(p.x,.62,p.z);
    }
+   for(const hostile of scenario.hostiles){
+    const visual=hostileVisuals.get(hostile.id)!;
+    const p=atCell(view.hostilePositions?.[hostile.id]??hostile.cell,scenario.size);
+    visual.ground.position.set(p.x,.107,p.z);
+    visual.sprite.position.set(p.x,.14,p.z);
+   }
    for(const [key,mesh] of routeTiles)mesh.visible=!!view.route?.includes(key)&&view.route.length>1;
    objectiveMaterials.get('sensor')?.color.set(view.mission.scanned?'#4d836c':'#70ddf4');
    objectiveMaterials.get('console')?.color.set(view.mission.consoleOnline?'#6ca180':'#ffd283');
@@ -205,7 +220,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:
    objectiveMaterials.get('extraction')?.color.set(view.mission.completed?'#f4dc93':'#98eba2');
    render();
   };
-  runtime.current={sync:(m,s,f,r)=>{view={mission:m,selected:s,focus:f,route:r};sync();}};
+  runtime.current={sync:(m,s,f,r,h)=>{view={mission:m,selected:s,focus:f,route:r,hostilePositions:h};sync();}};
   const resize=()=>{
    const b=element.getBoundingClientRect();
    if(b.width<=0||b.height<=0)return;
@@ -247,7 +262,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,onPick}:
    renderer.dispose();canvas.remove();
   };
  },[scenario.id]);
- useEffect(()=>{runtime.current?.sync(mission,selected,focus,route);},[mission,selected,focus,routeId]);
+ useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions);},[mission,selected,focus,routeId,hostilePositions]);
  return <div className="scenario-viewport" ref={host} data-testid="scenario-viewport">
   {error&&<p role="status" data-testid="scenario-webgl-fallback">{error}</p>}
  </div>;
