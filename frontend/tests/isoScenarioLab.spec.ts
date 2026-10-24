@@ -77,6 +77,9 @@ test('mission orders really consume AP, reject blocked/long travel and change ob
  await expect(page.getByTestId('scenario-move')).toBeEnabled();
  await page.getByTestId('scenario-move').click();
  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+ await expect(page.getByTestId('scenario-render-canvas')).toHaveAttribute('data-squad-moving','1');
+ await page.screenshot({path:'test-results/scenario-squad-walk-390.png',fullPage:true});
+ await expect(page.getByTestId('scenario-render-canvas')).toHaveAttribute('data-squad-moving','0',{timeout:2_000});
  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
  await clickBoard(page,'4:1',10);
  await expect(page.getByTestId('scenario-move')).toBeDisabled();

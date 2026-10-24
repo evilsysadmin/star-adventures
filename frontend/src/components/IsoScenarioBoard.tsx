@@ -15,6 +15,7 @@ type BoardProps = {
   onPick: (cell: string) => void;
 };
 type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>)=>void };
+type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
   {id:'security' as const,sex:'male',color:'#e7c47d'},
@@ -119,7 +120,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    dot.visible=false;
    routeTiles.set(tile.id,dot);
   }
-  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh}>();
+  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
   let disposed=false;
@@ -140,7 +141,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.center.set(.5,0);
    sprite.scale.set(1.48,2.28,1);
    sprite.position.set(position.x,.14,position.z);
-   squad.set(officer.id,{sprite,fallback});
+   squad.set(officer.id,{sprite,fallback,idle:null,walk:null});
   }
   for(const sex of ['female','male'] as const){
    // Resting squad members use the dedicated one-frame MVS portraits. A walk
@@ -151,6 +152,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     if(disposed)return;
     for(const officer of officers.filter(unit=>unit.sex===sex)){
      const visual=squad.get(officer.id)!;
+     visual.idle=texture;
      visual.sprite.material.map=texture;
      visual.sprite.material.needsUpdate=true;
      visual.sprite.visible=true;
@@ -161,6 +163,22 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    texture.colorSpace=THREE.SRGBColorSpace;
    texture.magFilter=THREE.LinearFilter;
    textures.push(texture);
+   const walkKey=sex==='female'?'starAdventures.tactical.officerFemaleWalkV1'
+     :'starAdventures.tactical.officerMaleWalkV1';
+   const walk=loader.load(assets.assets[walkKey].url,loaded=>{
+    if(disposed)return;
+    for(const officer of officers.filter(unit=>unit.sex===sex)){
+     const visual=squad.get(officer.id)!;
+     const isolated=loaded.clone();
+     isolated.repeat.set(1/WALK_ATLAS.columns,1/WALK_ATLAS.rows);
+     isolated.offset.set(walkFrameUv(0).x,walkFrameUv(0).y);
+     isolated.magFilter=THREE.LinearFilter;
+     isolated.needsUpdate=true;
+     visual.walk=isolated;textures.push(isolated);
+    }
+    render();
+   },undefined,()=>{if(!disposed)render();});
+   walk.colorSpace=THREE.SRGBColorSpace;textures.push(walk);
   }
   // The v1 training view keeps authored contact cells. Opt-in v2 encounters
   // supply replayed hostile positions; Three.js never owns simulation state.
@@ -201,8 +219,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
   }
   let view={mission,selected,focus,route,hostilePositions};
-  type Motion={from:THREE.Vector3;to:THREE.Vector3;started:number};
-  const motions=new Map<HostileId,Motion>();
+  const motions=new Map<HostileId,SpriteMotion>();
+  const squadMotions=new Map<SquadId,SpriteMotion>();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let inViewport=true;
   let frameRequest=0;
@@ -227,8 +245,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    for(const unit of officers){
     const p=atCell(view.mission.locations[unit.id],scenario.size);
     const actor=squad.get(unit.id)!;
-    actor.sprite.position.set(p.x,.14,p.z);
-    actor.fallback.position.set(p.x,.62,p.z);
+    if(!squadMotions.has(unit.id)){
+     actor.sprite.position.set(p.x,.14,p.z);
+     actor.fallback.position.set(p.x,.62,p.z);
+    }
    }
    for(const hostile of scenario.hostiles){
     const visual=hostileVisuals.get(hostile.id)!;
@@ -265,11 +285,29 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.hostileWalkFrame=String(step.frame);
    }
    canvas.dataset.hostileMoving=String(motions.size);
+   for(const [id,motion] of squadMotions){
+    const visual=squad.get(id)!;
+    const step=hostileStepAt(now-motion.started);
+    const x=THREE.MathUtils.lerp(motion.from.x,motion.to.x,step.progress);
+    const z=THREE.MathUtils.lerp(motion.from.z,motion.to.z,step.progress);
+    visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
+    if(visual.walk){
+     if(visual.sprite.material.map!==visual.walk){visual.sprite.material.map=visual.walk;visual.sprite.material.needsUpdate=true;}
+     visual.walk.offset.set(walkFrameUv(step.frame).x,walkFrameUv(step.frame).y);
+    }
+    if(step.done){
+     squadMotions.delete(id);
+     if(visual.idle){visual.sprite.material.map=visual.idle;visual.sprite.material.needsUpdate=true;}
+    }
+    canvas.dataset.squadWalkFrame=String(step.frame);
+   }
+   canvas.dataset.squadMoving=String(squadMotions.size);
    render();
-   if(motions.size)frameRequest=requestAnimationFrame(animate);
+   if(motions.size||squadMotions.size)frameRequest=requestAnimationFrame(animate);
   };
   runtime.current={sync:(m,s,f,r,h)=>{
    const previous=view.hostilePositions;
+   const previousMission=view.mission;
    // Training -> encounter and F5 restore are instantaneous: only a real
    // subsequent change in replayed cells can start a visual walk.
    if(!reduceMotion&&!document.hidden&&previous&&h){
@@ -281,9 +319,17 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
       to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
     }
    }else motions.clear();
+   if(!reduceMotion&&!document.hidden&&previousMission){
+    for(const unit of officers){
+     const fromCell=previousMission.locations[unit.id],toCell=m.locations[unit.id];
+     if(fromCell===toCell)continue;
+     const from=atCell(fromCell,scenario.size),to=atCell(toCell,scenario.size);
+     squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
+    }
+   }else squadMotions.clear();
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h};
    sync();
-   if(motions.size&&!frameRequest)frameRequest=requestAnimationFrame(animate);
+   if((motions.size||squadMotions.size)&&!frameRequest)frameRequest=requestAnimationFrame(animate);
   }};
   const idleTimer=window.setInterval(()=>{
    if(disposed||document.hidden||!inViewport||reduceMotion)return;
