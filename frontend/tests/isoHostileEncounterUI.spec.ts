@@ -70,6 +70,7 @@ test('hostile walk shows all six frames, then returns to idle without altering t
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
  await page.screenshot({path:'test-results/hostile-animation-mobile-390.png',fullPage:true});
  await page.setViewportSize({width:1280,height:850});
+ await canvas.scrollIntoViewIfNeeded();
  await expect.poll(async()=>canvas.getAttribute('data-hostile-idle-frame'),{timeout:3_000})
   .not.toBeNull();
  await page.screenshot({path:'test-results/hostile-animation-desktop-1280.png',fullPage:true});
@@ -81,7 +82,7 @@ test('reduced-motion hostile turns snap to authoritative saved positions',async(
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
  await page.getByTestId('scenario-hostile-toggle').click();
- const before=await page.getByTestId('scenario-hostile-aegis').textContent();
+ const positions=replayHostileEncounterCommands('relay',[{type:'end-turn'}]).encounter.positions;
  await page.getByTestId('scenario-end-turn').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
  await expect(page.getByTestId('scenario-render-canvas')).not.toHaveAttribute('data-hostile-moving','1');
@@ -90,5 +91,6 @@ test('reduced-motion hostile turns snap to authoritative saved positions',async(
  await page.getByTestId('tactical-view-missions').click();
  await page.getByTestId('scenario-hostile-toggle').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
- expect(await page.getByTestId('scenario-hostile-aegis').textContent()).not.toBe(before);
+ await expect(page.getByTestId('scenario-hostile-aegis')).toContainText(positions.aegis);
+ await expect(page.getByTestId('scenario-hostile-veil')).toContainText(positions.veil);
 });
