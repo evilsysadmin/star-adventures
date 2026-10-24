@@ -26,12 +26,14 @@ test('v3 replay converts real adjacent threats into deterministic injuries, not 
   assert.deepEqual(encounter, replayCombatEncounter('relay', actions));
   assert.deepEqual(encounter.hits.map(hit => ({ hostile: hit.hostile, officer: hit.officer, cell: hit.cell })),
     encounter.threats.map(threat => ({ hostile: threat.hostile, officer: threat.officer, cell: threat.cell })));
+  const expectedHealth = { science: 3, security: 3, medic: 3 };
   for (const hit of encounter.hits) {
     assert.equal(hit.damage, 1);
     assert.equal(hit.round, encounter.mission.round - 1);
-    assert.equal(hit.remainingHp, encounter.health[hit.officer]);
-    assert.equal(hit.remainingHp, 2);
+    expectedHealth[hit.officer]--;
+    assert.equal(hit.remainingHp, expectedHealth[hit.officer]);
   }
+  assert.deepEqual(encounter.health, expectedHealth);
   assert.equal(encounter.failed, false);
   assert.deepEqual(actions, Array.from({ length: actions.length }, () => ({ type: 'end-turn' })),
     'replay cannot mutate commands');
