@@ -4,7 +4,15 @@ export default defineConfig({
   testDir: './tests',
   timeout: 30_000,
   retries: process.env.CI ? 1 : 0,
-  use: { baseURL: 'http://127.0.0.1:4173', channel: 'chrome', ...devices['Desktop Chrome'] },
+  use: {
+    baseURL: 'http://127.0.0.1:4173',
+    // Most browser specs exercise an explicitly selected diagnostics view.
+    // Product default remains the playable mission for an unconfigured player.
+    storageState: './tests/tactical-existing.storageState.json',
+    ...devices['Desktop Chrome'],
+    channel: 'chrome',
+    launchOptions: process.env.PLAYWRIGHT_CHROME_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROME_PATH } : undefined,
+  },
   webServer: {
     command: 'npm run dev -- --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',

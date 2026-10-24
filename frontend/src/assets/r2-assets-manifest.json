@@ -1,0 +1,146 @@
+{
+  "assets": {
+    "starAdventures.tactical.aegisRaiderIdleV1": {
+      "bytes": 276374,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/aegis-raider-idle-v1-8bd3392d4dbfc92b.webp",
+      "sha256": "8bd3392d4dbfc92be9047b3ff4e52859f01ba98c85d38d5dde2ad28f9931709f",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/aegis-raider-idle-v1-8bd3392d4dbfc92b.webp"
+    },
+    "starAdventures.tactical.aegisRaiderWalkV1": {
+      "bytes": 153536,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/aegis-raider-walk-v1-bcae8d9b26eea62d.webp",
+      "sha256": "bcae8d9b26eea62d65eb55d6bfb49487f9407a50f0247b01ad5fab05bf51780a",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/aegis-raider-walk-v1-bcae8d9b26eea62d.webp"
+    },
+    "starAdventures.tactical.officerFemaleCrouchV1": {
+      "bytes": 208296,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-crouch-v1-25a2e07e1517036b.webp",
+      "sha256": "25a2e07e1517036b24918eb60505c43350d85a7afdb651fafa2f8c8b29d0f948",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-crouch-v1-25a2e07e1517036b.webp"
+    },
+    "starAdventures.tactical.officerFemaleFireV1": {
+      "bytes": 183140,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-fire-v1-67653ac7097cf031.webp",
+      "sha256": "67653ac7097cf031f6753457c9b79ad188d1f553e2cef9419bcb27f61632fa15",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-fire-v1-67653ac7097cf031.webp"
+    },
+    "starAdventures.tactical.officerFemaleHitV1": {
+      "bytes": 202136,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-hit-v1-5b1bae3f5a1aa867.webp",
+      "sha256": "5b1bae3f5a1aa8673398d1ada441d07ef54c3835515c863ccc2df31aa2ddc9bb",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-hit-v1-5b1bae3f5a1aa867.webp"
+    },
+    "starAdventures.tactical.officerFemaleJumpV1": {
+      "bytes": 207348,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-jump-v1-40bf8c99d86966ae.webp",
+      "sha256": "40bf8c99d86966ae6862176f10b8c12b477b9dd9101edd10217d1de8f46c0e1e",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-jump-v1-40bf8c99d86966ae.webp"
+    },
+    "starAdventures.tactical.officerFemaleKiaV1": {
+      "bytes": 136032,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-kia-v1-4f6ae3c57144d747.webp",
+      "sha256": "4f6ae3c57144d7474f96fda2bb2adb1bf0da0c9228a2b1195dafcabda4e1a370",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-kia-v1-4f6ae3c57144d747.webp"
+    },
+    "starAdventures.tactical.officerFemaleMvsV1": {
+      "bytes": 24578,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-mvs-v1-678cdda4febdd8f0.webp",
+      "sha256": "678cdda4febdd8f0cd0bad7690b9c7601e715eb08646aeb00e5a578817dd8bb4",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-mvs-v1-678cdda4febdd8f0.webp"
+    },
+    "starAdventures.tactical.officerFemaleRunV1": {
+      "bytes": 202628,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-run-v1-d0b5513c0c189f42.webp",
+      "sha256": "d0b5513c0c189f42290df40e1b563341e9805214f216357eaf97eecf5f8af4a2",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-run-v1-d0b5513c0c189f42.webp"
+    },
+    "starAdventures.tactical.officerFemaleWalkV1": {
+      "bytes": 205474,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-walk-v1-30b501bad90fd4a2.webp",
+      "sha256": "30b501bad90fd4a2b84f0d55e0d5e3f37b57716573806ab58906fdcfb61cb221",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-walk-v1-30b501bad90fd4a2.webp"
+    },
+    "starAdventures.tactical.officerMaleCrouchV1": {
+      "bytes": 238852,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-crouch-v1-5d0fe7e40f7fc71e.webp",
+      "sha256": "5d0fe7e40f7fc71e8be278057c46df9f8180f83b7e70c6c3444feaca9ac647c4",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-crouch-v1-5d0fe7e40f7fc71e.webp"
+    },
+    "starAdventures.tactical.officerMaleFireV1": {
+      "bytes": 187592,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-fire-v1-7ab0aa09a201fd95.webp",
+      "sha256": "7ab0aa09a201fd95bfe119491786f76e3c65b7eb7c703eb0e31027a573ea8958",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-fire-v1-7ab0aa09a201fd95.webp"
+    },
+    "starAdventures.tactical.officerMaleHitV1": {
+      "bytes": 236044,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-hit-v1-33c2d98ccf8ec939.webp",
+      "sha256": "33c2d98ccf8ec939175fba648a8a2fd68b0e2c11df4187f548ed4c6973947307",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-hit-v1-33c2d98ccf8ec939.webp"
+    },
+    "starAdventures.tactical.officerMaleJumpV1": {
+      "bytes": 280074,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-jump-v1-7ce1049816925102.webp",
+      "sha256": "7ce1049816925102c240b14a34bfe9ea79197091236e67d070e2bf50629e7692",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-jump-v1-7ce1049816925102.webp"
+    },
+    "starAdventures.tactical.officerMaleKiaV1": {
+      "bytes": 106246,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-kia-v1-6b05fc3ad60cf7e7.webp",
+      "sha256": "6b05fc3ad60cf7e7b09b56f6fbf366b554493521746bb7b87c5fc806ee8dc22d",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-kia-v1-6b05fc3ad60cf7e7.webp"
+    },
+    "starAdventures.tactical.officerMaleMvsV1": {
+      "bytes": 27508,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-mvs-male-v1-8345a78a52e2e7b8.webp",
+      "sha256": "8345a78a52e2e7b883eff8c56f01ce6f75c9a14ebbc436a41862b4cd102b68f6",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-mvs-male-v1-8345a78a52e2e7b8.webp"
+    },
+    "starAdventures.tactical.officerMaleRunV1": {
+      "bytes": 192210,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-run-v1-163dbbde72c2bdb8.webp",
+      "sha256": "163dbbde72c2bdb86b32dbce546b4f8bf123cce929709d24b52104f97f533a90",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-run-v1-163dbbde72c2bdb8.webp"
+    },
+    "starAdventures.tactical.officerMaleWalkV1": {
+      "bytes": 176278,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-male-walk-v1-4a62a5c267b28f00.webp",
+      "sha256": "4a62a5c267b28f00cb8bc98daab780985f10c44dad5a9cd6e953018c5ed30ac2",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-male-walk-v1-4a62a5c267b28f00.webp"
+    },
+    "starAdventures.tactical.veilAgentIdleV1": {
+      "bytes": 181634,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/veil-agent-idle-v1-bff4d3446dfe9b86.webp",
+      "sha256": "bff4d3446dfe9b86da7c960de085acaba1e1022a4bfcd0d0fe48c2ea0991f1d1",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/veil-agent-idle-v1-bff4d3446dfe9b86.webp"
+    },
+    "starAdventures.tactical.veilAgentWalkV1": {
+      "bytes": 111202,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/veil-agent-walk-v1-f1623f55c1218296.webp",
+      "sha256": "f1623f55c121829673ca1b432ba646d33c9b00ca446ab49e6e31b3c0f9efacc0",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/veil-agent-walk-v1-f1623f55c1218296.webp"
+    }
+  },
+  "baseUrl": "https://assets.chess-studio.shadowops.dpdns.org",
+  "version": 1
+}

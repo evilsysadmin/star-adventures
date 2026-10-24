@@ -1,0 +1,108 @@
+/* Playable mission sandbox: diegetic mission briefing above a genuine Three.js board. */
+.scenario-lab{min-width:0;margin-top:12px;border:1px solid #4b6775;background:#081926;color:#dbe7e4;overflow:hidden}
+.scenario-lab button{cursor:pointer}
+.scenario-lab button:focus-visible,.scenario-lab summary:focus-visible{outline:2px solid #f0d597;outline-offset:2px}
+.scenario-lab button:disabled{cursor:not-allowed;opacity:.49}
+.scenario-head{padding:17px 19px 15px;background:linear-gradient(125deg,#142f3b,#0c1d2e)}
+.scenario-eyebrow{font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.13em;color:#82c7bb}
+.scenario-head h2{font:600 clamp(19px,3vw,27px)/1.2 'Space Grotesk',sans-serif;color:#f9e9cf;margin:7px 0}
+.scenario-head p,.scenario-briefing p{margin:0;color:#a7c2c4;font-size:11px;line-height:1.65}
+.scenario-selector{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px 17px;background:#112633}
+.scenario-selector button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:6px;min-width:0;min-height:65px;padding:11px;border:1px solid #4b6870;background:#193340;color:#e2ede7}
+.scenario-selector button[aria-pressed=true]{border-color:#a6dfbf;background:#27514b}
+.scenario-selector strong{font-size:12px;font-weight:700;line-height:1.35}
+.scenario-selector span{font-size:10px;color:#acc9c6;line-height:1.45}
+.scenario-briefing{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 18px;border-bottom:1px solid #405867}
+.scenario-briefing h3{font:600 20px 'Space Grotesk',sans-serif;color:#f4e1b5;margin:5px 0}
+.scenario-turn{display:flex;flex-direction:column;gap:5px;flex:none;align-items:flex-end;color:#e2cb8c}
+.scenario-turn strong{font:700 16px 'Space Grotesk',sans-serif}
+.scenario-turn span{font-size:11px}
+.scenario-viewtools{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 15px;background:#0c222e}
+.scenario-viewtools button{border:1px solid #7cbdb1;background:#23444d;color:#e4f4ea;min-height:44px;padding:9px 13px;font-size:11px;font-weight:700}
+.scenario-viewtools button[aria-pressed=true]{background:#625134;border-color:#d5b97a;color:#fff1ca}
+.scenario-viewtools span{font:600 10px 'Space Grotesk',sans-serif;color:#a6c1ca}
+.scenario-board-shell{min-width:0}
+.scenario-board-shell:focus-visible{outline:2px solid #d9bd87;outline-offset:-2px}
+.scenario-viewport{height:clamp(440px,48vw,620px);width:100%;position:relative;background:#101f2b;overflow:hidden;border-block:1px solid #3f5e6d}
+.scenario-viewport canvas{display:block;width:100%;height:100%;touch-action:none}
+.scenario-viewport p{padding:16px;color:#dfca9c}
+.scenario-cell-bar{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;background:#112d39;padding:12px 17px}
+.scenario-cell-bar>div:first-child{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.scenario-cell-bar>div:first-child span{font:700 9px 'Space Grotesk',sans-serif;color:#9ac0ba;letter-spacing:.1em}
+.scenario-cell-bar strong{font:700 22px 'Space Grotesk',sans-serif;color:#f5d795}
+.scenario-cell-bar small{font-size:10px;color:#a5c7c8}
+.scenario-legend{display:flex;flex-wrap:wrap;gap:11px;color:#a9ccc8;font-size:10px}
+.scenario-legend span{display:inline-flex;align-items:center;gap:4px}
+.scenario-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#70ddf4}
+.scenario-dot.tech{background:#ffd283}
+.scenario-dot.evac{background:#98eba2}
+.scenario-dot.hostile{background:#e4946f}
+.scenario-roster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:12px 17px;background:#0d2230}
+.scenario-roster button{min-width:0;display:flex;flex-direction:column;gap:5px;align-items:flex-start;text-align:left;padding:12px 10px;background:#1b3845;border:1px solid #4b6a77;color:#d7e9e8}
+.scenario-roster button[aria-pressed=true]{border-color:#93d6c4;background:#28524d}
+.scenario-roster strong{font-size:12px}
+.scenario-roster span{font-size:10px;color:#a6c2c2}
+.scenario-roster small{font:700 14px 'Space Grotesk',sans-serif;color:#e9d49c}
+.scenario-orders{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px 17px;border-top:1px solid #345464}
+.scenario-orders button{min-width:0;min-height:48px;padding:10px 8px;border:1px solid #88b7a6;background:#224f4a;color:#e1f8e8;font:700 11px/1.4 'Space Grotesk',sans-serif}
+.scenario-orders button:disabled{background:#1b3440;border-color:#4e6873;color:#98a6aa}
+.scenario-orders button:last-child{background:#554631;border-color:#ab9166;color:#fcebcf}
+.scenario-notice{margin:0;padding:11px 17px;background:#17313a;color:#c7ddd5;font-size:11px;line-height:1.6;min-height:40px}
+.scenario-objectives{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:12px 17px;background:#0b1f2c}
+.scenario-objective{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #42616b;background:#152b39;color:#d4dedd;font-size:11px;min-width:0}
+.scenario-objective>span:first-child{font-size:17px;color:#d4bd8e}
+.scenario-objective small{color:#91b2b1;font-size:10px}
+.scenario-objective.completed{border-color:#538976;color:#bce8ce}
+.scenario-objective.completed>span:first-child{color:#84d69d}
+.scenario-success{margin:0;padding:15px 17px;color:#d4f2d9;border-top:1px solid #538976;font-size:12px}
+.scenario-grid,.scenario-log{margin:10px 17px;border:1px solid #3a5c6c;background:#102a37;min-width:0}
+.scenario-grid summary,.scenario-log summary{padding:12px;cursor:pointer;color:#bad4d1;font-size:11px}
+.scenario-grid>div{display:grid;gap:3px;padding:10px;overflow-x:auto}
+.scenario-grid button{min-width:33px;min-height:34px;background:#173a47;border:1px solid #577480;color:#d1e6e3;font-size:10px}
+.scenario-grid button[aria-pressed=true]{background:#776038;border-color:#f2d08e;color:#fff}
+.scenario-log ol{padding:0 16px 12px 36px;font-size:11px;line-height:1.75;color:#bed4d3}
+.scenario-disclaimer{padding:12px 17px;color:#7896a2;font-size:10px;line-height:1.5;margin:0}
+@media(max-width:520px){
+ .iso-mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+ .iso-mode-tabs button{font-size:9px;padding:8px 3px;min-width:0}
+ .scenario-head{padding:13px 11px}
+ .scenario-head h2{font-size:19px}
+ .scenario-selector{padding:9px;gap:5px}
+ .scenario-selector button{min-height:70px;padding:8px 5px}
+ .scenario-selector strong{font-size:10px}
+ .scenario-selector span{font-size:9px}
+ .scenario-briefing{padding:10px 11px;gap:9px}
+ .scenario-briefing h3{font-size:16px}
+ .scenario-briefing p{font-size:10px}
+ .scenario-turn strong{font-size:13px}
+ .scenario-turn span{font-size:10px}
+ .scenario-viewtools{flex-direction:column;align-items:stretch;padding:8px 11px;gap:5px}
+ .scenario-viewtools span{font-size:10px}
+ .scenario-viewport{height:510px}
+ .scenario-cell-bar{padding:10px 11px}
+ .scenario-roster{padding:9px;gap:5px}
+ .scenario-roster button{padding:9px 6px}
+ .scenario-roster strong{font-size:10px}
+ .scenario-roster span{font-size:9px}
+ .scenario-roster small{font-size:12px}
+ .scenario-orders{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px}
+ .scenario-orders button{min-height:48px;font-size:10px}
+ .scenario-notice,.scenario-objectives{padding:9px 11px}
+ .scenario-objective{font-size:10px;padding:8px 5px;gap:5px}
+ .scenario-grid,.scenario-log{margin:9px}
+ .scenario-grid>div{grid-auto-rows:minmax(34px,auto)}
+}
+@media(prefers-reduced-motion:reduce){.scenario-lab *{animation:none!important;transition:none!important}}
+
+/* Compact debrief follows an actual extraction; the bests remain folded away. */
+.scenario-debrief{padding:16px 18px;border-top:1px solid #67987f;background:linear-gradient(130deg,#153d3a,#102634);color:#cde8dd}
+.scenario-debrief h3{margin:6px 0;font:600 20px 'Space Grotesk',sans-serif;color:#fae8bf}
+.scenario-debrief p{margin:5px 0;font-size:11px;line-height:1.65}
+.scenario-debrief .scenario-success{border:0;padding:0;background:transparent}
+.scenario-debrief .scenario-debrief-scope{color:#abc8c6}
+.scenario-debrief button{margin-top:9px;padding:11px 16px;min-height:44px;background:#275a50;border:1px solid #94d7b4;color:#e9f6e7;font-weight:700}
+.scenario-training-records{margin:10px 17px;border:1px solid #476b66;background:#11312f}
+.scenario-training-records summary{padding:12px;cursor:pointer;color:#c5e4d7;font-size:11px}
+.scenario-training-records ul{padding:0 16px 0 33px;font-size:11px;line-height:1.9}
+.scenario-training-records p{padding:0 16px 12px;color:#9bbdb9;font-size:10px}
+@media(max-width:520px){.scenario-debrief{padding:14px 11px}.scenario-training-records{margin:9px}}

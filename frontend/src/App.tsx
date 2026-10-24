@@ -4,10 +4,16 @@ import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
 import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.mjs';
 import { FirstPersonView, type ViewState, type ExplorationEvent } from './components/FirstPersonView';
+import { TacticalViewSwitcher } from './components/TacticalViewSwitcher';
+import { DualMandatePanel } from './components/DualMandatePanel';
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
 import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
+import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
+import { performMedicalEvacuation } from '../../src/medicalEvacuation.mjs';
+import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
+import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
 
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
@@ -50,12 +56,22 @@ export function App() {
   const [exploration, setExploration] = useState<ViewState>(() => initialSpatial.state);
   const [initialAway] = useState(() => restoreAwaySession(localStorageOrNull()));
   const [awayTeam, setAwayTeam] = useState(() => initialAway.state);
+  const [initialMandate] = useState(() => restoreMandateSession(localStorageOrNull()));
+  const [mandate, setMandate] = useState<MandateState>(() => initialMandate.state);
+  const [medicalNotice, setMedicalNotice] = useState<string | null>(null);
+  const [coreNotice, setCoreNotice] = useState<string | null>(null);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
   useEffect(() => { persistSession(episode, session, localStorageOrNull()); }, [session]);
   useEffect(() => { persistSpatialSession(world, exploration, localStorageOrNull()); }, [exploration]);
   useEffect(() => { persistAwaySession(awayTeam, localStorageOrNull()); }, [awayTeam]);
+  useEffect(() => { persistMandateSession(mandate, localStorageOrNull()); }, [mandate]);
+  useEffect(() => {
+    if (awayTeam.findings.includes(PROBE_FINDING)) {
+      setMandate(before => reconcileObservedProbe(MANDATE_DEFINITION, before, awayTeam));
+    }
+  }, [awayTeam]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
   const access = availableConsoleOrders(world, exploration, episode, state);
@@ -72,12 +88,46 @@ export function App() {
         // An already resolved probe cannot award the finding again.
       }
     }
-  }, [session.crew, awayTeam]);
+    if (event.type === 'station' && event.action === 'extract-sensor-core') {
+      try {
+        const outcome = recoverSensorCore(
+          MANDATE_DEFINITION, mandate, world, position, session.crew, awayTeam
+        );
+        setMandate(outcome.state);
+        const officer = OFFICERS.find(item => item.id === outcome.report.officerId)?.name;
+        setCoreNotice(outcome.report.result === 'core-recovered'
+          ? `Núcleo asegurado por ${officer}. Registro clasificado actualizado.`
+          : `Acceso insuficiente: ${officer}, capacidad técnica ${outcome.report.skill}/5. Cambia especialistas en el puente.`);
+      } catch {
+        setCoreNotice(mandate.orders['recover-core'] !== 'active'
+          ? 'La directiva ya está resuelta; el núcleo no puede recuperarse dos veces.'
+          : 'No es posible completar la extracción de este archivo.');
+      }
+    }
+    if (event.type === 'station' && event.action === 'assist-evacuees') {
+      try {
+        const outcome = performMedicalEvacuation(
+          MANDATE_DEFINITION, mandate, world, position, session.crew, awayTeam
+        );
+        setMandate(outcome.state);
+        const name = OFFICERS.find(officer => officer.id === outcome.report.officerId)?.name;
+        setMedicalNotice(outcome.report.result === 'evacuated'
+          ? `Evacuación completada por ${name}. Los civiles están a salvo y constan en el diario.`
+          : `Asistencia insuficiente: mejor médico ${name}, habilidad ${outcome.report.skill}/5. Regresa al puente y cambia el equipo.`);
+      } catch {
+        setMedicalNotice(mandate.orders.evacuate === 'completed'
+          ? 'El rescate ya consta en el registro oficial.'
+          : 'La intervención no puede completarse en este momento.');
+      }
+    }
+  }, [session.crew, awayTeam, mandate]);
   const restart = () => {
     setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
     setAwayTeam(previous => ({ ...startAwayTeam(), squad: [...previous.squad] }));
     setExploration(startExploration(world));
     setActiveStation(null);
+    setMedicalNotice(null);
+    setCoreNotice(null);
     setExplorationKey(key => key + 1);
   };
   const select = (id: string) => setSession(prev => issueConsoleOrder(world, exploration, episode, prev, id));
@@ -121,6 +171,7 @@ export function App() {
               const officer = OFFICERS.find(candidate => candidate.id === id)!;
               return { id: officer.id, name: officer.name };
             })} />
+          <TacticalViewSwitcher />
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
@@ -173,6 +224,8 @@ export function App() {
                   ? `Investigación insuficiente · habilidad científica ${awayTeam.lastReport.skill}/5. Regresa a la nave para cambiar de especialistas.`
                   : exploration.area === 'bridge' ? 'Sonda pendiente. Selecciona especialistas antes del teletransporte.' : 'Sonda pendiente. Acércate e investígala con el equipo desplegado.'}
             </p>
+            {medicalNotice && <p className="away-finding" data-testid="medical-report" aria-live="polite">{medicalNotice}</p>}
+            {coreNotice && <p className="away-finding" data-testid="core-report" aria-live="polite">{coreNotice}</p>}
           </section>
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
@@ -203,6 +256,9 @@ export function App() {
               </div>
             )}
           </div>
+          <DualMandatePanel awayTeam={awayTeam} exploration={exploration}
+            accessedStationId={openedConsole?.id ?? null} mandate={mandate}
+            setMandate={setMandate} initialNotice={initialMandate.notice} />
           <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : openedConsole ? 'TECLAS 1–3 · ORDEN DE LA CONSOLA' : 'FLECHAS / WASD · E PARA USAR'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
         </section>
       </main>

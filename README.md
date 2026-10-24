@@ -27,6 +27,8 @@ Note: Chrome must be installed for Playwright's `channel: chrome`. GitHub-hosted
 
 - **Game rules and stories:** this repository, separate from Chess Studio and Chronicles.
 - **Infrastructure, staging, deployments and observability:** [shadowops-infra](https://github.com/evilsysadmin/shadowops-infra), only after explicit handoff.
+
+After **both** source CI jobs pass on a `main` push, the optional notification job requests Infra's existing `staradvs-pages-staging.yml` workflow. The game repository **never deploys** or accesses Cloudflare. To enable immediate cross-repository handoff, configure the `SHADOWOPS_INFRA_ACTIONS_TOKEN` **repository secret in Star Adventures**, using a GitHub fine-grained token restricted to `evilsysadmin/shadowops-infra` with **Actions: read/write** permission. Without it, or if dispatch temporarily fails, source CI remains green and Infra's scheduled staging reconciliation remains the fallback. Infra independently verifies exact source `main` SHA and finished, successful core/browser CI before any publication.
 - **No server yet:** the browser UI talks directly to a deterministic domain engine, not mocked API calls.
 
 Read `AGENTS.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` before extending the game.

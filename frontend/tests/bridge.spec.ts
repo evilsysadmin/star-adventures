@@ -270,6 +270,29 @@ for(const width of [390,1280]) {
   });
 }
 
+for (const width of [360, 390, 430, 1280]) {
+  test(`tactical camera proof stays visible at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 1280 ? 820 : 850 });
+    await page.goto('/');
+    await expect(page.getByTestId('tactical-canvas')).toBeVisible();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('oficial hombre 5:2');
+    await page.getByRole('button', { name: 'Movimiento: correr' }).click();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('saltar 8 FPS');
+    await page.getByRole('button', { name: 'Movimiento: saltar' }).click();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('agacharse 4 FPS');
+    await page.getByRole('button', { name: 'Movimiento: agacharse' }).click();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('disparar 9 FPS');
+    await page.getByRole('button', { name: 'Movimiento: disparar' }).click();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('recibir impacto 8 FPS');
+    await page.getByRole('button', { name: 'Movimiento: recibir impacto' }).click();
+    await expect(page.getByTestId('tactical-mvs')).toContainText('KIA 5 FPS');
+    await page.getByRole('button', { name: '7:7' }).click();
+    await expect(page.getByTestId('tactical-selected')).toContainText('7:7');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/tactical-camera-${width}.png`, fullPage: true });
+  });
+}
+
 test('F5 restores bridge heading and walkable tile without replaying movement', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto('/');
