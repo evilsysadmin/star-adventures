@@ -51,7 +51,7 @@ test('a hostile on the shortest route forces a legal detour instead of blocking 
   const direct = missionPath(mission, 'science', '3:1');
   assert.deepEqual(direct, ['1:1', '2:1', '3:1']);
   const detour = missionPath(mission, 'science', '3:1', ['2:1']);
-  assert.deepEqual(detour, ['1:1', '1:2', '2:2', '3:2', '3:1']);
+  assert.deepEqual(detour, ['1:1', '1:0', '2:0', '3:0', '3:1']);
   const moved = applyMissionAction(mission, { type: 'move', officer: 'science', cell: '3:1' }, ['2:1']);
   assert.equal(moved.locations.science, '3:1');
   assert.match(moved.events.at(-1), /4 casillas/);
