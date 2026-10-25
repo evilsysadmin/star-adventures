@@ -6,6 +6,7 @@ import { STATIONS, OFFICERS, officerAt, stationForChoice } from '../../src/crew.
 import { FirstPersonView, type ViewState, type ExplorationEvent } from './components/FirstPersonView';
 import { TacticalViewSwitcher } from './components/TacticalViewSwitcher';
 import { DualMandatePanel } from './components/DualMandatePanel';
+import { BridgeCombatReport } from './components/BridgeCombatReport';
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
@@ -227,6 +228,7 @@ export function App() {
             {medicalNotice && <p className="away-finding" data-testid="medical-report" aria-live="polite">{medicalNotice}</p>}
             {coreNotice && <p className="away-finding" data-testid="core-report" aria-live="polite">{coreNotice}</p>}
           </section>
+          {exploration.area === 'bridge' && <BridgeCombatReport />}
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
             <div className="panel-label">{terminal ? 'INFORME FINAL' : 'SITUACIÓN ACTUAL'}</div>
