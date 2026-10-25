@@ -6,7 +6,8 @@ import {
   deserializeCombatMissionInstance, serializeCombatMissionInstance,
   type CombatMissionInstance,
 } from './isoScenarioCombatMissionInstance.ts';
-import { newCombatReplaySession } from './isoScenarioCombatReplaySession.ts';
+import { newCombatReplaySession, persistCombatReplaySession } from './isoScenarioCombatReplaySession.ts';
+import type { CombatReplayHistory } from './isoScenarioCombatReplay.ts';
 import type { ScenarioId } from './isoScenarioCampaign.ts';
 
 export const COMBAT_MISSION_INSTANCE_SAVE_KEY =
@@ -96,4 +97,62 @@ export function restartCombatMissionInstanceSession(
     return 'conflict';
   }
   return writeAndVerify(fresh, storage);
+}
+
+/**
+ * Opt-in bridge between the v4 replay and the mission-attempt envelope.
+ * Save the replay first; an identity must never claim orders that v4 failed
+ * to persist. There is no cross-key transaction in localStorage, so consumers
+ * must require BOTH verified writes before treating an attempt as durable.
+ */
+export type CombatAttemptSave = Readonly<{
+  replaySaved: boolean;
+  identity: MissionInstanceWrite | 'untracked';
+}>;
+
+/** Called only by an explicit new/restarted v4 mission, never on F5. */
+export function startCombatMissionAttemptSession(
+  instanceId: string, scenarioId: ScenarioId,
+  storage: Pick<Storage, 'getItem' | 'setItem'> | null,
+): CombatAttemptSave {
+  if (!persistCombatReplaySession(newCombatReplaySession(scenarioId), storage)) {
+    return { replaySaved: false, identity: 'unavailable' };
+  }
+  return {
+    replaySaved: true,
+    identity: restartCombatMissionInstanceSession(instanceId, scenarioId, storage),
+  };
+}
+
+/**
+ * Keep an already-started attempt in sync with replay orders. Historical v4
+ * checkpoints without an identity stay untracked; never assign an ID
+ * retroactively on the first command or on reload.
+ */
+export function persistCombatMissionAttemptProgress(
+  history: CombatReplayHistory,
+  storage: Pick<Storage, 'getItem' | 'setItem'> | null,
+): CombatAttemptSave {
+  const current = readCombatMissionInstanceSession(storage);
+  if (current.instance) {
+    // Reject rewinds, scenario switches and rewritten commands BEFORE
+    // touching the authoritative v4 replay checkpoint.
+    try { advanceCombatMissionInstance(current.instance, history); }
+    catch { return { replaySaved: false, identity: 'conflict' }; }
+  }
+  if (!persistCombatReplaySession(history, storage)) {
+    return { replaySaved: false, identity: 'unavailable' };
+  }
+  if (!current.instance) {
+    return {
+      replaySaved: true,
+      identity: current.status === 'missing' ? 'untracked' : current.status,
+    };
+  }
+  return {
+    replaySaved: true,
+    identity: persistCombatMissionInstanceSession(
+      { instanceId: current.instance.instanceId, history }, storage,
+    ),
+  };
 }
