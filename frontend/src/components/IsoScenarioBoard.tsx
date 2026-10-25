@@ -12,9 +12,10 @@ import type { HostileId } from '../isoScenarioHostileTurn';
 type BoardProps = {
   scenario: Scenario; mission: MissionState; selected: string; focus: boolean;
   route: readonly string[] | null; hostilePositions?: Readonly<Record<HostileId,string>>;
+  hostileHealth?: Readonly<Record<HostileId,number>>;
   onPick: (cell: string) => void;
 };
-type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>)=>void };
+type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>)=>void };
 type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
@@ -26,7 +27,7 @@ const atCell=(id:string,size:Scenario['size'])=>{
   return cellCenter({col,row},size);
 };
 
-export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,onPick}:BoardProps){
+export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,onPick}:BoardProps){
  const host=useRef<HTMLDivElement>(null);
  const runtime=useRef<BoardRuntime|null>(null);
  const onPickRef=useRef(onPick);
@@ -219,7 +220,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     textures.push(texture);
    }
   }
-  let view={mission,selected,focus,route,hostilePositions};
+  let view={mission,selected,focus,route,hostilePositions,hostileHealth};
   const motions=new Map<HostileId,SpriteMotion>();
   const squadMotions=new Map<SquadId,SpriteMotion>();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -253,6 +254,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    for(const hostile of scenario.hostiles){
     const visual=hostileVisuals.get(hostile.id)!;
+    const alive=view.hostileHealth?.[hostile.id]!==0;
+    visual.ground.visible=alive;visual.sprite.visible=alive;
+    if(!alive)motions.delete(hostile.id);
     const p=atCell(view.hostilePositions?.[hostile.id]??hostile.cell,scenario.size);
     if(!motions.has(hostile.id)){
      visual.ground.position.set(p.x,.107,p.z);
@@ -306,14 +310,14 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    render();
    if(motions.size||squadMotions.size)frameRequest=requestAnimationFrame(animate);
   };
-  runtime.current={sync:(m,s,f,r,h)=>{
+  runtime.current={sync:(m,s,f,r,h,hp)=>{
    const previous=view.hostilePositions;
    const previousMission=view.mission;
    // Training -> encounter and F5 restore are instantaneous: only a real
    // subsequent change in replayed cells can start a visual walk.
    if(!reduceMotion&&!document.hidden&&previous&&h){
     for(const hostile of scenario.hostiles){
-     if(previous[hostile.id]===h[hostile.id])continue;
+     if(previous[hostile.id]===h[hostile.id]||hp?.[hostile.id]===0)continue;
      const from=atCell(previous[hostile.id],scenario.size);
      const to=atCell(h[hostile.id],scenario.size);
      motions.set(hostile.id,{from:new THREE.Vector3(from.x,.14,from.z),
@@ -328,7 +332,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
     }
    }else squadMotions.clear();
-   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h};
+   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp};
    sync();
    if((motions.size||squadMotions.size)&&!frameRequest)frameRequest=requestAnimationFrame(animate);
   }};
@@ -337,7 +341,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    const now=performance.now();
    let changed=false;
    scenario.hostiles.forEach((hostile,index)=>{
-    if(motions.has(hostile.id))return;
+    if(motions.has(hostile.id)||view.hostileHealth?.[hostile.id]===0)return;
     const frame=hostileIdleFrameAt(now,index*2);
     showFrame(hostileVisuals.get(hostile.id)!,'idle',frame);
     canvas.dataset.hostileIdleFrame=String(frame);
@@ -392,7 +396,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    renderer.dispose();canvas.remove();
   };
  },[scenario.id]);
- useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions);},[mission,selected,focus,routeId,hostilePositions]);
+ useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth);},[mission,selected,focus,routeId,hostilePositions,hostileHealth]);
  return <div className="scenario-viewport" ref={host} data-testid="scenario-viewport">
   {error&&<p role="status" data-testid="scenario-webgl-fallback">{error}</p>}
  </div>;
