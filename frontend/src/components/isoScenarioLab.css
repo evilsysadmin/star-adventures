@@ -123,3 +123,15 @@
 
 /* Four independent labs: 44px targets in a 2x2 mobile grid. */
 @media(max-width:520px){.scenario-mode-select{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* In v4, the live contact readout doubles as a keyboard/touch target picker.
+   Legacy modes keep their original read-only contact labels. */
+.scenario-hostile-status button{
+ min-height:44px;padding:8px 11px;border:1px solid #916c67;border-radius:4px;
+ background:#362e37;color:#f6d3b7;font:inherit;cursor:pointer;
+}
+.scenario-hostile-status button[aria-pressed="true"]{
+ border-color:#f5d795;background:#55483b;color:#fff0c9;
+}
+.scenario-hostile-status button:focus-visible{outline:2px solid #f5d795;outline-offset:2px}
+.scenario-hostile-status button:disabled{opacity:.52;cursor:default}
