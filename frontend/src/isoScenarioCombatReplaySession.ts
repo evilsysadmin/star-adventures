@@ -38,7 +38,7 @@ export function restoreCombatReplaySession(storage: Pick<Storage, 'getItem'> | n
 }
 
 export function persistCombatReplaySession(
-  history: CombatReplayHistory, storage: Pick<Storage, 'setItem'> | null,
+  history: CombatReplayHistory, storage: Pick<Storage, 'getItem' | 'setItem'> | null,
 ): boolean {
   if (!storage) return false;
   try {
@@ -46,7 +46,9 @@ export function persistCombatReplaySession(
     // Never serialize derived health, positions, shots or victory flags.
     const raw = serializeCombatReplay(history.scenarioId, history.actions);
     storage.setItem(COMBAT_REPLAY_SAVE_KEY, raw);
-    return true;
+    // Some storage shims silently discard writes; only report success when
+    // the exact replay checkpoint can be read back immediately.
+    return storage.getItem(COMBAT_REPLAY_SAVE_KEY) === raw;
   } catch {
     return false;
   }
