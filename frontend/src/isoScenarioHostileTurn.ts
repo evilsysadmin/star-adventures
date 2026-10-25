@@ -64,12 +64,18 @@ export function planHostileTurn(
   scenario: Scenario,
   squad: Readonly<Record<SquadId, string>>,
   hostilePositions: Readonly<Record<HostileId, string>>,
+  inactiveHostiles: readonly HostileId[] = [],
 ): HostileTurn {
   validateScenario(scenario);
   if (!squad || !hostilePositions ||
       Object.keys(squad).length !== OFFICERS.length ||
       Object.keys(hostilePositions).length !== HOSTILES.length)
     throw new TypeError('Invalid tactical occupants');
+  if (!Array.isArray(inactiveHostiles) ||
+      inactiveHostiles.some(id => !HOSTILES.includes(id)) ||
+      new Set(inactiveHostiles).size !== inactiveHostiles.length)
+    throw new TypeError('Invalid inactive hostile roster');
+  const inactive = new Set(inactiveHostiles);
   const terrain = new Set([
     ...scenario.walls, ...scenario.cover, scenario.sensor, scenario.extraction,
     ...(scenario.console ? [scenario.console] : []),
@@ -84,14 +90,16 @@ export function planHostileTurn(
   }
   for (const hostile of HOSTILES) {
     const cell = hostilePositions[hostile];
-    if (!coordinate(cell, scenario.size) || occupied.has(cell))
+    if (!coordinate(cell, scenario.size) || terrain.has(cell) ||
+        (!inactive.has(hostile) && occupied.has(cell)))
       throw new TypeError('Invalid or overlapping hostile position');
-    occupied.add(cell);
+    if (!inactive.has(hostile)) occupied.add(cell);
   }
   const positions = { ...hostilePositions };
   const moves: HostileMove[] = [];
   const threats: HostileThreat[] = [];
   for (const hostile of scenario.hostiles) {
+    if (inactive.has(hostile.id)) continue;
     const from = positions[hostile.id];
     const adjacent = OFFICERS.find(officer => neighbors(from, scenario.size).includes(squad[officer]));
     if (adjacent) {

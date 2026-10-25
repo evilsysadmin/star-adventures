@@ -24,7 +24,7 @@ const isScenarioId = (value: unknown): value is ScenarioId =>
 const isOfficer = (value: unknown): value is SquadId =>
   value === 'science' || value === 'security' || value === 'medic';
 
-function readAction(value: unknown): MissionAction {
+export function readAction(value: unknown): MissionAction {
   if (!isRecord(value)) throw new TypeError('Invalid tactical command');
   switch (value.type) {
     case 'end-turn':
