@@ -9,10 +9,14 @@ async function choose(page: Page, cell: string) {
  await expect(page.getByTestId('scenario-selected')).toHaveText(cell);
 }
 async function target(page: Page, id: 'aegis'|'veil') {
- const label=await page.getByTestId('scenario-hostile-'+id).textContent();
+ const chip=page.getByTestId('scenario-hostile-'+id);
+ const label=await chip.textContent();
  const cell=label?.match(/\b\d+:\d+\b/)?.[0];
  expect(cell).toBeTruthy();
- await choose(page,cell!);
+ await expect(chip).toBeEnabled();
+ await chip.click();
+ await expect(page.getByTestId('scenario-selected')).toHaveText(cell!);
+ await expect(chip).toHaveAttribute('aria-pressed','true');
 }
 for(const width of [390,1280]){
  test('v4 tactical fire, victory and F5 restore at '+width+'px',async ({page})=>{
@@ -39,6 +43,7 @@ for(const width of [390,1280]){
   await target(page,'aegis');
   await page.getByTestId('scenario-fire').click();
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 0/2');
+  await expect(page.getByTestId('scenario-hostile-aegis')).toBeDisabled();
   await target(page,'veil');
   await page.getByTestId('scenario-fire').click();
   await target(page,'veil');
@@ -61,5 +66,7 @@ for(const width of [390,1280]){
   await page.getByTestId('scenario-combat-retry').click();
   await expect(page.getByTestId('scenario-hostile-veil')).toContainText('PV 2/2');
   await expect(page.getByTestId('scenario-combat-result')).toHaveCount(0);
+  await page.getByTestId('scenario-combat-toggle').click();
+  await expect(page.getByTestId('scenario-hostile-aegis')).toHaveJSProperty('tagName','SPAN');
  });
 }
