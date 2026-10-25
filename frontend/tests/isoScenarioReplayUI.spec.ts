@@ -102,6 +102,8 @@ for(const width of [390,1280]){
   await expect(canvas).toHaveAttribute('data-shot-sequence','1');
   await expect(canvas).toHaveAttribute('data-shot-from','5:6');
   await expect(canvas).toHaveAttribute('data-shot-to','6:6');
+  // Capture during the 640ms tracer animation, not only after the flash fades.
+  await page.screenshot({path:'test-results/combat-v4-shot-travel-'+width+'.png',fullPage:true});
   await expect.poll(async()=>page.evaluate(()=>(window as Window & {seenShotPhases?:string[]}).seenShotPhases??[]),
    {timeout:5000}).toContain('impact');
   await page.screenshot({path:'test-results/combat-v4-shot-impact-'+width+'.png',fullPage:true});
