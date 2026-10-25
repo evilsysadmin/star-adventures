@@ -62,7 +62,7 @@ export function BridgeCombatReport() {
                 <span key={id}>{name}: {report.officerHealth[id as keyof typeof officerNames]} PV</span>)}
             </div>
           </>}
-        <p className="bridge-combat-scope">Informe reconstruido del combate experimental v4.
+        <p className="bridge-combat-scope" data-testid="bridge-combat-scope">Informe reconstruido del combate experimental v4.
           No concede recompensas ni modifica la campaña principal.</p>
       </div>
     </details>
