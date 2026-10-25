@@ -78,3 +78,19 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .away-party-portrait{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#356170;border:1px solid #7bb3b4;font-size:9px;color:#eaf5ee}
 @media(max-width:520px){.away-squad{margin:0 16px 14px;padding:11px 8px}.away-squad-slots{grid-template-columns:1fr}.away-squad-slot select{font-size:12px}.away-party{padding:9px}.away-party-members{gap:7px}.away-party-member{font-size:10px}}
 .tactical-probe{margin-top:1rem;padding:1rem;border:1px solid #396071;background:#071018;color:#d9e9ee}.tactical-probe h2{margin:.25rem 0;font-size:1.1rem}.tactical-probe p{margin:.25rem 0 .75rem}.tactical-motion{margin:-.35rem 0 .1rem;padding:.3rem .55rem;border:1px solid #547886;background:#102534;color:#d9e9ee;font:inherit;font-size:.75rem}.tactical-motion[aria-pressed=true]{border-color:#e8b85b;color:#f2cb7b}.tactical-canvas{width:100%;height:300px;overflow:hidden;border:1px solid #547886}.tactical-canvas canvas{display:block;width:100%;height:100%;touch-action:manipulation}.tactical-controls{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;margin-top:.75rem}.tactical-controls button{min-width:0;padding:.35rem .05rem;border:1px solid #547886;background:#102534;color:#d9e9ee;font:inherit;font-size:.68rem}.tactical-controls button[aria-pressed=true]{outline:2px solid #e8b85b;outline-offset:-2px}
+
+/* Optional bridge-only v4 sandbox debrief: no campaign handoff or new save. */
+.bridge-combat-report{margin:0 25px 16px;border:1px solid #3a5d67;background:#102531;color:#d7e9e5;min-width:0}
+.bridge-combat-report summary{display:flex;justify-content:space-between;align-items:center;gap:9px;cursor:pointer;padding:12px 13px;list-style:none;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.06em}
+.bridge-combat-report summary::-webkit-details-marker{display:none}
+.bridge-combat-report summary:hover{background:#1b3845}
+.bridge-combat-report summary:focus-visible{outline:2px solid #8ce2ce;outline-offset:-2px}
+.bridge-combat-action{color:#d8bd91;white-space:nowrap}
+.bridge-combat-body{border-top:1px solid #355662;padding:13px;overflow-wrap:anywhere;font:12px/1.6 'DM Sans',sans-serif}
+.bridge-combat-body p{margin:7px 0}
+.bridge-combat-body strong{display:block;color:#e8d4aa;font-size:13px}
+.bridge-combat-scenario{color:#bad3d2}
+.bridge-combat-metrics,.bridge-combat-health{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.bridge-combat-metrics span,.bridge-combat-health span{padding:5px 8px;border:1px solid #375b67;background:#193542}
+.bridge-combat-scope{color:#a5bfc3;font-size:11px}
+@media(max-width:520px){.bridge-combat-report{margin:0 16px 14px}.bridge-combat-report summary{font-size:9px;letter-spacing:0;padding:11px}.bridge-combat-body{padding:11px}.bridge-combat-metrics span,.bridge-combat-health span{font-size:11px}}
