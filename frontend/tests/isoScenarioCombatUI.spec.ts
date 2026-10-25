@@ -12,6 +12,12 @@ test('opt-in v3 combat displays real wounds and defeat, restores F5 and isolates
  const oldHostile = await page.evaluate(key => localStorage.getItem(key), HOSTILE_ENCOUNTER_SAVE_KEY);
  await page.getByTestId('scenario-combat-toggle').click();
  await expect(page.getByTestId('scenario-combat-toggle')).toHaveAttribute('aria-pressed', 'true');
+ const modeBoxes = await Promise.all(['scenario-training-toggle','scenario-hostile-toggle','scenario-combat-toggle']
+  .map(id => page.getByTestId(id).boundingBox()));
+ expect(modeBoxes.every(Boolean)).toBe(true);
+ expect(Math.max(...modeBoxes.map(box => box!.y)) - Math.min(...modeBoxes.map(box => box!.y)))
+  .toBeLessThan(3); // all three simulation choices share one visual row on mobile
+
  await expect(page.getByTestId('scenario-hp-medic')).toHaveText('PV 3 / 3');
  const actions: { type: 'end-turn' }[] = [];
  let expected = replayCombatEncounterCommands('relay', actions).encounter;

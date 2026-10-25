@@ -199,9 +199,9 @@ export function IsoScenarioLab(){
     <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode&&!combatMode}
      onClick={()=>switchEncounter('training')}>Entrenamiento</button>
     <button type="button" data-testid="scenario-hostile-toggle" aria-pressed={hostileMode}
-     onClick={()=>switchEncounter('hostile')}>Encuentro hostil · experimental</button>
+     onClick={()=>switchEncounter('hostile')}>Patrulla · sin daño</button>
     <button type="button" data-testid="scenario-combat-toggle" aria-pressed={combatMode}
-     onClick={()=>switchEncounter('combat')}>Combate con heridas · experimental</button>
+     onClick={()=>switchEncounter('combat')}>Combate · con daño</button>
    </div>
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
