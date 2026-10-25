@@ -268,9 +268,18 @@ export function IsoScenarioLab(){
      :route?'Oficial en su casilla':'Sin ruta disponible'}</small>
    </div>
    {hostilePositions&&<div className="scenario-hostile-status" data-testid="scenario-hostile-status"
-    aria-label="Posiciones enemigas verificadas">
-    <span data-testid="scenario-hostile-aegis">Aegis {hostilePositions.aegis}{hostileHealth&&' · PV '+hostileHealth.aegis+'/'+COMBAT_HOSTILE_MAX_HP}</span>
-    <span data-testid="scenario-hostile-veil">Velo {hostilePositions.veil}{hostileHealth&&' · PV '+hostileHealth.veil+'/'+COMBAT_HOSTILE_MAX_HP}</span>
+    aria-label={replayMode?'Contactos enemigos · selecciona un objetivo':'Posiciones enemigas verificadas'}>
+    {(['aegis','veil'] as const).map(id=>{
+     const label=id==='aegis'?'Aegis':'Velo';
+     const text=label+' '+hostilePositions[id]+(hostileHealth?' · PV '+hostileHealth[id]+'/'+COMBAT_HOSTILE_MAX_HP:'');
+     return replayMode
+      ? <button key={id} type="button" data-testid={`scenario-hostile-${id}`}
+       aria-label={`Seleccionar objetivo ${label} en ${hostilePositions[id]}`}
+       aria-pressed={selected===hostilePositions[id]&&hostileHealth?.[id]!==0}
+       disabled={hostileHealth?.[id]===0||!!replay?.victory||!!replay?.encounter.failed}
+       onClick={()=>choose(hostilePositions[id])}>{text}</button>
+      : <span key={id} data-testid={`scenario-hostile-${id}`}>{text}</span>;
+    })}
    </div>}
    <div className="scenario-legend">
     <span> <i className="scenario-dot sci"/> Ciencia</span>
