@@ -76,6 +76,15 @@ for(const width of [390,1280]){
   await target(page,'aegis');
   await expect(page.getByTestId('scenario-fire')).toBeEnabled();
   const canvas=page.getByTestId('scenario-render-canvas');
+  const [boardRect,fireRect]=await Promise.all([
+   canvas.boundingBox(),page.getByTestId('scenario-fire').boundingBox(),
+  ]);
+  expect(boardRect).not.toBeNull();
+  expect(fireRect).not.toBeNull();
+  expect(fireRect!.x).toBeGreaterThanOrEqual(boardRect!.x);
+  expect(fireRect!.y).toBeGreaterThanOrEqual(boardRect!.y);
+  expect(fireRect!.x+fireRect!.width).toBeLessThanOrEqual(boardRect!.x+boardRect!.width);
+  expect(fireRect!.y+fireRect!.height).toBeLessThanOrEqual(boardRect!.y+boardRect!.height);
   await page.evaluate(()=>{
    const element=document.querySelector('[data-testid="scenario-render-canvas"]')!;
    const state=window as Window & { seenShotPhases?:string[] };
