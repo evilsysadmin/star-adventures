@@ -68,7 +68,7 @@ test('future/corrupt records fail closed and are never silently replaced', () =>
     assert.equal(persistCombatMissionInstanceSession(instance(first), store), 'incompatible');
     assert.equal(store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY), raw);
   }
-  assert.equal(persistCombatMissionInstanceSession(instance('bad-id'), storage()), 'conflict');
+  assert.equal(persistCombatMissionInstanceSession({ instanceId: 'bad-id', history: replayCombatCommands('relay', []) }, storage()), 'conflict');
 });
 
 test('silent write loss, quota errors and denied reads never claim a durable save', () => {
