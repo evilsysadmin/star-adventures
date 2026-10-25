@@ -78,7 +78,10 @@
  .scenario-turn span{font-size:10px}
  .scenario-viewtools{flex-direction:column;align-items:stretch;padding:8px 11px;gap:5px}
  .scenario-viewtools span{font-size:10px}
- /* A tall mobile canvas made the 10x10 arena a tiny island in empty space.\n    Keep the full-board orthographic camera and its exact cell picking, but\n    give it a near-square viewport so the squad is readable at 390px. */\n .scenario-viewport{height:clamp(330px,95vw,390px)}
+ /* A tall mobile canvas made the 10x10 arena a tiny island in empty space.
+    Keep the full-board orthographic camera and its exact cell picking, but
+    give it a near-square viewport so the squad is readable at 390px. */
+ .scenario-viewport{height:clamp(330px,95vw,390px)}
  .scenario-cell-bar{padding:10px 11px}
  .scenario-roster{padding:9px;gap:5px}
  .scenario-roster button{padding:9px 6px}
