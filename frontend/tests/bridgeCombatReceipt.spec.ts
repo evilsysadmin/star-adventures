@@ -69,7 +69,7 @@ for (const width of [390, 1280]) {
 
     await button.click();
     await expect(page.getByTestId('bridge-combat-receipt-status')).toContainText('añadida');
-    await expect(page.getByTestId('bridge-combat-ledger-summary')).toContainText('1 extracciones');
+    await expect(page.getByTestId('bridge-combat-ledger-summary')).toContainText('1 extracción');
     await expect(button).toBeDisabled();
     const saved = await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY);
     expect(JSON.parse(saved!)).toEqual({ version: 2, checkpoints: [extracted] });
@@ -88,7 +88,7 @@ for (const width of [390, 1280]) {
 
     await page.reload();
     await panel.locator('summary').first().click();
-    await expect(page.getByTestId('bridge-combat-ledger-summary')).toContainText('1 extracciones');
+    await expect(page.getByTestId('bridge-combat-ledger-summary')).toContainText('1 extracción');
     await button.click();
     await expect(page.getByTestId('bridge-combat-receipt-status')).toContainText('ya estaba registrada');
     expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY))
@@ -154,7 +154,7 @@ test('bridge reads v1 receipt as history but does not rewrite it', async ({ page
     key: COMBAT_REPLAY_SAVE_KEY, value: alternate });
   const panel = page.getByTestId('bridge-combat-report');
   await panel.locator('summary').first().click();
-  await expect(page.getByTestId('bridge-combat-ledger-summary')).toContainText('1 extracciones');
+  await expect(page.getByTestId('bridge-combat-ledger-summary')).toContainText('1 extracción');
   expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY))
     .toBeNull();
   await page.getByTestId('bridge-combat-record-extraction').click();
