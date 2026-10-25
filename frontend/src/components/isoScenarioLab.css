@@ -147,11 +147,22 @@
 }
 .scenario-play-combat:focus-visible{outline:2px solid #fff0c5;outline-offset:3px}
 .scenario-fire-guide{
- grid-column:1/-1;margin:2px 0;padding:9px 12px;
+ margin:0;padding:9px 12px;
  color:#f1dcb7;background:#283b43;border-left:3px solid #f3bd7a;
  font:500 11px/1.6 'Space Grotesk',sans-serif;
 }
 .scenario-fire-guide strong{color:#fff0c9}
-.scenario-orders [data-testid="scenario-fire"]:not(:disabled){
- border-color:#f1b56e;background:#764c36;color:#fff1cf;font-weight:800;
+/* Keep the fire command inside the visible scene instead of below its 510px
+   viewport. The small corner control leaves the tactical picking field usable. */
+.scenario-board-shell{position:relative}
+.scenario-fire-overlay{
+ position:absolute;bottom:16px;right:12px;z-index:2;min-width:152px;
+ min-height:48px;padding:10px 14px;border:2px solid #ffe2a2;border-radius:6px;
+ background:#8b4b2c;color:#fff7de;font:800 12px 'Space Grotesk',sans-serif;
+ box-shadow:0 4px 17px #071a24aa;cursor:pointer;
 }
+.scenario-fire-overlay:disabled{
+ border-color:#8199a2;background:#1b3440df;color:#bfd0d4;cursor:default;
+}
+.scenario-fire-overlay:focus-visible{outline:3px solid #fff8b9;outline-offset:3px}
+@media(max-width:520px){.scenario-fire-overlay{right:10px;bottom:12px;min-width:146px}}
