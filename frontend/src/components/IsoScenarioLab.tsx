@@ -91,13 +91,14 @@ export function IsoScenarioLab(){
    const hits=next.combat.encounter.hits.map(hit=>hit.hostile+' hiere a '+hit.officer+': '+hit.remainingHp+'/'+COMBAT_OFFICER_MAX_HP+' PV');
    setNotice((saved?'':'Combate v4 no guardado · ')+[
     next.combat.encounter.mission.events.at(-1)||'Orden ejecutada',...hits,
-    ...(next.combat.victory?['Victoria · amenazas neutralizadas']:[]),
+    ...(next.combat.victory&&!replay?.victory?['Amenazas neutralizadas · continúa los objetivos y solicita extracción']:[]),
+    ...(next.combat.encounter.mission.completed?['Extracción confirmada · misión completada']:[]),
     ...(next.combat.encounter.failed?['Escuadra incapacitada · encuentro terminado']:[]),
    ].join(' · '));
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
  };
  const available=(command:MissionAction)=>{
-  if(mission.completed||combat?.failed||replay?.victory||activeActions.length>=MAX_SCENARIO_COMMANDS)return false;
+  if(mission.completed||combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS)return false;
   try{
    if(replayMode)replayCombatCommands(scenarioId,[...replayHistory.actions,command]);
    else if(combatMode)replayCombatEncounterCommands(scenarioId,[...combatHistory.actions,command]);
@@ -313,13 +314,13 @@ export function IsoScenarioLab(){
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
     {fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
    </button>}
-   <button type="button" data-testid="scenario-end-turn" disabled={mission.completed||!!combat?.failed||!!replay?.victory||activeActions.length>=MAX_SCENARIO_COMMANDS}
+   <button type="button" data-testid="scenario-end-turn" disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
     onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
   </div>
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
   {combat&&(combat.failed||mission.completed||!!replay?.victory)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
-   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':replay?.victory?'Victoria · amenazas neutralizadas':'Extracción confirmada · misión completada'}</strong>
+   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
    <p>Estado reconstruido del encuentro {replayMode?'v4':'v3'}; no modifica el entrenamiento ni la campaña.</p>
    <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
   </section>}
