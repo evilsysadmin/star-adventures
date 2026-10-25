@@ -106,9 +106,13 @@ for(const width of [390,1280]){
   // screenshot takes long enough for this short-lived effect to disappear.
   await expect(canvas).toHaveAttribute('data-shot-phase','travel');
   await canvas.screenshot({path:'test-results/combat-v4-shot-travel-'+width+'.png'});
+  // A late full-page capture cannot prove the impact flash was visible.
+  // Capture the WebGL canvas during the actual impact phase instead.
+  await expect(canvas).toHaveAttribute('data-shot-phase','impact',{timeout:5000});
+  await canvas.screenshot({path:'test-results/combat-v4-shot-impact-'+width+'.png'});
   await expect.poll(async()=>page.evaluate(()=>(window as Window & {seenShotPhases?:string[]}).seenShotPhases??[]),
    {timeout:5000}).toContain('impact');
-  await page.screenshot({path:'test-results/combat-v4-shot-impact-'+width+'.png',fullPage:true});
+  await page.screenshot({path:'test-results/combat-v4-shot-post-'+width+'.png',fullPage:true});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
   await page.getByTestId('scenario-end-turn').click();
   await target(page,'aegis');
