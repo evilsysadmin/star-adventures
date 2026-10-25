@@ -53,14 +53,23 @@ test('defeated contacts stop moving, threatening and blocking movement', () => {
   assert.equal(next.combat.encounter.threats.some(threat => threat.hostile === 'aegis'), false);
 });
 
-test('all hostiles eliminated yields replay-derived victory and terminal state', () => {
+test('all hostiles eliminated ends firing, but not mission objectives', () => {
   const history = replayCombatCommands('relay', win);
   assert.equal(history.combat.victory, true);
   assert.deepEqual(history.combat.hostileHealth, { aegis: 0, veil: 0 });
   assert.equal(history.combat.encounter.mission.ap, 0);
   assert.equal(history.combat.shots.length, 4);
-  assert.throws(() => replayCombatCommands('relay', [...win, { type: 'end-turn' }]),
-    /already ended/);
+  const continued = replayCombatCommands('relay', [...win, { type: 'end-turn' }]);
+  assert.equal(continued.combat.victory, true);
+  assert.equal(continued.combat.encounter.mission.round, 3);
+  assert.equal(continued.combat.encounter.mission.ap, 3);
+  assert.equal(continued.combat.encounter.enemyTurns, history.combat.encounter.enemyTurns,
+    'no phantom retaliation after every hostile has fallen');
+  assert.deepEqual(continued.combat.encounter.health, history.combat.encounter.health);
+  assert.deepEqual(continued.combat.encounter.moves, []);
+  assert.deepEqual(continued.combat.encounter.threats, []);
+  assert.throws(() => replayCombatCommands('relay',
+    [...win, { type: 'fire', officer: 'security', hostile: 'veil' }]), /already ended/);
 });
 
 test('v4 checkpoint round-trips without changing any historical save version', () => {

@@ -46,7 +46,10 @@ export function replayCombatCommands(
   let combat = startCombatFire(replayCombatEncounter(scenarioId, []));
   for (const input of commands) {
     const action = readCombatAction(input);
-    if (combat.victory || combat.encounter.failed || combat.encounter.mission.completed)
+    // Winning the firefight is not mission extraction. Preserve science/rescue
+    // orders after the last hostile falls, but never permit another shot.
+    if (combat.encounter.failed || combat.encounter.mission.completed ||
+        (combat.victory && action.type === 'fire'))
       throw new RangeError('Combat encounter already ended');
     if (action.type === 'fire') {
       // Old end-turn markers must not masquerade as fresh impacts after firing.
@@ -68,7 +71,8 @@ export function replayCombatCommands(
       let health = combat.encounter.health;
       let failed = false;
       let enemyTurns = combat.encounter.enemyTurns;
-      if (action.type === 'end-turn') {
+      // After victory, an end-turn restores AP without a phantom enemy turn.
+      if (action.type === 'end-turn' && !combat.victory) {
         const turn = planHostileTurn(
           SCENARIOS[scenarioId], mission.locations, positions, defeated,
         );

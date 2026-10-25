@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { combatMissionReport } from '../src/isoScenarioCombatMissionReport.ts';
 import { replayCombatCommands } from '../src/isoScenarioCombatReplay.ts';
+import { missionPath } from '../src/isoScenarioCampaign.ts';
 
 const approach = [
   { type: 'move', officer: 'security', cell: '3:7' },
@@ -66,6 +67,48 @@ test('replay-derived incapacitation is distinct from victory and extraction', ()
   assert.equal(report.hostilesNeutralized, 0);
   assert.ok(report.wounds >= 3);
   assert.equal(report.shots, 0);
+});
+
+test('neutralized contacts permit science, operations and actual extraction after victory', () => {
+  const actions = [...victory];
+  const state = () => replayCombatCommands('relay', actions).combat.encounter.mission;
+  const order = action => {
+    if (action.type !== 'end-turn' && state().ap === 0) actions.push({ type: 'end-turn' });
+    actions.push(action);
+    replayCombatCommands('relay', actions); // each new command must be legal
+  };
+  const travel = (officer, destination) => {
+    let path = missionPath(state(), officer, destination);
+    assert.ok(path, 'authored objective must be reachable');
+    while (path.length > 1) {
+      order({ type: 'move', officer, cell: path[Math.min(5, path.length - 1)] });
+      path = missionPath(state(), officer, destination);
+      assert.ok(path);
+    }
+  };
+
+  travel('science', '9:1'); // adjacent to the relay sensor
+  order({ type: 'scan', officer: 'science' });
+  travel('security', '9:7'); // adjacent to the relay console
+  order({ type: 'operate', officer: 'security' });
+  travel('security', '9:9'); // extraction beacon
+  order({ type: 'extract', officer: 'security' });
+
+  const report = combatMissionReport({ scenarioId: 'relay', actions });
+  assert.equal(report.status, 'mission-extracted');
+  assert.deepEqual(report.objectives, {
+    scanned: true, operated: true, rescued: false, extracted: true,
+  });
+  assert.equal(report.hostilesNeutralized, 2);
+  assert.equal(report.enemyTurns, 1, 'defeated contacts never receive new turns');
+  assert.equal(report.shots, 4);
+  assert.deepEqual(report.officerHealth, combatMissionReport({
+    scenarioId: 'relay', actions: victory,
+  }).officerHealth, 'post-victory objective work cannot cause phantom wounds');
+  assert.deepEqual(combatMissionReport({ scenarioId: 'relay', actions }),
+    combatMissionReport({ scenarioId: 'relay', actions: structuredClone(actions) }));
+  assert.throws(() => replayCombatCommands('relay', [...actions, { type: 'end-turn' }]),
+    /already ended/, 'extraction remains terminal');
 });
 
 test('report replays untrusted commands and ignores forged derived results', () => {
