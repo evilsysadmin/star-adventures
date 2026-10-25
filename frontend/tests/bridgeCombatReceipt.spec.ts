@@ -6,6 +6,8 @@ import {
 } from '../src/isoScenarioCombatReplay';
 import { COMBAT_EXTRACTION_RECEIPT_KEY } from '../src/isoScenarioCombatExtractionReceipt';
 import { COMBAT_EXTRACTION_LEDGER_KEY } from '../src/isoScenarioCombatExtractionLedger';
+import { COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY } from '../src/isoScenarioCombatExtractionAttemptLedger';
+import { COMBAT_MISSION_INSTANCE_SAVE_KEY } from '../src/isoScenarioCombatMissionInstanceSession';
 
 const victory: CombatReplayAction[] = [
   { type: 'move', officer: 'security', cell: '3:7' },
@@ -179,4 +181,106 @@ test('bridge refuses incompatible ledger without deleting saved evidence', async
   await expect(page.getByTestId('bridge-combat-receipt-status')).toContainText('incompatible');
   expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY))
     .toBe('{broken');
+});
+
+const FIRST_ATTEMPT = '12345678-1234-4234-8234-123456789abc';
+const SECOND_ATTEMPT = '87654321-4321-4321-8321-abcdefabcdef';
+
+for (const width of [390, 1280]) {
+  test(`bridge records separate v3 mission attempts with identical orders at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 850 : 820 });
+    await page.goto('/');
+    await page.evaluate(({ replayKey, identityKey, ledgerKey, checkpoint, id }) => {
+      localStorage.removeItem(ledgerKey);
+      localStorage.setItem(replayKey, checkpoint);
+      localStorage.setItem(identityKey, JSON.stringify({ version: 1, instanceId: id, checkpoint }));
+    }, { replayKey: COMBAT_REPLAY_SAVE_KEY, identityKey: COMBAT_MISSION_INSTANCE_SAVE_KEY,
+      ledgerKey: COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY, checkpoint: extracted, id: FIRST_ATTEMPT });
+    await page.reload();
+
+    const panel = page.getByTestId('bridge-combat-report');
+    await panel.locator('summary').first().click();
+    await expect(page.getByTestId('bridge-combat-status')).toContainText('Extracción confirmada');
+    await expect(page.getByTestId('bridge-combat-record-extraction')).toHaveCount(0);
+    const button = page.getByTestId('bridge-combat-record-attempt');
+    await expect(button).toBeVisible();
+    expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByTestId('bridge-combat-attempt-ledger-summary')).toContainText('0 misiones');
+    const previous = await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY);
+
+    await button.click();
+    await expect(page.getByTestId('bridge-combat-attempt-status')).toContainText('añadida');
+    await expect(page.getByTestId('bridge-combat-attempt-ledger-summary')).toContainText('1 misión');
+    await expect(button).toBeDisabled();
+    const saved = await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY);
+    expect(JSON.parse(saved!)).toEqual({ version: 3, attempts: [
+      { instanceId: FIRST_ATTEMPT, checkpoint: extracted },
+    ] });
+    expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY)).toBe(previous);
+
+    await page.reload();
+    await panel.locator('summary').first().click();
+    await expect(page.getByTestId('bridge-combat-attempt-ledger-summary')).toContainText('1 misión');
+    await button.click();
+    await expect(page.getByTestId('bridge-combat-attempt-status')).toContainText('ya estaba registrada');
+    expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY)).toBe(saved);
+
+    // Another genuine attempt can share the exact replay without being deduplicated.
+    await panel.locator('summary').first().click();
+    await page.evaluate(({ key, checkpoint }) => {
+      localStorage.setItem(key, JSON.stringify({
+        version: 1, instanceId: '87654321-4321-4321-8321-abcdefabcdef', checkpoint,
+      }));
+    }, { key: COMBAT_MISSION_INSTANCE_SAVE_KEY, checkpoint: extracted });
+    await panel.locator('summary').first().click();
+    await button.click();
+    await expect(page.getByTestId('bridge-combat-attempt-status')).toContainText('añadida');
+    await expect(page.getByTestId('bridge-combat-attempt-ledger-summary')).toContainText('2 misiones');
+    await page.getByTestId('bridge-combat-attempt-ledger-summary').click();
+    await expect(page.getByTestId('bridge-combat-attempt-ledger-entries').locator('li')).toHaveCount(2);
+    const after = await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY);
+    expect(JSON.parse(after!).attempts).toEqual([
+      { instanceId: FIRST_ATTEMPT, checkpoint: extracted },
+      { instanceId: SECOND_ATTEMPT, checkpoint: extracted },
+    ]);
+    expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_LEDGER_KEY)).toBe(previous);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: `test-results/bridge-identified-attempts-${width}.png`, fullPage: true });
+  });
+}
+
+test('bridge refuses mismatched identity and incompatible v3 history without rewriting either', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(({ replayKey, identityKey, ledgerKey, checkpoint, mismatch }) => {
+    localStorage.setItem(replayKey, checkpoint);
+    localStorage.setItem(identityKey, JSON.stringify({
+      version: 1, instanceId: '12345678-1234-4234-8234-123456789abc', checkpoint: mismatch,
+    }));
+    localStorage.removeItem(ledgerKey);
+  }, { replayKey: COMBAT_REPLAY_SAVE_KEY, identityKey: COMBAT_MISSION_INSTANCE_SAVE_KEY,
+    ledgerKey: COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY, checkpoint: extracted, mismatch: unextracted });
+  await page.reload();
+  const panel = page.getByTestId('bridge-combat-report');
+  await panel.locator('summary').first().click();
+  await page.getByTestId('bridge-combat-record-attempt').click();
+  await expect(page.getByTestId('bridge-combat-attempt-status')).toContainText('no coinciden');
+  expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY))
+    .toBeNull();
+
+  await panel.locator('summary').first().click();
+  await page.evaluate(({ identityKey, ledgerKey, checkpoint }) => {
+    localStorage.setItem(identityKey, JSON.stringify({
+      version: 1, instanceId: '12345678-1234-4234-8234-123456789abc', checkpoint,
+    }));
+    localStorage.setItem(ledgerKey, '{broken');
+  }, { identityKey: COMBAT_MISSION_INSTANCE_SAVE_KEY,
+    ledgerKey: COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY, checkpoint: extracted });
+  await panel.locator('summary').first().click();
+  await page.getByTestId('bridge-combat-attempt-ledger-summary').click();
+  await expect(page.getByTestId('bridge-combat-attempt-ledger-error')).toContainText('incompatible');
+  await page.getByTestId('bridge-combat-record-attempt').click();
+  await expect(page.getByTestId('bridge-combat-attempt-status')).toContainText('incompatible');
+  expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY))
+    .toBe('{broken');
+  await expect(page.getByTestId('bridge-combat-record-extraction')).toHaveCount(0);
 });
