@@ -277,10 +277,19 @@ export function IsoScenarioLab(){
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
+  {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide">
+   <strong>Para disparar:</strong> selecciona un oficial, toca un enemigo y pulsa Disparar.
+   {fireTarget?(fireReady?' Objetivo a tiro.':' Acerca al oficial o despeja la línea de visión; comprueba tus órdenes.'):' Selecciona un contacto Aegis o Velo.'}
+  </p>}
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
     selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} onPick={choose}/>
+   {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
+    disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
+    onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
+    {fireReady?'DISPARAR · '+fireTarget:fireTarget?'Sin tiro disponible':'APUNTAR · elige enemigo'}
+   </button>}
   </div>
   <div className="scenario-cell-bar">
    <div><span>CASILLA ELEGIDA</span>
@@ -331,14 +340,6 @@ export function IsoScenarioLab(){
     onClick={()=>execute(rescue)}>Rescatar</button>
    <button type="button" data-testid="scenario-extract" disabled={!available(extract)}
     onClick={()=>execute(extract)}>Solicitar extracción</button>
-   {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide">
-    <strong>Para disparar:</strong> selecciona un oficial, toca un enemigo y pulsa Disparar.
-    {fireTarget?(fireReady?' Objetivo a tiro.':' Acerca al oficial o despeja la línea de visión; comprueba tus órdenes.'):' Selecciona un contacto Aegis o Velo.'}
-   </p>}
-   {replayMode&&<button type="button" data-testid="scenario-fire" disabled={!fireReady}
-    onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
-    {fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
-   </button>}
    <button type="button" data-testid="scenario-end-turn" disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
     onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
   </div>
