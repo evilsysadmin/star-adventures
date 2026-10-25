@@ -135,3 +135,23 @@
 }
 .scenario-hostile-status button:focus-visible{outline:2px solid #f5d795;outline-offset:2px}
 .scenario-hostile-status button:disabled{opacity:.52;cursor:default}
+
+
+/* P0: make the playable firefight discoverable before the tactical viewport,
+   and explain the immediate three-step fire interaction without another modal. */
+.scenario-play-combat{
+ display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+ margin-top:10px;padding:10px 16px;border:1px solid #e9b477;border-radius:5px;
+ color:#1a2630;background:linear-gradient(120deg,#ffe7ad,#e7a96a);
+ font:700 12px 'Space Grotesk',sans-serif;cursor:pointer;
+}
+.scenario-play-combat:focus-visible{outline:2px solid #fff0c5;outline-offset:3px}
+.scenario-fire-guide{
+ grid-column:1/-1;margin:2px 0;padding:9px 12px;
+ color:#f1dcb7;background:#283b43;border-left:3px solid #f3bd7a;
+ font:500 11px/1.6 'Space Grotesk',sans-serif;
+}
+.scenario-fire-guide strong{color:#fff0c9}
+.scenario-orders [data-testid="scenario-fire"]:not(:disabled){
+ border-color:#f1b56e;background:#764c36;color:#fff1cf;font-weight:800;
+}
