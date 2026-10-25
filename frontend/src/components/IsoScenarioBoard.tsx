@@ -125,11 +125,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   }
   // A shot is a brief visual confirmation of an accepted v4 fire command.
   // These meshes are never part of the raycasting/picking layer.
-  const projectile=add(new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),
+  const projectile=add(new THREE.Mesh(new THREE.SphereGeometry(.23,12,8),
    new THREE.MeshBasicMaterial({color:'#ffedb1',depthTest:false,depthWrite:false})));
-  const muzzleFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.22,12,8),
+  const muzzleFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),
    new THREE.MeshBasicMaterial({color:'#fff2bc',depthTest:false,depthWrite:false})));
-  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.3,12,8),
+  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.42,12,8),
    new THREE.MeshBasicMaterial({color:'#ff8457',transparent:true,opacity:.82,depthTest:false,depthWrite:false})));
   for(const mesh of [projectile,muzzleFlash,impactFlash]){
    mesh.visible=false;
@@ -326,7 +326,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    canvas.dataset.squadMoving=String(squadMotions.size);
    if(shotMotion){
-    const progress=Math.min(1,Math.max(0,(now-shotMotion.started)/640));
+    const progress=Math.min(1,Math.max(0,(now-shotMotion.started)/900));
     const traveling=progress<.68;
     projectile.visible=traveling;
     muzzleFlash.visible=progress<.13;
