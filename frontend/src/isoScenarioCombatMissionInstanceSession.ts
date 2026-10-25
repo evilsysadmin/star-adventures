@@ -146,7 +146,8 @@ export function persistCombatMissionAttemptProgress(
   if (!current.instance) {
     return {
       replaySaved: true,
-      identity: current.status === 'missing' ? 'untracked' : current.status,
+      identity: current.status === 'missing' ? 'untracked' :
+        current.status === 'incompatible' ? 'incompatible' : 'unavailable',
     };
   }
   return {
