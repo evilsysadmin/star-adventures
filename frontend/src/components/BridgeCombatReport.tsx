@@ -102,7 +102,7 @@ export function BridgeCombatReport() {
           </>}
         {ledger && <details className="bridge-combat-ledger" data-testid="bridge-combat-ledger">
           <summary data-testid="bridge-combat-ledger-summary">
-            Historial verificado · {ledger.status === 'ready' ? ledger.entries.length : 0} extracciones ▾
+            Historial verificado · {ledger.status === 'ready' ? ledger.entries.length : 0} {ledger.entries.length === 1 ? 'extracción' : 'extracciones'} ▾
           </summary>
           {ledger.status === 'incompatible'
             ? <p data-testid="bridge-combat-ledger-error">Historial incompatible. No se ha modificado.</p>
@@ -111,8 +111,8 @@ export function BridgeCombatReport() {
               : ledger.entries.length === 0
                 ? <p>Todavía no hay extracciones registradas.</p>
                 : <ol data-testid="bridge-combat-ledger-entries">
-                  {ledger.entries.map((entry, index) => <li key={entry.checkpoint}>
-                    <span>#{index + 1} · {entry.report.label}</span>
+                  {ledger.entries.map(entry => <li key={entry.checkpoint}>
+                    <span>{entry.report.label}</span>
                     <span>{entry.report.round} rondas · {entry.report.orders} órdenes · {entry.report.wounds} PV de daño</span>
                   </li>)}
                 </ol>}
