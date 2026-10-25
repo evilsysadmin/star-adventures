@@ -49,6 +49,8 @@ export function BridgeCombatReport() {
   return (
     <details className="bridge-combat-report" data-testid="bridge-combat-report"
       onToggle={event => {
+        // Nested history disclosure must not reset the outer report state.
+        if (event.target !== event.currentTarget) return;
         if (event.currentTarget.open) {
           setDebrief(readCombatBridgeDebrief(localStorageOrNull()));
           setLedger(readCombatExtractionLedger(localStorageOrNull()));
