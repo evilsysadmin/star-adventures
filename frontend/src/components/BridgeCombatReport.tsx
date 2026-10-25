@@ -4,6 +4,13 @@ import {
   readCombatExtractionLedger, recordCombatExtractionInLedger,
   type ExtractionLedgerRead, type ExtractionLedgerWrite,
 } from '../isoScenarioCombatExtractionLedger';
+import {
+  readCombatExtractionAttemptLedger, recordCombatExtractionAttempt,
+  type ExtractionAttemptRead, type ExtractionAttemptWrite,
+} from '../isoScenarioCombatExtractionAttemptLedger';
+import {
+  readCombatMissionInstanceSession, type MissionInstanceRead,
+} from '../isoScenarioCombatMissionInstanceSession';
 import { localStorageOrNull } from '../session';
 
 const statusText: Record<string, string> = {
@@ -22,6 +29,18 @@ const ledgerText: Record<ExtractionLedgerWrite['status'], string> = {
   unavailable: 'No se ha podido guardar el historial. Comprueba el almacenamiento local.',
 };
 
+const attemptText: Record<ExtractionAttemptWrite['status'], string> = {
+  recorded: 'Misión identificada añadida al historial verificado. Sin recompensas de campaña.',
+  'already-recorded': 'Esta misión ya estaba registrada. No se ha duplicado.',
+  'not-extracted': 'No hay extracción acreditada para esta misión.',
+  untracked: 'Esta misión no tiene identidad persistente. No se ha registrado.',
+  'out-of-sync': 'La identidad y el combate guardado no coinciden. No se ha registrado.',
+  conflict: 'Esta identidad ya tiene otros resultados o el historial ha cambiado. No se ha sobrescrito.',
+  full: 'Historial de misiones lleno. No se ha eliminado ningún registro.',
+  incompatible: 'La misión o el historial identificado es incompatible. No se ha modificado.',
+  unavailable: 'No se ha podido guardar la misión. Comprueba el almacenamiento local.',
+};
+
 const officerNames = {
   science: 'Ciencia',
   security: 'Seguridad',
@@ -38,6 +57,9 @@ export function BridgeCombatReport() {
   const [debrief, setDebrief] = useState<BridgeCombatDebrief | null>(null);
   const [ledger, setLedger] = useState<ExtractionLedgerRead | null>(null);
   const [ledgerWrite, setLedgerWrite] = useState<ExtractionLedgerWrite | null>(null);
+  const [attemptLedger, setAttemptLedger] = useState<ExtractionAttemptRead | null>(null);
+  const [attemptWrite, setAttemptWrite] = useState<ExtractionAttemptWrite | null>(null);
+  const [identity, setIdentity] = useState<MissionInstanceRead | null>(null);
   const report = debrief?.report;
   const objectives = report ? [
     report.objectives.scanned && 'Investigación',
@@ -52,9 +74,13 @@ export function BridgeCombatReport() {
         // Nested history disclosure must not reset the outer report state.
         if (event.target !== event.currentTarget) return;
         if (event.currentTarget.open) {
-          setDebrief(readCombatBridgeDebrief(localStorageOrNull()));
-          setLedger(readCombatExtractionLedger(localStorageOrNull()));
+          const storage = localStorageOrNull();
+          setDebrief(readCombatBridgeDebrief(storage));
+          setLedger(readCombatExtractionLedger(storage));
+          setAttemptLedger(readCombatExtractionAttemptLedger(storage));
+          setIdentity(readCombatMissionInstanceSession(storage));
           setLedgerWrite(null);
+          setAttemptWrite(null);
         }
       }}>
       <summary>
@@ -85,24 +111,63 @@ export function BridgeCombatReport() {
             </div>
             {debrief.status === 'mission-extracted' && (
               <div className="bridge-combat-receipt">
-                <button type="button" data-testid="bridge-combat-record-extraction"
-                  disabled={ledgerWrite?.status === 'recorded' || ledgerWrite?.status === 'already-recorded'}
-                  onClick={() => {
-                    const storage = localStorageOrNull();
-                    setLedgerWrite(recordCombatExtractionInLedger(storage));
-                    setLedger(readCombatExtractionLedger(storage));
-                  }}>
-                  Añadir extracción al historial
-                </button>
-                {ledgerWrite && <p role="status" data-testid="bridge-combat-receipt-status">
-                  {ledgerText[ledgerWrite.status]}
+                {identity?.status === 'ready' ? <>
+                  <button type="button" data-testid="bridge-combat-record-attempt"
+                    disabled={attemptWrite?.status === 'recorded' || attemptWrite?.status === 'already-recorded'}
+                    onClick={() => {
+                      const storage = localStorageOrNull();
+                      setAttemptWrite(recordCombatExtractionAttempt(storage));
+                      setAttemptLedger(readCombatExtractionAttemptLedger(storage));
+                    }}>
+                    Registrar misión identificada
+                  </button>
+                  {attemptWrite && <p role="status" data-testid="bridge-combat-attempt-status">
+                    {attemptText[attemptWrite.status]}
+                  </p>}
+                </> : identity?.status === 'missing' ? <>
+                  <button type="button" data-testid="bridge-combat-record-extraction"
+                    disabled={ledgerWrite?.status === 'recorded' || ledgerWrite?.status === 'already-recorded'}
+                    onClick={() => {
+                      const storage = localStorageOrNull();
+                      setLedgerWrite(recordCombatExtractionInLedger(storage));
+                      setLedger(readCombatExtractionLedger(storage));
+                    }}>
+                    Añadir extracción al historial anterior
+                  </button>
+                  {ledgerWrite && <p role="status" data-testid="bridge-combat-receipt-status">
+                    {ledgerText[ledgerWrite.status]}
+                  </p>}
+                </> : <p role="status" data-testid="bridge-combat-identity-error">
+                  La identidad de misión no se puede consultar. Se conserva el historial sin modificar.
                 </p>}
               </div>
             )}
           </>}
-        {ledger && <details className="bridge-combat-ledger" data-testid="bridge-combat-ledger">
+        {attemptLedger && (identity?.status === 'ready' ||
+          attemptLedger.status === 'incompatible' || attemptLedger.status === 'unavailable' ||
+          attemptLedger.entries.length > 0) && (
+          <details className="bridge-combat-ledger" data-testid="bridge-combat-attempt-ledger">
+            <summary data-testid="bridge-combat-attempt-ledger-summary">
+              Misiones identificadas · {attemptLedger.entries.length} {attemptLedger.entries.length === 1 ? 'misión' : 'misiones'} ▾
+            </summary>
+            {attemptLedger.status === 'incompatible'
+              ? <p data-testid="bridge-combat-attempt-ledger-error">Historial identificado incompatible. No se ha modificado.</p>
+              : attemptLedger.status === 'unavailable'
+                ? <p data-testid="bridge-combat-attempt-ledger-error">No se puede leer el almacenamiento local.</p>
+                : attemptLedger.entries.length === 0
+                  ? <p>Todavía no hay misiones identificadas registradas.</p>
+                  : <ol data-testid="bridge-combat-attempt-ledger-entries">
+                    {attemptLedger.entries.map(entry => <li key={entry.instanceId}>
+                      <span>Intento {entry.instanceId.slice(0, 8)} · {entry.report.label}</span>
+                      <span>{entry.report.round} rondas · {entry.report.orders} órdenes · {entry.report.wounds} PV de daño</span>
+                    </li>)}
+                  </ol>}
+          </details>
+        )}
+        {ledger && (identity?.status !== 'ready' || ledger.status !== 'missing' ||
+          ledger.entries.length > 0) && <details className="bridge-combat-ledger" data-testid="bridge-combat-ledger">
           <summary data-testid="bridge-combat-ledger-summary">
-            Historial verificado · {ledger.status === 'ready' ? ledger.entries.length : 0} {ledger.entries.length === 1 ? 'extracción' : 'extracciones'} ▾
+            Historial anterior · {ledger.status === 'ready' ? ledger.entries.length : 0} {ledger.entries.length === 1 ? 'extracción' : 'extracciones'} ▾
           </summary>
           {ledger.status === 'incompatible'
             ? <p data-testid="bridge-combat-ledger-error">Historial incompatible. No se ha modificado.</p>
@@ -118,7 +183,8 @@ export function BridgeCombatReport() {
                 </ol>}
         </details>}
         <p className="bridge-combat-scope" data-testid="bridge-combat-scope">Informe reconstruido del combate experimental v4.
-          Las órdenes idénticas cuentan como una única evidencia. No concede recompensas ni modifica la campaña principal.</p>
+          Las misiones identificadas cuentan por intento, aunque repitan órdenes. Los registros anteriores permanecen separados.
+          No concede recompensas ni modifica la campaña principal.</p>
       </div>
     </details>
   );
