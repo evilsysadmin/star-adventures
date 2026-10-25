@@ -1,5 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
-import { COMBAT_REPLAY_SAVE_KEY } from '../src/isoScenarioCombatReplay';
+import { COMBAT_REPLAY_SAVE_KEY, replayCombatCommands } from '../src/isoScenarioCombatReplay';
+import { combatMissionReport } from '../src/isoScenarioCombatMissionReport';
+import { missionPath, type SquadId } from '../src/isoScenarioCampaign';
 import { COMBAT_ENCOUNTER_SAVE_KEY } from '../src/isoScenarioCombatCheckpoint';
 import { HOSTILE_ENCOUNTER_SAVE_KEY } from '../src/isoScenarioHostileCheckpoint';
 import { SCENARIO_SAVE_KEY } from '../src/isoScenarioSession';
@@ -18,9 +20,43 @@ async function target(page: Page, id: 'aegis'|'veil') {
  await expect(page.getByTestId('scenario-selected')).toHaveText(cell!);
  await expect(chip).toHaveAttribute('aria-pressed','true');
 }
+async function completeObjectives(page: Page) {
+ const state=async()=>{
+  const raw=await page.evaluate(key=>localStorage.getItem(key),COMBAT_REPLAY_SAVE_KEY);
+  if(!raw)throw new Error('Expected persisted v4 replay');
+  const checkpoint=JSON.parse(raw);
+  return replayCombatCommands(checkpoint.scenarioId,checkpoint.actions).combat.encounter.mission;
+ };
+ const order=async(testId:string)=>{
+  if((await state()).ap===0){
+   await expect(page.getByTestId('scenario-end-turn')).toBeEnabled();
+   await page.getByTestId('scenario-end-turn').click();
+  }
+  await expect(page.getByTestId(testId)).toBeEnabled();
+  await page.getByTestId(testId).click();
+ };
+ const travel=async(officer:SquadId,destination:string)=>{
+  await page.getByTestId('scenario-unit-'+officer).click();
+  for(let i=0;i<30;i++){
+   const route=missionPath(await state(),officer,destination);
+   expect(route,'Objective destination must be reachable').not.toBeNull();
+   if(route!.length===1)return;
+   await choose(page,route![Math.min(5,route!.length-1)]);
+   await order('scenario-move');
+  }
+  throw new Error('Objective travel exceeded 30 orders');
+ };
+ await travel('science','9:1');
+ await order('scenario-scan');
+ await travel('security','9:7');
+ await order('scenario-operate');
+ await travel('security','9:9');
+ await order('scenario-extract');
+}
+
 for(const width of [390,1280]){
  test('v4 tactical fire, victory and F5 restore at '+width+'px',async ({page})=>{
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.setViewportSize({width,height:850});
   await page.goto('/');
   await page.getByTestId('tactical-view-missions').click();
@@ -48,8 +84,9 @@ for(const width of [390,1280]){
   await page.getByTestId('scenario-fire').click();
   await target(page,'veil');
   await page.getByTestId('scenario-fire').click();
-  await expect(page.getByTestId('scenario-combat-result')).toContainText('Victoria');
-  await expect(page.getByTestId('scenario-end-turn')).toBeDisabled();
+  await expect(page.getByTestId('scenario-combat-result')).toContainText('Amenazas neutralizadas');
+  await expect(page.getByTestId('scenario-end-turn')).toBeEnabled();
+  await expect(page.getByTestId('scenario-fire')).toBeDisabled();
   const saved=await page.evaluate(key=>localStorage.getItem(key),COMBAT_REPLAY_SAVE_KEY);
   expect(JSON.parse(saved!)).toMatchObject({version:4,scenarioId:'relay'});
   expect(JSON.parse(saved!).actions).toHaveLength(7);
@@ -61,8 +98,29 @@ for(const width of [390,1280]){
   await page.getByTestId('tactical-view-missions').click();
   await page.getByTestId('scenario-replay-toggle').click();
   await expect(page.getByTestId('scenario-notice')).toContainText('restaurado');
-  await expect(page.getByTestId('scenario-combat-result')).toContainText('Victoria');
+  await expect(page.getByTestId('scenario-combat-result')).toContainText('Amenazas neutralizadas');
   await expect(page.getByTestId('scenario-hostile-veil')).toContainText('PV 0/2');
+  await expect(page.getByTestId('scenario-end-turn')).toBeEnabled();
+  await page.getByTestId('scenario-accessible-grid').locator('summary').click();
+  await completeObjectives(page);
+  await expect(page.getByTestId('scenario-combat-result')).toContainText('Extracción confirmada');
+  await expect(page.getByTestId('scenario-combat-result')).not.toContainText('Amenazas neutralizadas');
+  await expect(page.getByTestId('scenario-end-turn')).toBeDisabled();
+  await expect(page.getByTestId('scenario-fire')).toBeDisabled();
+  const extracted=JSON.parse((await page.evaluate(key=>localStorage.getItem(key),COMBAT_REPLAY_SAVE_KEY))!);
+  const report=combatMissionReport({scenarioId:'relay',actions:extracted.actions});
+  expect(report.status).toBe('mission-extracted');
+  expect(report.objectives).toEqual({scanned:true,operated:true,rescued:false,extracted:true});
+  expect(report.enemyTurns).toBe(1);
+  expect(await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),
+   [SCENARIO_SAVE_KEY,HOSTILE_ENCOUNTER_SAVE_KEY,COMBAT_ENCOUNTER_SAVE_KEY])).toEqual(legacy);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'test-results/combat-v4-extracted-'+width+'.png',fullPage:true});
+  await page.reload();
+  await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-replay-toggle').click();
+  await expect(page.getByTestId('scenario-combat-result')).toContainText('Extracción confirmada');
+  await expect(page.getByTestId('scenario-end-turn')).toBeDisabled();
   await page.getByTestId('scenario-combat-retry').click();
   await expect(page.getByTestId('scenario-hostile-veil')).toContainText('PV 2/2');
   await expect(page.getByTestId('scenario-combat-result')).toHaveCount(0);
