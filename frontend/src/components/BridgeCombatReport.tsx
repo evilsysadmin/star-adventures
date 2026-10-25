@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { readCombatBridgeDebrief, type BridgeCombatDebrief } from '../isoScenarioCombatBridgeDebrief';
+import { recordCombatExtraction, type ExtractionReceiptResult } from '../isoScenarioCombatExtractionReceipt';
 import { localStorageOrNull } from '../session';
 
 const statusText: Record<string, string> = {
@@ -9,6 +10,15 @@ const statusText: Record<string, string> = {
   'squad-incapacitated': 'Escuadra incapacitada · encuentro terminado',
 };
 
+const receiptText: Record<ExtractionReceiptResult['status'], string> = {
+  recorded: 'Extracción registrada en este navegador. No se han concedido recompensas.',
+  'already-recorded': 'Esta extracción ya estaba registrada. No se ha duplicado.',
+  'not-extracted': 'El historial actual no acredita la extracción. No se ha registrado.',
+  occupied: 'Ya existe otra extracción registrada. No se ha sobrescrito.',
+  incompatible: 'Historial o registro incompatible. No se ha modificado.',
+  unavailable: 'No se ha podido guardar el registro. Comprueba el almacenamiento local.',
+};
+
 const officerNames = {
   science: 'Ciencia',
   security: 'Seguridad',
@@ -16,12 +26,14 @@ const officerNames = {
 } as const;
 
 /**
- * A deliberately read-only bridge console for the separate v4 tactical sandbox.
+ * A bridge console for the separate v4 tactical sandbox. Reading the report is
+ * side-effect-free; only the explicit button may persist an extraction receipt.
  * Re-read on every opening: the tactical board may have saved new orders since
  * this panel was last inspected, without needing to couple the two UIs.
  */
 export function BridgeCombatReport() {
   const [debrief, setDebrief] = useState<BridgeCombatDebrief | null>(null);
+  const [receipt, setReceipt] = useState<ExtractionReceiptResult | null>(null);
   const report = debrief?.report;
   const objectives = report ? [
     report.objectives.scanned && 'Investigación',
@@ -33,7 +45,10 @@ export function BridgeCombatReport() {
   return (
     <details className="bridge-combat-report" data-testid="bridge-combat-report"
       onToggle={event => {
-        if (event.currentTarget.open) setDebrief(readCombatBridgeDebrief(localStorageOrNull()));
+        if (event.currentTarget.open) {
+          setDebrief(readCombatBridgeDebrief(localStorageOrNull()));
+          setReceipt(null);
+        }
       }}>
       <summary>
         <span>INFORME TÁCTICO · EXPERIMENTAL</span>
@@ -61,6 +76,18 @@ export function BridgeCombatReport() {
               {Object.entries(officerNames).map(([id, name]) =>
                 <span key={id}>{name}: {report.officerHealth[id as keyof typeof officerNames]} PV</span>)}
             </div>
+            {debrief.status === 'mission-extracted' && (
+              <div className="bridge-combat-receipt">
+                <button type="button" data-testid="bridge-combat-record-extraction"
+                  disabled={receipt?.status === 'recorded' || receipt?.status === 'already-recorded'}
+                  onClick={() => setReceipt(recordCombatExtraction(localStorageOrNull()))}>
+                  Registrar extracción verificada
+                </button>
+                {receipt && <p role="status" data-testid="bridge-combat-receipt-status">
+                  {receiptText[receipt.status]}
+                </p>}
+              </div>
+            )}
           </>}
         <p className="bridge-combat-scope" data-testid="bridge-combat-scope">Informe reconstruido del combate experimental v4.
           No concede recompensas ni modifica la campaña principal.</p>
