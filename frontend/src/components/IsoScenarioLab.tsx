@@ -11,6 +11,9 @@ import { localStorageOrNull } from '../session';
 import { newScenarioSession, restoreScenarioSession, persistScenarioSession } from '../isoScenarioSession';
 import { newHostileEncounterSession, restoreHostileEncounterSession, persistHostileEncounterSession } from '../isoScenarioHostileSession';
 import { replayHostileEncounterCommands } from '../isoScenarioHostileCheckpoint';
+import { newCombatEncounterSession, restoreCombatEncounterSession, persistCombatEncounterSession } from '../isoScenarioCombatSession';
+import { replayCombatEncounterCommands } from '../isoScenarioCombatCheckpoint';
+import { COMBAT_OFFICER_MAX_HP } from '../isoScenarioCombatEncounter';
 import './isoScenarioLab.css';
 
 const order: readonly ScenarioId[]=['relay','derelict','evacuation'];
@@ -27,6 +30,9 @@ export function IsoScenarioLab(){
  const [hostileStartup]=useState(()=>restoreHostileEncounterSession(localStorageOrNull()));
  const [hostileHistory,setHostileHistory]=useState(hostileStartup.history);
  const [hostileMode,setHostileMode]=useState(false);
+ const [combatStartup]=useState(()=>restoreCombatEncounterSession(localStorageOrNull()));
+ const [combatHistory,setCombatHistory]=useState(combatStartup.history);
+ const [combatMode,setCombatMode]=useState(false);
  const [initialRecords]=useState(()=>{
   const stored=restoreTrainingRecords(localStorageOrNull());
   if(!startup.history.state.completed)return stored;
@@ -36,17 +42,18 @@ export function IsoScenarioLab(){
  });
  const [records,setRecords]=useState<TrainingArchive>(initialRecords.archive);
  const [recordNotice,setRecordNotice]=useState(initialRecords.notice);
- const scenarioId=hostileMode?hostileHistory.scenarioId:history.scenarioId;
- const mission=hostileMode?hostileHistory.encounter.mission:history.state;
- const hostilePositions=hostileMode?hostileHistory.encounter.positions:undefined;
- const activeActions=hostileMode?hostileHistory.actions:history.actions;
+ const scenarioId=combatMode?combatHistory.scenarioId:hostileMode?hostileHistory.scenarioId:history.scenarioId;
+ const mission=combatMode?combatHistory.encounter.mission:hostileMode?hostileHistory.encounter.mission:history.state;
+ const hostilePositions=combatMode?combatHistory.encounter.positions:hostileMode?hostileHistory.encounter.positions:undefined;
+ const activeActions=combatMode?combatHistory.actions:hostileMode?hostileHistory.actions:history.actions;
+ const combat=combatMode?combatHistory.encounter:null;
  const [officer,setOfficer]=useState<SquadId>('science');
  const [selected,setSelected]=useState(startup.history.state.locations.science);
  const [focus,setFocus]=useState(false);
  const [notice,setNotice]=useState(startup.notice);
  const scenario=SCENARIOS[scenarioId];
- const completedResult=useMemo(()=>!hostileMode&&mission.completed
-  ?trainingResult({scenarioId:history.scenarioId,actions:history.actions}):null,[history,hostileMode]);
+ const completedResult=useMemo(()=>!hostileMode&&!combatMode&&mission.completed
+  ?trainingResult({scenarioId:history.scenarioId,actions:history.actions}):null,[history,hostileMode,combatMode]);
  const bestResults=useMemo(()=>records.runs.map(trainingResult),[records]);
  const route=missionPath(mission,officer,selected,
   hostilePositions?Object.values(hostilePositions):[]);
@@ -56,9 +63,10 @@ export function IsoScenarioLab(){
  const rescue:MissionAction={type:'rescue',officer:'medic'};
  const extract:MissionAction={type:'extract',officer};
  const available=(command:MissionAction)=>{
-  if(activeActions.length>=MAX_SCENARIO_COMMANDS)return false;
+  if(mission.completed||combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS)return false;
   try{
-   if(hostileMode)replayHostileEncounterCommands(scenarioId,[...hostileHistory.actions,command]);
+   if(combatMode)replayCombatEncounterCommands(scenarioId,[...combatHistory.actions,command]);
+   else if(hostileMode)replayHostileEncounterCommands(scenarioId,[...hostileHistory.actions,command]);
    else applyMissionAction(mission,command);
    return true;
   }catch{return false;}
@@ -68,6 +76,19 @@ export function IsoScenarioLab(){
    setNotice('Límite de órdenes alcanzado · inicia otra misión');return;
   }
   try{
+   if(combatMode){
+    const next=replayCombatEncounterCommands(scenarioId,[...combatHistory.actions,command]);
+    const saved=persistCombatEncounterSession(next,localStorageOrNull());
+    setCombatHistory(next);
+    const hits=next.encounter.hits.map(hit=>
+     `${hit.hostile} hiere a ${hit.officer}: ${hit.remainingHp}/${COMBAT_OFFICER_MAX_HP} PV`);
+    setNotice((saved?'':'Combate no guardado · ')+[
+     next.encounter.mission.events.at(-1)||'Orden ejecutada',
+     ...hits,
+     ...(next.encounter.failed?['Escuadra incapacitada · encuentro terminado']:[]),
+    ].join(' · '));
+    return;
+   }
    if(hostileMode){
     const next=replayHostileEncounterCommands(scenarioId,[...hostileHistory.actions,command]);
     const saved=persistHostileEncounterSession(next,localStorageOrNull());
@@ -96,6 +117,14 @@ export function IsoScenarioLab(){
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
  };
  const change=(id:ScenarioId)=>{
+  if(combatMode){
+   const next=newCombatEncounterSession(id);
+   const saved=persistCombatEncounterSession(next,localStorageOrNull());
+   setCombatHistory(next);
+   setOfficer('science');setSelected(next.encounter.mission.locations.science);setFocus(false);
+   setNotice(saved?'Nuevo combate experimental · progreso guardado':'Combate temporal · no guardado');
+   return;
+  }
   if(hostileMode){
    const next=newHostileEncounterSession(id);
    const saved=persistHostileEncounterSession(next,localStorageOrNull());
@@ -111,11 +140,14 @@ export function IsoScenarioLab(){
   setNotice(saved?'Nuevo escenario · progreso guardado en este navegador':
     'Nuevo escenario · almacenamiento no disponible, sesión temporal');
  };
- const switchEncounter=(enabled:boolean)=>{
-  setHostileMode(enabled);
-  const target=enabled?hostileHistory.encounter.mission:history.state;
+ const switchEncounter=(mode:'training'|'hostile'|'combat')=>{
+  setHostileMode(mode==='hostile');
+  setCombatMode(mode==='combat');
+  const target=mode==='combat'?combatHistory.encounter.mission:
+   mode==='hostile'?hostileHistory.encounter.mission:history.state;
   setOfficer('science');setSelected(target.locations.science);setFocus(false);
-  setNotice(enabled?hostileStartup.notice:startup.notice);
+  setNotice(mode==='combat'?combatStartup.notice:
+   mode==='hostile'?hostileStartup.notice:startup.notice);
  };
  const choose=(cell:string)=>{
   setSelected(cell);
@@ -164,10 +196,12 @@ export function IsoScenarioLab(){
   </div>
   <div className="scenario-viewtools">
    <div className="scenario-mode-select" role="group" aria-label="Tipo de ejercicio táctico">
-    <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode}
-     onClick={()=>switchEncounter(false)}>Entrenamiento</button>
+    <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode&&!combatMode}
+     onClick={()=>switchEncounter('training')}>Entrenamiento</button>
     <button type="button" data-testid="scenario-hostile-toggle" aria-pressed={hostileMode}
-     onClick={()=>switchEncounter(true)}>Encuentro hostil · experimental</button>
+     onClick={()=>switchEncounter('hostile')}>Encuentro hostil · experimental</button>
+    <button type="button" data-testid="scenario-combat-toggle" aria-pressed={combatMode}
+     onClick={()=>switchEncounter('combat')}>Combate con heridas · experimental</button>
    </div>
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
@@ -200,10 +234,11 @@ export function IsoScenarioLab(){
   <div className="scenario-roster" role="group" aria-label="Seleccionar oficial">
    {officers.map(unit=><button type="button" key={unit.id}
     data-testid={`scenario-unit-${unit.id}`} aria-pressed={officer===unit.id}
-    disabled={mission.completed}
+    disabled={mission.completed||!!combat?.failed}
     onClick={()=>{setOfficer(unit.id);setSelected(mission.locations[unit.id]);}}>
     <strong>{unit.name}</strong><span>{unit.role}</span>
     <small>{mission.locations[unit.id]}</small>
+    {combat&&<small data-testid={`scenario-hp-${unit.id}`}>PV {combat.health[unit.id]} / {COMBAT_OFFICER_MAX_HP}</small>}
    </button>)}
   </div>
   <div className="scenario-orders" role="group" aria-label="Órdenes tácticas con resultados reales">
@@ -217,10 +252,16 @@ export function IsoScenarioLab(){
     onClick={()=>execute(rescue)}>Rescatar</button>
    <button type="button" data-testid="scenario-extract" disabled={!available(extract)}
     onClick={()=>execute(extract)}>Solicitar extracción</button>
-   <button type="button" data-testid="scenario-end-turn" disabled={mission.completed}
+   <button type="button" data-testid="scenario-end-turn" disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
     onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
   </div>
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
+  {combat&&(combat.failed||mission.completed)&&<section className="scenario-debrief"
+   data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
+   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':'Extracción confirmada · misión completada'}</strong>
+   <p>Estado reconstruido de las órdenes del encuentro v3; no modifica el entrenamiento ni la campaña.</p>
+   <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
+  </section>}
   <div className="scenario-objectives" data-testid="scenario-objectives">
    {objectives.map(item=><div key={item.key}
     className={item.done?'scenario-objective completed':'scenario-objective'}>
@@ -238,7 +279,7 @@ export function IsoScenarioLab(){
    {recordNotice&&<p data-testid="scenario-record-notice">{recordNotice}</p>}
    <button type="button" data-testid="scenario-retry" onClick={()=>change(scenarioId)}>Repetir esta maniobra</button>
   </section>}
-  {!hostileMode&&records.runs.length>0&&<details className="scenario-training-records" data-testid="scenario-training-records">
+  {!hostileMode&&!combatMode&&records.runs.length>0&&<details className="scenario-training-records" data-testid="scenario-training-records">
    <summary>Archivo de maniobras · {records.runs.length} de 3 misiones acreditadas</summary>
    <ul>{bestResults.map(result=><li key={result.scenarioId} data-testid={`scenario-record-${result.scenarioId}`}>
     <strong>{result.label}</strong> · Ronda {result.rounds} · {result.orders} órdenes
@@ -259,7 +300,9 @@ export function IsoScenarioLab(){
    <summary>Diario de acciones verificadas · {mission.events.length} eventos</summary>
    <ol>{mission.events.map((event,index)=><li key={index}>{event}</li>)}</ol>
   </details>
-  <p className="scenario-disclaimer">{hostileMode
+  <p className="scenario-disclaimer">{combatMode
+   ?'Combate experimental v3 · los contactos adyacentes causan un punto de daño al terminar el turno. Un oficial a 0 PV termina el encuentro. Sin contraataques ni curación todavía. Guardado independiente de v1, v2 y la campaña.'
+   :hostileMode
    ?'Encuentro hostil experimental · los enemigos avanzan al terminar el turno y bloquean rutas. Las amenazas no causan heridas todavía. Guardado v2 separado del entrenamiento y de la campaña.'
    :'Simulador local de entrenamiento · progreso guardado independientemente de la campaña si el navegador lo permite. Los contactos hostiles son visuales; activa el encuentro experimental para probar sus turnos.'}</p>
  </section>;
