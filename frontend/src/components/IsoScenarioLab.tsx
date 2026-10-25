@@ -16,6 +16,7 @@ import { replayCombatEncounterCommands } from '../isoScenarioCombatCheckpoint';
 import { COMBAT_OFFICER_MAX_HP } from '../isoScenarioCombatEncounter';
 import { replayCombatCommands, type CombatReplayAction } from '../isoScenarioCombatReplay';
 import { newCombatReplaySession, restoreCombatReplaySession, persistCombatReplaySession } from '../isoScenarioCombatReplaySession';
+import { startCombatMissionAttemptSession, persistCombatMissionAttemptProgress } from '../isoScenarioCombatMissionInstanceSession';
 import { COMBAT_HOSTILE_MAX_HP } from '../isoScenarioCombatFire';
 import type { HostileId } from '../isoScenarioHostileTurn';
 import './isoScenarioLab.css';
@@ -86,7 +87,7 @@ export function IsoScenarioLab(){
   }
   try{
    const next=replayCombatCommands(scenarioId,[...replayHistory.actions,command]);
-   const saved=persistCombatReplaySession(next,localStorageOrNull());
+   const {replaySaved:saved}=persistCombatMissionAttemptProgress(next,localStorageOrNull());
    setReplayHistory(next);
    const hits=next.combat.encounter.hits.map(hit=>hit.hostile+' hiere a '+hit.officer+': '+hit.remainingHp+'/'+COMBAT_OFFICER_MAX_HP+' PV');
    setNotice((saved?'':'Combate v4 no guardado · ')+[
@@ -156,7 +157,11 @@ export function IsoScenarioLab(){
  const change=(id:ScenarioId)=>{
   if(replayMode){
    const next=newCombatReplaySession(id);
-   const saved=persistCombatReplaySession(next,localStorageOrNull());
+   const storage=localStorageOrNull();
+   const instanceId=globalThis.crypto?.randomUUID?.();
+   const saved=instanceId
+    ?startCombatMissionAttemptSession(instanceId,id,storage).replaySaved
+    :persistCombatReplaySession(next,storage);
    setReplayHistory(next);
    setOfficer('science');setSelected(next.combat.encounter.mission.locations.science);setFocus(false);
    setNotice(saved?'Nuevo combate v4 · progreso guardado':'Combate v4 temporal · no guardado');

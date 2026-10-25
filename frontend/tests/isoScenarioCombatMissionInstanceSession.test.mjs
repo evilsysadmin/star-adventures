@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   COMBAT_MISSION_INSTANCE_SAVE_KEY, readCombatMissionInstanceSession,
   persistCombatMissionInstanceSession, restartCombatMissionInstanceSession,
+  startCombatMissionAttemptSession, persistCombatMissionAttemptProgress,
 } from '../src/isoScenarioCombatMissionInstanceSession.ts';
 import {
   createCombatMissionInstance, deserializeCombatMissionInstance,
@@ -101,4 +102,89 @@ test('stored envelope contains canonical replay evidence, not forged victory fla
   const stored = deserializeCombatMissionInstance(store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY));
   assert.equal(stored.history.combat.victory, false);
   assert.deepEqual(stored.history.actions, history.actions);
+});
+
+test('explicit UI-style start, commands, F5 and restart preserve distinct attempt IDs', () => {
+  const store = storage();
+  assert.deepEqual(startCombatMissionAttemptSession(first, 'relay', store), {
+    replaySaved: true, identity: 'saved',
+  });
+  const firstReplay = replayCombatCommands('relay', [{ type: 'end-turn' }]);
+  assert.deepEqual(persistCombatMissionAttemptProgress(firstReplay, store), {
+    replaySaved: true, identity: 'saved',
+  });
+  assert.equal(readCombatMissionInstanceSession(store).instance.instanceId, first);
+  assert.deepEqual(readCombatMissionInstanceSession(store).instance.history.actions, firstReplay.actions);
+  assert.deepEqual(JSON.parse(store.getItem(COMBAT_REPLAY_SAVE_KEY)).actions, firstReplay.actions);
+  // Reconstruct both independent sessions after F5, without creating an ID.
+  const reloaded = readCombatMissionInstanceSession(store);
+  assert.equal(reloaded.instance.instanceId, first);
+  const next = replayCombatCommands('relay', [{ type: 'end-turn' }, { type: 'end-turn' }]);
+  assert.equal(persistCombatMissionAttemptProgress(next, store).identity, 'saved');
+  assert.equal(readCombatMissionInstanceSession(store).instance.instanceId, first);
+  assert.deepEqual(startCombatMissionAttemptSession(second, 'relay', store), {
+    replaySaved: true, identity: 'saved',
+  });
+  assert.equal(readCombatMissionInstanceSession(store).instance.instanceId, second);
+  assert.deepEqual(readCombatMissionInstanceSession(store).instance.history.actions, []);
+  assert.deepEqual(JSON.parse(store.getItem(COMBAT_REPLAY_SAVE_KEY)).actions, []);
+});
+
+test('legacy v4 replay stays untracked until an explicit restart', () => {
+  const store = storage([[COMBAT_REPLAY_SAVE_KEY, JSON.stringify({
+    version: 4, scenarioId: 'relay', actions: [{ type: 'end-turn' }],
+  })], [COMBAT_EXTRACTION_LEDGER_KEY, 'old ledger']]);
+  const next = replayCombatCommands('relay', [{ type: 'end-turn' }, { type: 'end-turn' }]);
+  assert.deepEqual(persistCombatMissionAttemptProgress(next, store), {
+    replaySaved: true, identity: 'untracked',
+  });
+  assert.equal(store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY), null);
+  assert.equal(store.getItem(COMBAT_EXTRACTION_LEDGER_KEY), 'old ledger');
+  assert.equal(startCombatMissionAttemptSession(first, 'relay', store).identity, 'saved');
+  assert.deepEqual(JSON.parse(store.getItem(COMBAT_REPLAY_SAVE_KEY)).actions, []);
+});
+
+test('identity conflicts fail closed without breaking independent v4 replay saves', () => {
+  const store = storage();
+  assert.equal(startCombatMissionAttemptSession(first, 'relay', store).identity, 'saved');
+  const advanced = replayCombatCommands('relay', [{ type: 'end-turn' }]);
+  assert.equal(persistCombatMissionAttemptProgress(advanced, store).identity, 'saved');
+  const originalIdentity = store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY);
+  const rewind = replayCombatCommands('relay', []);
+  assert.deepEqual(persistCombatMissionAttemptProgress(rewind, store), {
+    replaySaved: true, identity: 'conflict',
+  });
+  assert.deepEqual(JSON.parse(store.getItem(COMBAT_REPLAY_SAVE_KEY)).actions, []);
+  assert.deepEqual(persistCombatMissionAttemptProgress(
+    replayCombatCommands('derelict', []), store,
+  ), { replaySaved: true, identity: 'conflict' });
+  assert.equal(JSON.parse(store.getItem(COMBAT_REPLAY_SAVE_KEY)).scenarioId, 'derelict');
+  assert.equal(store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY), originalIdentity);
+});
+
+test('attempt sync never claims two durable writes if one key silently drops', () => {
+  const store = storage();
+  const droppedReplay = {
+    getItem: store.getItem,
+    setItem(key, value) {
+      if (key !== COMBAT_REPLAY_SAVE_KEY) store.setItem(key, value);
+    },
+  };
+  assert.deepEqual(startCombatMissionAttemptSession(first, 'relay', droppedReplay), {
+    replaySaved: false, identity: 'unavailable',
+  });
+  assert.equal(store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY), null);
+  const droppedIdentity = {
+    getItem: store.getItem,
+    setItem(key, value) {
+      if (key !== COMBAT_MISSION_INSTANCE_SAVE_KEY) store.setItem(key, value);
+    },
+  };
+  assert.deepEqual(startCombatMissionAttemptSession(first, 'relay', droppedIdentity), {
+    replaySaved: true, identity: 'unavailable',
+  });
+  assert.equal(store.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY), null);
+  assert.equal(persistCombatMissionAttemptProgress(
+    replayCombatCommands('relay', [{ type: 'end-turn' }]), droppedIdentity,
+  ).identity, 'untracked');
 });
