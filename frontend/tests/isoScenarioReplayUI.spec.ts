@@ -80,6 +80,12 @@ for(const width of [390,1280]){
    canvas.boundingBox(),page.getByTestId('scenario-fire').boundingBox(),
   ]);
   expect(boardRect).not.toBeNull();
+  // On narrow screens the board must not become a tiny island inside a tall
+  // empty canvas. Keep the entire board visible and the fire control in-frame.
+  if(width===390){
+   expect(boardRect!.height).toBeGreaterThanOrEqual(330);
+   expect(boardRect!.height).toBeLessThanOrEqual(391);
+  }
   expect(fireRect).not.toBeNull();
   expect(fireRect!.x).toBeGreaterThanOrEqual(boardRect!.x);
   expect(fireRect!.y).toBeGreaterThanOrEqual(boardRect!.y);
