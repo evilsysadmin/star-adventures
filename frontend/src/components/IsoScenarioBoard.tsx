@@ -127,11 +127,15 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   // These meshes are never part of the raycasting/picking layer.
   const projectile=add(new THREE.Mesh(new THREE.SphereGeometry(.23,12,8),
    new THREE.MeshBasicMaterial({color:'#ffedb1',depthTest:false,depthWrite:false})));
+  // A persistent, thin phaser streak makes short-range fire legible even on
+  // narrow screens, where a single moving sphere can disappear behind sprites.
+  const shotBeam=add(new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,1,8),
+   new THREE.MeshBasicMaterial({color:'#8df4ff',transparent:true,opacity:.9,depthTest:false,depthWrite:false})));
   const muzzleFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),
    new THREE.MeshBasicMaterial({color:'#fff2bc',depthTest:false,depthWrite:false})));
   const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.42,12,8),
    new THREE.MeshBasicMaterial({color:'#ff8457',transparent:true,opacity:.82,depthTest:false,depthWrite:false})));
-  for(const mesh of [projectile,muzzleFlash,impactFlash]){
+  for(const mesh of [projectile,shotBeam,muzzleFlash,impactFlash]){
    mesh.visible=false;
    mesh.renderOrder=95;
   }
@@ -329,6 +333,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const progress=Math.min(1,Math.max(0,(now-shotMotion.started)/900));
     const traveling=progress<.68;
     projectile.visible=traveling;
+    shotBeam.visible=traveling;
     muzzleFlash.visible=progress<.13;
     impactFlash.visible=!traveling&&progress<1;
     projectile.position.copy(shotMotion.from).lerp(shotMotion.to,Math.min(1,progress/.68));
@@ -338,7 +343,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.shotPhase=traveling?'travel':'impact';
     if(progress===1){
      shotMotion=null;
-     projectile.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
+     projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
      canvas.dataset.shotPhase='idle';
     }
    }
@@ -370,7 +375,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }else squadMotions.clear();
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};
    if(!firing&&shotMotion){
-    shotMotion=null;projectile.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
+    shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
     canvas.dataset.shotPhase='idle';
    }
    if(newShot){
@@ -383,6 +388,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      const from=atCell(firing.from,scenario.size),to=atCell(firing.to,scenario.size);
      shotMotion={from:new THREE.Vector3(from.x,.92,from.z),
       to:new THREE.Vector3(to.x,1.03,to.z),started:performance.now()};
+     const beamVector=shotMotion.to.clone().sub(shotMotion.from);
+     shotBeam.position.copy(shotMotion.from).add(shotMotion.to).multiplyScalar(.5);
+     shotBeam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),beamVector.clone().normalize());
+     shotBeam.scale.y=beamVector.length();
+     shotBeam.visible=true;
      muzzleFlash.position.copy(shotMotion.from);muzzleFlash.visible=true;
      canvas.dataset.shotPhase='travel';
     }else{
