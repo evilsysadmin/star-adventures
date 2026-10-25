@@ -87,6 +87,28 @@ test('v4 incompatible, future and corrupted saves are not erased or interpreted 
   assert.equal(legacy.getItem(COMBAT_REPLAY_SAVE_KEY), null);
 });
 
+test('v4 session refuses silently discarded or unreadable writes without false saved state', () => {
+  const first = serializeCombatReplay('relay', []);
+  const next = newCombatReplaySession('derelict');
+  const ignored = storage([[COMBAT_REPLAY_SAVE_KEY, first]]);
+  assert.equal(persistCombatReplaySession(next, {
+    getItem: ignored.getItem,
+    setItem() {}, // Browser/storage shim accepts the write but loses it.
+  }), false);
+  assert.equal(ignored.getItem(COMBAT_REPLAY_SAVE_KEY), first);
+
+  let written = false;
+  assert.equal(persistCombatReplaySession(next, {
+    setItem(key, value) { written = key === COMBAT_REPLAY_SAVE_KEY && value.length > 0; },
+    getItem() { throw new Error('SecurityError on readback'); },
+  }), false);
+  assert.equal(written, true);
+  assert.equal(persistCombatReplaySession(next, {
+    setItem() {},
+    getItem() { return null; },
+  }), false);
+});
+
 test('v4 session reports storage denial and quota failures without claiming persistence', () => {
   assert.match(restoreCombatReplaySession(null).notice, /temporal/);
   assert.match(restoreCombatReplaySession({ getItem: () => { throw Error('denied'); } }).notice, /temporal/);
