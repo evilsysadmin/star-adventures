@@ -190,3 +190,36 @@ test('blocked, quota-limited and silently discarded storage cannot claim durable
   assert.equal(recordCombatExtractionAttempt(quota).status, 'unavailable');
   assert.equal(store.getItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY), null);
 });
+
+test('a changed ledger or replay snapshot is never overwritten as if it were current', () => {
+  const store = tracked(first);
+  const competingLedger = JSON.stringify({ version: 3, attempts: [] });
+  let ledgerReads = 0;
+  const ledgerRace = {
+    getItem(key) {
+      if (key === COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY && ++ledgerReads === 2) {
+        store.values.set(key, competingLedger);
+      }
+      return store.getItem(key);
+    },
+    setItem: store.setItem,
+  };
+  assert.equal(recordCombatExtractionAttempt(ledgerRace).status, 'conflict');
+  assert.equal(store.getItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY), competingLedger);
+  assert.deepEqual(store.writes, []);
+
+  const replayStore = tracked(first);
+  let replayReads = 0;
+  const replayRace = {
+    getItem(key) {
+      if (key === COMBAT_REPLAY_SAVE_KEY && ++replayReads === 2) {
+        replayStore.values.set(key, checkpoint(1));
+      }
+      return replayStore.getItem(key);
+    },
+    setItem: replayStore.setItem,
+  };
+  assert.equal(recordCombatExtractionAttempt(replayRace).status, 'out-of-sync');
+  assert.equal(replayStore.getItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY), null);
+  assert.deepEqual(replayStore.writes, []);
+});
