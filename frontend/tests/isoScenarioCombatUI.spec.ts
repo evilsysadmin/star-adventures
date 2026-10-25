@@ -12,11 +12,14 @@ test('opt-in v3 combat displays real wounds and defeat, restores F5 and isolates
  const oldHostile = await page.evaluate(key => localStorage.getItem(key), HOSTILE_ENCOUNTER_SAVE_KEY);
  await page.getByTestId('scenario-combat-toggle').click();
  await expect(page.getByTestId('scenario-combat-toggle')).toHaveAttribute('aria-pressed', 'true');
- const modeBoxes = await Promise.all(['scenario-training-toggle','scenario-hostile-toggle','scenario-combat-toggle']
+ const modeBoxes = await Promise.all(['scenario-training-toggle','scenario-hostile-toggle','scenario-combat-toggle','scenario-replay-toggle']
   .map(id => page.getByTestId(id).boundingBox()));
  expect(modeBoxes.every(Boolean)).toBe(true);
- expect(Math.max(...modeBoxes.map(box => box!.y)) - Math.min(...modeBoxes.map(box => box!.y)))
-  .toBeLessThan(3); // all three simulation choices share one visual row on mobile
+ // Four opt-in labs use two balanced rows on narrow touch screens.
+ expect(Math.abs(modeBoxes[0]!.y-modeBoxes[1]!.y)).toBeLessThan(3);
+ expect(Math.abs(modeBoxes[2]!.y-modeBoxes[3]!.y)).toBeLessThan(3);
+ expect(modeBoxes[2]!.y).toBeGreaterThan(modeBoxes[0]!.y+40);
+ expect(modeBoxes.every(box=>box!.height>=44)).toBe(true);
 
  await expect(page.getByTestId('scenario-hp-medic')).toHaveText('PV 3 / 3');
  const actions: { type: 'end-turn' }[] = [];

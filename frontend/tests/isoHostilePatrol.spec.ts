@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createIsoCamera } from '../src/tacticalIsoCamera';
 import { projectCell } from '../src/tacticalGrid';
+import { hostilePatrolCellsAt } from '../src/isoHostilePatrol';
 
 async function choose(page: import('@playwright/test').Page, id: string) {
   const canvas = page.getByTestId('iso-render-canvas');
@@ -37,13 +38,16 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await page.waitForTimeout(500);
   expect(await page.getByTestId('iso-hostile-cells').textContent()).toBe(frozenCells);
   await expect(page.getByTestId('iso-motion-status')).toContainText('Recorrido completado', { timeout: 10_000 });
-  // Patrol has resumed by now; freeze the observed snapshot before projecting
-  // a pointer to it, otherwise a slow desktop runner can advance one tile
-  // between text read and canvas click.
+  // Stopping patrol resets both contacts to authored start cells on the
+  // next animation frame. Wait for that authoritative state instead of
+  // clicking a stale moving position immediately after the button flips.
   await page.getByTestId('iso-patrol').click();
   await expect(page.getByTestId('iso-patrol')).toContainText('Activar patrulla');
-  const resumedHostile = (await page.getByTestId('iso-hostile-cells').textContent())?.match(/[0-7]:[0-7]/)?.[0];
-  await choose(page, resumedHostile!);
+  const initialCells = hostilePatrolCellsAt(0);
+  await expect.poll(async () =>
+    (await page.getByTestId('iso-hostile-cells').textContent())?.match(/[0-7]:[0-7]/g)
+  ).toEqual([...initialCells]);
+  await choose(page, initialCells[0]);
   expect(await page.getByTestId('iso-selected').textContent()).toContain('Hostil de entrenamiento');
   await page.screenshot({ path: `test-results/iso-hostile-patrol-${width}.png`, fullPage: true });
 });

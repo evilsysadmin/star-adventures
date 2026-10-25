@@ -116,7 +116,10 @@
 /* Three explicit, equally weighted simulation modes; keep the camera controls
    on a separate row instead of wrapping a mode into a misleading second row. */
 .scenario-viewtools{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}
-.scenario-mode-select{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.scenario-mode-select{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .scenario-mode-select button{min-width:0;min-height:44px;padding:8px 5px;font-size:10px;line-height:1.25}
 .scenario-viewtools>button{grid-column:1;justify-self:stretch}
 .scenario-viewtools>span{grid-column:2;text-align:right}
+
+/* Four independent labs: 44px targets in a 2x2 mobile grid. */
+@media(max-width:520px){.scenario-mode-select{grid-template-columns:repeat(2,minmax(0,1fr))}}
