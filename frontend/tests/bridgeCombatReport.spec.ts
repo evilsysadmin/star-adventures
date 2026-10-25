@@ -22,7 +22,7 @@ for (const width of [390, 1280]) {
     const disclosure = page.getByTestId('bridge-combat-report');
     await expect(disclosure).toBeVisible();
     const before = await page.evaluate(() => ({ ...localStorage }));
-    await disclosure.locator('summary').click();
+    await disclosure.locator('summary').first().click();
     await expect(page.getByTestId('bridge-combat-status')).toHaveText('Amenazas neutralizadas · extracción pendiente');
     await expect(page.getByTestId('bridge-combat-metrics')).toContainText('4 disparos');
     await expect(page.getByTestId('bridge-combat-metrics')).toContainText('2 amenazas neutralizadas');
@@ -43,11 +43,11 @@ for (const width of [390, 1280]) {
 test('bridge handles missing and corrupt v4 saves without mutating them', async ({ page }) => {
   await page.goto('/');
   const disclosure = page.getByTestId('bridge-combat-report');
-  await disclosure.locator('summary').click();
+  await disclosure.locator('summary').first().click();
   await expect(page.getByTestId('bridge-combat-unavailable')).toContainText('no hay un combate v4');
-  await disclosure.locator('summary').click();
+  await disclosure.locator('summary').first().click();
   await page.evaluate(key => localStorage.setItem(key, '{broken'), KEY);
-  await disclosure.locator('summary').click();
+  await disclosure.locator('summary').first().click();
   await expect(page.getByTestId('bridge-combat-unavailable')).toContainText('incompatible');
   expect(await page.evaluate(key => localStorage.getItem(key), KEY)).toBe('{broken');
   await page.reload();
