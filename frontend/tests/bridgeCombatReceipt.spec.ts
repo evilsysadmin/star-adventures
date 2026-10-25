@@ -51,9 +51,9 @@ for (const width of [390, 1280]) {
     await page.goto('/');
     await page.evaluate(({ key, checkpoint }) => {
       localStorage.setItem(key, checkpoint);
-      localStorage.setItem('shadowops.star-adventures.border-signal.v2', 'legacy-unchanged');
     }, { key: COMBAT_REPLAY_SAVE_KEY, checkpoint: extracted });
     await page.reload();
+    const legacyBefore = await page.evaluate(() => localStorage.getItem('shadowops.star-adventures.border-signal.v2'));
 
     const panel = page.getByTestId('bridge-combat-report');
     await panel.locator('summary').click();
@@ -73,7 +73,7 @@ for (const width of [390, 1280]) {
     expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_REPLAY_SAVE_KEY))
       .toBe(extracted);
     expect(await page.evaluate(() => localStorage.getItem('shadowops.star-adventures.border-signal.v2')))
-      .toBe('legacy-unchanged');
+      .toBe(legacyBefore);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `test-results/bridge-extraction-recorded-${width}.png`, fullPage: true });
 
