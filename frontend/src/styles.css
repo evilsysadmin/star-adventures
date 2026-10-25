@@ -79,7 +79,7 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 @media(max-width:520px){.away-squad{margin:0 16px 14px;padding:11px 8px}.away-squad-slots{grid-template-columns:1fr}.away-squad-slot select{font-size:12px}.away-party{padding:9px}.away-party-members{gap:7px}.away-party-member{font-size:10px}}
 .tactical-probe{margin-top:1rem;padding:1rem;border:1px solid #396071;background:#071018;color:#d9e9ee}.tactical-probe h2{margin:.25rem 0;font-size:1.1rem}.tactical-probe p{margin:.25rem 0 .75rem}.tactical-motion{margin:-.35rem 0 .1rem;padding:.3rem .55rem;border:1px solid #547886;background:#102534;color:#d9e9ee;font:inherit;font-size:.75rem}.tactical-motion[aria-pressed=true]{border-color:#e8b85b;color:#f2cb7b}.tactical-canvas{width:100%;height:300px;overflow:hidden;border:1px solid #547886}.tactical-canvas canvas{display:block;width:100%;height:100%;touch-action:manipulation}.tactical-controls{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;margin-top:.75rem}.tactical-controls button{min-width:0;padding:.35rem .05rem;border:1px solid #547886;background:#102534;color:#d9e9ee;font:inherit;font-size:.68rem}.tactical-controls button[aria-pressed=true]{outline:2px solid #e8b85b;outline-offset:-2px}
 
-/* Optional bridge-only v4 sandbox debrief: no campaign handoff or new save. */
+/* Bridge-only v4 sandbox debrief; receipt is opt-in and grants no campaign rewards. */
 .bridge-combat-report{margin:0 25px 16px;border:1px solid #3a5d67;background:#102531;color:#d7e9e5;min-width:0}
 .bridge-combat-report summary{display:flex;justify-content:space-between;align-items:center;gap:9px;cursor:pointer;padding:12px 13px;list-style:none;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.06em}
 .bridge-combat-report summary::-webkit-details-marker{display:none}
@@ -93,4 +93,10 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .bridge-combat-metrics,.bridge-combat-health{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .bridge-combat-metrics span,.bridge-combat-health span{padding:5px 8px;border:1px solid #375b67;background:#193542}
 .bridge-combat-scope{color:#a5bfc3;font-size:11px}
+.bridge-combat-receipt{margin:12px 0 6px}
+.bridge-combat-receipt button{min-height:44px;max-width:100%;padding:9px 14px;border:1px solid #80b7a8;border-radius:4px;background:#1e504d;color:#e4f5e9;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+.bridge-combat-receipt button:hover:not(:disabled){background:#28665e}
+.bridge-combat-receipt button:focus-visible{outline:2px solid #e8d4aa;outline-offset:2px}
+.bridge-combat-receipt button:disabled{opacity:.65;cursor:default}
+.bridge-combat-receipt [role=status]{color:#cbe5d8;font-size:12px}
 @media(max-width:520px){.bridge-combat-report{margin:0 16px 14px}.bridge-combat-report summary{font-size:9px;letter-spacing:0;padding:11px}.bridge-combat-body{padding:11px}.bridge-combat-metrics span,.bridge-combat-health span{font-size:11px}}
