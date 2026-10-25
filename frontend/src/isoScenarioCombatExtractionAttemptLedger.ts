@@ -114,10 +114,6 @@ export function recordCombatExtractionAttempt(
   storage: Pick<Storage, 'getItem' | 'setItem'> | null,
 ): ExtractionAttemptWrite {
   if (!storage) return writeResult('unavailable');
-  const ledger = readCombatExtractionAttemptLedger(storage);
-  if (ledger.status === 'incompatible' || ledger.status === 'unavailable') {
-    return writeResult(ledger.status);
-  }
   let replayRaw: string | null;
   let identityRaw: string | null;
   let ledgerRaw: string | null;
@@ -125,54 +121,59 @@ export function recordCombatExtractionAttempt(
     replayRaw = storage.getItem(COMBAT_REPLAY_SAVE_KEY);
     identityRaw = storage.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY);
     ledgerRaw = storage.getItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY);
-  } catch { return writeResult('unavailable', ledger.entries.length); }
-  if (replayRaw === null) return writeResult('not-extracted', ledger.entries.length);
+  } catch { return writeResult('unavailable'); }
+  // Parse the same snapshot that will be checked again before writing.
+  // A separate read here could accidentally append to a stale ledger.
+  let entries: ExtractionAttemptEntry[];
+  try { entries = ledgerRaw === null ? [] : parseEntries(ledgerRaw); }
+  catch { return writeResult('incompatible'); }
+  if (replayRaw === null) return writeResult('not-extracted', entries.length);
   let entry: ExtractionAttemptEntry;
   try {
     const history = deserializeCombatReplay(replayRaw);
     if (serializeCombatReplay(history.scenarioId, history.actions) !== replayRaw) {
-      return writeResult('incompatible', ledger.entries.length);
+      return writeResult('incompatible', entries.length);
     }
     if (combatMissionReport(history).status !== 'mission-extracted') {
-      return writeResult('not-extracted', ledger.entries.length);
+      return writeResult('not-extracted', entries.length);
     }
-    if (identityRaw === null) return writeResult('untracked', ledger.entries.length);
+    if (identityRaw === null) return writeResult('untracked', entries.length);
     const attempt = deserializeCombatMissionInstance(identityRaw);
     if (serializeCombatReplay(attempt.history.scenarioId, attempt.history.actions) !== replayRaw) {
-      return writeResult('out-of-sync', ledger.entries.length);
+      return writeResult('out-of-sync', entries.length);
     }
     entry = verifiedEntry(attempt.instanceId, replayRaw);
-  } catch { return writeResult('incompatible', ledger.entries.length); }
-  const previous = ledger.entries.find(item => item.instanceId === entry.instanceId);
+  } catch { return writeResult('incompatible', entries.length); }
+  const previous = entries.find(item => item.instanceId === entry.instanceId);
   if (previous) {
     return writeResult(previous.checkpoint === entry.checkpoint
-      ? 'already-recorded' : 'conflict', ledger.entries.length);
+      ? 'already-recorded' : 'conflict', entries.length);
   }
-  if (ledger.entries.length >= MAX_EXTRACTION_ATTEMPT_ENTRIES) {
-    return writeResult('full', ledger.entries.length);
+  if (entries.length >= MAX_EXTRACTION_ATTEMPT_ENTRIES) {
+    return writeResult('full', entries.length);
   }
   const payload = JSON.stringify({
     version: COMBAT_EXTRACTION_ATTEMPT_LEDGER_VERSION,
-    attempts: [...ledger.entries, entry].map(({ instanceId, checkpoint }) =>
+    attempts: [...entries, entry].map(({ instanceId, checkpoint }) =>
       ({ instanceId, checkpoint })),
   });
   if (payload.length > MAX_EXTRACTION_ATTEMPT_LEDGER_BYTES) {
-    return writeResult('full', ledger.entries.length);
+    return writeResult('full', entries.length);
   }
   try {
     // Detect changed evidence before the write; localStorage is not an
     // atomic compare-and-swap, so server-owned rewards still need authority.
     if (storage.getItem(COMBAT_REPLAY_SAVE_KEY) !== replayRaw ||
         storage.getItem(COMBAT_MISSION_INSTANCE_SAVE_KEY) !== identityRaw) {
-      return writeResult('out-of-sync', ledger.entries.length);
+      return writeResult('out-of-sync', entries.length);
     }
     if (storage.getItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY) !== ledgerRaw) {
-      return writeResult('conflict', ledger.entries.length);
+      return writeResult('conflict', entries.length);
     }
     storage.setItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY, payload);
     if (storage.getItem(COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY) !== payload) {
-      return writeResult('unavailable', ledger.entries.length);
+      return writeResult('unavailable', entries.length);
     }
-  } catch { return writeResult('unavailable', ledger.entries.length); }
-  return writeResult('recorded', ledger.entries.length + 1);
+  } catch { return writeResult('unavailable', entries.length); }
+  return writeResult('recorded', entries.length + 1);
 }
