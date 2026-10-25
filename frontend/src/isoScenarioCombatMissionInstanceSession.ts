@@ -134,15 +134,17 @@ export function persistCombatMissionAttemptProgress(
   storage: Pick<Storage, 'getItem' | 'setItem'> | null,
 ): CombatAttemptSave {
   const current = readCombatMissionInstanceSession(storage);
+  let identityConflict = false;
   if (current.instance) {
-    // Reject rewinds, scenario switches and rewritten commands BEFORE
-    // touching the authoritative v4 replay checkpoint.
+    // A diverged identity must never receive credit, but it must not stop
+    // the independent v4 replay from saving legitimate player actions.
     try { advanceCombatMissionInstance(current.instance, history); }
-    catch { return { replaySaved: false, identity: 'conflict' }; }
+    catch { identityConflict = true; }
   }
   if (!persistCombatReplaySession(history, storage)) {
     return { replaySaved: false, identity: 'unavailable' };
   }
+  if (identityConflict) return { replaySaved: true, identity: 'conflict' };
   if (!current.instance) {
     return {
       replaySaved: true,
