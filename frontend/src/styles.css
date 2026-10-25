@@ -81,10 +81,10 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 
 /* Bridge-only v4 sandbox debrief; receipt is opt-in and grants no campaign rewards. */
 .bridge-combat-report{margin:0 25px 16px;border:1px solid #3a5d67;background:#102531;color:#d7e9e5;min-width:0}
-.bridge-combat-report summary{display:flex;justify-content:space-between;align-items:center;gap:9px;cursor:pointer;padding:12px 13px;list-style:none;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.06em}
-.bridge-combat-report summary::-webkit-details-marker{display:none}
-.bridge-combat-report summary:hover{background:#1b3845}
-.bridge-combat-report summary:focus-visible{outline:2px solid #8ce2ce;outline-offset:-2px}
+.bridge-combat-report > summary{display:flex;justify-content:space-between;align-items:center;gap:9px;cursor:pointer;padding:12px 13px;list-style:none;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.06em}
+.bridge-combat-report > summary::-webkit-details-marker{display:none}
+.bridge-combat-report > summary:hover{background:#1b3845}
+.bridge-combat-report > summary:focus-visible{outline:2px solid #8ce2ce;outline-offset:-2px}
 .bridge-combat-action{color:#d8bd91;white-space:nowrap}
 .bridge-combat-body{border-top:1px solid #355662;padding:13px;overflow-wrap:anywhere;font:12px/1.6 'DM Sans',sans-serif}
 .bridge-combat-body p{margin:7px 0}
@@ -99,4 +99,14 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .bridge-combat-receipt button:focus-visible{outline:2px solid #e8d4aa;outline-offset:2px}
 .bridge-combat-receipt button:disabled{opacity:.65;cursor:default}
 .bridge-combat-receipt [role=status]{color:#cbe5d8;font-size:12px}
-@media(max-width:520px){.bridge-combat-report{margin:0 16px 14px}.bridge-combat-report summary{font-size:9px;letter-spacing:0;padding:11px}.bridge-combat-body{padding:11px}.bridge-combat-metrics span,.bridge-combat-health span{font-size:11px}}
+.bridge-combat-ledger{margin:12px 0 8px;border:1px solid #375b67;background:#142d3a}
+.bridge-combat-ledger > summary{padding:9px 10px;cursor:pointer;color:#c8e5df;font-weight:700;list-style:none}
+.bridge-combat-ledger > summary::-webkit-details-marker{display:none}
+.bridge-combat-ledger > summary:focus-visible{outline:2px solid #8ce2ce;outline-offset:-2px}
+.bridge-combat-ledger > summary:hover{background:#1d3b49}
+.bridge-combat-ledger > p{padding:0 10px}
+.bridge-combat-ledger ol{margin:0;padding:6px 10px 8px 32px;max-height:180px;overflow-y:auto}
+.bridge-combat-ledger li{padding:6px 0;border-top:1px solid #375b67}
+.bridge-combat-ledger li span{display:block}
+.bridge-combat-ledger li span + span{color:#abc8ca;font-size:11px}
+@media(max-width:520px){.bridge-combat-report{margin:0 16px 14px}.bridge-combat-report > summary{font-size:9px;letter-spacing:0;padding:11px}.bridge-combat-body{padding:11px}.bridge-combat-metrics span,.bridge-combat-health span{font-size:11px}}
