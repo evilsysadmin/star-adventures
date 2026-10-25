@@ -62,8 +62,10 @@ for(const width of [390,1280]){
   await page.getByTestId('tactical-view-missions').click();
   const legacy=await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),
    [SCENARIO_SAVE_KEY,HOSTILE_ENCOUNTER_SAVE_KEY,COMBAT_ENCOUNTER_SAVE_KEY]);
-  await page.getByTestId('scenario-replay-toggle').click();
+  await expect(page.getByTestId('scenario-play-combat')).toBeVisible();
+  await page.getByTestId('scenario-play-combat').click();
   await expect(page.getByTestId('scenario-replay-toggle')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('scenario-fire-guide')).toContainText('Para disparar');
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   await page.getByTestId('scenario-unit-security').click();
@@ -73,7 +75,21 @@ for(const width of [390,1280]){
   await page.getByTestId('scenario-move').click();
   await target(page,'aegis');
   await expect(page.getByTestId('scenario-fire')).toBeEnabled();
+  const canvas=page.getByTestId('scenario-render-canvas');
+  await page.evaluate(()=>{
+   const element=document.querySelector('[data-testid="scenario-render-canvas"]')!;
+   const state=window as Window & { seenShotPhases?:string[] };
+   state.seenShotPhases=[];
+   new MutationObserver(()=>state.seenShotPhases!.push(element.getAttribute('data-shot-phase')??''))
+    .observe(element,{attributes:true,attributeFilter:['data-shot-phase']});
+  });
   await page.getByTestId('scenario-fire').click();
+  await expect(canvas).toHaveAttribute('data-shot-sequence','1');
+  await expect(canvas).toHaveAttribute('data-shot-from','5:6');
+  await expect(canvas).toHaveAttribute('data-shot-to','6:6');
+  await expect.poll(async()=>page.evaluate(()=>(window as Window & {seenShotPhases?:string[]}).seenShotPhases??[]),
+   {timeout:5000}).toContain('impact');
+  await page.screenshot({path:'test-results/combat-v4-shot-impact-'+width+'.png',fullPage:true});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
   await page.getByTestId('scenario-end-turn').click();
   await target(page,'aegis');
