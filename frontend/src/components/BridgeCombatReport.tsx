@@ -11,6 +11,10 @@ import {
 import {
   readCombatMissionInstanceSession, type MissionInstanceRead,
 } from '../isoScenarioCombatMissionInstanceSession';
+import {
+  acceptCombatCampaignMission, readCombatCampaignAcceptances,
+  type CampaignAcceptanceRead, type CampaignAcceptanceWrite,
+} from '../isoScenarioCombatCampaignAcceptance';
 import { localStorageOrNull } from '../session';
 
 const statusText: Record<string, string> = {
@@ -41,6 +45,16 @@ const attemptText: Record<ExtractionAttemptWrite['status'], string> = {
   unavailable: 'No se ha podido guardar la misión. Comprueba el almacenamiento local.',
 };
 
+const acceptanceText: Record<CampaignAcceptanceWrite['status'], string> = {
+  accepted: 'Misión aceptada y guardada. No se han concedido recompensas.',
+  'already-accepted': 'Esta misión ya estaba aceptada. No se ha duplicado.',
+  'not-recorded': 'Esta misión no tiene una extracción registrada y verificada.',
+  conflict: 'El historial ha cambiado. No se ha aceptado la misión.',
+  full: 'El registro de aceptaciones está lleno. No se ha borrado ningún resultado.',
+  incompatible: 'El registro de aceptaciones es incompatible. No se ha modificado.',
+  unavailable: 'No se ha podido guardar la aceptación. Comprueba el almacenamiento local.',
+};
+
 const officerNames = {
   science: 'Ciencia',
   security: 'Seguridad',
@@ -60,6 +74,10 @@ export function BridgeCombatReport() {
   const [attemptLedger, setAttemptLedger] = useState<ExtractionAttemptRead | null>(null);
   const [attemptWrite, setAttemptWrite] = useState<ExtractionAttemptWrite | null>(null);
   const [identity, setIdentity] = useState<MissionInstanceRead | null>(null);
+  const [acceptances, setAcceptances] = useState<CampaignAcceptanceRead | null>(null);
+  const [acceptanceWrite, setAcceptanceWrite] = useState<{
+    instanceId: string; result: CampaignAcceptanceWrite;
+  } | null>(null);
   const report = debrief?.report;
   const objectives = report ? [
     report.objectives.scanned && 'Investigación',
@@ -79,6 +97,8 @@ export function BridgeCombatReport() {
           setLedger(readCombatExtractionLedger(storage));
           setAttemptLedger(readCombatExtractionAttemptLedger(storage));
           setIdentity(readCombatMissionInstanceSession(storage));
+          setAcceptances(readCombatCampaignAcceptances(storage));
+          setAcceptanceWrite(null);
           setLedgerWrite(null);
           setAttemptWrite(null);
         }
@@ -157,11 +177,41 @@ export function BridgeCombatReport() {
                 : attemptLedger.entries.length === 0
                   ? <p>Todavía no hay misiones identificadas registradas.</p>
                   : <ol data-testid="bridge-combat-attempt-ledger-entries">
-                    {attemptLedger.entries.map(entry => <li key={entry.instanceId}>
-                      <span>Intento {entry.instanceId.slice(0, 8)} · {entry.report.label}</span>
-                      <span>{entry.report.round} rondas · {entry.report.orders} órdenes · {entry.report.wounds} PV de daño</span>
-                    </li>)}
+                    {attemptLedger.entries.map(entry => {
+                      const accepted = acceptances?.status === 'ready' &&
+                        acceptances.entries.some(item => item.instanceId === entry.instanceId);
+                      const canAccept = acceptances?.status === 'ready' || acceptances?.status === 'missing';
+                      return <li key={entry.instanceId}>
+                        <span>Intento {entry.instanceId.slice(0, 8)} · {entry.report.label}</span>
+                        <span>{entry.report.round} rondas · {entry.report.orders} órdenes · {entry.report.wounds} PV de daño</span>
+                        {accepted ? <span data-testid={`bridge-combat-accepted-${entry.instanceId}`}>
+                          Aceptada para campaña · sin recompensas
+                        </span> : canAccept && <div className="bridge-combat-receipt">
+                          <button type="button" data-testid={`bridge-combat-accept-${entry.instanceId}`}
+                            onClick={() => {
+                              const storage = localStorageOrNull();
+                              const result = acceptCombatCampaignMission(storage, entry.instanceId);
+                              setAcceptanceWrite({ instanceId: entry.instanceId, result });
+                              setAcceptances(readCombatCampaignAcceptances(storage));
+                            }}>
+                            Aceptar misión
+                          </button>
+                        </div>}
+                        {acceptanceWrite?.instanceId === entry.instanceId && (
+                          <p role="status" data-testid="bridge-combat-acceptance-status">
+                            {acceptanceText[acceptanceWrite.result.status]}
+                          </p>
+                        )}
+                      </li>;
+                    })}
                   </ol>}
+            {(acceptances?.status === 'incompatible' || acceptances?.status === 'unavailable') && (
+              <p role="status" data-testid="bridge-combat-acceptance-error">
+                {acceptances.status === 'incompatible'
+                  ? 'Registro de aceptaciones incompatible. No se ha modificado.'
+                  : 'No se puede consultar el registro de aceptaciones.'}
+              </p>
+            )}
           </details>
         )}
         {ledger && (identity?.status !== 'ready' || ledger.status !== 'missing' ||

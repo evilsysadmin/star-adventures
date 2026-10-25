@@ -8,6 +8,7 @@ import { COMBAT_EXTRACTION_RECEIPT_KEY } from '../src/isoScenarioCombatExtractio
 import { COMBAT_EXTRACTION_LEDGER_KEY } from '../src/isoScenarioCombatExtractionLedger';
 import { COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY } from '../src/isoScenarioCombatExtractionAttemptLedger';
 import { COMBAT_MISSION_INSTANCE_SAVE_KEY } from '../src/isoScenarioCombatMissionInstanceSession';
+import { COMBAT_CAMPAIGN_ACCEPTANCE_KEY } from '../src/isoScenarioCombatCampaignAcceptance';
 
 const victory: CombatReplayAction[] = [
   { type: 'move', officer: 'security', cell: '3:7' },
@@ -283,4 +284,72 @@ test('bridge refuses mismatched identity and incompatible v3 history without rew
   expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY))
     .toBe('{broken');
   await expect(page.getByTestId('bridge-combat-record-extraction')).toHaveCount(0);
+});
+
+
+for (const width of [390, 1280]) {
+  test(`bridge accepts a verified mission explicitly and keeps it after F5 at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 850 : 820 });
+    await page.goto('/');
+    await page.evaluate(({ replayKey, identityKey, checkpoint, instanceId }) => {
+      localStorage.setItem(replayKey, checkpoint);
+      localStorage.setItem(identityKey, JSON.stringify({ version: 1, instanceId, checkpoint }));
+    }, { replayKey: COMBAT_REPLAY_SAVE_KEY, identityKey: COMBAT_MISSION_INSTANCE_SAVE_KEY,
+      checkpoint: extracted, instanceId: FIRST_ATTEMPT });
+    await page.reload();
+    const panel = page.getByTestId('bridge-combat-report');
+    await panel.locator('summary').first().click();
+    await page.getByTestId('bridge-combat-record-attempt').click();
+    await expect(page.getByTestId('bridge-combat-attempt-status')).toContainText('añadida');
+    const sourceBefore = await page.evaluate(key => localStorage.getItem(key),
+      COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY);
+    expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_CAMPAIGN_ACCEPTANCE_KEY))
+      .toBeNull();
+
+    await page.getByTestId('bridge-combat-attempt-ledger-summary').click();
+    const accept = page.getByTestId(`bridge-combat-accept-${FIRST_ATTEMPT}`);
+    await expect(accept).toBeVisible();
+    expect((await accept.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await accept.click();
+    await expect(page.getByTestId('bridge-combat-acceptance-status')).toContainText('aceptada');
+    await expect(page.getByTestId(`bridge-combat-accepted-${FIRST_ATTEMPT}`))
+      .toContainText('sin recompensas');
+    const accepted = await page.evaluate(key => localStorage.getItem(key),
+      COMBAT_CAMPAIGN_ACCEPTANCE_KEY);
+    expect(JSON.parse(accepted!)).toEqual({ version: 1, accepted: [
+      { instanceId: FIRST_ATTEMPT, checkpoint: extracted },
+    ] });
+    expect(await page.evaluate(key => localStorage.getItem(key),
+      COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY)).toBe(sourceBefore);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: `test-results/bridge-accepted-mission-${width}.png`, fullPage: true });
+
+    await page.reload();
+    await panel.locator('summary').first().click();
+    await page.getByTestId('bridge-combat-attempt-ledger-summary').click();
+    await expect(page.getByTestId(`bridge-combat-accepted-${FIRST_ATTEMPT}`)).toBeVisible();
+    await expect(accept).toHaveCount(0);
+    expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_CAMPAIGN_ACCEPTANCE_KEY))
+      .toBe(accepted);
+  });
+}
+
+test('bridge fails closed when accepted-mission evidence is corrupted', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(({ replayKey, identityKey, sourceKey, acceptedKey, checkpoint, instanceId }) => {
+    localStorage.setItem(replayKey, checkpoint);
+    localStorage.setItem(identityKey, JSON.stringify({ version: 1, instanceId, checkpoint }));
+    localStorage.setItem(sourceKey, JSON.stringify({ version: 3, attempts: [{ instanceId, checkpoint }] }));
+    localStorage.setItem(acceptedKey, '{broken');
+  }, { replayKey: COMBAT_REPLAY_SAVE_KEY, identityKey: COMBAT_MISSION_INSTANCE_SAVE_KEY,
+    sourceKey: COMBAT_EXTRACTION_ATTEMPT_LEDGER_KEY, acceptedKey: COMBAT_CAMPAIGN_ACCEPTANCE_KEY,
+    checkpoint: extracted, instanceId: FIRST_ATTEMPT });
+  await page.reload();
+  const panel = page.getByTestId('bridge-combat-report');
+  await panel.locator('summary').first().click();
+  await page.getByTestId('bridge-combat-attempt-ledger-summary').click();
+  await expect(page.getByTestId('bridge-combat-acceptance-error')).toContainText('incompatible');
+  await expect(page.getByTestId(`bridge-combat-accept-${FIRST_ATTEMPT}`)).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_CAMPAIGN_ACCEPTANCE_KEY))
+    .toBe('{broken');
 });
