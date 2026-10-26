@@ -62,7 +62,7 @@ export function IsoScenarioLab(){
  const [focus,setFocus]=useState(false);
  const [notice,setNotice]=useState(startup.notice);
  // Fire feedback is transient presentation only; never enters the replay/save.
- const [shot,setShot]=useState<{id:number;from:string;to:string}|null>(null);
+ const [shot,setShot]=useState<{id:number;from:string;to:string;officer:SquadId}|null>(null);
  const nextShotId=useRef(0);
  const scenario=SCENARIOS[scenarioId];
  const completedResult=useMemo(()=>!hostileMode&&!combatMode&&!replayMode&&mission.completed
@@ -95,6 +95,7 @@ export function IsoScenarioLab(){
    if(command.type==='fire'){
     setShot({
      id:++nextShotId.current,
+     officer:command.officer,
      from:replayHistory.combat.encounter.mission.locations[command.officer],
      to:replayHistory.combat.encounter.positions[command.hostile],
     });
