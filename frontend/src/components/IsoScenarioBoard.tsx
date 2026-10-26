@@ -160,7 +160,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    new THREE.MeshBasicMaterial({color:'#8df4ff',transparent:true,opacity:.9,depthTest:false,depthWrite:false})));
   const muzzleFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),
    new THREE.MeshBasicMaterial({color:'#fff2bc',depthTest:false,depthWrite:false})));
-  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.6,12,8),
+  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.34,12,8),
    new THREE.MeshBasicMaterial({color:'#ff8457',transparent:true,opacity:.94,depthTest:false,depthWrite:false})));
   for(const mesh of [projectile,shotBeam,muzzleFlash,impactFlash]){
    mesh.visible=false;
