@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 import { COMBAT_REPLAY_SAVE_KEY, replayCombatCommands } from '../src/isoScenarioCombatReplay';
 import { combatMissionReport } from '../src/isoScenarioCombatMissionReport';
 import { missionPath, type SquadId } from '../src/isoScenarioCampaign';
@@ -91,32 +92,57 @@ for(const width of [390,1280]){
   expect(fireRect!.y).toBeGreaterThanOrEqual(boardRect!.y);
   expect(fireRect!.x+fireRect!.width).toBeLessThanOrEqual(boardRect!.x+boardRect!.width);
   expect(fireRect!.y+fireRect!.height).toBeLessThanOrEqual(boardRect!.y+boardRect!.height);
+  // Capture the WebGL buffer synchronously after each rendered frame. A
+  // Playwright screenshot can take longer than the entire tracer animation
+  // on software-rendered CI and accidentally photograph the impact instead.
   await page.evaluate(()=>{
-   const element=document.querySelector('[data-testid="scenario-render-canvas"]')!;
-   const state=window as Window & { seenShotPhases?:string[] };
-   state.seenShotPhases=[];
-   new MutationObserver(()=>state.seenShotPhases!.push(element.getAttribute('data-shot-phase')??''))
-    .observe(element,{attributes:true,attributeFilter:['data-shot-phase']});
+   const element=document.querySelector<HTMLCanvasElement>('[data-testid="scenario-render-canvas"]')!;
+   const state=window as Window & {
+    shotFrames?:{travel?:string;impact?:string;phases:string[]};
+   };
+   state.shotFrames={phases:[]};
+   let travelFrames=0;
+   const observer=new MutationObserver(()=>{
+    const phase=element.dataset.shotPhase??'';
+    if(element.dataset.shotSequence!=='1')return;
+    state.shotFrames!.phases.push(phase);
+    // The initial travel notification may precede the first animation frame.
+    if(phase==='travel'&&++travelFrames>=2&&!state.shotFrames!.travel)
+     state.shotFrames!.travel=element.toDataURL('image/png');
+    if(phase==='impact'&&!state.shotFrames!.impact)
+     state.shotFrames!.impact=element.toDataURL('image/png');
+    if(state.shotFrames!.travel&&state.shotFrames!.impact)observer.disconnect();
+   });
+   observer.observe(element,{attributes:true,attributeFilter:['data-shot-phase']});
   });
   await page.getByTestId('scenario-fire').click();
   await expect(canvas).toHaveAttribute('data-shot-sequence','1');
   await expect(canvas).toHaveAttribute('data-shot-from','5:6');
   await expect(canvas).toHaveAttribute('data-shot-to','6:6');
-  // Capture impact FIRST: screenshotting the travel phase can take longer
-  // than the entire effect in software-rendered desktop CI.
-  await expect(canvas).toHaveAttribute('data-shot-phase','impact',{timeout:5000});
-  await canvas.screenshot({path:'test-results/combat-v4-shot-impact-'+width+'.png'});
-  await expect.poll(async()=>page.evaluate(()=>(window as Window & {seenShotPhases?:string[]}).seenShotPhases??[]),
-   {timeout:5000}).toContain('impact');
+  // Both frames must belong to the FIRST accepted shot, not a later phase
+  // mislabeled by an asynchronous screenshot.
+  await expect.poll(async()=>page.evaluate(()=>(window as Window & {
+   shotFrames?:{travel?:string;impact?:string};
+  }).shotFrames?.impact??null),{timeout:5000}).not.toBeNull();
+  const frames=await page.evaluate(()=>(window as Window & {
+   shotFrames?:{travel?:string;impact?:string;phases:string[]};
+  }).shotFrames!);
+  expect(frames.phases).toContain('travel');
+  expect(frames.phases).toContain('impact');
+  expect(frames.travel,'Must capture an actual travel frame').toMatch(/^data:image\\/png;base64,/);
+  expect(frames.impact,'Must capture an actual impact frame').toMatch(/^data:image\\/png;base64,/);
+  expect(frames.travel).not.toEqual(frames.impact);
+  for(const phase of ['travel','impact'] as const){
+   const png=Buffer.from(frames[phase]!.split(',')[1],'base64');
+   expect(png.byteLength,'Canvas frame should contain real rendered pixels').toBeGreaterThan(10_000);
+   await writeFile('test-results/combat-v4-shot-'+phase+'-'+width+'.png',png);
+  }
   await page.screenshot({path:'test-results/combat-v4-shot-post-'+width+'.png',fullPage:true});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
   await page.getByTestId('scenario-end-turn').click();
   await target(page,'aegis');
   await page.getByTestId('scenario-fire').click();
-  // The next valid shot supplies a separate, real travel-phase capture.
   await expect(canvas).toHaveAttribute('data-shot-sequence','2');
-  await expect(canvas).toHaveAttribute('data-shot-phase','travel');
-  await canvas.screenshot({path:'test-results/combat-v4-shot-travel-'+width+'.png'});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 0/2');
   await expect(page.getByTestId('scenario-hostile-aegis')).toBeDisabled();
   await target(page,'veil');
