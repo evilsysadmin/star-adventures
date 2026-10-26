@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { IsoScenarioBoard } from './IsoScenarioBoard';
 import {
  SCENARIOS, applyMissionAction, missionPath,
@@ -61,6 +61,9 @@ export function IsoScenarioLab(){
  const [selected,setSelected]=useState(startup.history.state.locations.science);
  const [focus,setFocus]=useState(false);
  const [notice,setNotice]=useState(startup.notice);
+ // Fire feedback is transient presentation only; never enters the replay/save.
+ const [shot,setShot]=useState<{id:number;from:string;to:string}|null>(null);
+ const nextShotId=useRef(0);
  const scenario=SCENARIOS[scenarioId];
  const completedResult=useMemo(()=>!hostileMode&&!combatMode&&!replayMode&&mission.completed
   ?trainingResult({scenarioId:history.scenarioId,actions:history.actions}):null,[history,hostileMode,combatMode,replayMode]);
@@ -89,6 +92,13 @@ export function IsoScenarioLab(){
    const next=replayCombatCommands(scenarioId,[...replayHistory.actions,command]);
    const {replaySaved:saved}=persistCombatMissionAttemptProgress(next,localStorageOrNull());
    setReplayHistory(next);
+   if(command.type==='fire'){
+    setShot({
+     id:++nextShotId.current,
+     from:replayHistory.combat.encounter.mission.locations[command.officer],
+     to:replayHistory.combat.encounter.positions[command.hostile],
+    });
+   }
    const hits=next.combat.encounter.hits.map(hit=>hit.hostile+' hiere a '+hit.officer+': '+hit.remainingHp+'/'+COMBAT_OFFICER_MAX_HP+' PV');
    setNotice((saved?'':'Combate v4 no guardado · ')+[
     next.combat.encounter.mission.events.at(-1)||'Orden ejecutada',...hits,
@@ -155,6 +165,7 @@ export function IsoScenarioLab(){
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
  };
  const change=(id:ScenarioId)=>{
+  setShot(null);
   if(replayMode){
    const next=newCombatReplaySession(id);
    const storage=localStorageOrNull();
@@ -191,6 +202,7 @@ export function IsoScenarioLab(){
     'Nuevo escenario · almacenamiento no disponible, sesión temporal');
  };
  const switchEncounter=(mode:'training'|'hostile'|'combat'|'replay')=>{
+  setShot(null);
   setHostileMode(mode==='hostile');
   setCombatMode(mode==='combat');
   setReplayMode(mode==='replay');
@@ -227,6 +239,10 @@ export function IsoScenarioLab(){
    <span className="scenario-eyebrow">OPERACIONES TÁCTICAS · LABORATORIO JUGABLE</span>
    <h2 id="scenario-heading">Tres misiones, un equipo</h2>
    <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Los movimientos y las órdenes cambian el estado real del escenario.</p>
+   {!replayMode&&<button className="scenario-play-combat" type="button"
+    data-testid="scenario-play-combat" onClick={()=>switchEncounter('replay')}>
+    Jugar combate con disparos
+   </button>}
   </header>
   <div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
    {order.map(id=><button key={id} type="button"
@@ -255,16 +271,25 @@ export function IsoScenarioLab(){
     <button type="button" data-testid="scenario-combat-toggle" aria-pressed={combatMode}
      onClick={()=>switchEncounter('combat')}>Combate v3 · daño</button>
     <button type="button" data-testid="scenario-replay-toggle" aria-pressed={replayMode}
-     onClick={()=>switchEncounter('replay')}>Combate v4 · disparos</button>
+     onClick={()=>switchEncounter('replay')}>Combate jugable · disparos</button>
    </div>
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
+  {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide">
+   <strong>Para disparar:</strong> selecciona un oficial, toca un enemigo y pulsa Disparar.
+   {fireTarget?(fireReady?' Objetivo a tiro.':' Acerca al oficial o despeja la línea de visión; comprueba tus órdenes.'):' Selecciona un contacto Aegis o Velo.'}
+  </p>}
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
-    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} onPick={choose}/>
+    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} onPick={choose}/>
+   {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
+    disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
+    onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
+    {fireReady?'DISPARAR · '+fireTarget:fireTarget?'Sin tiro disponible':'APUNTAR · elige enemigo'}
+   </button>}
   </div>
   <div className="scenario-cell-bar">
    <div><span>CASILLA ELEGIDA</span>
@@ -315,10 +340,6 @@ export function IsoScenarioLab(){
     onClick={()=>execute(rescue)}>Rescatar</button>
    <button type="button" data-testid="scenario-extract" disabled={!available(extract)}
     onClick={()=>execute(extract)}>Solicitar extracción</button>
-   {replayMode&&<button type="button" data-testid="scenario-fire" disabled={!fireReady}
-    onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
-    {fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
-   </button>}
    <button type="button" data-testid="scenario-end-turn" disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
     onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
   </div>
