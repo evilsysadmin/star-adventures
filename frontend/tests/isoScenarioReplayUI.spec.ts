@@ -77,6 +77,10 @@ for(const width of [390,1280]){
   await target(page,'aegis');
   await expect(page.getByTestId('scenario-fire')).toBeEnabled();
   const canvas=page.getByTestId('scenario-render-canvas');
+  // The real shooter atlas must be ready before the accepted shot. This is
+  // the mission board, not the separate non-damaging animation laboratory.
+  await expect(canvas).toHaveAttribute('data-fire-atlases-ready','3',{timeout:25_000});
+  await expect(canvas).not.toHaveAttribute('data-fire-unit',/./);
   const [boardRect,fireRect]=await Promise.all([
    canvas.boundingBox(),page.getByTestId('scenario-fire').boundingBox(),
   ]);
@@ -98,9 +102,20 @@ for(const width of [390,1280]){
   await page.evaluate(()=>{
    const element=document.querySelector<HTMLCanvasElement>('[data-testid="scenario-render-canvas"]')!;
    const state=window as Window & {
-    shotFrames?:{travel?:string;impact?:string;phases:string[]};
+    shotFrames?:{travel?:string;impact?:string;fire?:string;phases:string[];fireFrames:string[]};
    };
-   state.shotFrames={phases:[]};
+   state.shotFrames={phases:[],fireFrames:[]};
+   const fireObserver=new MutationObserver(()=>{
+    if(element.dataset.shotSequence!=='1')return;
+    const frame=element.dataset.fireFrame;
+    if(frame===undefined)return;
+    if(!state.shotFrames!.fireFrames.includes(frame))state.shotFrames!.fireFrames.push(frame);
+    if(Number(frame)>=2&&!state.shotFrames!.fire){
+     state.shotFrames!.fire=element.toDataURL('image/png');
+     fireObserver.disconnect();
+    }
+   });
+   fireObserver.observe(element,{attributes:true,attributeFilter:['data-fire-frame']});
    let travelFrames=0;
    const observer=new MutationObserver(()=>{
     const phase=element.dataset.shotPhase??'';
@@ -124,9 +139,14 @@ for(const width of [390,1280]){
   await expect.poll(async()=>page.evaluate(()=>(window as Window & {
    shotFrames?:{travel?:string;impact?:string};
   }).shotFrames?.impact??null),{timeout:5000}).not.toBeNull();
+  await expect.poll(async()=>page.evaluate(()=>(window as Window & {
+   shotFrames?:{fire?:string};
+  }).shotFrames?.fire??null),{timeout:5000}).not.toBeNull();
   const frames=await page.evaluate(()=>(window as Window & {
-   shotFrames?:{travel?:string;impact?:string;phases:string[]};
+   shotFrames?:{travel?:string;impact?:string;fire?:string;phases:string[];fireFrames:string[]};
   }).shotFrames!);
+  expect(frames.fireFrames.some(frame=>Number(frame)>=2),'Real firing sprite must advance beyond idle').toBe(true);
+  expect(frames.fire,'Must capture an authored firing frame during an accepted shot').toMatch(/^data:image\/png;base64,/);
   expect(frames.phases).toContain('travel');
   expect(frames.phases).toContain('impact');
   expect(frames.travel,'Must capture an actual travel frame').toMatch(/^data:image\/png;base64,/);
@@ -137,6 +157,10 @@ for(const width of [390,1280]){
    expect(png.byteLength,'Canvas frame should contain real rendered pixels').toBeGreaterThan(10_000);
    await writeFile('test-results/combat-v4-shot-'+phase+'-'+width+'.png',png);
   }
+  const firePng=Buffer.from(frames.fire!.split(',')[1],'base64');
+  expect(firePng.byteLength).toBeGreaterThan(10_000);
+  await writeFile('test-results/combat-v4-shooter-fire-'+width+'.png',firePng);
+  await expect(canvas).not.toHaveAttribute('data-fire-unit',/./,{timeout:5_000});
   await page.screenshot({path:'test-results/combat-v4-shot-post-'+width+'.png',fullPage:true});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
   await page.getByTestId('scenario-end-turn').click();
