@@ -452,7 +452,17 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      motions.set(hostile.id,{from:new THREE.Vector3(from.x,.14,from.z),
       to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
     }
-   }else motions.clear();
+   }else{
+    motions.clear();
+    // Reduced-motion and F5-style updates still show the actual new bearing,
+    // without inventing a walk animation or changing the authoritative cell.
+    if(previous&&h)for(const hostile of scenario.hostiles){
+     const before=previous[hostile.id],after=h[hostile.id];
+     if(before===after||hp?.[hostile.id]===0)continue;
+     const p=atCell(after,scenario.size);
+     placeFacing(hostileVisuals.get(hostile.id)!.facing,p.x,p.z,before,after,hostile.id);
+    }
+   }
    if(!reduceMotion&&!document.hidden&&previousMission){
     const occupiedHostiles=previous
      ?Object.entries(previous).filter(([id])=>view.hostileHealth?.[id as HostileId]!==0).map(([,cell])=>cell)
@@ -469,7 +479,15 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now(),path});
      canvas.dataset.squadRouteLength=String(path.length-1);
     }
-   }else squadMotions.clear();
+   }else{
+    squadMotions.clear();
+    if(previousMission)for(const unit of officers){
+     const before=previousMission.locations[unit.id],after=m.locations[unit.id];
+     if(before===after)continue;
+     const p=atCell(after,scenario.size);
+     placeFacing(squad.get(unit.id)!.facing,p.x,p.z,before,after,unit.id);
+    }
+   }
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};
    if(!firing&&shotMotion){
     shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
