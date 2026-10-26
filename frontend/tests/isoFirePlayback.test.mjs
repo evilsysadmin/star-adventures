@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoFireFrame, nextFireReviewFrame } from '../src/isoFirePlayback.ts';
+import { isoFireFrame, isoHitReactionAt, nextFireReviewFrame } from '../src/isoFirePlayback.ts';
 import { FIRE_ATLAS } from '../src/tacticalAnimation.ts';
 
 test('one authored fire burst advances through all six frames exactly once',()=>{
@@ -40,4 +40,33 @@ test('manual review reaches each original frame once, then explicitly returns to
 test('manual review rejects invalid and out-of-order frame indices instead of wrapping',()=>{
  for(const frame of [-1,1.5,6,Infinity,NaN])assert.throws(()=>nextFireReviewFrame(frame),RangeError);
  assert.equal(nextFireReviewFrame(0),1);
+});
+
+
+test('accepted nonlethal hit flashes and recoils only after projectile arrival',()=>{
+ const travel=isoHitReactionAt(639,1600,.4,false);
+ assert.deepEqual(travel,{phase:'travel',flash:0,opacity:1,recoil:0});
+ const impact=isoHitReactionAt(640,1600,.4,false);
+ assert.equal(impact.phase,'impact');
+ assert.equal(impact.flash,1);
+ assert.equal(impact.opacity,1);
+ const middle=isoHitReactionAt(1120,1600,.4,false);
+ assert.equal(middle.phase,'impact');
+ assert.ok(middle.recoil>.15);
+ assert.equal(middle.opacity,1);
+ assert.equal(isoHitReactionAt(1600,1600,.4,false).phase,'done');
+});
+
+test('lethal hit stays visible until impact then fades without changing damage',()=>{
+ assert.equal(isoHitReactionAt(639,1600,.4,true).opacity,1);
+ assert.equal(isoHitReactionAt(640,1600,.4,true).opacity,1);
+ const late=isoHitReactionAt(1360,1600,.4,true);
+ assert.equal(late.phase,'impact');
+ assert.ok(late.opacity>0&&late.opacity<1);
+ assert.deepEqual(isoHitReactionAt(1600,1600,.4,true),
+  {phase:'done',flash:0,opacity:1,recoil:0});
+ for(const invalid of [NaN,Infinity,-Infinity])
+  assert.equal(isoHitReactionAt(invalid,1600,.4,true).phase,'done');
+ assert.equal(isoHitReactionAt(500,0,.4,true).phase,'done');
+ assert.equal(isoHitReactionAt(500,1600,1,true).phase,'done');
 });
