@@ -6,7 +6,8 @@ import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
-import type { MissionState, Scenario, SquadId } from '../isoScenarioCampaign';
+import { officerRouteStepAt } from '../isoOfficerAnimation';
+import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
 type ShotVisual = Readonly<{ id:number; from:string; to:string }>;
@@ -22,6 +23,7 @@ type BoardProps = {
 };
 type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null)=>void };
 type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
+type SquadMotion = SpriteMotion & { path:readonly string[] };
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
   {id:'security' as const,sex:'male',color:'#e7c47d'},
@@ -245,7 +247,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot};
   let shotMotion:{from:THREE.Vector3;to:THREE.Vector3;started:number}|null=null;
   const motions=new Map<HostileId,SpriteMotion>();
-  const squadMotions=new Map<SquadId,SpriteMotion>();
+  const squadMotions=new Map<SquadId,SquadMotion>();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let inViewport=true;
   let frameRequest=0;
@@ -317,10 +319,16 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    canvas.dataset.hostileMoving=String(motions.size);
    for(const [id,motion] of squadMotions){
     const visual=squad.get(id)!;
-    const step=hostileStepAt(now-motion.started);
-    const x=THREE.MathUtils.lerp(motion.from.x,motion.to.x,step.progress);
-    const z=THREE.MathUtils.lerp(motion.from.z,motion.to.z,step.progress);
+    // A five-cell command may turn several corners: interpolate each validated
+    // orthogonal BFS segment instead of cutting diagonally through scenery.
+    const step=officerRouteStepAt(motion.path,now-motion.started);
+    const from=atCell(step.from,scenario.size),to=atCell(step.to,scenario.size);
+    const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
+    const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
+    canvas.dataset.squadRouteStep=String(step.segment);
+    canvas.dataset.squadRouteFrom=step.from;
+    canvas.dataset.squadRouteTo=step.to;
     if(visual.walk){
      if(visual.sprite.material.map!==visual.walk){visual.sprite.material.map=visual.walk;visual.sprite.material.needsUpdate=true;}
      visual.walk.offset.set(walkFrameUv(step.frame).x,walkFrameUv(step.frame).y);
@@ -371,11 +379,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     }
    }else motions.clear();
    if(!reduceMotion&&!document.hidden&&previousMission){
+    const occupiedHostiles=previous
+     ?Object.entries(previous).filter(([id])=>view.hostileHealth?.[id as HostileId]!==0).map(([,cell])=>cell)
+     :[];
     for(const unit of officers){
      const fromCell=previousMission.locations[unit.id],toCell=m.locations[unit.id];
      if(fromCell===toCell)continue;
+     const path=missionPath(previousMission,unit.id,toCell,occupiedHostiles);
+     // Never invent a straight-line shortcut when a replay/legacy position
+     // cannot be reconstructed: the authoritative destination still renders.
+     if(!path||path.length<2)continue;
      const from=atCell(fromCell,scenario.size),to=atCell(toCell,scenario.size);
-     squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
+     squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now(),path});
+     canvas.dataset.squadRouteLength=String(path.length-1);
     }
    }else squadMotions.clear();
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};

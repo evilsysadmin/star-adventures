@@ -1,7 +1,7 @@
 // A visual-only clip schedule for one officer. Never authoritative for game state.
 // Walking must not be shared across atlas users: everyone except the actual
 // moving officer holds the first frame, and pause/reduced-motion hold it too.
-import { walkFrameAt } from './tacticalAnimation.ts';
+import { WALK_ATLAS, walkFrameAt } from './tacticalAnimation.ts';
 
 export type MovingClip = Readonly<{
   unitId: string;
@@ -14,4 +14,25 @@ export function isoOfficerFrame(
   if (!animate || !motion || motion.unitId !== unitId ||
       motion.start === null || !Number.isFinite(nowMs)) return 0;
   return walkFrameAt(Math.max(0, nowMs - motion.start));
+}
+
+// Walk one real orthogonal tile at a time along the same validated BFS route
+// used by the mission reducer. This never changes logical movement or saves.
+export const OFFICER_ROUTE_STEP_MS = 320;
+export function officerRouteStepAt(route: readonly string[], elapsedMs: number): Readonly<{
+  from: string; to: string; progress: number; frame: number; done: boolean; segment: number;
+}> {
+  const last = route.at(-1) ?? '';
+  const segments = Math.max(0, route.length - 1);
+  if (!segments || (Number.isFinite(elapsedMs) && elapsedMs >= segments * OFFICER_ROUTE_STEP_MS))
+    return { from: last, to: last, progress: 1, frame: 0, done: true, segment: segments };
+  const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
+  const segment = Math.min(segments - 1, Math.floor(elapsed / OFFICER_ROUTE_STEP_MS));
+  const fraction = (elapsed - segment * OFFICER_ROUTE_STEP_MS) / OFFICER_ROUTE_STEP_MS;
+  const progress = fraction * fraction * (3 - 2 * fraction);
+  return {
+    from: route[segment], to: route[segment + 1], progress,
+    frame: Math.min(WALK_ATLAS.frames - 1, Math.floor(fraction * WALK_ATLAS.frames)),
+    done: false, segment,
+  };
 }
