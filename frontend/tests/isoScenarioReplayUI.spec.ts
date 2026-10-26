@@ -129,8 +129,8 @@ for(const width of [390,1280]){
   }).shotFrames!);
   expect(frames.phases).toContain('travel');
   expect(frames.phases).toContain('impact');
-  expect(frames.travel,'Must capture an actual travel frame').toMatch(/^data:image\\/png;base64,/);
-  expect(frames.impact,'Must capture an actual impact frame').toMatch(/^data:image\\/png;base64,/);
+  expect(frames.travel,'Must capture an actual travel frame').toMatch(/^data:image\/png;base64,/);
+  expect(frames.impact,'Must capture an actual impact frame').toMatch(/^data:image\/png;base64,/);
   expect(frames.travel).not.toEqual(frames.impact);
   for(const phase of ['travel','impact'] as const){
    const png=Buffer.from(frames[phase]!.split(',')[1],'base64');
