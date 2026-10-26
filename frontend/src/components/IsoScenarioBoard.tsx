@@ -29,7 +29,7 @@ type BoardProps = {
 };
 type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null)=>void };
 type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
-type SquadMotion = SpriteMotion & { path:readonly string[] };
+type SquadMotion = Omit<SpriteMotion,'started'> & { path:readonly string[]; started:number|null };
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
   {id:'security' as const,sex:'male',color:'#e7c47d'},
@@ -519,7 +519,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const visual=squad.get(id)!;
     // A five-cell command may turn several corners: interpolate each validated
     // orthogonal BFS segment instead of cutting diagonally through scenery.
-    const step=officerRouteStepAt(motion.path,now-motion.started);
+    // Start at the first actual animation frame: a delayed rAF must not
+    // skip the whole 320ms tile traversal and visually teleport the officer.
+    const started=motion.started??(motion.started=now);
+    const step=officerRouteStepAt(motion.path,now-started);
     const from=atCell(step.from,scenario.size),to=atCell(step.to,scenario.size);
     const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
@@ -659,7 +662,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      if(!path||path.length<2)continue;
      const from=atCell(fromCell,scenario.size),to=atCell(toCell,scenario.size);
      placeFacing(squad.get(unit.id)!.facing,from.x,from.z,path[0],path[1],unit.id);
-     squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now(),path});
+     squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:null,path});
      canvas.dataset.squadRouteLength=String(path.length-1);
     }
    }else{
