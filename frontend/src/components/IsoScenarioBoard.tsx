@@ -17,6 +17,8 @@ type OfficerHitVisual = Readonly<{ id:number; officers:readonly SquadId[] }>;
 // A fast tracer followed by a readable, fading hit glow; visual only.
 const SHOT_DURATION_MS=1600;
 const SHOT_TRAVEL_FRACTION=.4;
+// Six authored hit poses need enough screen time to read at whole-board zoom.
+const OFFICER_HIT_FRAME_MS=200;
 type BoardProps = {
   scenario: Scenario; mission: MissionState; selected: string; focus: boolean;
   route: readonly string[] | null; hostilePositions?: Readonly<Record<HostileId,string>>;
@@ -274,8 +276,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.position.set(position.x,.14,position.z);
    const facing=createFacing(officer.color);
    // Ground-level impact warning survives a missing R2 atlas.
-   const hitRing=add(new THREE.Mesh(new THREE.RingGeometry(.40,.54,28),
-    new THREE.MeshBasicMaterial({color:'#ff876e',transparent:true,opacity:.8,
+   const hitRing=add(new THREE.Mesh(new THREE.RingGeometry(.44,.65,28),
+    new THREE.MeshBasicMaterial({color:'#ffb080',transparent:true,opacity:.9,
      side:THREE.DoubleSide,depthTest:false,depthWrite:false})));
    hitRing.rotation.x=-Math.PI/2;
    hitRing.position.set(position.x,.22,position.z);
@@ -557,7 +559,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    if(officerHitMotion){
     const elapsed=now-officerHitMotion.started;
-    const frame=Math.floor(elapsed*HIT_ATLAS.fps/1000);
+    const frame=Math.floor(elapsed/OFFICER_HIT_FRAME_MS);
     if(frame>=HIT_ATLAS.frames)resetOfficerHit();
     else{
      for(const id of officerHitMotion.officers){
@@ -570,7 +572,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
        actor.hit.offset.set(uv.x,uv.y);
       }
       actor.hitRing.visible=true;
-      actor.hitRing.scale.setScalar(1+.2*Math.sin(Math.PI*elapsed/(HIT_ATLAS.frames*1000/HIT_ATLAS.fps)));
+      actor.hitRing.scale.setScalar(1+.2*Math.sin(Math.PI*elapsed/(HIT_ATLAS.frames*OFFICER_HIT_FRAME_MS)));
       (actor.hitRing.material as THREE.MeshBasicMaterial).opacity=.85*(1-.5*frame/HIT_ATLAS.frames);
      }
      canvas.dataset.squadHitUnits=officerHitMotion.officers.join(',');
