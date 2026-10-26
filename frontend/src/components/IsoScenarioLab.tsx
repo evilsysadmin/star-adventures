@@ -19,6 +19,8 @@ import { newCombatReplaySession, restoreCombatReplaySession, persistCombatReplay
 import { startCombatMissionAttemptSession, persistCombatMissionAttemptProgress } from '../isoScenarioCombatMissionInstanceSession';
 import { COMBAT_HOSTILE_MAX_HP } from '../isoScenarioCombatFire';
 import { playAcceptedTacticalShot } from '../isoTacticalShotAudio';
+import { evaluateCombatAim } from '../isoScenarioCombatAim';
+import { describeCombatAim } from '../isoCombatAimFeedback';
 import type { HostileId } from '../isoScenarioHostileTurn';
 import './isoScenarioLab.css';
 
@@ -80,6 +82,11 @@ export function IsoScenarioLab(){
   ?(Object.keys(replay.hostileHealth) as HostileId[]).find(id=>
     replay.hostileHealth[id]>0&&replay.encounter.positions[id]===selected)
   :undefined;
+ const fireAim=replay&&fireTarget?evaluateCombatAim({
+  ...replay.encounter,
+  positions:Object.fromEntries(Object.entries(replay.encounter.positions)
+   .filter(([id])=>replay.hostileHealth[id as HostileId]>0)) as Record<HostileId,string>,
+ },officer,fireTarget):null;
  const fireReady=!!(replay&&fireTarget&&activeActions.length<MAX_SCENARIO_COMMANDS&&
   !replay.victory&&!replay.encounter.failed&&(()=>{
    try{replayCombatCommands(scenarioId,[...replayHistory.actions,{type:'fire',officer,hostile:fireTarget}]);return true;}
@@ -282,9 +289,12 @@ export function IsoScenarioLab(){
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
-  {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide">
+  {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
    <strong>Para disparar:</strong> selecciona un oficial, toca un enemigo y pulsa Disparar.
-   {fireTarget?(fireReady?' Objetivo a tiro.':' Acerca al oficial o despeja la línea de visión; comprueba tus órdenes.'):' Selecciona un contacto Aegis o Velo.'}
+   {fireTarget?(fireReady?' '+describeCombatAim(fireAim):activeActions.length>=MAX_SCENARIO_COMMANDS
+    ?' Límite de órdenes alcanzado · reinicia el combate.'
+    :fireAim?.allowed?' Orden de disparo no disponible en este turno.':' '+describeCombatAim(fireAim))
+    :' Selecciona un contacto Aegis o Velo.'}
   </p>}
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
@@ -293,7 +303,7 @@ export function IsoScenarioLab(){
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
     disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
-    {fireReady?'DISPARAR · '+fireTarget:fireTarget?'Sin tiro disponible':'APUNTAR · elige enemigo'}
+    {fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
    </button>}
   </div>
   <div className="scenario-cell-bar">
