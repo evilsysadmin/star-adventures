@@ -10,6 +10,9 @@ import type { MissionState, Scenario, SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
 type ShotVisual = Readonly<{ id:number; from:string; to:string }>;
+// A fast tracer followed by a readable, fading hit glow; visual only.
+const SHOT_DURATION_MS=1600;
+const SHOT_TRAVEL_FRACTION=.4;
 type BoardProps = {
   scenario: Scenario; mission: MissionState; selected: string; focus: boolean;
   route: readonly string[] | null; hostilePositions?: Readonly<Record<HostileId,string>>;
@@ -129,12 +132,12 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    new THREE.MeshBasicMaterial({color:'#ffedb1',depthTest:false,depthWrite:false})));
   // A persistent, thin phaser streak makes short-range fire legible even on
   // narrow screens, where a single moving sphere can disappear behind sprites.
-  const shotBeam=add(new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,1,8),
+  const shotBeam=add(new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,1,8),
    new THREE.MeshBasicMaterial({color:'#8df4ff',transparent:true,opacity:.9,depthTest:false,depthWrite:false})));
   const muzzleFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),
    new THREE.MeshBasicMaterial({color:'#fff2bc',depthTest:false,depthWrite:false})));
-  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.42,12,8),
-   new THREE.MeshBasicMaterial({color:'#ff8457',transparent:true,opacity:.82,depthTest:false,depthWrite:false})));
+  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.6,12,8),
+   new THREE.MeshBasicMaterial({color:'#ff8457',transparent:true,opacity:.94,depthTest:false,depthWrite:false})));
   for(const mesh of [projectile,shotBeam,muzzleFlash,impactFlash]){
    mesh.visible=false;
    mesh.renderOrder=95;
@@ -330,16 +333,18 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    canvas.dataset.squadMoving=String(squadMotions.size);
    if(shotMotion){
-    const progress=Math.min(1,Math.max(0,(now-shotMotion.started)/900));
-    const traveling=progress<.68;
+    const progress=Math.min(1,Math.max(0,(now-shotMotion.started)/SHOT_DURATION_MS));
+    const traveling=progress<SHOT_TRAVEL_FRACTION;
     projectile.visible=traveling;
     shotBeam.visible=traveling;
-    muzzleFlash.visible=progress<.13;
+    muzzleFlash.visible=progress<.10;
     impactFlash.visible=!traveling&&progress<1;
-    projectile.position.copy(shotMotion.from).lerp(shotMotion.to,Math.min(1,progress/.68));
+    projectile.position.copy(shotMotion.from).lerp(shotMotion.to,Math.min(1,progress/SHOT_TRAVEL_FRACTION));
     muzzleFlash.position.copy(shotMotion.from);
     impactFlash.position.copy(shotMotion.to);
-    impactFlash.scale.setScalar(1+Math.max(0,progress-.68)*2);
+    const impactProgress=Math.max(0,(progress-SHOT_TRAVEL_FRACTION)/(1-SHOT_TRAVEL_FRACTION));
+    impactFlash.scale.setScalar(1.1+impactProgress*.8);
+    (impactFlash.material as THREE.MeshBasicMaterial).opacity=.94*(1-impactProgress*.75);
     canvas.dataset.shotPhase=traveling?'travel':'impact';
     if(progress===1){
      shotMotion=null;
