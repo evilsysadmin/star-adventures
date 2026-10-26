@@ -18,3 +18,28 @@ export function nextFireReviewFrame(frame: number): number | null {
     throw new RangeError('Invalid fire review frame');
   return frame === FIRE_ATLAS.frames - 1 ? null : frame + 1;
 }
+
+
+/**
+ * Presentation-only response to a confirmed shot. The combat reducer owns
+ * damage and death; this timeline merely keeps a defeated target visible
+ * until the projectile actually reaches it, then flashes/recoils/fades it.
+ */
+export function isoHitReactionAt(
+  elapsedMs: number, durationMs: number, travelFraction: number, lethal: boolean,
+): Readonly<{ phase: 'travel' | 'impact' | 'done'; flash: number; opacity: number; recoil: number }> {
+  const done = { phase: 'done' as const, flash: 0, opacity: 1, recoil: 0 };
+  if (![elapsedMs, durationMs, travelFraction].every(Number.isFinite) ||
+      durationMs <= 0 || travelFraction <= 0 || travelFraction >= 1) return done;
+  const impactStart = durationMs * travelFraction;
+  if (elapsedMs < impactStart)
+    return { phase: 'travel', flash: 0, opacity: 1, recoil: 0 };
+  if (elapsedMs >= durationMs) return done;
+  const progress = (elapsedMs - impactStart) / (durationMs - impactStart);
+  return {
+    phase: 'impact',
+    flash: 1 - progress,
+    opacity: lethal ? 1 - progress : 1,
+    recoil: 0.16 * Math.sin(Math.PI * progress),
+  };
+}
