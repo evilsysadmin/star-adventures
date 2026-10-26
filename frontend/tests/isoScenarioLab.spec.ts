@@ -75,12 +75,27 @@ test('mission orders really consume AP, reject blocked/long travel and change ob
  await openMissions(page,390);
  await clickBoard(page,'2:1',10);
  await expect(page.getByTestId('scenario-move')).toBeEnabled();
+ // Watch the transient motion before issuing the order. On a busy CI runner,
+ // the entire 320ms walk may finish before Playwright's next locator poll.
+ const canvas=page.getByTestId('scenario-render-canvas');
+ await canvas.evaluate(element=>{
+  const observer=new MutationObserver(()=>{
+   if(element.getAttribute('data-squad-moving')!=='1')return;
+   element.setAttribute('data-test-saw-squad-motion','1');
+   element.setAttribute('data-test-motion-from',element.getAttribute('data-squad-route-from')??'');
+   element.setAttribute('data-test-motion-to',element.getAttribute('data-squad-route-to')??'');
+   observer.disconnect();
+  });
+  observer.observe(element,{attributes:true,attributeFilter:['data-squad-moving']});
+ });
  await page.getByTestId('scenario-move').click();
  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
- await expect(page.getByTestId('scenario-render-canvas')).toHaveAttribute('data-squad-moving','1');
- await page.screenshot({path:'test-results/scenario-squad-walk-390.png',fullPage:true});
- await expect(page.getByTestId('scenario-render-canvas')).toHaveAttribute('data-squad-moving','0',{timeout:2_000});
+ await expect(canvas).toHaveAttribute('data-test-saw-squad-motion','1');
+ await expect(canvas).toHaveAttribute('data-test-motion-from','1:1');
+ await expect(canvas).toHaveAttribute('data-test-motion-to','2:1');
+ await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:3_000});
  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
+ await page.screenshot({path:'test-results/scenario-squad-arrived-390.png',fullPage:true});
  await clickBoard(page,'4:1',10);
  await expect(page.getByTestId('scenario-move')).toBeDisabled();
  await clickBoard(page,'9:9',10);
