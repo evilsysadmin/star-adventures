@@ -4,7 +4,7 @@ import assets from '../assets/r2-assets-manifest.json';
 import { cells, cellCenter, pickCell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
-import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
+import { HIT_ATLAS, WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt } from '../isoFirePlayback';
@@ -13,17 +13,21 @@ import { missionPath, type MissionState, type Scenario, type SquadId } from '../
 import type { HostileId } from '../isoScenarioHostileTurn';
 
 type ShotVisual = Readonly<{ id:number; from:string; to:string; officer:SquadId }>;
+type OfficerHitVisual = Readonly<{ id:number; officers:readonly SquadId[] }>;
 // A fast tracer followed by a readable, fading hit glow; visual only.
 const SHOT_DURATION_MS=1600;
 const SHOT_TRAVEL_FRACTION=.4;
+// Six authored hit poses need enough screen time to read at whole-board zoom.
+const OFFICER_HIT_FRAME_MS=200;
 type BoardProps = {
   scenario: Scenario; mission: MissionState; selected: string; focus: boolean;
   route: readonly string[] | null; hostilePositions?: Readonly<Record<HostileId,string>>;
   hostileHealth?: Readonly<Record<HostileId,number>>;
   shot?: ShotVisual | null;
+  officerHit?: OfficerHitVisual | null;
   onPick: (cell: string) => void;
 };
-type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null)=>void };
+type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null)=>void };
 type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
 type SquadMotion = SpriteMotion & { path:readonly string[] };
 const officers = [
@@ -36,7 +40,7 @@ const atCell=(id:string,size:Scenario['size'])=>{
   return cellCenter({col,row},size);
 };
 
-export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,shot,onPick}:BoardProps){
+export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit,onPick}:BoardProps){
  const host=useRef<HTMLDivElement>(null);
  const runtime=useRef<BoardRuntime|null>(null);
  const onPickRef=useRef(onPick);
@@ -249,7 +253,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   }
   canvas.dataset.shotPhase='idle';
   canvas.dataset.hitPhase='idle';
-  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null}>();
+  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;hitRing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null;hit:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
   let disposed=false;
@@ -271,7 +275,15 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.scale.set(1.48,2.28,1);
    sprite.position.set(position.x,.14,position.z);
    const facing=createFacing(officer.color);
-   squad.set(officer.id,{sprite,fallback,facing,idle:null,walk:null,fire:null});
+   // Ground-level impact warning survives a missing R2 atlas.
+   const hitRing=add(new THREE.Mesh(new THREE.RingGeometry(.44,.65,28),
+    new THREE.MeshBasicMaterial({color:'#ffb080',transparent:true,opacity:.9,
+     side:THREE.DoubleSide,depthTest:false,depthWrite:false})));
+   hitRing.rotation.x=-Math.PI/2;
+   hitRing.position.set(position.x,.22,position.z);
+   hitRing.renderOrder=91;
+   hitRing.visible=false;
+   squad.set(officer.id,{sprite,fallback,facing,hitRing,idle:null,walk:null,fire:null,hit:null});
   }
   for(const sex of ['female','male'] as const){
    // Resting squad members use the dedicated one-frame MVS portraits. A walk
@@ -330,6 +342,25 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    },undefined,()=>{if(!disposed)render();});
    fire.colorSpace=THREE.SRGBColorSpace;fire.magFilter=THREE.LinearFilter;
    textures.push(fire);
+   const hitKey=sex==='female'?'starAdventures.tactical.officerFemaleHitV1'
+     :'starAdventures.tactical.officerMaleHitV1';
+   const hit=loader.load(assets.assets[hitKey].url,loaded=>{
+    if(disposed)return;
+    for(const officer of officers.filter(unit=>unit.sex===sex)){
+     const visual=squad.get(officer.id)!;
+     const isolated=loaded.clone();
+     isolated.repeat.set(1/HIT_ATLAS.columns,1/HIT_ATLAS.rows);
+     const uv=walkFrameUv(0);
+     isolated.offset.set(uv.x,uv.y);
+     isolated.magFilter=THREE.LinearFilter;
+     isolated.needsUpdate=true;
+     visual.hit=isolated;textures.push(isolated);
+    }
+    canvas.dataset.officerHitAtlasesReady=String([...squad.values()].filter(visual=>visual.hit).length);
+    render();
+   },undefined,()=>{if(!disposed)render();});
+   hit.colorSpace=THREE.SRGBColorSpace;hit.magFilter=THREE.LinearFilter;
+   textures.push(hit);
   }
   // The v1 training view keeps authored contact cells. Opt-in v2 encounters
   // supply replayed hostile positions; Three.js never owns simulation state.
@@ -371,7 +402,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     textures.push(texture);
    }
   }
-  let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot};
+  let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit};
   let shotMotion:{from:THREE.Vector3;to:THREE.Vector3;toCell:string;started:number;target:HostileId|null;lethal:boolean}|null=null;
   const resetHit=()=>{
    if(shotMotion?.target){
@@ -387,6 +418,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    delete canvas.dataset.hitTarget;
   };
   let fireMotion:{officer:SquadId;started:number}|null=null;
+  let officerHitMotion:{officers:readonly SquadId[];started:number}|null=null;
+  const resetOfficerHit=()=>{
+   if(!officerHitMotion)return;
+   for(const id of officerHitMotion.officers){
+    const actor=squad.get(id)!;
+    actor.hitRing.visible=false;
+    actor.hitRing.scale.setScalar(1);
+    if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+   }
+   officerHitMotion=null;
+   delete canvas.dataset.squadHitUnits;
+   delete canvas.dataset.squadHitFrame;
+  };
   const motions=new Map<HostileId,SpriteMotion>();
   const squadMotions=new Map<SquadId,SquadMotion>();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -416,6 +460,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     if(!squadMotions.has(unit.id)){
      actor.sprite.position.set(p.x,.14,p.z);
      actor.fallback.position.set(p.x,.62,p.z);
+     actor.hitRing.position.set(p.x,.22,p.z);
      placeFacing(actor.facing,p.x,p.z);
     }
    }
@@ -445,7 +490,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    frameRequest=0;
    if(disposed)return;
    if(reduceMotion||document.hidden){
-    motions.clear();squadMotions.clear();resetHit();shotMotion=null;
+    motions.clear();squadMotions.clear();resetHit();resetOfficerHit();shotMotion=null;
     if(fireMotion){
      const actor=squad.get(fireMotion.officer)!;
      if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
@@ -479,6 +524,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
+    visual.hitRing.position.set(x,.22,z);
     placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
     canvas.dataset.squadRouteStep=String(step.segment);
     canvas.dataset.squadRouteFrom=step.from;
@@ -509,6 +555,28 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      actor.fire.offset.set(uv.x,uv.y);
      canvas.dataset.fireUnit=fireMotion.officer;
      canvas.dataset.fireFrame=String(frame);
+    }
+   }
+   if(officerHitMotion){
+    const elapsed=now-officerHitMotion.started;
+    const frame=Math.floor(elapsed/OFFICER_HIT_FRAME_MS);
+    if(frame>=HIT_ATLAS.frames)resetOfficerHit();
+    else{
+     for(const id of officerHitMotion.officers){
+      const actor=squad.get(id)!;
+      if(actor.hit){
+       if(actor.sprite.material.map!==actor.hit){
+        actor.sprite.material.map=actor.hit;actor.sprite.material.needsUpdate=true;
+       }
+       const uv=walkFrameUv(frame);
+       actor.hit.offset.set(uv.x,uv.y);
+      }
+      actor.hitRing.visible=true;
+      actor.hitRing.scale.setScalar(1+.2*Math.sin(Math.PI*elapsed/(HIT_ATLAS.frames*OFFICER_HIT_FRAME_MS)));
+      (actor.hitRing.material as THREE.MeshBasicMaterial).opacity=.85*(1-.5*frame/HIT_ATLAS.frames);
+     }
+     canvas.dataset.squadHitUnits=officerHitMotion.officers.join(',');
+     canvas.dataset.squadHitFrame=String(frame);
     }
    }
    if(shotMotion){
@@ -549,10 +617,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     }
    }
    render();
-   if(motions.size||squadMotions.size||shotMotion)frameRequest=requestAnimationFrame(animate);
+   if(motions.size||squadMotions.size||shotMotion||officerHitMotion)frameRequest=requestAnimationFrame(animate);
   };
-  runtime.current={sync:(m,s,f,r,h,hp,firing)=>{
+  runtime.current={sync:(m,s,f,r,h,hp,firing,incomingHit)=>{
    const newShot=!!firing&&firing.id!==view.shot?.id;
+   const newHit=!!incomingHit&&incomingHit.id!==view.officerHit?.id;
    const previous=view.hostilePositions;
    const previousMission=view.mission;
    // Training -> encounter and F5 restore are instantaneous: only a real
@@ -602,7 +671,13 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      placeFacing(squad.get(unit.id)!.facing,p.x,p.z,before,after,unit.id);
     }
    }
-   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};
+   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing,officerHit:incomingHit};
+   if(!incomingHit)resetOfficerHit();
+   if(newHit){
+    resetOfficerHit();
+    if(!reduceMotion&&!document.hidden&&incomingHit.officers.length)
+     officerHitMotion={officers:incomingHit.officers,started:performance.now()};
+   }
    if(!firing&&shotMotion){
     resetHit();shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
     if(fireMotion){
@@ -647,7 +722,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     }
    }
    sync();
-   if((motions.size||squadMotions.size||shotMotion)&&!frameRequest)frameRequest=requestAnimationFrame(animate);
+   if((motions.size||squadMotions.size||shotMotion||officerHitMotion)&&!frameRequest)frameRequest=requestAnimationFrame(animate);
   }};
   const idleTimer=window.setInterval(()=>{
    if(disposed||document.hidden||!inViewport||reduceMotion)return;
@@ -709,7 +784,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    renderer.dispose();canvas.remove();
   };
  },[scenario.id]);
- useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth,shot);},[mission,selected,focus,routeId,hostilePositions,hostileHealth,shot]);
+ useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit);},[mission,selected,focus,routeId,hostilePositions,hostileHealth,shot,officerHit]);
  return <div className="scenario-viewport" ref={host} data-testid="scenario-viewport">
   {error&&<p role="status" data-testid="scenario-webgl-fallback">{error}</p>}
  </div>;

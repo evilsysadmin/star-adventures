@@ -7,7 +7,7 @@ const { assets } = JSON.parse(readFileSync(
 )) as { assets: Record<string, AtlasAsset> };
 
 const motions = Object.entries(assets).filter(([id]) =>
-  /^starAdventures\.tactical\.officer(?:Female|Male)(?:Walk|Run|Jump|Crouch|Fire)V[1-9]\d*$/.test(id),
+  /^starAdventures\.tactical\.officer(?:Female|Male)(?:Walk|Run|Jump|Crouch|Fire|Hit)V[1-9]\d*$/.test(id),
 );
 
 test('every motion atlas has both officer variants for visual regression checks', () => {
@@ -84,7 +84,8 @@ for (const [id, asset] of motions) {
       expect(frame.fraction, `${id} frame ${frame.index} has no meaningful drawing`).toBeGreaterThan(0.002);
     }
     const distinctFrames = new Set(result.frames.map(f => f.signature)).size;
-    expect(distinctFrames, `${id} is six copies of one static frame`).toBeGreaterThan(1);
+    expect(distinctFrames, `${id} must have meaningful distinct motion frames`)
+      .toBeGreaterThanOrEqual(id.includes('HitV') ? 5 : 2);
 
     // Keep evidence in CI logs when authored art changes in the future.
     console.log(`R2_FRAME_QA ${id} ${result.width}x${result.height}: ` +
