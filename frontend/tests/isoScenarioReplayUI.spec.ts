@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { COMBAT_REPLAY_SAVE_KEY, replayCombatCommands } from '../src/isoScenarioCombatReplay';
 import { combatMissionReport } from '../src/isoScenarioCombatMissionReport';
-import { missionPath, type SquadId } from '../src/isoScenarioCampaign';
+import { createMission, missionPath, type SquadId } from '../src/isoScenarioCampaign';
 import { COMBAT_ENCOUNTER_SAVE_KEY } from '../src/isoScenarioCombatCheckpoint';
 import { HOSTILE_ENCOUNTER_SAVE_KEY } from '../src/isoScenarioHostileCheckpoint';
 import { SCENARIO_SAVE_KEY } from '../src/isoScenarioSession';
@@ -191,5 +191,56 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('scenario-combat-result')).toHaveCount(0);
   await page.getByTestId('scenario-combat-toggle').click();
   await expect(page.getByTestId('scenario-hostile-aegis')).toHaveJSProperty('tagName','SPAN');
+ });
+}
+
+// P0 movement proof: an accepted five-tile order must visually traverse its
+// orthogonal BFS corners instead of sliding directly through scenery.
+for (const width of [390, 1280]) {
+ test('squad walks a real turning route at '+width+'px', async ({page}) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({width,height:850});
+  await page.goto('/');
+  await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-play-combat').click();
+  await page.getByTestId('scenario-accessible-grid').locator('summary').click();
+  await page.getByTestId('scenario-unit-science').click();
+  const route=missionPath(createMission('relay'),'science','3:3')!;
+  expect(route.length).toBe(5);
+  await choose(page,'3:3');
+  await expect(page.getByTestId('scenario-move')).toBeEnabled();
+  await page.evaluate(() => {
+   const canvas=document.querySelector<HTMLCanvasElement>('[data-testid="scenario-render-canvas"]')!;
+   const state=window as Window & {officerRouteCapture?:{pairs:string[];png:string|null}};
+   state.officerRouteCapture={pairs:[],png:null};
+   const observer=new MutationObserver(() => {
+    const from=canvas.dataset.squadRouteFrom,to=canvas.dataset.squadRouteTo;
+    if(from&&to&&from!==to){
+     const pair=from+'>'+to;
+     if(!state.officerRouteCapture!.pairs.includes(pair))state.officerRouteCapture!.pairs.push(pair);
+    }
+    if(canvas.dataset.squadRouteStep==='2'&&!state.officerRouteCapture!.png){
+     state.officerRouteCapture!.png=canvas.toDataURL('image/png');
+    }
+    if(canvas.dataset.squadMoving==='0')observer.disconnect();
+   });
+   observer.observe(canvas,{attributes:true,attributeFilter:['data-squad-route-step','data-squad-moving']});
+  });
+  await page.getByTestId('scenario-move').click();
+  const canvas=page.getByTestId('scenario-render-canvas');
+  await expect(canvas).toHaveAttribute('data-squad-route-length','4');
+  await expect.poll(async()=>page.evaluate(()=>(window as Window & {
+   officerRouteCapture?:{png:string|null};
+  }).officerRouteCapture?.png??null),{timeout:10_000}).not.toBeNull();
+  await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:10_000});
+  await expect(canvas).toHaveAttribute('data-squad-route-from','3:3');
+  await expect(canvas).toHaveAttribute('data-squad-route-to','3:3');
+  const capture=await page.evaluate(()=>(window as Window & {
+   officerRouteCapture?:{pairs:string[];png:string|null};
+  }).officerRouteCapture!);
+  expect(capture.pairs).toContain('3:1>3:2');
+  const png=Buffer.from(capture.png!.split(',')[1],'base64');
+  expect(png.byteLength).toBeGreaterThan(10_000);
+  await writeFile('test-results/combat-v4-officer-route-'+width+'.png',png);
  });
 }
