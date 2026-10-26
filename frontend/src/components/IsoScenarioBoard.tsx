@@ -28,7 +28,7 @@ type BoardProps = {
   onPick: (cell: string) => void;
 };
 type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null)=>void };
-type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
+type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number|null };
 type SquadMotion = Omit<SpriteMotion,'started'> & { path:readonly string[]; started:number|null };
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
@@ -502,7 +502,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    for(const [id,motion] of motions){
     const visual=hostileVisuals.get(id)!;
-    const step=hostileStepAt(now-motion.started);
+    // The first painted frame owns the start time, not the state update.
+    // A busy browser must not skip the entire hostile walk.
+    const started=motion.started??(motion.started=now);
+    const step=hostileStepAt(now-started);
     const x=THREE.MathUtils.lerp(motion.from.x,motion.to.x,step.progress);
     const z=THREE.MathUtils.lerp(motion.from.z,motion.to.z,step.progress);
     visual.sprite.position.set(x,.14,z);
@@ -636,7 +639,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      const to=atCell(h[hostile.id],scenario.size);
      placeFacing(hostileVisuals.get(hostile.id)!.facing,from.x,from.z,previous[hostile.id],h[hostile.id],hostile.id);
      motions.set(hostile.id,{from:new THREE.Vector3(from.x,.14,from.z),
-      to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
+      to:new THREE.Vector3(to.x,.14,to.z),started:null});
     }
    }else{
     motions.clear();
