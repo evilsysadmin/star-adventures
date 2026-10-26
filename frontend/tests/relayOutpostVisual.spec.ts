@@ -10,12 +10,18 @@ for(const width of [390,1280]){
   await page.getByTestId('tactical-view-missions').click();
   const canvas=page.getByTestId('scenario-render-canvas');
   await expect(canvas).toBeVisible();
-  // Desktop gives the tactical battlefield room to breathe. Mobile retains
-  // its compact near-square canvas, so controls do not disappear below a giant viewport.
-  const viewportHeight = (await canvas.boundingBox())!.height;
-  if(width===1280)expect(viewportHeight).toBeGreaterThanOrEqual(720);
-  else expect(viewportHeight).toBeLessThanOrEqual(400);
+  // Verify actual playfield width, not just an enlarged canvas full of empty sky.
+  const viewport = (await canvas.boundingBox())!;
+  if(width===1280){
+   expect(viewport.width).toBeGreaterThanOrEqual(780);
+   expect(viewport.height).toBeLessThanOrEqual(680);
+   expect((await page.locator('.orders-panel').boundingBox())!.width).toBeGreaterThanOrEqual(330);
+  }else{
+   expect(viewport.height).toBeLessThanOrEqual(400);
+  }
   await canvas.screenshot({path:`test-results/relay-outpost-full-${width}.png`});
+  await canvas.scrollIntoViewIfNeeded();
+  await page.screenshot({path:`test-results/relay-outpost-page-${width}.png`});
   await canvas.scrollIntoViewIfNeeded();
   const box=(await canvas.boundingBox())!;
   for(const id of ['2:3','2:1']){
