@@ -7,7 +7,7 @@ import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
-import { isoFireFrame } from '../isoFirePlayback';
+import { isoFireFrame, isoHitReactionAt } from '../isoFirePlayback';
 import { headingFromCells } from '../isoActorFacing';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
@@ -167,6 +167,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    mesh.renderOrder=95;
   }
   canvas.dataset.shotPhase='idle';
+  canvas.dataset.hitPhase='idle';
   const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
@@ -290,7 +291,20 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
   }
   let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot};
-  let shotMotion:{from:THREE.Vector3;to:THREE.Vector3;started:number}|null=null;
+  let shotMotion:{from:THREE.Vector3;to:THREE.Vector3;toCell:string;started:number;target:HostileId|null;lethal:boolean}|null=null;
+  const resetHit=()=>{
+   if(shotMotion?.target){
+    const victim=hostileVisuals.get(shotMotion.target)!;
+    victim.sprite.material.color.set('#ffffff');
+    victim.sprite.material.opacity=1;
+    const p=atCell(view.hostilePositions?.[shotMotion.target]??shotMotion.toCell,scenario.size);
+    victim.sprite.position.set(p.x,.14,p.z);
+    const alive=view.hostileHealth?.[shotMotion.target]!==0;
+    victim.sprite.visible=alive;victim.ground.visible=alive;
+   }
+   canvas.dataset.hitPhase='idle';
+   delete canvas.dataset.hitTarget;
+  };
   let fireMotion:{officer:SquadId;started:number}|null=null;
   const motions=new Map<HostileId,SpriteMotion>();
   const squadMotions=new Map<SquadId,SquadMotion>();
@@ -326,7 +340,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    for(const hostile of scenario.hostiles){
     const visual=hostileVisuals.get(hostile.id)!;
-    const alive=view.hostileHealth?.[hostile.id]!==0;
+    // Combat HP changes immediately, but a lethal hit should not erase the
+    // sprite before the visible projectile has actually reached its target.
+    const alive=view.hostileHealth?.[hostile.id]!==0||shotMotion?.target===hostile.id;
     visual.ground.visible=alive;visual.sprite.visible=alive;
     visual.facing.visible=alive&&Number.isFinite(visual.facing.userData.heading);
     if(!alive)motions.delete(hostile.id);
@@ -348,7 +364,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    frameRequest=0;
    if(disposed)return;
    if(reduceMotion||document.hidden){
-    motions.clear();squadMotions.clear();shotMotion=null;
+    motions.clear();squadMotions.clear();resetHit();shotMotion=null;
     if(fireMotion){
      const actor=squad.get(fireMotion.officer)!;
      if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
@@ -428,8 +444,25 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     impactFlash.scale.setScalar(1.1+impactProgress*.8);
     (impactFlash.material as THREE.MeshBasicMaterial).opacity=.94*(1-impactProgress*.75);
     canvas.dataset.shotPhase=traveling?'travel':'impact';
+    if(shotMotion.target){
+     const reaction=isoHitReactionAt(now-shotMotion.started,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,shotMotion.lethal);
+     canvas.dataset.hitPhase=reaction.phase;
+     if(reaction.phase==='impact'){
+      const victim=hostileVisuals.get(shotMotion.target)!;
+      const dx=shotMotion.to.x-shotMotion.from.x,dz=shotMotion.to.z-shotMotion.from.z;
+      const length=Math.hypot(dx,dz)||1;
+      victim.sprite.position.set(
+       shotMotion.to.x+dx/length*reaction.recoil,
+       .14+reaction.recoil*.35,
+       shotMotion.to.z+dz/length*reaction.recoil,
+      );
+      victim.sprite.material.color.setRGB(1,1-.6*reaction.flash,1-.85*reaction.flash);
+      victim.sprite.material.opacity=reaction.opacity;
+      victim.sprite.visible=true;victim.ground.visible=true;
+     }
+    }
     if(progress===1){
-     shotMotion=null;
+     resetHit();shotMotion=null;
      projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
      canvas.dataset.shotPhase='idle';
     }
@@ -490,7 +523,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    }
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};
    if(!firing&&shotMotion){
-    shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
+    resetHit();shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
     if(fireMotion){
      const actor=squad.get(fireMotion.officer)!;
      if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
@@ -500,6 +533,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.shotPhase='idle';
    }
    if(newShot){
+    // A second accepted shot may arrive before the previous animation ends.
+    // Restore the old victim before taking ownership of the next hit.
+    if(shotMotion){resetHit();shotMotion=null;}
     // Coordinates come from the accepted action's actual combat participants,
     // not the selected tile or a guessed hit. This effect is never replayed on F5.
     canvas.dataset.shotSequence=String(firing.id);
@@ -510,8 +546,14 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     if(!reduceMotion&&!document.hidden){
      fireMotion={officer:firing.officer,started:performance.now()};
      const from=atCell(firing.from,scenario.size),to=atCell(firing.to,scenario.size);
+     const target=scenario.hostiles.find(hostile=>
+      (previous?.[hostile.id]??h?.[hostile.id]??hostile.cell)===firing.to);
      shotMotion={from:new THREE.Vector3(from.x,.92,from.z),
-      to:new THREE.Vector3(to.x,1.03,to.z),started:performance.now()};
+      to:new THREE.Vector3(to.x,1.03,to.z),toCell:firing.to,
+      started:performance.now(),target:target?.id??null,
+      lethal:!!target&&hp?.[target.id]===0};
+     canvas.dataset.hitPhase=target?'travel':'idle';
+     if(target)canvas.dataset.hitTarget=target.id;
      const beamVector=shotMotion.to.clone().sub(shotMotion.from);
      shotBeam.position.copy(shotMotion.from).add(shotMotion.to).multiplyScalar(.5);
      shotBeam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),beamVector.clone().normalize());
@@ -531,7 +573,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    const now=performance.now();
    let changed=false;
    scenario.hostiles.forEach((hostile,index)=>{
-    if(motions.has(hostile.id)||view.hostileHealth?.[hostile.id]===0)return;
+    if(motions.has(hostile.id)||shotMotion?.target===hostile.id||view.hostileHealth?.[hostile.id]===0)return;
     const frame=hostileIdleFrameAt(now,index*2);
     showFrame(hostileVisuals.get(hostile.id)!,'idle',frame);
     canvas.dataset.hostileIdleFrame=String(frame);
