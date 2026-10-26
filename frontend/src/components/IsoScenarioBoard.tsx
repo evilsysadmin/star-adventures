@@ -117,6 +117,87 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     top.position.set(p.x,elevated-.08,p.z);
    }
   }
+  // Original, deterministic relay-outpost dressing: structural wall ribs,
+  // industrial cover and readable mission props. Only authored solid/objective
+  // cells carry tall scenery; walkable routes, LOS and picking remain unchanged.
+  // Meshes live exclusively in the visual scene (pickCell uses its own grid).
+  if(scenario.id==='relay'){
+   const steel=new THREE.MeshStandardMaterial({color:'#354e5d',metalness:.58,roughness:.47});
+   const panel=new THREE.MeshStandardMaterial({color:'#486779',metalness:.46,roughness:.55});
+   const darkSteel=new THREE.MeshStandardMaterial({color:'#1a303d',metalness:.57,roughness:.44});
+   const warning=new THREE.MeshBasicMaterial({color:'#d8ac62'});
+   const cyan=new THREE.MeshBasicMaterial({color:'#7fdbe4'});
+   const green=new THREE.MeshBasicMaterial({color:'#a3f1b5'});
+   const block=(p:THREE.Vector3,w:number,h:number,d:number,mat:THREE.Material)=>{
+    const mesh=add(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat));
+    mesh.position.copy(p);return mesh;
+   };
+   for(const cell of scenario.walls){
+    const p=atCell(cell,scenario.size);
+    // The authored col-4 wall now reads as one defended relay bulkhead.
+    block(new THREE.Vector3(p.x,1.19,p.z),.99,.10,.99,darkSteel);
+    block(new THREE.Vector3(p.x-.494,.71,p.z),.028,.56,.70,panel);
+    block(new THREE.Vector3(p.x-.515,.92,p.z),.014,.065,.27,cyan);
+    for(const dz of [-.41,.41])
+     block(new THREE.Vector3(p.x-.43,.67,p.z+dz),.14,.94,.13,steel);
+    const [col,row]=cell.split(':').map(Number);
+    const walkway=`${col-1}:${row}`;
+    if(!scenario.cover.includes(walkway)){
+     const q=atCell(walkway,scenario.size);
+     block(new THREE.Vector3(q.x+.39,.079,q.z),.09,.015,.80,warning);
+    }
+   }
+   // Relay identity at whole-board zoom: one continuous illuminated service
+   // gantry and a compact radio array on existing wall cells. These silhouettes
+   // sit above impassable terrain; they never create fake obstacles or hitboxes.
+   const gantry=atCell('4:3',scenario.size);
+   block(new THREE.Vector3(gantry.x,1.44,gantry.z),.65,.17,6.66,steel);
+   for(const side of [-.25,.25])
+    block(new THREE.Vector3(gantry.x+side,1.545,gantry.z),.025,.035,6.40,cyan);
+   const relayMast=add(new THREE.Mesh(new THREE.CylinderGeometry(.055,.095,1.12,10),darkSteel));
+   relayMast.position.set(gantry.x,2.05,gantry.z);
+   block(new THREE.Vector3(gantry.x,2.48,gantry.z),1.12,.075,.11,steel);
+   for(const side of [-.43,.43]){
+    block(new THREE.Vector3(gantry.x+side,2.47,gantry.z),.22,.32,.06,panel);
+    block(new THREE.Vector3(gantry.x+side,2.48,gantry.z+.039),.12,.19,.015,cyan);
+   }
+   for(const row of [0,6]){
+    const end=atCell(`4:${row}`,scenario.size);
+    block(new THREE.Vector3(end.x,1.39,end.z),.83,.18,.18,warning);
+   }
+   for(const cell of scenario.cover){
+    const p=atCell(cell,scenario.size);
+    // A waist-high crate remains exactly the same logical cover cell.
+    block(new THREE.Vector3(p.x,.505,p.z),.77,.13,.77,darkSteel);
+    block(new THREE.Vector3(p.x,.578,p.z),.10,.026,.80,steel);
+    block(new THREE.Vector3(p.x,.578,p.z),.80,.026,.10,steel);
+    block(new THREE.Vector3(p.x,p.y+.22,p.z+.488),.45,.055,.018,warning);
+   }
+   const sensor=atCell(scenario.sensor,scenario.size);
+   block(new THREE.Vector3(sensor.x,.31,sensor.z),.45,.40,.45,steel);
+   const mast=add(new THREE.Mesh(new THREE.CylinderGeometry(.035,.06,.68,8),steel));
+   mast.position.set(sensor.x,.72,sensor.z);
+   const dish=add(new THREE.Mesh(new THREE.ConeGeometry(.27,.14,12),panel));
+   dish.rotation.z=Math.PI/2.6;
+   dish.position.set(sensor.x,.99,sensor.z);
+   block(new THREE.Vector3(sensor.x,.99,sensor.z),.07,.07,.07,cyan);
+   if(scenario.console){
+    const terminal=atCell(scenario.console,scenario.size);
+    block(new THREE.Vector3(terminal.x,.65,terminal.z+.22),.48,.32,.065,darkSteel);
+    block(new THREE.Vector3(terminal.x,.66,terminal.z+.263),.35,.19,.015,cyan);
+    block(new THREE.Vector3(terminal.x,.48,terminal.z-.13),.15,.16,.19,steel);
+   }
+   const extraction=atCell(scenario.extraction,scenario.size);
+   for(const dx of [-.34,.34])for(const dz of [-.34,.34]){
+    block(new THREE.Vector3(extraction.x+dx,.17,extraction.z+dz),.12,.22,.12,darkSteel);
+    block(new THREE.Vector3(extraction.x+dx,.29,extraction.z+dz),.10,.05,.10,green);
+   }
+   for(const cell of ['8:9','9:8']){
+    const p=atCell(cell,scenario.size);
+    for(const delta of [-.22,.22])
+     block(new THREE.Vector3(p.x+delta,.079,p.z),.07,.015,.65,warning);
+   }
+  }
   const objectiveMaterials=new Map<string,THREE.MeshBasicMaterial>();
   const makeObjective=(id:string,color:string,kind:'sensor'|'console'|'survivor'|'extraction')=>{
    const geometry=kind==='console'?new THREE.BoxGeometry(.66,.35,.66)
