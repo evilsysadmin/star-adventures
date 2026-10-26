@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import { createCanonicalOfficer } from '../src/isoCanonicalOfficer.ts';
+
+test('canonical officer is a genuine 3D front/back body with grounded feet and persistent facing', () => {
+  const scene = new THREE.Scene();
+  const actor = createCanonicalOfficer(scene);
+  assert.equal(scene.children.includes(actor.root), true);
+  actor.setTile(2, -3);
+  assert.deepEqual(actor.root.position.toArray(), [2, .14, -3]);
+  const badge = actor.root.getObjectByName('front-insignia');
+  const pack = actor.root.getObjectByName('rear-field-pack');
+  assert.ok(badge && pack);
+  actor.setFacing(0);
+  const badgeFront = badge.getWorldPosition(new THREE.Vector3());
+  const packBack = pack.getWorldPosition(new THREE.Vector3());
+  assert.ok(badgeFront.z > packBack.z);
+  actor.setFacing(Math.PI);
+  const badgeRear = badge.getWorldPosition(new THREE.Vector3());
+  const packFront = pack.getWorldPosition(new THREE.Vector3());
+  assert.ok(badgeRear.z < packFront.z);
+  actor.setFacing(Math.PI / 2);
+  assert.equal(actor.root.rotation.y, Math.PI / 2);
+  actor.setFacing(NaN);
+  actor.setTile(Infinity, 0);
+  assert.equal(actor.root.rotation.y, Math.PI / 2);
+  assert.deepEqual(actor.root.position.toArray(), [2, .14, -3]);
+});
+
+test('walk alternates real articulated legs; fire aims arm; hit recoils; idle resets all poses', () => {
+  const actor = createCanonicalOfficer(new THREE.Scene());
+  const leftLeg = actor.root.getObjectByName('left-leg');
+  const rightLeg = actor.root.getObjectByName('right-leg');
+  const rightArm = actor.root.getObjectByName('right-arm');
+  const torso = actor.root.getObjectByName('torso');
+  assert.ok(leftLeg && rightLeg && rightArm && torso);
+  actor.setPose('walk', Math.PI / 2);
+  assert.ok(leftLeg.rotation.x > .4 && rightLeg.rotation.x < -.4);
+  assert.ok(torso.position.y > 1.13);
+  actor.setPose('fire', .5);
+  assert.ok(rightArm.rotation.x < -1);
+  assert.equal(leftLeg.rotation.x, 0);
+  actor.setPose('hit', .5);
+  assert.ok(torso.rotation.z < -.2);
+  assert.ok(torso.position.x < -.08);
+  actor.setPose('idle', 0);
+  assert.equal(torso.rotation.z, 0);
+  assert.equal(torso.position.x, 0);
+  assert.equal(rightArm.rotation.x, 0);
+  assert.equal(leftLeg.rotation.x, 0);
+  assert.equal(rightLeg.rotation.x, 0);
+});
