@@ -165,8 +165,29 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
   await page.getByTestId('scenario-end-turn').click();
   await target(page,'aegis');
+  // A lethal shot must not make its target vanish on the click, before the
+  // projectile arrives. Capture the *real rendered* impact, not a late UI shot.
+  await page.evaluate(()=>{
+   const canvas=document.querySelector<HTMLCanvasElement>('[data-testid="scenario-render-canvas"]')!;
+   const state=window as Window & {lethalHitCapture?:string};
+   const observer=new MutationObserver(()=>{
+    if(canvas.dataset.shotSequence!=='2'||canvas.dataset.hitPhase!=='impact'||state.lethalHitCapture)return;
+    state.lethalHitCapture=canvas.toDataURL('image/png');
+    observer.disconnect();
+   });
+   observer.observe(canvas,{attributes:true,attributeFilter:['data-hit-phase']});
+  });
   await page.getByTestId('scenario-fire').click();
   await expect(canvas).toHaveAttribute('data-shot-sequence','2');
+  await expect(canvas).toHaveAttribute('data-hit-target','aegis');
+  await expect.poll(async()=>page.evaluate(()=>(window as Window & {
+   lethalHitCapture?:string;
+  }).lethalHitCapture??null),{timeout:5000}).not.toBeNull();
+  const lethalPng=await page.evaluate(()=>(window as Window & {lethalHitCapture:string}).lethalHitCapture);
+  const hitPixels=Buffer.from(lethalPng.split(',')[1],'base64');
+  expect(hitPixels.byteLength).toBeGreaterThan(10_000);
+  await writeFile('test-results/combat-v4-lethal-hit-'+width+'.png',hitPixels);
+  await expect(canvas).toHaveAttribute('data-hit-phase','idle',{timeout:5000});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 0/2');
   await expect(page.getByTestId('scenario-hostile-aegis')).toBeDisabled();
   await target(page,'veil');
