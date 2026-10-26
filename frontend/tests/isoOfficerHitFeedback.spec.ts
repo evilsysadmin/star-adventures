@@ -28,7 +28,7 @@ for (const width of [390, 1280]) {
   }
   const wounded=[...new Set(hits.map(hit=>hit.officer))].join(',');
   await expect(canvas).toHaveAttribute('data-squad-hit-units',wounded,{timeout:2500});
-  await expect(canvas).toHaveAttribute('data-squad-hit-frame',/^[0-5]$/);
+  await expect(canvas).toHaveAttribute('data-squad-hit-frame',/^[1-4]$/,{timeout:2500});
   await canvas.screenshot({path:`test-results/officer-hit-canvas-${width}.png`});
   await page.screenshot({path:`test-results/officer-hit-page-${width}.png`,fullPage:true});
   for(const id of ['science','security','medic'] as const)
