@@ -10,6 +10,11 @@ for(const width of [390,1280]){
   await page.getByTestId('tactical-view-missions').click();
   const canvas=page.getByTestId('scenario-render-canvas');
   await expect(canvas).toBeVisible();
+  // Desktop gives the tactical battlefield room to breathe. Mobile retains
+  // its compact near-square canvas, so controls do not disappear below a giant viewport.
+  const viewportHeight = (await canvas.boundingBox())!.height;
+  if(width===1280)expect(viewportHeight).toBeGreaterThanOrEqual(720);
+  else expect(viewportHeight).toBeLessThanOrEqual(400);
   await canvas.screenshot({path:`test-results/relay-outpost-full-${width}.png`});
   await canvas.scrollIntoViewIfNeeded();
   const box=(await canvas.boundingBox())!;
