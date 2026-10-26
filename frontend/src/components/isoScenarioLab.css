@@ -23,7 +23,7 @@
 .scenario-viewtools span{font:600 10px 'Space Grotesk',sans-serif;color:#a6c1ca}
 .scenario-board-shell{min-width:0}
 .scenario-board-shell:focus-visible{outline:2px solid #d9bd87;outline-offset:-2px}
-.scenario-viewport{height:clamp(440px,62vw,760px);width:100%;position:relative;background:#101f2b;overflow:hidden;border-block:1px solid #3f5e6d}
+.scenario-viewport{height:clamp(440px,50vw,660px);width:100%;position:relative;background:#101f2b;overflow:hidden;border-block:1px solid #3f5e6d}
 .scenario-viewport canvas{display:block;width:100%;height:100%;touch-action:none}
 .scenario-viewport p{padding:16px;color:#dfca9c}
 .scenario-cell-bar{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;background:#112d39;padding:12px 17px}
@@ -169,3 +169,10 @@
 }
 .scenario-fire-overlay:focus-visible{outline:3px solid #fff8b9;outline-offset:3px}
 @media(max-width:520px){.scenario-fire-overlay{right:10px;bottom:12px;min-width:146px}}
+
+/* P0: a taller canvas alone adds empty sky. Widen the actual play column
+   when the playable mission is mounted; keep the command panel >=330px.
+   The stacked <=1000px layout and compact mobile viewport are unchanged. */
+@media(min-width:1001px){
+ .bridge-layout:has(.scenario-lab){grid-template-columns:minmax(0,1.75fr) minmax(330px,.65fr)}
+}
