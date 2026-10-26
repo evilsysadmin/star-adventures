@@ -18,6 +18,7 @@ import { replayCombatCommands, type CombatReplayAction } from '../isoScenarioCom
 import { newCombatReplaySession, restoreCombatReplaySession, persistCombatReplaySession } from '../isoScenarioCombatReplaySession';
 import { startCombatMissionAttemptSession, persistCombatMissionAttemptProgress } from '../isoScenarioCombatMissionInstanceSession';
 import { COMBAT_HOSTILE_MAX_HP } from '../isoScenarioCombatFire';
+import { playAcceptedTacticalShot } from '../isoTacticalShotAudio';
 import type { HostileId } from '../isoScenarioHostileTurn';
 import './isoScenarioLab.css';
 
@@ -93,6 +94,9 @@ export function IsoScenarioLab(){
    const {replaySaved:saved}=persistCombatMissionAttemptProgress(next,localStorageOrNull());
    setReplayHistory(next);
    if(command.type==='fire'){
+    // The reducer has accepted this shot. Play immediately in the click gesture;
+    // never on replay/F5, invalid targets, or a blocked command.
+    playAcceptedTacticalShot();
     setShot({
      id:++nextShotId.current,
      officer:command.officer,
