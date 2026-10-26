@@ -102,12 +102,8 @@ for(const width of [390,1280]){
   await expect(canvas).toHaveAttribute('data-shot-sequence','1');
   await expect(canvas).toHaveAttribute('data-shot-from','5:6');
   await expect(canvas).toHaveAttribute('data-shot-to','6:6');
-  // Capture the WebGL canvas itself while the tracer is traveling. A full-page
-  // screenshot takes long enough for this short-lived effect to disappear.
-  await expect(canvas).toHaveAttribute('data-shot-phase','travel');
-  await canvas.screenshot({path:'test-results/combat-v4-shot-travel-'+width+'.png'});
-  // A late full-page capture cannot prove the impact flash was visible.
-  // Capture the WebGL canvas during the actual impact phase instead.
+  // Capture impact FIRST: screenshotting the travel phase can take longer
+  // than the entire effect in software-rendered desktop CI.
   await expect(canvas).toHaveAttribute('data-shot-phase','impact',{timeout:5000});
   await canvas.screenshot({path:'test-results/combat-v4-shot-impact-'+width+'.png'});
   await expect.poll(async()=>page.evaluate(()=>(window as Window & {seenShotPhases?:string[]}).seenShotPhases??[]),
@@ -117,6 +113,10 @@ for(const width of [390,1280]){
   await page.getByTestId('scenario-end-turn').click();
   await target(page,'aegis');
   await page.getByTestId('scenario-fire').click();
+  // The next valid shot supplies a separate, real travel-phase capture.
+  await expect(canvas).toHaveAttribute('data-shot-sequence','2');
+  await expect(canvas).toHaveAttribute('data-shot-phase','travel');
+  await canvas.screenshot({path:'test-results/combat-v4-shot-travel-'+width+'.png'});
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 0/2');
   await expect(page.getByTestId('scenario-hostile-aegis')).toBeDisabled();
   await target(page,'veil');
