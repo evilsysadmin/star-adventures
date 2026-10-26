@@ -147,6 +147,24 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      block(new THREE.Vector3(q.x+.39,.079,q.z),.09,.015,.80,warning);
     }
    }
+   // Relay identity at whole-board zoom: one continuous illuminated service
+   // gantry and a compact radio array on existing wall cells. These silhouettes
+   // sit above impassable terrain; they never create fake obstacles or hitboxes.
+   const gantry=atCell('4:3',scenario.size);
+   block(new THREE.Vector3(gantry.x,1.44,gantry.z),.65,.17,6.66,steel);
+   for(const side of [-.25,.25])
+    block(new THREE.Vector3(gantry.x+side,1.545,gantry.z),.025,.035,6.40,cyan);
+   const mast=add(new THREE.Mesh(new THREE.CylinderGeometry(.055,.095,1.12,10),darkSteel));
+   mast.position.set(gantry.x,2.05,gantry.z);
+   block(new THREE.Vector3(gantry.x,2.48,gantry.z),1.12,.075,.11,steel);
+   for(const side of [-.43,.43]){
+    block(new THREE.Vector3(gantry.x+side,2.47,gantry.z),.22,.32,.06,panel);
+    block(new THREE.Vector3(gantry.x+side,2.48,gantry.z+.039),.12,.19,.015,cyan);
+   }
+   for(const row of [0,6]){
+    const end=atCell(`4:${row}`,scenario.size);
+    block(new THREE.Vector3(end.x,1.39,end.z),.83,.18,.18,warning);
+   }
    for(const cell of scenario.cover){
     const p=atCell(cell,scenario.size);
     // A waist-high crate remains exactly the same logical cover cell.
