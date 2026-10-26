@@ -154,8 +154,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    block(new THREE.Vector3(gantry.x,1.44,gantry.z),.65,.17,6.66,steel);
    for(const side of [-.25,.25])
     block(new THREE.Vector3(gantry.x+side,1.545,gantry.z),.025,.035,6.40,cyan);
-   const mast=add(new THREE.Mesh(new THREE.CylinderGeometry(.055,.095,1.12,10),darkSteel));
-   mast.position.set(gantry.x,2.05,gantry.z);
+   const relayMast=add(new THREE.Mesh(new THREE.CylinderGeometry(.055,.095,1.12,10),darkSteel));
+   relayMast.position.set(gantry.x,2.05,gantry.z);
    block(new THREE.Vector3(gantry.x,2.48,gantry.z),1.12,.075,.11,steel);
    for(const side of [-.43,.43]){
     block(new THREE.Vector3(gantry.x+side,2.47,gantry.z),.22,.32,.06,panel);
