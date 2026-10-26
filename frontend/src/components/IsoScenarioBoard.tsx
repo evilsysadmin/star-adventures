@@ -9,6 +9,7 @@ import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../iso
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt } from '../isoFirePlayback';
 import { headingFromCells } from '../isoActorFacing';
+import { createCanonicalOfficer, type CanonicalOfficerVisual } from '../isoCanonicalOfficer';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
@@ -20,10 +21,11 @@ type BoardProps = {
   scenario: Scenario; mission: MissionState; selected: string; focus: boolean;
   route: readonly string[] | null; hostilePositions?: Readonly<Record<HostileId,string>>;
   hostileHealth?: Readonly<Record<HostileId,number>>;
+  officerHealth?: Readonly<Record<SquadId,number>>;
   shot?: ShotVisual | null;
   onPick: (cell: string) => void;
 };
-type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null)=>void };
+type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,oh?:Readonly<Record<SquadId,number>>)=>void };
 type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number };
 type SquadMotion = SpriteMotion & { path:readonly string[] };
 const officers = [
@@ -36,7 +38,7 @@ const atCell=(id:string,size:Scenario['size'])=>{
   return cellCenter({col,row},size);
 };
 
-export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,shot,onPick}:BoardProps){
+export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,officerHealth,shot,onPick}:BoardProps){
  const host=useRef<HTMLDivElement>(null);
  const runtime=useRef<BoardRuntime|null>(null);
  const onPickRef=useRef(onPick);
@@ -85,6 +87,18 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    if(angle!==null){
     marker.userData.heading=angle;marker.visible=true;
     if(id)canvas.dataset[`facing${id[0].toUpperCase()+id.slice(1)}`]=String(angle);
+   }
+   const canonical=marker.userData.canonical as CanonicalOfficerVisual|undefined;
+   canonical?.setTile(x,z);
+   if(canonical){
+    // The science officer's *body* turns, so its old floor arrow is hidden.
+    // Still expose the observed bearing for existing keyboard/picking QA.
+    if(Number.isFinite(marker.userData.heading)){
+     const heading=marker.userData.heading as number;
+     canonical.setFacing(heading);
+     canvas.dataset.canonicalFacing=String(heading);
+    }
+    marker.visible=false;return;
    }
    if(!marker.visible)return;
    const direction=marker.userData.heading as number;
@@ -168,7 +182,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   }
   canvas.dataset.shotPhase='idle';
   canvas.dataset.hitPhase='idle';
-  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null}>();
+  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;canonical?:CanonicalOfficerVisual;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
   let disposed=false;
@@ -190,7 +204,17 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.scale.set(1.48,2.28,1);
    sprite.position.set(position.x,.14,position.z);
    const facing=createFacing(officer.color);
-   squad.set(officer.id,{sprite,fallback,facing,idle:null,walk:null,fire:null});
+   // One canonical ORIGINAL 3D officer first; the other two keep their proven
+   // sprite presentation until mobile/desktop visual QA accepts this rig.
+   const canonical=officer.id==='science'?createCanonicalOfficer(scene,officer.color):undefined;
+   if(canonical){
+    canonical.setTile(position.x,position.z);
+    facing.userData.canonical=canonical;
+    fallback.visible=false;
+    canvas.dataset.canonicalOfficer=officer.id;
+    canvas.dataset.canonicalPose='idle';
+   }
+   squad.set(officer.id,{sprite,fallback,facing,canonical,idle:null,walk:null,fire:null});
   }
   for(const sex of ['female','male'] as const){
    // Resting squad members use the dedicated one-frame MVS portraits. A walk
@@ -204,7 +228,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      visual.idle=texture;
      visual.sprite.material.map=texture;
      visual.sprite.material.needsUpdate=true;
-     visual.sprite.visible=true;
+     visual.sprite.visible=officer.id!=='science';
      visual.fallback.visible=false;
     }
     render();
@@ -290,7 +314,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     textures.push(texture);
    }
   }
-  let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot};
+  let view={mission,selected,focus,route,hostilePositions,hostileHealth,officerHealth,shot};
   let shotMotion:{from:THREE.Vector3;to:THREE.Vector3;toCell:string;started:number;target:HostileId|null;lethal:boolean}|null=null;
   const resetHit=()=>{
    if(shotMotion?.target){
@@ -306,6 +330,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    delete canvas.dataset.hitTarget;
   };
   let fireMotion:{officer:SquadId;started:number}|null=null;
+  let hitMotion:{officer:SquadId;started:number}|null=null;
   const motions=new Map<HostileId,SpriteMotion>();
   const squadMotions=new Map<SquadId,SquadMotion>();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -364,7 +389,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    frameRequest=0;
    if(disposed)return;
    if(reduceMotion||document.hidden){
-    motions.clear();squadMotions.clear();resetHit();shotMotion=null;
+    motions.clear();squadMotions.clear();resetHit();shotMotion=null;hitMotion=null;
+    squad.get('science')?.canonical?.setPose('idle');canvas.dataset.canonicalPose='idle';
     if(fireMotion){
      const actor=squad.get(fireMotion.officer)!;
      if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
@@ -406,6 +432,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      if(visual.sprite.material.map!==visual.walk){visual.sprite.material.map=visual.walk;visual.sprite.material.needsUpdate=true;}
      visual.walk.offset.set(walkFrameUv(step.frame).x,walkFrameUv(step.frame).y);
     }
+    if(visual.canonical){
+     visual.canonical.setPose(step.done?'idle':'walk',
+      ((now-motion.started)%320)/320*Math.PI*2);
+     canvas.dataset.canonicalPose=step.done?'idle':'walk';
+    }
     if(step.done){
      squadMotions.delete(id);
      if(visual.idle){visual.sprite.material.map=visual.idle;visual.sprite.material.needsUpdate=true;}
@@ -418,16 +449,36 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const frame=isoFireFrame(now-fireMotion.started);
     if(frame===null){
      if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+     actor.canonical?.setPose('idle');
+     if(actor.canonical)canvas.dataset.canonicalPose='idle';
      fireMotion=null;
      delete canvas.dataset.fireUnit;delete canvas.dataset.fireFrame;
-    }else if(actor.fire){
-     if(actor.sprite.material.map!==actor.fire){
+    }else{
+     if(actor.canonical){
+      actor.canonical.setPose('fire',frame/6);
+      canvas.dataset.canonicalPose='fire';
+     }
+     if(actor.fire){
+      if(actor.sprite.material.map!==actor.fire){
       actor.sprite.material.map=actor.fire;actor.sprite.material.needsUpdate=true;
      }
      const uv=walkFrameUv(frame);
-     actor.fire.offset.set(uv.x,uv.y);
+      actor.fire.offset.set(uv.x,uv.y);
+     }
      canvas.dataset.fireUnit=fireMotion.officer;
      canvas.dataset.fireFrame=String(frame);
+    }
+   }
+   if(hitMotion){
+    const elapsed=now-hitMotion.started;
+    const actor=squad.get(hitMotion.officer)!;
+    if(elapsed>=420){
+     actor.canonical?.setPose('idle');
+     if(actor.canonical)canvas.dataset.canonicalPose='idle';
+     hitMotion=null;
+    }else{
+     actor.canonical?.setPose('hit',elapsed/420);
+     if(actor.canonical)canvas.dataset.canonicalPose='hit';
     }
    }
    if(shotMotion){
@@ -468,12 +519,16 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     }
    }
    render();
-   if(motions.size||squadMotions.size||shotMotion)frameRequest=requestAnimationFrame(animate);
+   if(motions.size||squadMotions.size||shotMotion||fireMotion||hitMotion)frameRequest=requestAnimationFrame(animate);
   };
-  runtime.current={sync:(m,s,f,r,h,hp,firing)=>{
+  runtime.current={sync:(m,s,f,r,h,hp,firing,oh)=>{
    const newShot=!!firing&&firing.id!==view.shot?.id;
    const previous=view.hostilePositions;
    const previousMission=view.mission;
+   if(oh&&view.officerHealth&&oh.science<view.officerHealth.science
+      &&!reduceMotion&&!document.hidden){
+    hitMotion={officer:'science',started:performance.now()};
+   }
    // Training -> encounter and F5 restore are instantaneous: only a real
    // subsequent change in replayed cells can start a visual walk.
    if(!reduceMotion&&!document.hidden&&previous&&h){
@@ -521,7 +576,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      placeFacing(squad.get(unit.id)!.facing,p.x,p.z,before,after,unit.id);
     }
    }
-   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};
+   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,officerHealth:oh,shot:firing};
    if(!firing&&shotMotion){
     resetHit();shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
     if(fireMotion){
@@ -566,7 +621,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     }
    }
    sync();
-   if((motions.size||squadMotions.size||shotMotion)&&!frameRequest)frameRequest=requestAnimationFrame(animate);
+   if((motions.size||squadMotions.size||shotMotion||fireMotion||hitMotion)&&!frameRequest)frameRequest=requestAnimationFrame(animate);
   }};
   const idleTimer=window.setInterval(()=>{
    if(disposed||document.hidden||!inViewport||reduceMotion)return;
@@ -579,6 +634,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.hostileIdleFrame=String(frame);
     changed=true;
    });
+   if(!squadMotions.has('science')&&fireMotion?.officer!=='science'&&hitMotion?.officer!=='science'){
+    squad.get('science')?.canonical?.setPose('idle',now/1000);
+    canvas.dataset.canonicalPose='idle';
+    changed=true;
+   }
    if(changed)render();
   },HOSTILE_IDLE_FRAME_MS);
   const viewportObserver=new IntersectionObserver(entries=>{
@@ -628,7 +688,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    renderer.dispose();canvas.remove();
   };
  },[scenario.id]);
- useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth,shot);},[mission,selected,focus,routeId,hostilePositions,hostileHealth,shot]);
+ useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHealth);},[mission,selected,focus,routeId,hostilePositions,hostileHealth,officerHealth,shot]);
  return <div className="scenario-viewport" ref={host} data-testid="scenario-viewport">
   {error&&<p role="status" data-testid="scenario-webgl-fallback">{error}</p>}
  </div>;
