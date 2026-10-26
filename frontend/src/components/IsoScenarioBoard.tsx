@@ -8,6 +8,7 @@ import { WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame } from '../isoFirePlayback';
+import { headingFromCells } from '../isoActorFacing';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
@@ -70,6 +71,26 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   sun.position.set(-4,12,5);scene.add(sun);
   const objects:THREE.Object3D[]=[];
   const add=<T extends THREE.Object3D>(object:T):T=>{objects.push(object);scene.add(object);return object;};
+  // A small world-space arrow indicates actual last observed facing. The
+  // authored sprites remain camera-facing: this is NOT a directional atlas.
+  // Picking uses the independent ground plane, never these visual meshes.
+  const createFacing=(color:string)=>{
+   const marker=add(new THREE.Mesh(new THREE.ConeGeometry(.18,.38,3),
+    new THREE.MeshBasicMaterial({color,depthTest:false,depthWrite:false})));
+   marker.renderOrder=90;marker.visible=false;
+   return marker;
+  };
+  const placeFacing=(marker:THREE.Mesh,x:number,z:number,from?:string,to?:string,id?:string)=>{
+   const angle=from!==undefined&&to!==undefined?headingFromCells(from,to):null;
+   if(angle!==null){
+    marker.userData.heading=angle;marker.visible=true;
+    if(id)canvas.dataset[`facing${id[0].toUpperCase()+id.slice(1)}`]=String(angle);
+   }
+   if(!marker.visible)return;
+   const direction=marker.userData.heading as number;
+   marker.rotation.set(Math.PI/2,direction,0,'YXZ');
+   marker.position.set(x+Math.sin(direction)*.34,.23,z+Math.cos(direction)*.34);
+  };
   const floor=add(new THREE.Mesh(
    new THREE.BoxGeometry(scenario.size+.75,.44,scenario.size+.75),
    new THREE.MeshStandardMaterial({color:shades.tile,metalness:.36,roughness:.72})
@@ -146,7 +167,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    mesh.renderOrder=95;
   }
   canvas.dataset.shotPhase='idle';
-  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null}>();
+  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
   let disposed=false;
@@ -167,7 +188,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.center.set(.5,0);
    sprite.scale.set(1.48,2.28,1);
    sprite.position.set(position.x,.14,position.z);
-   squad.set(officer.id,{sprite,fallback,idle:null,walk:null,fire:null});
+   const facing=createFacing(officer.color);
+   squad.set(officer.id,{sprite,fallback,facing,idle:null,walk:null,fire:null});
   }
   for(const sex of ['female','male'] as const){
    // Resting squad members use the dedicated one-frame MVS portraits. A walk
@@ -234,7 +256,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[2.02,3.04] as const,color:'#e4946f'},
    veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.74,2.68] as const,color:'#b59be8'},
   } as const;
-  type HostileVisual={ground:THREE.Mesh;sprite:THREE.Sprite;idle:THREE.Texture|null;walk:THREE.Texture|null};
+  type HostileVisual={ground:THREE.Mesh;sprite:THREE.Sprite;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null};
   const hostileVisuals=new Map<HostileId,HostileVisual>();
   for(const hostile of scenario.hostiles){
    const asset=hostileAssets[hostile.id];
@@ -245,7 +267,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    ground.rotation.x=-Math.PI/2;ground.position.set(p.x,.107,p.z);
    const sprite=add(new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,alphaTest:.06})));
    sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
-   const visual:HostileVisual={ground,sprite,idle:null,walk:null};
+   const facing=createFacing(asset.color);
+   const visual:HostileVisual={ground,sprite,facing,idle:null,walk:null};
    hostileVisuals.set(hostile.id,visual);
    // Both atlases contain six frames. Each hostile owns its own UV offsets:
    // a shared texture would make two independent sprites animate in lockstep.
@@ -298,17 +321,20 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     if(!squadMotions.has(unit.id)){
      actor.sprite.position.set(p.x,.14,p.z);
      actor.fallback.position.set(p.x,.62,p.z);
+     placeFacing(actor.facing,p.x,p.z);
     }
    }
    for(const hostile of scenario.hostiles){
     const visual=hostileVisuals.get(hostile.id)!;
     const alive=view.hostileHealth?.[hostile.id]!==0;
     visual.ground.visible=alive;visual.sprite.visible=alive;
+    visual.facing.visible=alive&&Number.isFinite(visual.facing.userData.heading);
     if(!alive)motions.delete(hostile.id);
     const p=atCell(view.hostilePositions?.[hostile.id]??hostile.cell,scenario.size);
     if(!motions.has(hostile.id)){
      visual.ground.position.set(p.x,.107,p.z);
      visual.sprite.position.set(p.x,.14,p.z);
+     placeFacing(visual.facing,p.x,p.z);
     }
    }
    for(const [key,mesh] of routeTiles)mesh.visible=!!view.route?.includes(key)&&view.route.length>1;
@@ -339,6 +365,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const z=THREE.MathUtils.lerp(motion.from.z,motion.to.z,step.progress);
     visual.sprite.position.set(x,.14,z);
     visual.ground.position.set(x,.107,z);
+    placeFacing(visual.facing,x,z);
     if(step.done){
      motions.delete(id);
      showFrame(visual,'idle',0);
@@ -355,6 +382,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
+    placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
     canvas.dataset.squadRouteStep=String(step.segment);
     canvas.dataset.squadRouteFrom=step.from;
     canvas.dataset.squadRouteTo=step.to;
@@ -420,10 +448,21 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      if(previous[hostile.id]===h[hostile.id]||hp?.[hostile.id]===0)continue;
      const from=atCell(previous[hostile.id],scenario.size);
      const to=atCell(h[hostile.id],scenario.size);
+     placeFacing(hostileVisuals.get(hostile.id)!.facing,from.x,from.z,previous[hostile.id],h[hostile.id],hostile.id);
      motions.set(hostile.id,{from:new THREE.Vector3(from.x,.14,from.z),
       to:new THREE.Vector3(to.x,.14,to.z),started:performance.now()});
     }
-   }else motions.clear();
+   }else{
+    motions.clear();
+    // Reduced-motion and F5-style updates still show the actual new bearing,
+    // without inventing a walk animation or changing the authoritative cell.
+    if(previous&&h)for(const hostile of scenario.hostiles){
+     const before=previous[hostile.id],after=h[hostile.id];
+     if(before===after||hp?.[hostile.id]===0)continue;
+     const p=atCell(after,scenario.size);
+     placeFacing(hostileVisuals.get(hostile.id)!.facing,p.x,p.z,before,after,hostile.id);
+    }
+   }
    if(!reduceMotion&&!document.hidden&&previousMission){
     const occupiedHostiles=previous
      ?Object.entries(previous).filter(([id])=>view.hostileHealth?.[id as HostileId]!==0).map(([,cell])=>cell)
@@ -436,10 +475,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      // cannot be reconstructed: the authoritative destination still renders.
      if(!path||path.length<2)continue;
      const from=atCell(fromCell,scenario.size),to=atCell(toCell,scenario.size);
+     placeFacing(squad.get(unit.id)!.facing,from.x,from.z,path[0],path[1],unit.id);
      squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:performance.now(),path});
      canvas.dataset.squadRouteLength=String(path.length-1);
     }
-   }else squadMotions.clear();
+   }else{
+    squadMotions.clear();
+    if(previousMission)for(const unit of officers){
+     const before=previousMission.locations[unit.id],after=m.locations[unit.id];
+     if(before===after)continue;
+     const p=atCell(after,scenario.size);
+     placeFacing(squad.get(unit.id)!.facing,p.x,p.z,before,after,unit.id);
+    }
+   }
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing};
    if(!firing&&shotMotion){
     shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
@@ -457,6 +505,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.shotSequence=String(firing.id);
     canvas.dataset.shotFrom=firing.from;
     canvas.dataset.shotTo=firing.to;
+    const shooterCell=atCell(firing.from,scenario.size);
+    placeFacing(squad.get(firing.officer)!.facing,shooterCell.x,shooterCell.z,firing.from,firing.to,firing.officer);
     if(!reduceMotion&&!document.hidden){
      fireMotion={officer:firing.officer,started:performance.now()};
      const from=atCell(firing.from,scenario.size),to=atCell(firing.to,scenario.size);
