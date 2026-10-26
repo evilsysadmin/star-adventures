@@ -29,3 +29,16 @@ for (const width of [390,1280]) {
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
+
+test('reduced motion still indicates the true facing after an instantaneous move',async ({page}) => {
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.setViewportSize({width:390,height:850});
+ await page.goto('/');
+ await page.getByTestId('tactical-view-missions').click();
+ const canvas=page.getByTestId('scenario-render-canvas');
+ await page.getByTestId('scenario-accessible-grid').locator('summary').click();
+ await page.getByRole('button',{name:'Casilla 2:1'}).click();
+ await page.getByTestId('scenario-move').click();
+ await expect(canvas).toHaveAttribute('data-facing-science',String(Math.PI/2));
+ await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+});
