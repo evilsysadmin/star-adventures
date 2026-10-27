@@ -111,6 +111,11 @@ export function IsoScenarioLab(){
   blocker:fireAim.blocker,
   reason:fireReady?'ready':fireAim.reason,
  }:null;
+ const parleyReady=!!(replay&&activeActions.length<MAX_SCENARIO_COMMANDS&&
+  !replay.victory&&!replay.truce&&!replay.encounter.failed&&(()=>{
+   try{replayCombatCommands(scenarioId,[...replayHistory.actions,{type:'parley',officer:'security'}]);return true;}
+   catch{return false;}
+  })());
  const executeReplay=(command:CombatReplayAction)=>{
   if(replayHistory.actions.length>=MAX_SCENARIO_COMMANDS){
    setNotice('Límite de órdenes alcanzado · reinicia el combate');return;
@@ -326,7 +331,10 @@ export function IsoScenarioLab(){
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
-  {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
+  {replayMode&&replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-truce" role="status">
+   Alto el fuego aceptado: ambos contactos han dejado de atacar. Completa los objetivos y solicita extracción sin disparar.
+  </p>}
+  {replayMode&&!replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
    <strong>Sobre el mapa:</strong> toca una casilla libre para ver la ruta y vuelve a tocarla para mover. Para disparar, selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar.
    {fireTarget?(fireReady?' '+describeCombatAim(fireAim):activeActions.length>=MAX_SCENARIO_COMMANDS
     ?' Límite de órdenes alcanzado · reinicia el combate.'
@@ -340,7 +348,7 @@ export function IsoScenarioLab(){
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
     disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
-    {fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
+    {replay?.truce?'ALTO EL FUEGO':fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
    </button>}
   </div>
   <div className="scenario-cell-bar">
@@ -384,6 +392,8 @@ export function IsoScenarioLab(){
   <div className="scenario-orders" role="group" aria-label="Órdenes tácticas con resultados reales">
    <button type="button" data-testid="scenario-move" disabled={!available(move)}
     onClick={()=>execute(move)}>Mover · máximo 5 casillas</button>
+   {replayMode&&<button type="button" data-testid="scenario-parley" disabled={!parleyReady}
+    onClick={()=>executeReplay({type:'parley',officer:'security'})}>Pedir alto el fuego · Seguridad junto a enemigo</button>}
    <button type="button" data-testid="scenario-scan" disabled={!available(scan)}
     onClick={()=>execute(scan)}>Escanear señal</button>
    <button type="button" data-testid="scenario-operate" disabled={!available(operate)}
@@ -396,9 +406,9 @@ export function IsoScenarioLab(){
     onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
   </div>
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
-  {combat&&(combat.failed||mission.completed||!!replay?.victory)&&<section className="scenario-debrief"
+  {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
-   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
+   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':replay?.truce?'Alto el fuego acordado · completa objetivos y solicita extracción':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
    <p>Estado reconstruido del encuentro {replayMode?'v4':'v3'}; no modifica el entrenamiento ni la campaña.</p>
    <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
   </section>}
