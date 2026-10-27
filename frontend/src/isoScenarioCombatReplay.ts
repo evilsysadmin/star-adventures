@@ -59,7 +59,7 @@ export function replayCombatCommands(
         (combat.victory && (action.type === 'fire' || action.type === 'parley')))
       throw new RangeError('Combat encounter already ended');
     if (action.type === 'parley') {
-      // A real alternative to killing: reach speaking distance without
+      // A real alternative to killing: reach hailing distance without
       // firing, spend an order, and both living contacts accept a ceasefire.
       // Their occupied tiles remain solid; only future hostility stops.
       const mission = combat.encounter.mission;
@@ -67,10 +67,10 @@ export function replayCombatCommands(
       const inContact = (Object.keys(combat.hostileHealth) as HostileId[])
         .some(id => combat.hostileHealth[id] > 0 && (() => {
           const [hx, hy] = combat.encounter.positions[id].split(':').map(Number);
-          return Math.abs(x - hx) + Math.abs(y - hy) === 1;
+          return Math.abs(x - hx) + Math.abs(y - hy) <= 2;
         })());
       if (combat.truce || combat.shots.length || !inContact || mission.ap < 1)
-        throw new RangeError('Parley requires an adjacent living contact, no shots and one order');
+        throw new RangeError('Parley requires a living contact within two tiles, no shots and one order');
       combat = Object.freeze({
         ...combat, truce: true,
         encounter: Object.freeze({
