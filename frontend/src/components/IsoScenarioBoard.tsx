@@ -14,6 +14,9 @@ import type { HostileId } from '../isoScenarioHostileTurn';
 
 type ShotVisual = Readonly<{ id:number; from:string; to:string; officer:SquadId }>;
 type OfficerHitVisual = Readonly<{ id:number; officers:readonly SquadId[] }>;
+type AimPreview = Readonly<{
+  from:string; to:string; allowed:boolean; blocker:string|null; reason:string;
+}> | null;
 // A fast tracer followed by a readable, fading hit glow; visual only.
 const SHOT_DURATION_MS=1600;
 const SHOT_TRAVEL_FRACTION=.4;
@@ -25,9 +28,10 @@ type BoardProps = {
   hostileHealth?: Readonly<Record<HostileId,number>>;
   shot?: ShotVisual | null;
   officerHit?: OfficerHitVisual | null;
+  aimPreview?: AimPreview;
   onPick: (cell: string) => void;
 };
-type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null)=>void };
+type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null,aimPreview?:AimPreview)=>void };
 type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number|null };
 type SquadMotion = Omit<SpriteMotion,'started'> & { path:readonly string[]; started:number|null };
 const officers = [
@@ -40,7 +44,7 @@ const atCell=(id:string,size:Scenario['size'])=>{
   return cellCenter({col,row},size);
 };
 
-export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit,onPick}:BoardProps){
+export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit,aimPreview,onPick}:BoardProps){
  const host=useRef<HTMLDivElement>(null);
  const runtime=useRef<BoardRuntime|null>(null);
  const onPickRef=useRef(onPick);
@@ -223,6 +227,21 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    new THREE.LineBasicMaterial({color:'#fff1ad',depthTest:false})
   ));
   highlight.renderOrder=80;
+  // Live aim preview: a target halo and dashed line ending at the FIRST
+  // authoritative obstruction, never an invented projectile or hit chance.
+  // The ray, rings and cover marker are decorative and cannot steal picks.
+  const targetRing=add(new THREE.Mesh(new THREE.RingGeometry(.46,.61,40),
+   new THREE.MeshBasicMaterial({color:'#a4f2ca',side:THREE.DoubleSide,depthTest:false,depthWrite:false})));
+  targetRing.rotation.x=-Math.PI/2;targetRing.renderOrder=82;targetRing.visible=false;
+  const obstructionRing=add(new THREE.Mesh(new THREE.RingGeometry(.30,.44,32),
+   new THREE.MeshBasicMaterial({color:'#ff9474',side:THREE.DoubleSide,depthTest:false,depthWrite:false})));
+  obstructionRing.rotation.x=-Math.PI/2;obstructionRing.renderOrder=83;obstructionRing.visible=false;
+  const aimLine=add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+   new THREE.Vector3(0,.34,0),new THREE.Vector3(0,.34,0)]),
+   new THREE.LineDashedMaterial({color:'#a4f2ca',dashSize:.23,gapSize:.15,
+    depthTest:false,depthWrite:false})));
+  aimLine.renderOrder=81;aimLine.visible=false;
+  canvas.dataset.aimState='none';
   const routeTiles=new Map<string,THREE.Mesh>();
   const routeGeometry=new THREE.CircleGeometry(.25,18);
   for(const tile of cells(scenario.size)){
@@ -402,7 +421,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     textures.push(texture);
    }
   }
-  let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit};
+  let view={mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit,aimPreview};
   let shotMotion:{from:THREE.Vector3;to:THREE.Vector3;toCell:string;started:number;target:HostileId|null;lethal:boolean}|null=null;
   const resetHit=()=>{
    if(shotMotion?.target){
@@ -451,6 +470,31 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    const [col,row]=view.selected.split(':').map(Number);
    const center=atCell(view.selected,scenario.size);
    highlight.position.set(center.x,.28,center.z);
+   const aim=view.aimPreview;
+   targetRing.visible=!!aim;
+   obstructionRing.visible=!!aim?.blocker;
+   aimLine.visible=!!aim;
+   if(aim){
+    const target=atCell(aim.to,scenario.size);
+    const origin=atCell(aim.from,scenario.size);
+    const stop=atCell(aim.blocker??aim.to,scenario.size);
+    const color=aim.allowed?'#a4f2ca':'#ffad7c';
+    targetRing.position.set(target.x,.33,target.z);
+    targetRing.material.color.set(color);
+    if(aim.blocker)obstructionRing.position.set(stop.x,.35,stop.z);
+    aimLine.geometry.dispose();
+    aimLine.geometry=new THREE.BufferGeometry().setFromPoints([
+     new THREE.Vector3(origin.x,.35,origin.z),new THREE.Vector3(stop.x,.35,stop.z)]);
+    aimLine.computeLineDistances();
+    (aimLine.material as THREE.LineDashedMaterial).color.set(color);
+    canvas.dataset.aimState=aim.reason;
+    canvas.dataset.aimTarget=aim.to;
+    canvas.dataset.aimStop=aim.blocker??aim.to;
+   }else{
+    canvas.dataset.aimState='none';
+    delete canvas.dataset.aimTarget;
+    delete canvas.dataset.aimStop;
+   }
    camera=view.focus
     ?createIsoDetailCamera(b.width/b.height,{col,row},1.75,scenario.size)
     :createIsoCamera(b.width/b.height,scenario.size,3.18);
@@ -625,7 +669,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    render();
    if(motions.size||squadMotions.size||shotMotion||officerHitMotion)frameRequest=requestAnimationFrame(animate);
   };
-  runtime.current={sync:(m,s,f,r,h,hp,firing,incomingHit)=>{
+  runtime.current={sync:(m,s,f,r,h,hp,firing,incomingHit,nextAim)=>{
    const newShot=!!firing&&firing.id!==view.shot?.id;
    const newHit=!!incomingHit&&incomingHit.id!==view.officerHit?.id;
    const previous=view.hostilePositions;
@@ -677,7 +721,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      placeFacing(squad.get(unit.id)!.facing,p.x,p.z,before,after,unit.id);
     }
    }
-   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing,officerHit:incomingHit};
+   view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing,officerHit:incomingHit,aimPreview:nextAim};
    if(!incomingHit)resetOfficerHit();
    if(newHit){
     resetOfficerHit();
@@ -790,7 +834,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    renderer.dispose();canvas.remove();
   };
  },[scenario.id]);
- useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit);},[mission,selected,focus,routeId,hostilePositions,hostileHealth,shot,officerHit]);
+ useEffect(()=>{runtime.current?.sync(mission,selected,focus,route,hostilePositions,hostileHealth,shot,officerHit,aimPreview);},[mission,selected,focus,routeId,hostilePositions,hostileHealth,shot,officerHit,aimPreview]);
  return <div className="scenario-viewport" ref={host} data-testid="scenario-viewport">
   {error&&<p role="status" data-testid="scenario-webgl-fallback">{error}</p>}
  </div>;
