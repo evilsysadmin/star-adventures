@@ -46,7 +46,7 @@
 .scenario-orders{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px 17px;border-top:1px solid #345464}
 .scenario-orders button{min-width:0;min-height:48px;padding:10px 8px;border:1px solid #88b7a6;background:#224f4a;color:#e1f8e8;font:700 11px/1.4 'Space Grotesk',sans-serif}
 .scenario-orders button:disabled{background:#1b3440;border-color:#4e6873;color:#98a6aa}
-.scenario-orders button:last-child{background:#554631;border-color:#ab9166;color:#fcebcf}
+.scenario-orders button[data-testid="scenario-end-turn"]{background:#554631;border-color:#ab9166;color:#fcebcf}
 .scenario-notice{margin:0;padding:11px 17px;background:#17313a;color:#c7ddd5;font-size:11px;line-height:1.6;min-height:40px}
 .scenario-objectives{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:12px 17px;background:#0b1f2c}
 .scenario-objective{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #42616b;background:#152b39;color:#d4dedd;font-size:11px;min-width:0}
@@ -169,6 +169,28 @@
 }
 .scenario-fire-overlay:focus-visible{outline:3px solid #fff8b9;outline-offset:3px}
 @media(max-width:520px){.scenario-fire-overlay{right:10px;bottom:12px;min-width:146px}}
+
+/* P0: the other half of the live firefight must not require scrolling past
+   the map. End-turn lives opposite Fire in the same tactical viewport; the
+   legacy training/hostile modes retain their existing order row. */
+.scenario-turn-overlay{
+ position:absolute;bottom:16px;left:12px;z-index:2;
+ width:clamp(116px,34%,155px);min-height:48px;padding:8px 9px;
+ border:2px solid #9bd8c8;border-radius:6px;
+ background:#245450;color:#f0fff3;
+ font:800 11px/1.35 'Space Grotesk',sans-serif;
+ box-shadow:0 4px 17px #071a24aa;cursor:pointer;
+}
+.scenario-turn-overlay:disabled{
+ border-color:#718c90;background:#1b3440df;color:#bfd0d4;cursor:default;
+}
+.scenario-turn-overlay:focus-visible{outline:3px solid #fff8b9;outline-offset:3px}
+@media(max-width:520px){.scenario-turn-overlay{left:10px;bottom:12px}}
+/* 360px Chrome evidence caught overlap with Fire. Preserve both 44px+
+   targets and a real gap instead of weakening the browser geometry gate. */
+@media(max-width:380px){.scenario-turn-overlay{width:96px;padding:7px 4px;font-size:10px}}
+
+
 
 /* P0: a taller canvas alone adds empty sky. Widen the actual play column
    when the playable mission is mounted; keep the command panel >=330px.
