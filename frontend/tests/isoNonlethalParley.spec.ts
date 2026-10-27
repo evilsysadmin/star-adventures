@@ -42,7 +42,7 @@ for (const width of [390, 1280]) {
   await page.getByTestId('scenario-replay-toggle').click();
   await expect(page.getByTestId('scenario-truce')).toBeVisible();
   await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
-  await expect(page.getByTestId('scenario-hostile-status')).toHaveText(before);
+  await expect(page.getByTestId('scenario-hostile-status')).toHaveText(pacifiedContacts);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
  });
 }
