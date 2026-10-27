@@ -335,7 +335,7 @@ export function IsoScenarioLab(){
    Alto el fuego aceptado: ambos contactos han dejado de atacar. Completa los objetivos y solicita extracción sin disparar.
   </p>}
   {replayMode&&!replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
-   <strong>Sobre el mapa:</strong> toca una casilla libre para ver la ruta y vuelve a tocarla para mover. Para disparar, selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar. O acerca a Seguridad junto a un contacto vivo para pedir alto el fuego sin disparar.
+   <strong>Sobre el mapa:</strong> toca una casilla libre para ver la ruta y vuelve a tocarla para mover. Para disparar, selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar. O acerca a Seguridad a dos casillas o menos de un contacto vivo para pedir alto el fuego sin disparar.
    {fireTarget?(fireReady?' '+describeCombatAim(fireAim):activeActions.length>=MAX_SCENARIO_COMMANDS
     ?' Límite de órdenes alcanzado · reinicia el combate.'
     :fireAim?.allowed?' Orden de disparo no disponible en este turno.':' '+describeCombatAim(fireAim))
@@ -393,7 +393,7 @@ export function IsoScenarioLab(){
    <button type="button" data-testid="scenario-move" disabled={!available(move)}
     onClick={()=>execute(move)}>Mover · máximo 5 casillas</button>
    {replayMode&&<button type="button" data-testid="scenario-parley" disabled={!parleyReady}
-    onClick={()=>executeReplay({type:'parley',officer:'security'})}>Pedir alto el fuego · Seguridad junto a enemigo</button>}
+    onClick={()=>executeReplay({type:'parley',officer:'security'})}>Pedir alto el fuego · Seguridad a 2 casillas</button>}
    <button type="button" data-testid="scenario-scan" disabled={!available(scan)}
     onClick={()=>execute(scan)}>Escanear señal</button>
    <button type="button" data-testid="scenario-operate" disabled={!available(operate)}
