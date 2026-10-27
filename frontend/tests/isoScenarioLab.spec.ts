@@ -71,7 +71,7 @@ test('10×10 relay scene raycasts all 100 cells at desktop size; scenario switch
  await expect(page.getByTestId('iso-render-canvas')).toBeVisible();
 });
 
-test('mission orders really consume AP, reject blocked/long travel and change objective state',async({page})=>{
+test('mission orders consume AP, reject blocked cells and stage long travel safely',async({page})=>{
  await openMissions(page,390);
  await clickBoard(page,'2:1',10);
  await expect(page.getByTestId('scenario-move')).toBeEnabled();
@@ -98,8 +98,13 @@ test('mission orders really consume AP, reject blocked/long travel and change ob
  await page.screenshot({path:'test-results/scenario-squad-arrived-390.png',fullPage:true});
  await clickBoard(page,'4:1',10);
  await expect(page.getByTestId('scenario-move')).toBeDisabled();
+ // A far extraction tile is now reachable through validated stages;
+ // previewing it still spends no AP and never teleports the squad.
  await clickBoard(page,'9:9',10);
- await expect(page.getByTestId('scenario-move')).toBeDisabled();
+ await expect(page.getByTestId('scenario-move')).toBeEnabled();
+ await expect(page.getByTestId('scenario-move')).toContainText('Avanzar 5 casillas hacia 9:9');
+ await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+ await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
  await expect(page.getByTestId('scenario-scan')).toBeDisabled();
  await page.getByTestId('scenario-end-turn').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
