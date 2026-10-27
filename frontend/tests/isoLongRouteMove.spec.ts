@@ -57,7 +57,8 @@ for (const width of [390, 1280]) {
     await tapCell(page,'10:9');
     await expect(page.getByTestId('scenario-unit-science')).toContainText('6:6');
     await expect(page.getByTestId('scenario-ap')).toContainText('1 / 3');
-    await expect(canvas).toHaveAttribute('data-squad-route-from','4:3',{timeout:3000});
+    await expect(canvas).toHaveAttribute('data-squad-route-length','5');
+    await expect(canvas).toHaveAttribute('data-squad-moving','1',{timeout:3000});
     await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:8000});
     await expect(page.getByTestId('scenario-selected')).toHaveText('10:9');
     await page.screenshot({path:`test-results/derelict-two-legal-stages-${width}.png`,fullPage:true});
