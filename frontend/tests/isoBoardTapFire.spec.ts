@@ -63,6 +63,11 @@ for(const width of [390,1280]){
   await expect(canvas).toHaveAttribute('data-shot-sequence','1');
   await expect(canvas).toHaveAttribute('data-shot-from','5:6');
   await expect(canvas).toHaveAttribute('data-shot-to','6:6');
+  // Actual canvas reaction must reach the target promptly, not after the old
+  // 640 ms tracer. Keep a real impact frame as mobile/desktop visual evidence.
+  await expect(canvas).toHaveAttribute('data-shot-phase','impact',{timeout:1500});
+  await expect(canvas).toHaveAttribute('data-hit-phase','impact');
+  await canvas.screenshot({path:`test-results/board-fast-shot-impact-${width}.png`});
   await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
   await page.screenshot({path:`test-results/board-tap-shot-${width}.png`,fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
