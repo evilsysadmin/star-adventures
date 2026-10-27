@@ -124,3 +124,31 @@ test('sustained unopposed enemy attacks cause replay-derived defeat', () => {
   assert.throws(() => replayCombatCommands('relay', [...actions, { type: 'end-turn' }]),
     /already ended/);
 });
+
+test('security can negotiate a nonlethal ceasefire only when adjacent before shooting', () => {
+  const peacefulApproach = [approach[0], { type: 'move', officer: 'security', cell: '5:7' }];
+  const parley = [...peacefulApproach, { type: 'parley', officer: 'security' }];
+  const state = replayCombatCommands('relay', parley);
+  assert.equal(state.combat.truce, true);
+  assert.equal(state.combat.victory, false, 'ceasefire is not a lethal victory');
+  assert.deepEqual(state.combat.hostileHealth, { aegis: 2, veil: 2 });
+  assert.deepEqual(state.combat.shots, []);
+  assert.equal(state.combat.encounter.mission.ap, 0);
+  assert.match(state.combat.encounter.mission.events.at(-1), /alto el fuego/);
+  const next = replayCombatCommands('relay', [...parley, { type: 'end-turn' }]);
+  assert.equal(next.combat.encounter.mission.round, 2);
+  assert.equal(next.combat.encounter.mission.ap, 3);
+  assert.equal(next.combat.encounter.enemyTurns, 0);
+  assert.deepEqual(next.combat.encounter.moves, []);
+  assert.deepEqual(next.combat.encounter.threats, []);
+  assert.deepEqual(next.combat.encounter.hits, []);
+  assert.deepEqual(next.combat.encounter.health, state.combat.encounter.health);
+  assert.deepEqual(next.combat.encounter.positions, state.combat.encounter.positions);
+  assert.deepEqual(deserializeCombatReplay(serializeCombatReplay('relay', [...parley, { type: 'end-turn' }])), next);
+  assert.throws(() => replayCombatCommands('relay', [...parley, { type: 'fire', officer: 'security', hostile: 'aegis' }]), /Ceasefire/);
+  assert.throws(() => replayCombatCommands('relay', [...parley, { type: 'parley', officer: 'security' }]), /Parley/);
+  assert.throws(() => replayCombatCommands('relay', [{ type: 'parley', officer: 'security' }]), /Parley/);
+  assert.throws(() => replayCombatCommands('relay', [...firstHit, { type: 'parley', officer: 'security' }]), /Parley/);
+  assert.throws(() => replayCombatCommands('relay', [...peacefulApproach, { type: 'parley', officer: 'science' }]));
+  assert.throws(() => replayCombatCommands('relay', [...peacefulApproach, { type: 'parley', officer: 'security', success: true }]));
+});

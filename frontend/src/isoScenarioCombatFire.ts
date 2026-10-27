@@ -16,6 +16,7 @@ export type CombatFireState = Readonly<{
   hostileHealth: Readonly<Record<HostileId, number>>;
   shots: readonly CombatShot[];
   victory: boolean;
+  truce: boolean;
 }>;
 
 /** Start a separate, unsaved player-fire experiment from a v3 encounter. */
@@ -25,6 +26,7 @@ export function startCombatFire(encounter: CombatEncounter): CombatFireState {
     hostileHealth: Object.freeze({ aegis: COMBAT_HOSTILE_MAX_HP, veil: COMBAT_HOSTILE_MAX_HP }),
     shots: Object.freeze([]) as readonly CombatShot[],
     victory: false,
+    truce: false,
   });
 }
 
@@ -36,6 +38,7 @@ export function startCombatFire(encounter: CombatEncounter): CombatFireState {
 export function fireCombatShot(
   state: CombatFireState, officer: SquadId, hostile: HostileId,
 ): CombatFireState {
+  if (state.truce) throw new RangeError('Ceasefire prohibits firing');
   if (state.victory) throw new RangeError('Combat already won');
   if (state.hostileHealth[hostile] === 0) throw new RangeError('Hostile already eliminated');
   const activePositions = Object.fromEntries(
@@ -63,5 +66,6 @@ export function fireCombatShot(
     hostileHealth,
     shots: Object.freeze([...state.shots, shot]),
     victory: Object.values(hostileHealth).every(hp => hp === 0),
+    truce: state.truce,
   });
 }

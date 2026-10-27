@@ -111,6 +111,11 @@ export function IsoScenarioLab(){
   blocker:fireAim.blocker,
   reason:fireReady?'ready':fireAim.reason,
  }:null;
+ const parleyReady=!!(replay&&activeActions.length<MAX_SCENARIO_COMMANDS&&
+  !replay.victory&&!replay.truce&&!replay.encounter.failed&&(()=>{
+   try{replayCombatCommands(scenarioId,[...replayHistory.actions,{type:'parley',officer:'security'}]);return true;}
+   catch{return false;}
+  })());
  const executeReplay=(command:CombatReplayAction)=>{
   if(replayHistory.actions.length>=MAX_SCENARIO_COMMANDS){
    setNotice('Límite de órdenes alcanzado · reinicia el combate');return;
@@ -326,8 +331,11 @@ export function IsoScenarioLab(){
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
-  {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
-   <strong>Sobre el mapa:</strong> toca una casilla libre para ver la ruta y vuelve a tocarla para mover. Para disparar, selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar.
+  {replayMode&&replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-truce" role="status">
+   Alto el fuego aceptado: ambos contactos han dejado de atacar. Completa los objetivos y solicita extracción sin disparar.
+  </p>}
+  {replayMode&&!replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
+   <strong>Sobre el mapa:</strong> toca una casilla libre para ver la ruta y vuelve a tocarla para mover. Para disparar, selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar. O acerca a Seguridad a dos casillas o menos de un contacto vivo para pedir alto el fuego sin disparar.
    {fireTarget?(fireReady?' '+describeCombatAim(fireAim):activeActions.length>=MAX_SCENARIO_COMMANDS
     ?' Límite de órdenes alcanzado · reinicia el combate.'
     :fireAim?.allowed?' Orden de disparo no disponible en este turno.':' '+describeCombatAim(fireAim))
@@ -338,9 +346,9 @@ export function IsoScenarioLab(){
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
     selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} aimPreview={aimPreview} onPick={onBoardPick}/>
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
-    disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
+    disabled={!fireReady} aria-label={replay?.truce?'Alto el fuego acordado':fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
-    {fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
+    {replay?.truce?'ALTO EL FUEGO':fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
    </button>}
   </div>
   <div className="scenario-cell-bar">
@@ -351,15 +359,15 @@ export function IsoScenarioLab(){
      :route?'Oficial en su casilla':'Sin ruta disponible'}</small>
    </div>
    {hostilePositions&&<div className="scenario-hostile-status" data-testid="scenario-hostile-status"
-    aria-label={replayMode?'Contactos enemigos · selecciona un objetivo':'Posiciones enemigas verificadas'}>
+    aria-label={replay?.truce?'Contactos en tregua':replayMode?'Contactos enemigos · selecciona un objetivo':'Posiciones enemigas verificadas'}>
     {(['aegis','veil'] as const).map(id=>{
      const label=id==='aegis'?'Aegis':'Velo';
-     const text=label+' '+hostilePositions[id]+(hostileHealth?' · PV '+hostileHealth[id]+'/'+COMBAT_HOSTILE_MAX_HP:'');
+     const text=label+' '+hostilePositions[id]+(hostileHealth?' · PV '+hostileHealth[id]+'/'+COMBAT_HOSTILE_MAX_HP:'')+(replay?.truce?' · EN TREGUA':'');
      return replayMode
       ? <button key={id} type="button" data-testid={`scenario-hostile-${id}`}
        aria-label={`Seleccionar objetivo ${label} en ${hostilePositions[id]}`}
        aria-pressed={selected===hostilePositions[id]&&hostileHealth?.[id]!==0}
-       disabled={hostileHealth?.[id]===0||!!replay?.victory||!!replay?.encounter.failed}
+       disabled={hostileHealth?.[id]===0||!!replay?.victory||!!replay?.truce||!!replay?.encounter.failed}
        onClick={()=>choose(hostilePositions[id])}>{text}</button>
       : <span key={id} data-testid={`scenario-hostile-${id}`}>{text}</span>;
     })}
@@ -368,7 +376,7 @@ export function IsoScenarioLab(){
     <span> <i className="scenario-dot sci"/> Ciencia</span>
     <span> <i className="scenario-dot tech"/> Terminal</span>
     <span> <i className="scenario-dot evac"/> Extracción</span>
-    <span> <i className="scenario-dot hostile"/> Contacto hostil</span>
+    <span> <i className="scenario-dot hostile"/> {replay?.truce?'Contacto en tregua':'Contacto hostil'}</span>
    </div>
   </div>
   <div className="scenario-roster" role="group" aria-label="Seleccionar oficial">
@@ -384,6 +392,8 @@ export function IsoScenarioLab(){
   <div className="scenario-orders" role="group" aria-label="Órdenes tácticas con resultados reales">
    <button type="button" data-testid="scenario-move" disabled={!available(move)}
     onClick={()=>execute(move)}>Mover · máximo 5 casillas</button>
+   {replayMode&&<button type="button" data-testid="scenario-parley" disabled={!parleyReady}
+    onClick={()=>executeReplay({type:'parley',officer:'security'})}>Pedir alto el fuego · Seguridad a 2 casillas</button>}
    <button type="button" data-testid="scenario-scan" disabled={!available(scan)}
     onClick={()=>execute(scan)}>Escanear señal</button>
    <button type="button" data-testid="scenario-operate" disabled={!available(operate)}
@@ -396,9 +406,9 @@ export function IsoScenarioLab(){
     onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
   </div>
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
-  {combat&&(combat.failed||mission.completed||!!replay?.victory)&&<section className="scenario-debrief"
+  {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
-   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
+   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':replay?.truce?'Alto el fuego acordado · completa objetivos y solicita extracción':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
    <p>Estado reconstruido del encuentro {replayMode?'v4':'v3'}; no modifica el entrenamiento ni la campaña.</p>
    <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
   </section>}
