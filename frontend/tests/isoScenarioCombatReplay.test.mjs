@@ -126,7 +126,8 @@ test('sustained unopposed enemy attacks cause replay-derived defeat', () => {
 });
 
 test('security can negotiate a nonlethal ceasefire only when adjacent before shooting', () => {
-  const parley = [...approach, { type: 'parley', officer: 'security' }];
+  const peacefulApproach = [approach[0], { type: 'move', officer: 'security', cell: '5:7' }];
+  const parley = [...peacefulApproach, { type: 'parley', officer: 'security' }];
   const state = replayCombatCommands('relay', parley);
   assert.equal(state.combat.truce, true);
   assert.equal(state.combat.victory, false, 'ceasefire is not a lethal victory');
@@ -148,6 +149,6 @@ test('security can negotiate a nonlethal ceasefire only when adjacent before sho
   assert.throws(() => replayCombatCommands('relay', [...parley, { type: 'parley', officer: 'security' }]), /Parley/);
   assert.throws(() => replayCombatCommands('relay', [{ type: 'parley', officer: 'security' }]), /Parley/);
   assert.throws(() => replayCombatCommands('relay', [...firstHit, { type: 'parley', officer: 'security' }]), /Parley/);
-  assert.throws(() => replayCombatCommands('relay', [...approach, { type: 'parley', officer: 'science' }]));
-  assert.throws(() => replayCombatCommands('relay', [...approach, { type: 'parley', officer: 'security', success: true }]));
+  assert.throws(() => replayCombatCommands('relay', [...peacefulApproach, { type: 'parley', officer: 'science' }]));
+  assert.throws(() => replayCombatCommands('relay', [...peacefulApproach, { type: 'parley', officer: 'security', success: true }]));
 });
