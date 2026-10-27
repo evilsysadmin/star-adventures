@@ -31,7 +31,7 @@ type BoardProps = {
 };
 type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null,aimPreview?:AimPreview)=>void };
 type HostileMotion = {path:readonly string[];started:number|null};
-type SquadMotion = {path:readonly string[];started:number|null};
+type SquadMotion = {from:THREE.Vector3;to:THREE.Vector3;path:readonly string[];started:number|null};
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
   {id:'security' as const,sex:'male',color:'#e7c47d'},
