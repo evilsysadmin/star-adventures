@@ -186,6 +186,10 @@
 }
 .scenario-turn-overlay:focus-visible{outline:3px solid #fff8b9;outline-offset:3px}
 @media(max-width:520px){.scenario-turn-overlay{left:10px;bottom:12px}}
+/* 360px Chrome evidence caught overlap with Fire. Preserve both 44px+
+   targets and a real gap instead of weakening the browser geometry gate. */
+@media(max-width:380px){.scenario-turn-overlay{width:96px;padding:7px 4px;font-size:10px}}
+
 
 
 /* P0: a taller canvas alone adds empty sky. Widen the actual play column
