@@ -14,7 +14,7 @@ export const COMBAT_REPLAY_VERSION = 4;
 export const COMBAT_REPLAY_SAVE_KEY = 'shadowops.star-adventures.combat-replay.v4';
 export type CombatReplayAction = MissionAction | Readonly<{
   type: 'fire'; officer: SquadId; hostile: HostileId;
-}>;
+}> | Readonly<{ type: 'parley'; officer: 'security' }>;
 export type CombatReplayHistory = Readonly<{
   scenarioId: ScenarioId;
   actions: readonly CombatReplayAction[];
@@ -22,6 +22,13 @@ export type CombatReplayHistory = Readonly<{
 }>;
 
 function readCombatAction(value: unknown): CombatReplayAction {
+  if (value && typeof value === 'object' && !Array.isArray(value) &&
+      (value as Record<string, unknown>).type === 'parley') {
+    const item = value as Record<string, unknown>;
+    if (Object.keys(item).length !== 2 || item.officer !== 'security')
+      throw new TypeError('Malformed parley command');
+    return { type: 'parley', officer: 'security' };
+  }
   if (value && typeof value === 'object' && !Array.isArray(value) &&
       (value as Record<string, unknown>).type === 'fire') {
     const item = value as Record<string, unknown>;
@@ -49,9 +56,33 @@ export function replayCombatCommands(
     // Winning the firefight is not mission extraction. Preserve science/rescue
     // orders after the last hostile falls, but never permit another shot.
     if (combat.encounter.failed || combat.encounter.mission.completed ||
-        (combat.victory && action.type === 'fire'))
+        (combat.victory && (action.type === 'fire' || action.type === 'parley')))
       throw new RangeError('Combat encounter already ended');
-    if (action.type === 'fire') {
+    if (action.type === 'parley') {
+      // A real alternative to killing: reach speaking distance without
+      // firing, spend an order, and both living contacts accept a ceasefire.
+      // Their occupied tiles remain solid; only future hostility stops.
+      const mission = combat.encounter.mission;
+      const [x, y] = mission.locations.security.split(':').map(Number);
+      const inContact = (Object.keys(combat.hostileHealth) as HostileId[])
+        .some(id => combat.hostileHealth[id] > 0 && (() => {
+          const [hx, hy] = combat.encounter.positions[id].split(':').map(Number);
+          return Math.abs(x - hx) + Math.abs(y - hy) === 1;
+        })());
+      if (combat.truce || combat.shots.length || !inContact || mission.ap < 1)
+        throw new RangeError('Parley requires an adjacent living contact, no shots and one order');
+      combat = Object.freeze({
+        ...combat, truce: true,
+        encounter: Object.freeze({
+          ...combat.encounter, moves: [], threats: [], hits: [],
+          mission: Object.freeze({
+            ...mission, ap: mission.ap - 1,
+            events: Object.freeze([...mission.events,
+              'Seguridad: alto el fuego aceptado; contactos hostiles cesan sus ataques']),
+          }),
+        }),
+      });
+    } else if (action.type === 'fire') {
       // Old end-turn markers must not masquerade as fresh impacts after firing.
       combat = fireCombatShot({
         ...combat,
@@ -72,7 +103,7 @@ export function replayCombatCommands(
       let failed = false;
       let enemyTurns = combat.encounter.enemyTurns;
       // After victory, an end-turn restores AP without a phantom enemy turn.
-      if (action.type === 'end-turn' && !combat.victory) {
+      if (action.type === 'end-turn' && !combat.victory && !combat.truce) {
         const turn = planHostileTurn(
           SCENARIOS[scenarioId], mission.locations, positions, defeated,
         );
