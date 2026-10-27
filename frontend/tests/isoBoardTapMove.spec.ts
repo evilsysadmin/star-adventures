@@ -87,3 +87,33 @@ test('real touch: first tap aims at destination, second moves without scrolling 
   await canvas.screenshot({path:'test-results/board-touch-move-390.png'});
  } finally{await context.close();}
 });
+
+
+for (const width of [390,1280]) {
+ test(`crew can be selected beside the tactical board before movement at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:850});
+  await page.goto('/');
+  await page.getByTestId('tactical-view-missions').click();
+  const crew=page.getByTestId('scenario-unit-security');
+  const canvas=page.getByTestId('scenario-render-canvas');
+  await crew.click();
+  await expect(crew).toHaveAttribute('aria-pressed','true');
+  const location=(await crew.locator('small').first().textContent())?.trim();
+  expect(location).toBeTruthy();
+  await expect(page.getByTestId('scenario-selected')).toHaveText(location!);
+  const layout=await page.evaluate(()=>{
+   const roster=document.querySelector('.scenario-roster')?.getBoundingClientRect();
+   const board=document.querySelector('.scenario-board-shell')?.getBoundingClientRect();
+   return {rosterBottom:roster?.bottom??Infinity,boardTop:board?.top??-Infinity};
+  });
+  expect(layout.rosterBottom).toBeLessThanOrEqual(layout.boardTop+1);
+  await page.getByTestId('scenario-unit-science').click();
+  await pick(page,'2:1');
+  await pick(page,'2:1');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
+  await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:5000});
+  await page.screenshot({path:`test-results/crew-before-board-${width}.png`,fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ });
+}
