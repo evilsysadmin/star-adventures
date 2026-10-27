@@ -66,5 +66,6 @@ export function fireCombatShot(
     hostileHealth,
     shots: Object.freeze([...state.shots, shot]),
     victory: Object.values(hostileHealth).every(hp => hp === 0),
+    truce: state.truce,
   });
 }
