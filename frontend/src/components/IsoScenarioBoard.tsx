@@ -204,6 +204,78 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      block(new THREE.Vector3(p.x+delta,.079,p.z),.07,.015,.65,warning);
    }
   }
+  // The 12x12 derelict is a navigable, damaged installation rather than a
+  // uniformly tiled training board. All tall dressing is anchored to authored
+  // wall, cover or objective cells; floor markings stay flush with walkable
+  // tiles. Gameplay obstacles and the independent picking plane are unchanged.
+  if(scenario.id==='derelict'){
+   const hull=new THREE.MeshStandardMaterial({color:'#34475b',metalness:.62,roughness:.49});
+   const frame=new THREE.MeshStandardMaterial({color:'#8396a3',metalness:.7,roughness:.4});
+   const rust=new THREE.MeshStandardMaterial({color:'#9a6853',metalness:.32,roughness:.77});
+   const dark=new THREE.MeshStandardMaterial({color:'#1c2b3b',metalness:.53,roughness:.5});
+   const emergency=new THREE.MeshBasicMaterial({color:'#ed9778'});
+   const signal=new THREE.MeshBasicMaterial({color:'#8ee5de'});
+   const safe=new THREE.MeshBasicMaterial({color:'#a7e8ad'});
+   const box=(x:number,y:number,z:number,w:number,h:number,d:number,mat:THREE.Material)=>{
+    const mesh=add(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat));
+    mesh.position.set(x,y,z);return mesh;
+   };
+   // Broken pressure bulkheads: capped wall sections, exposed ribs and
+   // occasional emergency panels. The two intentional corridor gaps remain
+   // open, so neither route finding nor line of sight is falsified by art.
+   scenario.walls.forEach((cell,index)=>{
+    const p=atCell(cell,scenario.size);
+    box(p.x,1.19,p.z,.94,.11,.94,frame);
+    box(p.x-.40,.88,p.z,.10,.48,.82,index%3===0?rust:hull);
+    box(p.x+.39,.89,p.z,.09,.47,.82,hull);
+    box(p.x,1.31,p.z,.72,.10,.12,dark);
+    if(index%3===0){
+     box(p.x,.93,p.z+.483,.36,.15,.018,emergency);
+     box(p.x,.69,p.z+.483,.47,.06,.018,dark);
+    }
+   });
+   // Service crates occupy only the seven authored cover cells. Distinct
+   // heights and warm damage accents distinguish useful tactical cover.
+   scenario.cover.forEach((cell,index)=>{
+    const p=atCell(cell,scenario.size);
+    box(p.x,.66,p.z,.73,.33,.71,index%2?rust:hull);
+    box(p.x,.85,p.z,.77,.055,.75,frame);
+    box(p.x,p.y+.63,p.z+.364,.48,.06,.022,index%2?emergency:signal);
+   });
+   // Subtle, flush floor guidance suggests an abandoned service corridor;
+   // these are markings, never collision objects or fake obstacles.
+   for(const cell of ['3:5','4:5','5:5','6:5','7:5','9:5']){
+    const p=atCell(cell,scenario.size);
+    box(p.x,.074,p.z-.39,.62,.014,.04,frame);
+    box(p.x,.075,p.z+.39,.62,.014,.04,dark);
+   }
+   // Actual science, console, rescue and extraction cells have recognisable
+   // silhouettes. Existing gameplay markers remain visible above the floor.
+   const sensor=atCell(scenario.sensor,scenario.size);
+   box(sensor.x,.19,sensor.z,.58,.22,.58,hull);
+   const antenna=add(new THREE.Mesh(new THREE.CylinderGeometry(.04,.07,.72,8),frame));
+   antenna.position.set(sensor.x,.64,sensor.z);
+   box(sensor.x,.97,sensor.z,.61,.09,.08,signal);
+   if(scenario.console){
+    const terminal=atCell(scenario.console,scenario.size);
+    box(terminal.x,.25,terminal.z+.20,.65,.33,.26,hull);
+    box(terminal.x,.66,terminal.z+.30,.58,.49,.08,dark);
+    box(terminal.x,.69,terminal.z+.347,.43,.30,.018,signal);
+   }
+   if(scenario.survivor){
+    const rescue=atCell(scenario.survivor,scenario.size);
+    // A low medical cot keeps the actual survivor marker unobstructed.
+    box(rescue.x,.14,rescue.z,.70,.13,.79,hull);
+    for(const dx of [-.31,.31])
+     box(rescue.x+dx,.25,rescue.z,.045,.18,.79,frame);
+    box(rescue.x,.115,rescue.z-.32,.44,.018,.07,emergency);
+   }
+   const landing=atCell(scenario.extraction,scenario.size);
+   for(const dx of [-.35,.35])for(const dz of [-.35,.35]){
+    box(landing.x+dx,.22,landing.z+dz,.09,.30,.09,dark);
+    box(landing.x+dx,.39,landing.z+dz,.10,.06,.10,safe);
+   }
+  }
   const objectiveMaterials=new Map<string,THREE.MeshBasicMaterial>();
   const makeObjective=(id:string,color:string,kind:'sensor'|'console'|'survivor'|'extraction')=>{
    const geometry=kind==='console'?new THREE.BoxGeometry(.66,.35,.66)
