@@ -25,19 +25,31 @@ for(const width of [390,1280]){
   const grid = page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
   await page.getByTestId('scenario-unit-security').click();
+  const canvas=page.getByTestId('scenario-render-canvas');
+  await expect(canvas).toHaveAttribute('data-aim-state','none');
+  // At the starting position the authored bulkhead blocks this exact ray.
+  // The dashed line must stop at the first real obstruction, not cross it.
+  await page.getByTestId('scenario-hostile-aegis').click();
+  await expect(canvas).toHaveAttribute('data-aim-state','terrain-blocked');
+  await expect(canvas).toHaveAttribute('data-aim-target','6:6');
+  await expect(canvas).toHaveAttribute('data-aim-stop',/^4:/);
+  await expect(page.getByTestId('scenario-fire')).toBeDisabled();
+  await canvas.screenshot({path:`test-results/board-aim-cover-${width}.png`});
   for(const cell of ['3:7','5:6']){
    await page.getByRole('button',{name:'Casilla '+cell,exact:true}).click();
    await expect(page.getByTestId('scenario-move')).toBeEnabled();
    await page.getByTestId('scenario-move').click();
   }
   await expect(page.getByTestId('scenario-unit-security')).toContainText('5:6');
-  const canvas=page.getByTestId('scenario-render-canvas');
   await expect(canvas).toHaveAttribute('data-fire-atlases-ready','3',{timeout:25_000});
   // Selecting the enemy must never consume an order or fire a projectile.
   await tapBoardCell(page,'6:6');
   await expect(page.getByTestId('scenario-hostile-aegis')).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 2/2');
   await expect(page.getByTestId('scenario-fire')).toBeEnabled();
+  await expect(canvas).toHaveAttribute('data-aim-state','ready');
+  await expect(canvas).toHaveAttribute('data-aim-target','6:6');
+  await expect(canvas).toHaveAttribute('data-aim-stop','6:6');
   await expect(canvas).not.toHaveAttribute('data-shot-sequence',/./);
   await page.getByTestId('scenario-hostile-aegis').click();
   await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 2/2');
