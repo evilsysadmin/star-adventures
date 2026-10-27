@@ -16,12 +16,12 @@ for (const width of [390, 1280]) {
   await page.getByTestId('scenario-unit-security').click();
   const grid = page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
-  for (const destination of ['3:7', '5:6']) {
+  for (const destination of ['3:7', '5:7']) {
    await page.getByRole('button', { name: 'Casilla ' + destination, exact: true }).click();
    await expect(page.getByTestId('scenario-move')).toBeEnabled();
    await page.getByTestId('scenario-move').click();
   }
-  await expect(page.getByTestId('scenario-unit-security')).toContainText('5:6');
+  await expect(page.getByTestId('scenario-unit-security')).toContainText('5:7');
   await expect(page.getByTestId('scenario-parley')).toBeEnabled();
   await page.getByTestId('scenario-parley').click();
   await expect(page.getByTestId('scenario-truce')).toContainText('Alto el fuego aceptado');
