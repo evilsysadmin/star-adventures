@@ -346,7 +346,7 @@ export function IsoScenarioLab(){
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
     selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} aimPreview={aimPreview} onPick={onBoardPick}/>
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
-    disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
+    disabled={!fireReady} aria-label={replay?.truce?'Alto el fuego acordado':fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
     {replay?.truce?'ALTO EL FUEGO':fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
    </button>}
@@ -359,15 +359,15 @@ export function IsoScenarioLab(){
      :route?'Oficial en su casilla':'Sin ruta disponible'}</small>
    </div>
    {hostilePositions&&<div className="scenario-hostile-status" data-testid="scenario-hostile-status"
-    aria-label={replayMode?'Contactos enemigos · selecciona un objetivo':'Posiciones enemigas verificadas'}>
+    aria-label={replay?.truce?'Contactos en tregua':replayMode?'Contactos enemigos · selecciona un objetivo':'Posiciones enemigas verificadas'}>
     {(['aegis','veil'] as const).map(id=>{
      const label=id==='aegis'?'Aegis':'Velo';
-     const text=label+' '+hostilePositions[id]+(hostileHealth?' · PV '+hostileHealth[id]+'/'+COMBAT_HOSTILE_MAX_HP:'');
+     const text=label+' '+hostilePositions[id]+(hostileHealth?' · PV '+hostileHealth[id]+'/'+COMBAT_HOSTILE_MAX_HP:'')+(replay?.truce?' · EN TREGUA':'');
      return replayMode
       ? <button key={id} type="button" data-testid={`scenario-hostile-${id}`}
        aria-label={`Seleccionar objetivo ${label} en ${hostilePositions[id]}`}
        aria-pressed={selected===hostilePositions[id]&&hostileHealth?.[id]!==0}
-       disabled={hostileHealth?.[id]===0||!!replay?.victory||!!replay?.encounter.failed}
+       disabled={hostileHealth?.[id]===0||!!replay?.victory||!!replay?.truce||!!replay?.encounter.failed}
        onClick={()=>choose(hostilePositions[id])}>{text}</button>
       : <span key={id} data-testid={`scenario-hostile-${id}`}>{text}</span>;
     })}
@@ -376,7 +376,7 @@ export function IsoScenarioLab(){
     <span> <i className="scenario-dot sci"/> Ciencia</span>
     <span> <i className="scenario-dot tech"/> Terminal</span>
     <span> <i className="scenario-dot evac"/> Extracción</span>
-    <span> <i className="scenario-dot hostile"/> Contacto hostil</span>
+    <span> <i className="scenario-dot hostile"/> {replay?.truce?'Contacto en tregua':'Contacto hostil'}</span>
    </div>
   </div>
   <div className="scenario-roster" role="group" aria-label="Seleccionar oficial">
