@@ -47,11 +47,15 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
     await expect(canvas).toHaveAttribute('data-squad-route-length','5');
     await expect(canvas).toHaveAttribute('data-squad-moving','1',{timeout:3000});
-    await canvas.screenshot({path:`test-results/derelict-first-stage-walking-${width}.png`});
+    // Capture a middle BFS segment, not just the first animation frame,
+    // which can look identical to the initial still image on a busy runner.
+    await expect(canvas).toHaveAttribute('data-squad-route-step','2',{timeout:4000});
+    const walking = await canvas.screenshot({path:`test-results/derelict-first-stage-walking-${width}.png`});
     await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:8000});
     await expect(page.getByTestId('scenario-selected')).toHaveText('10:9');
     await expect(page.getByTestId('scenario-route')).toContainText('12 casillas');
-    await canvas.screenshot({path:`test-results/derelict-first-stage-arrived-${width}.png`});
+    const arrived = await canvas.screenshot({path:`test-results/derelict-first-stage-arrived-${width}.png`});
+    expect(walking.equals(arrived)).toBe(false, 'The rendered officer must visibly traverse the route');
 
     // A further tap on the SAME target continues from the new real cell.
     await tapCell(page,'10:9');
