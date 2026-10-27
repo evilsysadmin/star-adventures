@@ -47,6 +47,6 @@ for (const width of [360, 390, 1280]) {
   await page.getByTestId('scenario-training-toggle').click();
   await expect(page.getByTestId('scenario-end-turn')).toHaveCount(1);
   await expect(page.getByTestId('scenario-end-turn')).not.toHaveClass(/scenario-turn-overlay/);
-  await expect(page.getByTestId('scenario-orders').getByTestId('scenario-end-turn')).toBeVisible();
+  await expect(page.locator('.scenario-orders').getByTestId('scenario-end-turn')).toBeVisible();
  });
 }
