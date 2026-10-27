@@ -9,6 +9,7 @@ import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileRouteStepAt, joinHost
 import { joinOfficerRoutes, officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../isoFirePlayback';
 import { headingFromCells } from '../isoActorFacing';
+import { createTacticalOfficerRig } from '../tacticalOfficerRig';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
@@ -342,6 +343,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   }
   canvas.dataset.shotPhase='idle';
   canvas.dataset.hitPhase='idle';
+  // One canonical articulated 3D officer; the remaining crew retain their
+  // current R2 sprites until this model passes visual and interaction QA.
+  const securityRig=createTacticalOfficerRig('#e7c47d');
+  add(securityRig.root);
+  canvas.dataset.securityRig='articulated-3d';
   const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;hitRing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null;hit:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
@@ -363,6 +369,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    sprite.center.set(.5,0);
    sprite.scale.set(1.48,2.28,1);
    sprite.position.set(position.x,.14,position.z);
+   if(officer.id==='security'){
+    securityRig.root.position.set(position.x,.22,position.z);
+    fallback.visible=false;
+   }
    const facing=createFacing(officer.color);
    // Ground-level impact warning survives a missing R2 atlas.
    const hitRing=add(new THREE.Mesh(new THREE.RingGeometry(.44,.65,28),
@@ -386,7 +396,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      visual.idle=texture;
      visual.sprite.material.map=texture;
      visual.sprite.material.needsUpdate=true;
-     visual.sprite.visible=true;
+     visual.sprite.visible=officer.id!=='security';
      visual.fallback.visible=false;
     }
     render();
@@ -575,6 +585,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      actor.sprite.position.set(p.x,.14,p.z);
      actor.fallback.position.set(p.x,.62,p.z);
      actor.hitRing.position.set(p.x,.22,p.z);
+     if(unit.id==='security')securityRig.root.position.set(p.x,.22,p.z);
      placeFacing(actor.facing,p.x,p.z);
     }
    }
@@ -649,6 +660,13 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
     visual.hitRing.position.set(x,.22,z);
+    if(id==='security'){
+     securityRig.root.position.set(x,.22,z);
+     const heading=headingFromCells(step.from,step.to);
+     if(heading!==null)securityRig.face(heading);
+     securityRig.pose(step.done?'idle':'walk',now/1000);
+     canvas.dataset.securityHeading=String(securityRig.root.rotation.y);
+    }
     placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
     canvas.dataset.squadRouteStep=String(step.segment);
     canvas.dataset.squadRouteFrom=step.from;
@@ -740,6 +758,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      canvas.dataset.shotPhase='idle';
     }
    }
+   if(officerHitMotion?.officers.includes('security'))securityRig.pose('hit',now/1000);
+   else if(fireMotion?.officer==='security')securityRig.pose('fire',now/1000);
+   else if(!squadMotions.has('security'))securityRig.pose('idle',now/1000);
    render();
    if(motions.size||squadMotions.size||shotMotion||officerHitMotion)frameRequest=requestAnimationFrame(animate);
   };
@@ -841,6 +862,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.shotFrom=firing.from;
     canvas.dataset.shotTo=firing.to;
     const shooterCell=atCell(firing.from,scenario.size);
+    if(firing.officer==='security'){
+     const heading=headingFromCells(firing.from,firing.to);
+     if(heading!==null)securityRig.face(heading);
+     canvas.dataset.securityHeading=String(securityRig.root.rotation.y);
+    }
     placeFacing(squad.get(firing.officer)!.facing,shooterCell.x,shooterCell.z,firing.from,firing.to,firing.officer);
     if(!reduceMotion&&!document.hidden){
      fireMotion={officer:firing.officer,started:performance.now()};
