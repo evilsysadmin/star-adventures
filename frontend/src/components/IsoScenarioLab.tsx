@@ -341,6 +341,16 @@ export function IsoScenarioLab(){
     :fireAim?.allowed?' Orden de disparo no disponible en este turno.':' '+describeCombatAim(fireAim))
     :' Selecciona un contacto Aegis o Velo.'}
   </p>}
+  <div className="scenario-roster" role="group" aria-label="Seleccionar oficial">
+   {officers.map(unit=><button type="button" key={unit.id}
+    data-testid={`scenario-unit-${unit.id}`} aria-pressed={officer===unit.id}
+    disabled={mission.completed||!!combat?.failed}
+    onClick={()=>{setOfficer(unit.id);setSelected(mission.locations[unit.id]);}}>
+    <strong>{unit.name}</strong><span>{unit.role}</span>
+    <small>{mission.locations[unit.id]}</small>
+    {combat&&<small data-testid={`scenario-hp-${unit.id}`}>PV {combat.health[unit.id]} / {COMBAT_OFFICER_MAX_HP}</small>}
+   </button>)}
+  </div>
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
@@ -378,16 +388,6 @@ export function IsoScenarioLab(){
     <span> <i className="scenario-dot evac"/> Extracción</span>
     <span> <i className="scenario-dot hostile"/> {replay?.truce?'Contacto en tregua':'Contacto hostil'}</span>
    </div>
-  </div>
-  <div className="scenario-roster" role="group" aria-label="Seleccionar oficial">
-   {officers.map(unit=><button type="button" key={unit.id}
-    data-testid={`scenario-unit-${unit.id}`} aria-pressed={officer===unit.id}
-    disabled={mission.completed||!!combat?.failed}
-    onClick={()=>{setOfficer(unit.id);setSelected(mission.locations[unit.id]);}}>
-    <strong>{unit.name}</strong><span>{unit.role}</span>
-    <small>{mission.locations[unit.id]}</small>
-    {combat&&<small data-testid={`scenario-hp-${unit.id}`}>PV {combat.health[unit.id]} / {COMBAT_OFFICER_MAX_HP}</small>}
-   </button>)}
   </div>
   <div className="scenario-orders" role="group" aria-label="Órdenes tácticas con resultados reales">
    <button type="button" data-testid="scenario-move" disabled={!available(move)}
