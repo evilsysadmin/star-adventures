@@ -251,13 +251,18 @@ export function IsoScenarioLab(){
   for(const id of ['science','security','medic'] as const)
    if(mission.locations[id]===cell){setOfficer(id);break;}
  };
- // A first board tap only aims. A second tap on that SAME living contact
- // fires through the existing validated replay action (including AP/LOS).
- // Roster, contact chips and keyboard cell selection remain selection-only.
+ // First tap previews a destination or aims at a hostile. Repeating a tap
+ // on the SAME reachable empty tile issues the validated move; repeating on a
+ // living hostile fires instead. Neither tap bypasses AP, BFS, cover or LOS.
+ // Roster, contact chips and keyboard selection remain selection-only.
  const onBoardPick=(cell:string)=>{
   if(replayMode&&cell===selected&&fireTarget&&fireReady&&
      replay?.encounter.positions[fireTarget]===cell){
    executeReplay({type:'fire',officer,hostile:fireTarget});
+   return;
+  }
+  if(cell===selected&&available(move)){
+   execute(move);
    return;
   }
   choose(cell);
@@ -282,7 +287,7 @@ export function IsoScenarioLab(){
   <header className="scenario-head">
    <span className="scenario-eyebrow">OPERACIONES TÁCTICAS · LABORATORIO JUGABLE</span>
    <h2 id="scenario-heading">Tres misiones, un equipo</h2>
-   <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Los movimientos y las órdenes cambian el estado real del escenario.</p>
+   <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca una casilla libre dos veces para mover al oficial seleccionado; las órdenes cambian el escenario real.</p>
    {!replayMode&&<button className="scenario-play-combat" type="button"
     data-testid="scenario-play-combat" onClick={()=>switchEncounter('replay')}>
     Jugar combate con disparos
@@ -322,7 +327,7 @@ export function IsoScenarioLab(){
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
   {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
-   <strong>Para disparar:</strong> selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar.
+   <strong>Sobre el mapa:</strong> toca una casilla libre para ver la ruta y vuelve a tocarla para mover. Para disparar, selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar.
    {fireTarget?(fireReady?' '+describeCombatAim(fireAim):activeActions.length>=MAX_SCENARIO_COMMANDS
     ?' Límite de órdenes alcanzado · reinicia el combate.'
     :fireAim?.allowed?' Orden de disparo no disponible en este turno.':' '+describeCombatAim(fireAim))
