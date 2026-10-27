@@ -145,11 +145,11 @@
    second tap or the separate FIRE command to avoid accidental shots. */
 .scenario-board-shell>.scenario-hostile-status{
  position:absolute;top:10px;left:10px;right:10px;z-index:3;
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ display:flex;justify-content:center;gap:8px;
  pointer-events:none;
 }
 .scenario-board-shell>.scenario-hostile-status button{
- min-width:0;min-height:44px;padding:7px 5px;
+ flex:1 1 0;max-width:200px;min-width:0;min-height:44px;padding:7px 5px;
  background:#362e37ed;box-shadow:0 3px 12px #071a24aa;
  pointer-events:auto;
 }
