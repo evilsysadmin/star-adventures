@@ -296,6 +296,12 @@ export function IsoScenarioLab(){
   const [x,y]=pos(selected),nx=x+delta[0],ny=y+delta[1];
   if(nx>=0&&nx<scenario.size&&ny>=0&&ny<scenario.size)choose(`${nx}:${ny}`);
  };
+ const endTurnButton=<button type="button" data-testid="scenario-end-turn"
+  className={replayMode?'scenario-turn-overlay':undefined}
+  disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
+  onClick={()=>execute({type:'end-turn'})}>
+  {replayMode?'Fin de turno · +3 órdenes':'Fin de turno · recuperar 3 órdenes'}
+ </button>;
  const objectives=[
   {key:'sensor',text:'Analizar señal',at:scenario.sensor,done:mission.scanned},
   ...(scenario.console?[{key:'console',text:'Operar terminal',at:scenario.console,done:mission.consoleOnline}]:[]),
@@ -369,6 +375,7 @@ export function IsoScenarioLab(){
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
     selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} aimPreview={aimPreview} onPick={onBoardPick}/>
+   {replayMode&&endTurnButton}
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
     disabled={!fireReady} aria-label={replay?.truce?'Alto el fuego acordado':fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
@@ -416,8 +423,7 @@ export function IsoScenarioLab(){
     onClick={()=>execute(rescue)}>Rescatar</button>
    <button type="button" data-testid="scenario-extract" disabled={!available(extract)}
     onClick={()=>execute(extract)}>Solicitar extracción</button>
-   <button type="button" data-testid="scenario-end-turn" disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
-    onClick={()=>execute({type:'end-turn'})}>Fin de turno · recuperar 3 órdenes</button>
+   {!replayMode&&endTurnButton}
   </div>
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
   {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
