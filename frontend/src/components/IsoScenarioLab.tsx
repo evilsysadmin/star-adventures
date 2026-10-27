@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { IsoScenarioBoard } from './IsoScenarioBoard';
 import {
- SCENARIOS, applyMissionAction, missionPath,
+ SCENARIOS, MAX_MOVE_STEPS, applyMissionAction, missionPath, nextMissionWaypoint,
  type MissionAction, type ScenarioId, type SquadId,
 } from '../isoScenarioCampaign';
 import { MAX_SCENARIO_COMMANDS } from '../isoScenarioCheckpoint';
@@ -85,7 +85,9 @@ export function IsoScenarioLab(){
  const bestResults=useMemo(()=>records.runs.map(trainingResult),[records]);
  const route=missionPath(mission,officer,selected,
   hostilePositions?Object.entries(hostilePositions).filter(([id])=>!hostileHealth||hostileHealth[id as HostileId]>0).map(([,cell])=>cell):[]);
- const move:MissionAction={type:'move',officer,cell:selected};
+ // Keep the distant destination selected while advancing one validated
+ // five-cell segment at a time. No direct-line shortcut or extra AP.
+ const move:MissionAction={type:'move',officer,cell:nextMissionWaypoint(route)??selected};
  const scan:MissionAction={type:'scan',officer:'science'};
  const operate:MissionAction={type:'operate',officer:'security'};
  const rescue:MissionAction={type:'rescue',officer:'medic'};
@@ -271,8 +273,9 @@ export function IsoScenarioLab(){
    if(mission.locations[id]===cell){setOfficer(id);break;}
  };
  // First tap previews a destination or aims at a hostile. Repeating a tap
- // on the SAME reachable empty tile issues the validated move; repeating on a
- // living hostile fires instead. Neither tap bypasses AP, BFS, cover or LOS.
+ // on the SAME reachable empty tile issues the next validated five-cell
+ // stage; repeat to continue toward a distant destination. A living hostile
+ // still fires on the second tap. AP, BFS, cover and LOS remain authoritative.
  // Roster, contact chips and keyboard selection remain selection-only.
  const onBoardPick=(cell:string)=>{
   if(replayMode&&cell===selected&&fireTarget&&fireReady&&
@@ -312,7 +315,7 @@ export function IsoScenarioLab(){
   <header className="scenario-head">
    <span className="scenario-eyebrow">OPERACIONES TÁCTICAS · LABORATORIO JUGABLE</span>
    <h2 id="scenario-heading">Tres misiones, un equipo</h2>
-   <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca una casilla libre dos veces para mover al oficial seleccionado; las órdenes cambian el escenario real.</p>
+   <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.</p>
    {!replayMode&&<button className="scenario-play-combat" type="button"
     data-testid="scenario-play-combat" onClick={startPlayableCombat}>
     Jugar combate con disparos
@@ -386,7 +389,7 @@ export function IsoScenarioLab(){
    <div><span>CASILLA ELEGIDA</span>
     <strong data-testid="scenario-selected">{selected}</strong>
     <small data-testid="scenario-route">{route&&route.length>1
-     ?`Ruta: ${route.length-1} casillas${route.length>6?' · necesitas un destino intermedio':''}`
+     ?`Ruta: ${route.length-1} casillas${route.length>MAX_MOVE_STEPS+1?' · avanza por tramos de '+MAX_MOVE_STEPS:''}`
      :route?'Oficial en su casilla':'Sin ruta disponible'}</small>
    </div>
    {hostilePositions&&<div className="scenario-hostile-status" data-testid="scenario-hostile-status"
@@ -412,7 +415,8 @@ export function IsoScenarioLab(){
   </div>
   <div className="scenario-orders" role="group" aria-label="Órdenes tácticas con resultados reales">
    <button type="button" data-testid="scenario-move" disabled={!available(move)}
-    onClick={()=>execute(move)}>Mover · máximo 5 casillas</button>
+    onClick={()=>execute(move)}>{route&&route.length>MAX_MOVE_STEPS+1
+     ?`Avanzar ${MAX_MOVE_STEPS} casillas hacia ${selected}`:'Mover · máximo 5 casillas'}</button>
    {replayMode&&<button type="button" data-testid="scenario-parley" disabled={!parleyReady}
     onClick={()=>executeReplay({type:'parley',officer:'security'})}>Pedir alto el fuego · Seguridad a 2 casillas</button>}
    <button type="button" data-testid="scenario-scan" disabled={!available(scan)}
