@@ -2,6 +2,11 @@
 // No hit, damage, ammunition or combat-result authority lives here.
 import { FIRE_ATLAS } from './tacticalAnimation.ts';
 
+// Fast visible tracer: impact at 240 ms, then retain the full 960 ms
+// readable recoil/fade. Shared with Web Audio to avoid timing drift.
+export const SHOT_DURATION_MS = 1200;
+export const SHOT_TRAVEL_FRACTION = 0.2;
+
 export function isoFireFrame(elapsedMs: number, animate = true): number | null {
   if (!Number.isFinite(elapsedMs)) return null;
   if (elapsedMs < 0) return 0;
