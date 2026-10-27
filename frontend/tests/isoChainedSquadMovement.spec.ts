@@ -27,13 +27,13 @@ for (const width of [390, 1280]) {
   const grid = page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
   await page.getByRole('button', { name: 'Casilla 3:1' }).click();
-  await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 2 pasos');
+  await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 2 casillas');
   await page.getByTestId('scenario-move').click();
   await expect(canvas).toHaveAttribute('data-squad-moving', '1');
   await expect(page.getByTestId('scenario-unit-science')).toContainText('3:1');
 
   await page.getByRole('button', { name: 'Casilla 3:2' }).click();
-  await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 1 pasos');
+  await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 1 casilla');
   await page.getByTestId('scenario-move').click();
   await expect(page.getByTestId('scenario-unit-science')).toContainText('3:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('1 / 3');
