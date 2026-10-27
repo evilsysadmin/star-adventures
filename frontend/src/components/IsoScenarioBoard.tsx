@@ -7,7 +7,7 @@ import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { HIT_ATLAS, WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
-import { isoFireFrame, isoHitReactionAt } from '../isoFirePlayback';
+import { isoFireFrame, isoHitReactionAt, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../isoFirePlayback';
 import { headingFromCells } from '../isoActorFacing';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
@@ -17,9 +17,7 @@ type OfficerHitVisual = Readonly<{ id:number; officers:readonly SquadId[] }>;
 type AimPreview = Readonly<{
   from:string; to:string; allowed:boolean; blocker:string|null; reason:string;
 }> | null;
-// A fast tracer followed by a readable, fading hit glow; visual only.
-const SHOT_DURATION_MS=1600;
-const SHOT_TRAVEL_FRACTION=.4;
+// Fast tracer and readable impact share a single timing contract with audio.
 // Six authored hit poses need enough screen time to read at whole-board zoom.
 const OFFICER_HIT_FRAME_MS=200;
 type BoardProps = {
@@ -264,8 +262,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    new THREE.MeshBasicMaterial({color:'#8df4ff',transparent:true,opacity:.9,depthTest:false,depthWrite:false})));
   const muzzleFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),
    new THREE.MeshBasicMaterial({color:'#fff2bc',depthTest:false,depthWrite:false})));
-  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.34,12,8),
-   new THREE.MeshBasicMaterial({color:'#ff8457',transparent:true,opacity:.94,depthTest:false,depthWrite:false})));
+  const impactFlash=add(new THREE.Mesh(new THREE.SphereGeometry(.52,12,8),
+   new THREE.MeshBasicMaterial({color:'#ffd39a',transparent:true,opacity:.96,depthTest:false,depthWrite:false})));
   for(const mesh of [projectile,shotBeam,muzzleFlash,impactFlash]){
    mesh.visible=false;
    mesh.renderOrder=95;

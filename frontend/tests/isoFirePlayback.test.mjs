@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoFireFrame, isoHitReactionAt, nextFireReviewFrame } from '../src/isoFirePlayback.ts';
+import { isoFireFrame, isoHitReactionAt, nextFireReviewFrame, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../src/isoFirePlayback.ts';
 import { FIRE_ATLAS } from '../src/tacticalAnimation.ts';
 import { scheduleTacticalShot, SHOT_IMPACT_DELAY_SECONDS } from '../src/isoTacticalShotAudio.ts';
 
@@ -45,26 +45,26 @@ test('manual review rejects invalid and out-of-order frame indices instead of wr
 
 
 test('accepted nonlethal hit flashes and recoils only after projectile arrival',()=>{
- const travel=isoHitReactionAt(639,1600,.4,false);
+ const travel=isoHitReactionAt(239,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,false);
  assert.deepEqual(travel,{phase:'travel',flash:0,opacity:1,recoil:0});
- const impact=isoHitReactionAt(640,1600,.4,false);
+ const impact=isoHitReactionAt(240,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,false);
  assert.equal(impact.phase,'impact');
  assert.equal(impact.flash,1);
  assert.equal(impact.opacity,1);
- const middle=isoHitReactionAt(1120,1600,.4,false);
+ const middle=isoHitReactionAt(720,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,false);
  assert.equal(middle.phase,'impact');
  assert.ok(middle.recoil>.15);
  assert.equal(middle.opacity,1);
- assert.equal(isoHitReactionAt(1600,1600,.4,false).phase,'done');
+ assert.equal(isoHitReactionAt(1200,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,false).phase,'done');
 });
 
 test('lethal hit stays visible until impact then fades without changing damage',()=>{
- assert.equal(isoHitReactionAt(639,1600,.4,true).opacity,1);
- assert.equal(isoHitReactionAt(640,1600,.4,true).opacity,1);
- const late=isoHitReactionAt(1360,1600,.4,true);
+ assert.equal(isoHitReactionAt(239,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,true).opacity,1);
+ assert.equal(isoHitReactionAt(240,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,true).opacity,1);
+ const late=isoHitReactionAt(960,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,true);
  assert.equal(late.phase,'impact');
  assert.ok(late.opacity>0&&late.opacity<1);
- assert.deepEqual(isoHitReactionAt(1600,1600,.4,true),
+ assert.deepEqual(isoHitReactionAt(1200,SHOT_DURATION_MS,SHOT_TRAVEL_FRACTION,true),
   {phase:'done',flash:0,opacity:1,recoil:0});
  for(const invalid of [NaN,Infinity,-Infinity])
   assert.equal(isoHitReactionAt(invalid,1600,.4,true).phase,'done');
@@ -90,8 +90,10 @@ test('accepted fire schedules an immediate chirp and an impact at the visible tr
  assert.equal(starts.length,2);
  assert.equal(starts[0],10,'fire begins on accepted user action');
  assert.ok(Math.abs(starts[1]-10-SHOT_IMPACT_DELAY_SECONDS)<1e-9);
- assert.equal(SHOT_IMPACT_DELAY_SECONDS*1000,1600*.4,
+ assert.equal(SHOT_IMPACT_DELAY_SECONDS*1000,SHOT_DURATION_MS*SHOT_TRAVEL_FRACTION,
   'audio impact coincides with the board tracer reaching the enemy');
+ assert.equal(SHOT_IMPACT_DELAY_SECONDS,0.24,'impact must feel immediate, not arrive after 640 ms');
+ assert.equal(SHOT_DURATION_MS*(1-SHOT_TRAVEL_FRACTION),960,'readable hit duration is preserved');
  assert.ok(stops[0]>starts[0]&&stops[1]>starts[1]);
  assert.equal(frequencies[0][1],820);
  assert.equal(frequencies[2][1],180);

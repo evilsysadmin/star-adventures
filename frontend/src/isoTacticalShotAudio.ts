@@ -1,7 +1,8 @@
 // Original, synthesized tactical-fire feedback. The accepted combat command is
 // authoritative; audio never changes hit chances, AP, health, saves or replay.
-// Match the mission board's 1600ms tracer / 40% travel timeline.
-export const SHOT_IMPACT_DELAY_SECONDS = 0.64;
+// Match the mission board's fast tracer arrival exactly.
+import { SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from './isoFirePlayback.ts';
+export const SHOT_IMPACT_DELAY_SECONDS = SHOT_DURATION_MS * SHOT_TRAVEL_FRACTION / 1000;
 
 let context: AudioContext | null = null;
 
