@@ -242,6 +242,17 @@ export function IsoScenarioLab(){
   for(const id of ['science','security','medic'] as const)
    if(mission.locations[id]===cell){setOfficer(id);break;}
  };
+ // A first board tap only aims. A second tap on that SAME living contact
+ // fires through the existing validated replay action (including AP/LOS).
+ // Roster, contact chips and keyboard cell selection remain selection-only.
+ const onBoardPick=(cell:string)=>{
+  if(replayMode&&cell===selected&&fireTarget&&fireReady&&
+     replay?.encounter.positions[fireTarget]===cell){
+   executeReplay({type:'fire',officer,hostile:fireTarget});
+   return;
+  }
+  choose(cell);
+ };
  const onKeyboard=(event:KeyboardEvent<HTMLDivElement>)=>{
   const offsets:Record<string,[number,number]>={
    ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1],
@@ -302,7 +313,7 @@ export function IsoScenarioLab(){
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>
   {replayMode&&<p className="scenario-fire-guide" data-testid="scenario-fire-guide" role="status">
-   <strong>Para disparar:</strong> selecciona un oficial, toca un enemigo y pulsa Disparar.
+   <strong>Para disparar:</strong> selecciona un oficial y toca un enemigo. Tócalo otra vez para disparar, o usa el botón Disparar.
    {fireTarget?(fireReady?' '+describeCombatAim(fireAim):activeActions.length>=MAX_SCENARIO_COMMANDS
     ?' Límite de órdenes alcanzado · reinicia el combate.'
     :fireAim?.allowed?' Orden de disparo no disponible en este turno.':' '+describeCombatAim(fireAim))
@@ -311,7 +322,7 @@ export function IsoScenarioLab(){
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
-    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} onPick={choose}/>
+    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} onPick={onBoardPick}/>
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
     disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
