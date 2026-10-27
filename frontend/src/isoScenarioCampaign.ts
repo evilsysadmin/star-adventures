@@ -106,6 +106,14 @@ export function validateMission(state:MissionState):void {
     (state.completed&&(!state.scanned||(!!scenario.console&&!state.consoleOnline)||
      (!!scenario.survivor&&!state.rescued))))throw new TypeError('Impossible mission progress');
 }
+// Long-distance selection is a destination, not a request to teleport.
+// Each accepted order advances at most five cells along the same validated
+// BFS route; the player can keep the far destination selected between turns.
+export const MAX_MOVE_STEPS = 5;
+export function nextMissionWaypoint(route: readonly string[] | null): string | null {
+ if (!route || route.length < 2) return null;
+ return route[Math.min(MAX_MOVE_STEPS, route.length - 1)];
+}
 const steps=[[0,-1],[1,0],[0,1],[-1,0]] as const;
 export function missionPath(
  state:MissionState,officer:SquadId,destination:string,
@@ -154,7 +162,7 @@ export function applyMissionAction(
  switch(action.type){
   case 'move':{
    const route=missionPath(state,officer,action.cell,additionalBlocked);
-   if(!route||route.length<2||route.length>6)
+   if(!route||route.length<2||route.length>MAX_MOVE_STEPS+1)
     throw new RangeError('Destination blocked, unchanged or beyond 5-step allowance');
    update={locations:{...state.locations,[officer]:action.cell}};
    log=`${officer}: marcha ${route.length-1} casillas hasta ${action.cell}`;break;
