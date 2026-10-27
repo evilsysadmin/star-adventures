@@ -16,6 +16,17 @@ export function isoOfficerFrame(
   return walkFrameAt(Math.max(0, nowMs - motion.start));
 }
 
+// When two legal movement orders arrive before the first animation finishes,
+// retain the already visible path and append the second BFS route. The second
+// route must begin at the first route's logical destination; otherwise the
+// renderer must not invent a connecting segment through obstacles.
+export function joinOfficerRoutes(
+  active: readonly string[], next: readonly string[],
+): readonly string[] | null {
+  if (active.length < 2 || next.length < 2 || active.at(-1) !== next[0]) return null;
+  return [...active, ...next.slice(1)];
+}
+
 // Walk one real orthogonal tile at a time along the same validated BFS route
 // used by the mission reducer. This never changes logical movement or saves.
 export const OFFICER_ROUTE_STEP_MS = 320;

@@ -6,7 +6,7 @@ import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { HIT_ATLAS, WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
-import { officerRouteStepAt } from '../isoOfficerAnimation';
+import { joinOfficerRoutes, officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../isoFirePlayback';
 import { headingFromCells } from '../isoActorFacing';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
@@ -705,6 +705,16 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      // Never invent a straight-line shortcut when a replay/legacy position
      // cannot be reconstructed: the authoritative destination still renders.
      if(!path||path.length<2)continue;
+     const active=squadMotions.get(unit.id);
+     const joined=active?joinOfficerRoutes(active.path,path):null;
+     if(active&&joined){
+      // Logical orders may arrive faster than their visual walks. Keep the
+      // existing first-frame clock and route, then traverse the next corners.
+      // Replacing the motion here would jump to the previous logical endpoint.
+      squadMotions.set(unit.id,{...active,path:joined});
+      canvas.dataset.squadRouteLength=String(joined.length-1);
+      continue;
+     }
      const from=atCell(fromCell,scenario.size),to=atCell(toCell,scenario.size);
      placeFacing(squad.get(unit.id)!.facing,from.x,from.z,path[0],path[1],unit.id);
      squadMotions.set(unit.id,{from:new THREE.Vector3(from.x,.14,from.z),to:new THREE.Vector3(to.x,.14,to.z),started:null,path});

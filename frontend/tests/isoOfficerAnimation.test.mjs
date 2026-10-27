@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoOfficerFrame, officerRouteStepAt, OFFICER_ROUTE_STEP_MS } from '../src/isoOfficerAnimation.ts';
+import { isoOfficerFrame, joinOfficerRoutes, officerRouteStepAt, OFFICER_ROUTE_STEP_MS } from '../src/isoOfficerAnimation.ts';
 import { createMission, missionPath, SCENARIOS } from '../src/isoScenarioCampaign.ts';
 import { WALK_ATLAS } from '../src/tacticalAnimation.ts';
 
@@ -77,4 +77,21 @@ test('route sampler visits six walk frames per tile and safely handles invalid t
     assert.equal(sample.frame, 0);
   }
   assert.equal(officerRouteStepAt(['1:1'], 10).done, true);
+});
+
+test('consecutive legal movement orders extend the active route instead of jumping to its old endpoint', () => {
+  const first = ['1:1', '2:1', '3:1'];
+  const second = ['3:1', '3:2'];
+  const joined = joinOfficerRoutes(first, second);
+  assert.deepEqual(joined, ['1:1', '2:1', '3:1', '3:2']);
+  assert.deepEqual(first, ['1:1', '2:1', '3:1'], 'No mutation of the active route');
+  assert.deepEqual(second, ['3:1', '3:2'], 'No mutation of the new route');
+  assert.equal(joinOfficerRoutes(first, ['4:1', '4:2']), null, 'Never invent a connector');
+  assert.equal(joinOfficerRoutes(first, ['3:1']), null, 'No new movement to append');
+  for (let step = 0; step < joined.length - 1; step++) {
+    const sample = officerRouteStepAt(joined, (step + .5) * OFFICER_ROUTE_STEP_MS);
+    assert.equal(sample.from, joined[step]);
+    assert.equal(sample.to, joined[step + 1]);
+    assert.equal(sample.progress, .5);
+  }
 });
