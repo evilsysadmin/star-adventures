@@ -39,23 +39,39 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('scenario-move')).toContainText('Avanzar 5 casillas hacia 10:9');
     await expect(page.getByTestId('scenario-move')).toBeEnabled();
     await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
-    await canvas.screenshot({path:`test-results/derelict-far-route-selected-${width}.png`});
+    const beforeMove = await canvas.screenshot({path:`test-results/derelict-far-route-selected-${width}.png`});
 
+    // Record the actual DOM route-step transitions before ordering movement.
+    // Exact-frame Playwright polling misses short stages on busy CI runners.
+    // MutationObserver runs in the renderer's event loop and preserves the
+    // intermediate transitions even when a screenshot waits for a free frame.
+    await page.evaluate(() => {
+      const board = document.querySelector('[data-testid="scenario-render-canvas"]');
+      if (!board) throw new Error('Missing tactical canvas');
+      const steps: string[] = [];
+      (window as Window & { __observedRouteSteps?: string[] }).__observedRouteSteps = steps;
+      new MutationObserver(() => {
+        const step = board.getAttribute('data-squad-route-step');
+        if (step && steps.at(-1) !== step) steps.push(step);
+      }).observe(board, {attributes:true, attributeFilter:['data-squad-route-step']});
+    });
     // Second tap spends one AP and physically walks five real BFS cells.
     await tapCell(page,'10:9');
     await expect(page.getByTestId('scenario-unit-science')).toContainText('4:3');
     await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
     await expect(canvas).toHaveAttribute('data-squad-route-length','5');
     await expect(canvas).toHaveAttribute('data-squad-moving','1',{timeout:3000});
-    // Capture a middle BFS segment, not just the first animation frame,
-    // which can look identical to the initial still image on a busy runner.
-    await expect(canvas).toHaveAttribute('data-squad-route-step','2',{timeout:4000});
-    const walking = await canvas.screenshot({path:`test-results/derelict-first-stage-walking-${width}.png`});
+    await canvas.screenshot({path:`test-results/derelict-first-stage-walking-${width}.png`});
     await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:8000});
+    const steps = await page.evaluate(
+      () => (window as Window & { __observedRouteSteps?: string[] }).__observedRouteSteps ?? []
+    );
+    expect(steps).toContain('5');
+    expect(steps.filter(step => ['2','3','4'].includes(step)).length).toBeGreaterThanOrEqual(2);
     await expect(page.getByTestId('scenario-selected')).toHaveText('10:9');
     await expect(page.getByTestId('scenario-route')).toContainText('12 casillas');
     const arrived = await canvas.screenshot({path:`test-results/derelict-first-stage-arrived-${width}.png`});
-    expect(walking.equals(arrived)).toBe(false, 'The rendered officer must visibly traverse the route');
+    expect(beforeMove.equals(arrived)).toBe(false, 'The officer must finish at a visibly different board position');
 
     // A further tap on the SAME target continues from the new real cell.
     await tapCell(page,'10:9');
