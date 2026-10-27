@@ -300,7 +300,7 @@ export function IsoScenarioLab(){
   className={replayMode?'scenario-turn-overlay':undefined}
   disabled={mission.completed||!!combat?.failed||activeActions.length>=MAX_SCENARIO_COMMANDS}
   onClick={()=>execute({type:'end-turn'})}>
-  {replayMode?'Fin de turno · +3 órdenes':'Fin de turno · recuperar 3 órdenes'}
+  {replayMode?'Fin de turno · +3 AP':'Fin de turno · recuperar 3 órdenes'}
  </button>;
  const objectives=[
   {key:'sensor',text:'Analizar señal',at:scenario.sensor,done:mission.scanned},
