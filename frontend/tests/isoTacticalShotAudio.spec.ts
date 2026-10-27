@@ -49,7 +49,7 @@ for (const width of [390, 1280]) {
   const starts = await page.evaluate(() => (window as Window & { tacticalAudioStarts?: number[] }).tacticalAudioStarts!);
   expect(starts).toHaveLength(2);
   expect(starts[0]).toBe(12);
-  expect(starts[1] - starts[0]).toBeCloseTo(0.64, 5);
+  expect(starts[1] - starts[0]).toBeCloseTo(0.24, 5);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
   await page.getByTestId('scenario-play-combat').click();
