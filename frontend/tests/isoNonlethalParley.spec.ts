@@ -23,9 +23,10 @@ for (const width of [390, 1280]) {
   }
   await expect(page.getByTestId('scenario-unit-security')).toContainText('5:6');
   await expect(page.getByTestId('scenario-parley')).toBeEnabled();
-  const before = await page.getByTestId('scenario-hostile-status').innerText();
   await page.getByTestId('scenario-parley').click();
   await expect(page.getByTestId('scenario-truce')).toContainText('Alto el fuego aceptado');
+  await expect(page.getByTestId('scenario-hostile-status')).toContainText('EN TREGUA');
+  const pacifiedContacts = await page.getByTestId('scenario-hostile-status').innerText();
   await expect(page.getByTestId('scenario-combat-result')).toContainText('Alto el fuego acordado');
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
   await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
@@ -33,7 +34,7 @@ for (const width of [390, 1280]) {
   await page.screenshot({ path: `test-results/nonlethal-parley-full-${width}.png`, fullPage: true });
   await page.getByTestId('scenario-end-turn').click();
   await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
-  await expect(page.getByTestId('scenario-hostile-status')).toHaveText(before);
+  await expect(page.getByTestId('scenario-hostile-status')).toHaveText(pacifiedContacts);
   await expect(page.getByTestId('scenario-hp-security')).toHaveText('PV 3 / 3');
   await expect(canvas).not.toHaveAttribute('data-hostile-moving', '1');
   await page.reload();
