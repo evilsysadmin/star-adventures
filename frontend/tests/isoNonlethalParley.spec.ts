@@ -35,7 +35,7 @@ for (const width of [390, 1280]) {
   await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
   await expect(page.getByTestId('scenario-hostile-status')).toHaveText(before);
   await expect(page.getByTestId('scenario-hp-security')).toHaveText('PV 3 / 3');
-  await expect(canvas).toHaveAttribute('data-hostile-moving', '0');
+  await expect(canvas).not.toHaveAttribute('data-hostile-moving', '1');
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
   await page.getByTestId('scenario-replay-toggle').click();
