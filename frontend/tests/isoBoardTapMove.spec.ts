@@ -64,3 +64,26 @@ test('double-tap move also uses real combat replay rules without firing',async({
  await expect(canvas).not.toHaveAttribute('data-shot-sequence',/./);
  await canvas.screenshot({path:'test-results/board-tap-move-combat-390.png'});
 });
+
+test('real touch: first tap aims at destination, second moves without scrolling to orders',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:390,height:850},isMobile:true,hasTouch:true});
+ const page=await context.newPage();
+ try{
+  await page.goto('/');
+  await page.getByTestId('tactical-view-missions').tap();
+  const canvas=page.getByTestId('scenario-render-canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  const box=(await canvas.boundingBox())!;
+  const point=projectCell({id:'2:1',col:2,row:1},
+   createIsoCamera(box.width/box.height,10,3.18),
+   {left:box.x,top:box.y,width:box.width,height:box.height},10);
+  await page.touchscreen.tap(point.x,point.y);
+  await expect(page.getByTestId('scenario-selected')).toHaveText('2:1');
+  await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
+  await page.touchscreen.tap(point.x,point.y);
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
+  await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:5000});
+  await canvas.screenshot({path:'test-results/board-touch-move-390.png'});
+ } finally{await context.close();}
+});
