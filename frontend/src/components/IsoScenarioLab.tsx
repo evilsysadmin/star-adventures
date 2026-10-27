@@ -102,6 +102,15 @@ export function IsoScenarioLab(){
    try{replayCombatCommands(scenarioId,[...replayHistory.actions,{type:'fire',officer,hostile:fireTarget}]);return true;}
    catch{return false;}
   })());
+ // The renderer receives only the reducer's actual range/cover decision.
+ // No speculative hit chance, no duplicated LOS rules in Three.js.
+ const aimPreview=replay&&fireTarget&&fireAim?{
+  from:replay.encounter.mission.locations[officer],
+  to:replay.encounter.positions[fireTarget],
+  allowed:fireReady,
+  blocker:fireAim.blocker,
+  reason:fireReady?'ready':fireAim.reason,
+ }:null;
  const executeReplay=(command:CombatReplayAction)=>{
   if(replayHistory.actions.length>=MAX_SCENARIO_COMMANDS){
    setNotice('Límite de órdenes alcanzado · reinicia el combate');return;
@@ -322,7 +331,7 @@ export function IsoScenarioLab(){
   <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
-    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} onPick={onBoardPick}/>
+    selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} aimPreview={aimPreview} onPick={onBoardPick}/>
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
     disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
