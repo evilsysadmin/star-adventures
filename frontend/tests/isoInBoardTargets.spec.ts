@@ -19,6 +19,7 @@ for (const width of [360, 390, 1280]) {
    const chip=await contact.boundingBox(),board=await shell.boundingBox();
    expect(chip).not.toBeNull();expect(board).not.toBeNull();
    expect(chip!.height).toBeGreaterThanOrEqual(44);
+   expect(chip!.width).toBeLessThanOrEqual(202); // No full-width target bars on desktop.
    expect(chip!.x).toBeGreaterThanOrEqual(board!.x-1);
    expect(chip!.x+chip!.width).toBeLessThanOrEqual(board!.x+board!.width+1);
    expect(chip!.y).toBeGreaterThanOrEqual(board!.y-1);
