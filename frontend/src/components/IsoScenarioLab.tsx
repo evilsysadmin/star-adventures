@@ -67,6 +67,9 @@ export function IsoScenarioLab(){
  // Fire feedback is transient presentation only; never enters the replay/save.
  const [shot,setShot]=useState<{id:number;from:string;to:string;officer:SquadId}|null>(null);
  const nextShotId=useRef(0);
+ // The explicit Play action should reveal the playable board immediately.
+ const playAreaRef=useRef<HTMLDivElement>(null);
+ const boardRef=useRef<HTMLDivElement>(null);
  // Only accepted live enemy turns trigger presentation. Replaying an F5 save
  // restores health but never replays a wound as if it had just happened.
  const [officerHit,setOfficerHit]=useState<{id:number;officers:readonly SquadId[]}|null>(null);
@@ -251,6 +254,15 @@ export function IsoScenarioLab(){
   setNotice(mode==='replay'?replayStartup.notice:mode==='combat'?combatStartup.notice:
    mode==='hostile'?hostileStartup.notice:startup.notice);
  };
+ const startPlayableCombat=()=>{
+  switchEncounter('replay');
+  // The scene remains in its existing layout; move the viewport only after
+  // the combat controls have rendered, and give keyboard users the board.
+  requestAnimationFrame(()=>{
+   playAreaRef.current?.scrollIntoView({block:'start',behavior:'auto'});
+   boardRef.current?.focus({preventScroll:true});
+  });
+ };
  const choose=(cell:string)=>{
   setSelected(cell);
   for(const id of ['science','security','medic'] as const)
@@ -294,7 +306,7 @@ export function IsoScenarioLab(){
    <h2 id="scenario-heading">Tres misiones, un equipo</h2>
    <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca una casilla libre dos veces para mover al oficial seleccionado; las órdenes cambian el escenario real.</p>
    {!replayMode&&<button className="scenario-play-combat" type="button"
-    data-testid="scenario-play-combat" onClick={()=>switchEncounter('replay')}>
+    data-testid="scenario-play-combat" onClick={startPlayableCombat}>
     Jugar combate con disparos
    </button>}
   </header>
@@ -316,7 +328,7 @@ export function IsoScenarioLab(){
     <span data-testid="scenario-ap">{mission.ap} / 3 órdenes</span>
    </div>
   </div>
-  <div className="scenario-viewtools">
+  <div className="scenario-viewtools" ref={playAreaRef}>
    <div className="scenario-mode-select" role="group" aria-label="Tipo de ejercicio táctico">
     <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode&&!combatMode&&!replayMode}
      onClick={()=>switchEncounter('training')}>Entrenamiento</button>
@@ -351,7 +363,7 @@ export function IsoScenarioLab(){
     {combat&&<small data-testid={`scenario-hp-${unit.id}`}>PV {combat.health[unit.id]} / {COMBAT_OFFICER_MAX_HP}</small>}
    </button>)}
   </div>
-  <div onKeyDown={onKeyboard} className="scenario-board-shell" tabIndex={0}
+  <div onKeyDown={onKeyboard} className="scenario-board-shell" ref={boardRef} tabIndex={0}
    aria-label="Mapa táctico: usa las flechas para seleccionar una casilla" data-testid="scenario-keyboard">
    <IsoScenarioBoard key={scenarioId} scenario={scenario} mission={mission}
     selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} aimPreview={aimPreview} onPick={onBoardPick}/>
