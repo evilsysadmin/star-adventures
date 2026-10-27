@@ -5,7 +5,7 @@ import { cells, cellCenter, pickCell } from '../tacticalGrid';
 import { createIsoCamera } from '../tacticalIsoCamera';
 import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { HIT_ATLAS, WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
-import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileStepAt } from '../isoHostileAnimation';
+import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileRouteStepAt, joinHostileRoutes } from '../isoHostileAnimation';
 import { joinOfficerRoutes, officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../isoFirePlayback';
 import { headingFromCells } from '../isoActorFacing';
@@ -30,8 +30,8 @@ type BoardProps = {
   onPick: (cell: string) => void;
 };
 type BoardRuntime = { sync: (m:MissionState,s:string,f:boolean,r:readonly string[]|null,h?:Readonly<Record<HostileId,string>>,hp?:Readonly<Record<HostileId,number>>,shot?:ShotVisual|null,officerHit?:OfficerHitVisual|null,aimPreview?:AimPreview)=>void };
-type SpriteMotion = { from:THREE.Vector3;to:THREE.Vector3;started:number|null };
-type SquadMotion = Omit<SpriteMotion,'started'> & { path:readonly string[]; started:number|null };
+type HostileMotion = {path:readonly string[];started:number|null};
+type SquadMotion = {from:THREE.Vector3;to:THREE.Vector3;path:readonly string[];started:number|null};
 const officers = [
   {id:'science' as const,sex:'female',color:'#9ad9e9'},
   {id:'security' as const,sex:'male',color:'#e7c47d'},
@@ -448,7 +448,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    delete canvas.dataset.squadHitUnits;
    delete canvas.dataset.squadHitFrame;
   };
-  const motions=new Map<HostileId,SpriteMotion>();
+  const motions=new Map<HostileId,HostileMotion>();
   const squadMotions=new Map<SquadId,SquadMotion>();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let inViewport=true;
@@ -547,12 +547,16 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     // The first painted frame owns the start time, not the state update.
     // A busy browser must not skip the entire hostile walk.
     const started=motion.started??(motion.started=now);
-    const step=hostileStepAt(now-started);
-    const x=THREE.MathUtils.lerp(motion.from.x,motion.to.x,step.progress);
-    const z=THREE.MathUtils.lerp(motion.from.z,motion.to.z,step.progress);
+    const step=hostileRouteStepAt(motion.path,now-started);
+    const from=atCell(step.from,scenario.size),to=atCell(step.to,scenario.size);
+    const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
+    const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);
     visual.ground.position.set(x,.107,z);
-    placeFacing(visual.facing,x,z);
+    placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
+    canvas.dataset.hostileRouteFrom=step.from;
+    canvas.dataset.hostileRouteTo=step.to;
+    canvas.dataset.hostileRouteSegment=String(step.segment);
     if(step.done){
      motions.delete(id);
      showFrame(visual,'idle',0);
@@ -677,11 +681,20 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    if(!reduceMotion&&!document.hidden&&previous&&h){
     for(const hostile of scenario.hostiles){
      if(previous[hostile.id]===h[hostile.id]||hp?.[hostile.id]===0)continue;
-     const from=atCell(previous[hostile.id],scenario.size);
-     const to=atCell(h[hostile.id],scenario.size);
-     placeFacing(hostileVisuals.get(hostile.id)!.facing,from.x,from.z,previous[hostile.id],h[hostile.id],hostile.id);
-     motions.set(hostile.id,{from:new THREE.Vector3(from.x,.14,from.z),
-      to:new THREE.Vector3(to.x,.14,to.z),started:null});
+     const fromCell=previous[hostile.id],toCell=h[hostile.id];
+     const active=motions.get(hostile.id);
+     const joined=active?joinHostileRoutes(active.path,[fromCell,toCell]):null;
+     if(active&&joined){
+      // A new legal turn must not teleport an enemy to its prior logical
+      // destination while its previous visual step is still in flight.
+      motions.set(hostile.id,{...active,path:joined});
+      canvas.dataset.hostileRouteLength=String(joined.length-1);
+      continue;
+     }
+     const from=atCell(fromCell,scenario.size);
+     placeFacing(hostileVisuals.get(hostile.id)!.facing,from.x,from.z,fromCell,toCell,hostile.id);
+     motions.set(hostile.id,{path:[fromCell,toCell],started:null});
+     canvas.dataset.hostileRouteLength='1';
     }
    }else{
     motions.clear();
