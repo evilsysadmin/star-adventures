@@ -462,8 +462,6 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
     onClick={()=>execute(extract)}>Solicitar extracción</button>
    {!replayMode&&endTurnButton}
   </div>
-  {replayMode&&missionSelector}
-  {replayMode&&viewTools}
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
   {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
@@ -478,6 +476,8 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
     <span>{item.text} <small>{item.at}</small></span>
    </div>)}
   </div>
+  {replayMode&&missionSelector}
+  {replayMode&&viewTools}
   {completedResult&&<section className="scenario-debrief" data-testid="scenario-debrief" aria-label="Informe táctico de entrenamiento">
    <span className="scenario-eyebrow">EXTRACCIÓN CONFIRMADA · INFORME DE MANIOBRAS</span>
    <h3>{completedResult.label}</h3>
