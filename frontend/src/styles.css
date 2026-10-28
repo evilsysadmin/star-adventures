@@ -110,3 +110,41 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
 .bridge-combat-ledger li span{display:block}
 .bridge-combat-ledger li span + span{color:#abc8ca;font-size:11px}
 @media(max-width:520px){.bridge-combat-report{margin:0 16px 14px}.bridge-combat-report > summary{font-size:9px;letter-spacing:0;padding:11px}.bridge-combat-body{padding:11px}.bridge-combat-metrics span,.bridge-combat-health span{font-size:11px}}
+
+
+/* P0 opening: the bridge tells a playable rescue story before any lab UI.
+   All three milestones are driven by physical area + witnessed rescue state. */
+.mission-transmission{
+  position:relative;overflow:hidden;margin:0 0 18px;padding:15px 18px 12px;
+  border:1px solid #456a72;border-left:3px solid #c6a77b;
+  background:linear-gradient(115deg,#142d3b 0%,#0b1c2a 74%);
+  box-shadow:inset 0 1px #a8d8d71a,0 12px 32px #0002;
+}
+.mission-transmission::after{
+  content:"";position:absolute;right:-50px;top:-90px;width:240px;height:240px;
+  border:1px solid #9cd7ce13;border-radius:50%;box-shadow:0 0 0 38px #9cd7ce08,0 0 0 78px #9cd7ce06;
+  pointer-events:none;
+}
+.mission-transmission-top{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px}
+.mission-transmission-kicker{font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.1em;color:#d8bd91;display:flex;align-items:center;gap:8px}
+.mission-transmission-beacon{display:inline-block;flex:none;width:7px;height:7px;border-radius:50%;background:#f1c27e;box-shadow:0 0 12px #f1c27e9e}
+.mission-transmission-phase{font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.08em;color:#c8e8e4}
+.mission-transmission-story{position:relative;z-index:1;margin:11px 0 7px;max-width:65ch;font:500 13px/1.55 'DM Sans',sans-serif;color:#f0f2e9}
+.mission-transmission-next{position:relative;z-index:1;margin:0;max-width:69ch;font:400 11px/1.6 'DM Sans',sans-serif;color:#b7d0d2}
+.mission-transmission-next strong{color:#e8c99b;font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.08em;margin-right:5px;white-space:nowrap}
+.mission-transmission-route{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:13px}
+.mission-transmission-route>span{min-width:0;display:flex;align-items:center;gap:7px;padding:7px 8px;border:1px solid #3b5762;color:#849ba4;font:700 10px 'Space Grotesk',sans-serif}
+.mission-transmission-route>span>span{flex:none;display:grid;place-items:center;width:19px;height:19px;border:1px solid currentColor;border-radius:50%;font-size:9px}
+.mission-transmission-route>span[data-state="current"]{border-color:#b6a27e;background:#66503738;color:#f1d6a6}
+.mission-transmission-route>span[data-state="done"]{border-color:#53887e;background:#244f483b;color:#a9e4cd}
+.mission-transmission-debrief{border-left-color:#8cd5bb}
+@media(max-width:520px){
+  .mission-transmission{padding:11px 11px 10px;margin-bottom:14px}
+  .mission-transmission-kicker{font-size:8px;letter-spacing:.05em}
+  .mission-transmission-phase{font-size:9px}
+  .mission-transmission-story{font-size:12px;margin:9px 0 6px}
+  .mission-transmission-next{font-size:10px}
+  .mission-transmission-route{gap:4px;margin-top:10px}
+  .mission-transmission-route>span{font-size:9px;padding:6px 4px;gap:4px}
+  .mission-transmission-route>span>span{width:16px;height:16px;font-size:8px}
+}
