@@ -658,16 +658,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
     visual.hitRing.position.set(x,.22,z);
-    if(!step.done){
+    // A queued walk can still be interpolating when the player fires.
+    // The accepted target bearing wins until the burst has finished.
+    if(!step.done&&fireMotion?.officer!==id){
      const side=isoSpriteSideFromCells(step.from,step.to);
      if(side!==null)visual.sprite.userData.mirror=side==='left';
      canvas.dataset[`spriteFacing${id[0].toUpperCase()+id.slice(1)}`]=visual.sprite.userData.mirror?'left':'right';
     }
-    placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
+    if(fireMotion?.officer!==id)
+     placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
     canvas.dataset.squadRouteStep=String(step.segment);
     canvas.dataset.squadRouteFrom=step.from;
     canvas.dataset.squadRouteTo=step.to;
-    if(visual.walk){
+    if(visual.walk&&fireMotion?.officer!==id){
      if(visual.sprite.material.map!==visual.walk){visual.sprite.material.map=visual.walk;visual.sprite.material.needsUpdate=true;}
      const mirror=visual.sprite.userData.mirror===true;
      const uv=mirroredAtlasUv(step.frame,mirror);
@@ -681,7 +684,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     }
     if(step.done){
      squadMotions.delete(id);
-     if(visual.idle){visual.sprite.material.map=visual.idle;visual.sprite.material.needsUpdate=true;}
+     if(visual.idle&&fireMotion?.officer!==id){visual.sprite.material.map=visual.idle;visual.sprite.material.needsUpdate=true;}
     }
     canvas.dataset.squadWalkFrame=String(step.frame);
    }
