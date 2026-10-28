@@ -92,4 +92,19 @@ test('a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('explore-area')).toBeInViewport();
   await expect(page.getByTestId('explore-forward')).toBeFocused();
   await page.screenshot({ path: 'test-results/field-truce-390.png', fullPage: false });
+
+  // The negotiated contact becomes a distinct, visible outcome of the real
+  // evacuation only after medical rescue and physical return to the bridge.
+  for (const command of ['left', 'left', 'forward', 'right', 'forward', 'right', 'use']) {
+    await page.getByTestId('explore-' + command).click();
+  }
+  await expect(page.getByTestId('mission-phase')).toHaveText('RESCATE CONFIRMADO');
+  for (const command of ['right', 'forward', 'right', 'forward', 'left', 'use']) {
+    await page.getByTestId('explore-' + command).click();
+  }
+  await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('mission-phase')).toHaveText('REGRESO AL PUENTE');
+  await expect(page.getByTestId('mission-perimeter-outcome')).toContainText('Tregua negociada');
+  await expect(page.getByTestId('mission-return-report')).toContainText('Civiles a salvo');
+  await page.screenshot({ path: 'test-results/mission-debrief-truce-390.png', fullPage: false });
 });
