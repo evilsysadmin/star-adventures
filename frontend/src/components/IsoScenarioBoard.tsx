@@ -9,6 +9,7 @@ import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileRouteStepAt, joinHost
 import { joinOfficerRoutes, officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../isoFirePlayback';
 import { headingFromCells, isoSpriteSideFromCells, mirroredAtlasUv } from '../isoActorFacing';
+import { walk4Direction, walk4Uv, validWalk4Dimensions, type Walk4Direction } from '../isoDirectionalWalk';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
@@ -342,7 +343,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   }
   canvas.dataset.shotPhase='idle';
   canvas.dataset.hitPhase='idle';
-  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;hitRing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;fire:THREE.Texture|null;hit:THREE.Texture|null}>();
+  const squad=new Map<SquadId,{sprite:THREE.Sprite;fallback:THREE.Mesh;facing:THREE.Mesh;hitRing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null;walk4:THREE.Texture|null;fire:THREE.Texture|null;hit:THREE.Texture|null}>();
   const textures:THREE.Texture[]=[];
   const loader=new THREE.TextureLoader();
   let disposed=false;
@@ -372,8 +373,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    hitRing.position.set(position.x,.22,position.z);
    hitRing.renderOrder=91;
    hitRing.visible=false;
-   squad.set(officer.id,{sprite,fallback,facing,hitRing,idle:null,walk:null,fire:null,hit:null});
+   squad.set(officer.id,{sprite,fallback,facing,hitRing,idle:null,walk:null,walk4:null,fire:null,hit:null});
   }
+  // If no genuine 24-frame R2 sheet is published, keep V1 art untouched.
+  const optionalWalk4Assets=assets.assets as Record<string,{url:string}|undefined>;
   for(const sex of ['female','male'] as const){
    // Resting squad members use the dedicated one-frame MVS portraits. A walk
    // atlas makes an idle officer look mid-stride even when no move is active.
@@ -416,6 +419,36 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     render();
    },undefined,()=>{if(!disposed)render();});
    walk.colorSpace=THREE.SRGBColorSpace;textures.push(walk);
+   const fourKey=sex==='female'?'starAdventures.tactical.officerFemaleWalk4V1'
+    :'starAdventures.tactical.officerMaleWalk4V1';
+   const fourUrl=optionalWalk4Assets[fourKey]?.url;
+   if(fourUrl?.startsWith('https://')&&fourUrl.endsWith('.webp')){
+    const four=loader.load(fourUrl,loaded=>{
+     if(disposed)return;
+     const image=loaded.image as {width?:number;height?:number}|undefined;
+     if(!validWalk4Dimensions(image?.width,image?.height)){
+      canvas.dataset.walk4Fallback='invalid-officer-sheet';return;
+     }
+     for(const officer of officers.filter(unit=>unit.sex===sex)){
+      const visual=squad.get(officer.id)!;
+      const isolated=loaded.clone();
+      const direction=visual.sprite.userData.cardinal as Walk4Direction|undefined;
+      const uv=walk4Uv(0,direction??'south');
+      isolated.repeat.set(uv.repeatX,uv.repeatY);
+      isolated.offset.set(uv.x,uv.y);
+      isolated.magFilter=THREE.LinearFilter;isolated.needsUpdate=true;
+      visual.walk4=isolated;textures.push(isolated);
+      // A late CDN load adopts the officer's last accepted facing.
+      if(direction){
+       visual.sprite.material.map=isolated;visual.sprite.material.needsUpdate=true;
+      }
+     }
+     canvas.dataset.walk4OfficerReady=String([...squad.values()].filter(v=>v.walk4).length);
+     render();
+    },undefined,()=>{if(!disposed)canvas.dataset.walk4Fallback='officer-cdn-error';});
+    four.colorSpace=THREE.SRGBColorSpace;four.magFilter=THREE.LinearFilter;
+    textures.push(four);
+   }
    // Real accepted shots play the existing authored fire atlas on the shooter,
    // not merely a projectile over an officer frozen in an idle pose.
    const fireKey=sex==='female'?'starAdventures.tactical.officerFemaleFireV1'
@@ -522,13 +555,26 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   };
   let fireMotion:{officer:SquadId;started:number}|null=null;
   let officerHitMotion:{officers:readonly SquadId[];started:number}|null=null;
+  const showOfficerIdle=(actor:{sprite:THREE.Sprite;idle:THREE.Texture|null;walk4:THREE.Texture|null})=>{
+   const facing=actor.sprite.userData.cardinal as Walk4Direction|undefined;
+   const texture=actor.walk4&&facing?actor.walk4:actor.idle;
+   if(!texture)return;
+   if(texture===actor.walk4&&facing){
+    const uv=walk4Uv(0,facing);
+    texture.repeat.set(uv.repeatX,uv.repeatY);
+    texture.offset.set(uv.x,uv.y);
+   }
+   if(actor.sprite.material.map!==texture){
+    actor.sprite.material.map=texture;actor.sprite.material.needsUpdate=true;
+   }
+  };
   const resetOfficerHit=()=>{
    if(!officerHitMotion)return;
    for(const id of officerHitMotion.officers){
     const actor=squad.get(id)!;
     actor.hitRing.visible=false;
     actor.hitRing.scale.setScalar(1);
-    if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+    showOfficerIdle(actor);
     delete canvas.dataset['squadHitUv'+id[0].toUpperCase()+id.slice(1)];
    }
    officerHitMotion=null;
@@ -624,7 +670,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     motions.clear();squadMotions.clear();resetHit();resetOfficerHit();shotMotion=null;
     if(fireMotion){
      const actor=squad.get(fireMotion.officer)!;
-     if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+     showOfficerIdle(actor);
      fireMotion=null;
     }
     delete canvas.dataset.fireUnit;delete canvas.dataset.fireFrame;
@@ -676,6 +722,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     if(!step.done&&fireMotion?.officer!==id){
      const side=isoSpriteSideFromCells(step.from,step.to);
      if(side!==null)visual.sprite.userData.mirror=side==='left';
+     const direction=walk4Direction(step.from,step.to);
+     if(direction){
+      visual.sprite.userData.cardinal=direction;
+      canvas.dataset[`spriteDirection${id[0].toUpperCase()+id.slice(1)}`]=direction;
+     }
      canvas.dataset[`spriteFacing${id[0].toUpperCase()+id.slice(1)}`]=visual.sprite.userData.mirror?'left':'right';
     }
     if(fireMotion?.officer!==id)
@@ -684,20 +735,24 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.squadRouteFrom=step.from;
     canvas.dataset.squadRouteTo=step.to;
     if(visual.walk&&fireMotion?.officer!==id){
-     if(visual.sprite.material.map!==visual.walk){visual.sprite.material.map=visual.walk;visual.sprite.material.needsUpdate=true;}
+     const direction=visual.sprite.userData.cardinal as Walk4Direction|undefined;
+     const sheet=visual.walk4&&direction?visual.walk4:visual.walk;
+     if(visual.sprite.material.map!==sheet){visual.sprite.material.map=sheet;visual.sprite.material.needsUpdate=true;}
      const mirror=visual.sprite.userData.mirror===true;
-     const uv=mirroredAtlasUv(step.frame,mirror);
-     visual.walk.repeat.set(uv.repeatX,uv.repeatY);
-     visual.walk.offset.set(uv.x,uv.y);
+     const uv=sheet===visual.walk4&&direction?walk4Uv(step.frame,direction)
+      :mirroredAtlasUv(step.frame,mirror);
+     sheet.repeat.set(uv.repeatX,uv.repeatY);
+     sheet.offset.set(uv.x,uv.y);
+     canvas.dataset.squadWalkAtlas=sheet===visual.walk4?'four-views':'legacy';
      if(visual.idle){
       visual.idle.repeat.x=mirror?-1:1;
       visual.idle.offset.x=mirror?1:0;
      }
-     canvas.dataset.squadSpriteUvX=String(visual.walk.repeat.x);
+     canvas.dataset.squadSpriteUvX=String(sheet.repeat.x);
     }
     if(step.done){
      squadMotions.delete(id);
-     if(visual.idle&&fireMotion?.officer!==id){visual.sprite.material.map=visual.idle;visual.sprite.material.needsUpdate=true;}
+     if(fireMotion?.officer!==id)showOfficerIdle(visual);
     }
     canvas.dataset.squadWalkFrame=String(step.frame);
    }
@@ -706,7 +761,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const actor=squad.get(fireMotion.officer)!;
     const frame=isoFireFrame(now-fireMotion.started);
     if(frame===null){
-     if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+     showOfficerIdle(actor);
      fireMotion=null;
      delete canvas.dataset.fireUnit;delete canvas.dataset.fireFrame;
     }else if(actor.fire){
@@ -868,6 +923,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      const p=atCell(after,scenario.size);
      const visual=squad.get(unit.id)!;
      const side=isoSpriteSideFromCells(before,after);
+     const direction=walk4Direction(before,after);
+     if(direction){
+      visual.sprite.userData.cardinal=direction;
+      canvas.dataset[`spriteDirection${unit.id[0].toUpperCase()+unit.id.slice(1)}`]=direction;
+     }
      if(side!==null){
       const mirror=side==='left';
       visual.sprite.userData.mirror=mirror;
@@ -878,6 +938,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
       }
       canvas.dataset[`spriteFacing${unit.id[0].toUpperCase()+unit.id.slice(1)}`]=side;
      }
+     if(direction)showOfficerIdle(visual);
      placeFacing(visual.facing,p.x,p.z,before,after,unit.id);
     }
    }
@@ -892,7 +953,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     resetHit();shotMotion=null;projectile.visible=false;shotBeam.visible=false;muzzleFlash.visible=false;impactFlash.visible=false;
     if(fireMotion){
      const actor=squad.get(fireMotion.officer)!;
-     if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+     showOfficerIdle(actor);
      fireMotion=null;
     }
     delete canvas.dataset.fireUnit;delete canvas.dataset.fireFrame;
