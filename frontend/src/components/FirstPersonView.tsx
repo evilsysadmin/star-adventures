@@ -103,7 +103,7 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
       // therefore reveal the same architectural panels from new angles.
       const contactX = state.x + .5 + Math.cos(ray) * distance;
       const contactY = state.y + .5 + Math.sin(ray) * distance;
-      const along = Math.abs(Math.sin(ray)) >= Math.abs(Math.cos(ray)
+      const along = Math.abs(Math.sin(ray)) >= Math.abs(Math.cos(ray))
         ? contactX - Math.floor(contactX) : contactY - Math.floor(contactY);
       const rib = along < .07 || along > .93;
       const trim = Math.max(2, height * .018);
