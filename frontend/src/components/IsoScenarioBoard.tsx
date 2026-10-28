@@ -8,7 +8,7 @@ import { HIT_ATLAS, WALK_ATLAS, walkFrameUv } from '../tacticalAnimation';
 import { HOSTILE_IDLE_FRAME_MS, hostileIdleFrameAt, hostileRouteStepAt, joinHostileRoutes } from '../isoHostileAnimation';
 import { joinOfficerRoutes, officerRouteStepAt } from '../isoOfficerAnimation';
 import { isoFireFrame, isoHitReactionAt, SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from '../isoFirePlayback';
-import { headingFromCells } from '../isoActorFacing';
+import { headingFromCells, isoSpriteSideFromCells, mirroredAtlasUv } from '../isoActorFacing';
 import { missionPath, type MissionState, type Scenario, type SquadId } from '../isoScenarioCampaign';
 import type { HostileId } from '../isoScenarioHostileTurn';
 
@@ -383,8 +383,10 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     if(disposed)return;
     for(const officer of officers.filter(unit=>unit.sex===sex)){
      const visual=squad.get(officer.id)!;
-     visual.idle=texture;
-     visual.sprite.material.map=texture;
+     // Independent UVs: changing this officer must not mirror the other two.
+     const isolated=texture.clone();isolated.needsUpdate=true;
+     visual.idle=isolated;textures.push(isolated);
+     visual.sprite.material.map=isolated;
      visual.sprite.material.needsUpdate=true;
      visual.sprite.visible=true;
      visual.fallback.visible=false;
@@ -531,7 +533,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    if(visual.sprite.material.map!==texture){
     visual.sprite.material.map=texture;visual.sprite.material.needsUpdate=true;
    }
-   const uv=walkFrameUv(frame);
+   const mirror=visual.sprite.userData.mirror===true;
+   const uv=mirroredAtlasUv(frame,mirror);
+   texture.repeat.set(uv.repeatX,uv.repeatY);
    texture.offset.set(uv.x,uv.y);
   };
   const sync=()=>{
@@ -625,6 +629,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);
     visual.ground.position.set(x,.107,z);
+    if(!step.done){
+     const side=isoSpriteSideFromCells(step.from,step.to);
+     if(side!==null)visual.sprite.userData.mirror=side==='left';
+     canvas.dataset[`spriteFacing${id[0].toUpperCase()+id.slice(1)}`]=visual.sprite.userData.mirror?'left':'right';
+    }
     placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
     canvas.dataset.hostileRouteFrom=step.from;
     canvas.dataset.hostileRouteTo=step.to;
@@ -649,13 +658,26 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);visual.fallback.position.set(x,.62,z);
     visual.hitRing.position.set(x,.22,z);
+    if(!step.done){
+     const side=isoSpriteSideFromCells(step.from,step.to);
+     if(side!==null)visual.sprite.userData.mirror=side==='left';
+     canvas.dataset[`spriteFacing${id[0].toUpperCase()+id.slice(1)}`]=visual.sprite.userData.mirror?'left':'right';
+    }
     placeFacing(visual.facing,x,z,step.done?undefined:step.from,step.done?undefined:step.to,id);
     canvas.dataset.squadRouteStep=String(step.segment);
     canvas.dataset.squadRouteFrom=step.from;
     canvas.dataset.squadRouteTo=step.to;
     if(visual.walk){
      if(visual.sprite.material.map!==visual.walk){visual.sprite.material.map=visual.walk;visual.sprite.material.needsUpdate=true;}
-     visual.walk.offset.set(walkFrameUv(step.frame).x,walkFrameUv(step.frame).y);
+     const mirror=visual.sprite.userData.mirror===true;
+     const uv=mirroredAtlasUv(step.frame,mirror);
+     visual.walk.repeat.set(uv.repeatX,uv.repeatY);
+     visual.walk.offset.set(uv.x,uv.y);
+     if(visual.idle){
+      visual.idle.repeat.x=mirror?-1:1;
+      visual.idle.offset.x=mirror?1:0;
+     }
+     canvas.dataset.squadSpriteUvX=String(visual.walk.repeat.x);
     }
     if(step.done){
      squadMotions.delete(id);
