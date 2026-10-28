@@ -31,6 +31,14 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('scenario-replay-toggle')).toHaveCount(0);
     await expect(page.getByTestId('field-resolution')).toHaveCount(0);
     await expect(page.getByTestId('mission-phase')).toHaveText('MISIÓN EN SUPERFICIE');
+    // Reviewable first frame: the board, not a page of explanatory copy,
+    // must be onscreen immediately on both mobile and desktop.
+    await expect(page.getByTestId('scenario-keyboard')).toBeFocused();
+    const board = await page.getByTestId('scenario-render-canvas').boundingBox();
+    expect(board).not.toBeNull();
+    expect(board!.y).toBeGreaterThanOrEqual(-30);
+    expect(board!.y).toBeLessThan(360);
+    await expect(page.getByTestId('field-encounter-return')).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `test-results/field-contact-${width}.png`, fullPage: false });
 
