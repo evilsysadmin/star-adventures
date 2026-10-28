@@ -14,9 +14,9 @@ export function hostileStepAt(elapsedMs: number): Readonly<{
   }
   const progress = Math.min(1, elapsedMs / HOSTILE_STEP_MS);
   const frame = progress === 1 ? 0 : Math.min(WALK_ATLAS.frames - 1, Math.floor(progress * WALK_ATLAS.frames));
-  // Smooth arrival/departure without changing the logical destination.
-  const eased = progress * progress * (3 - 2 * progress);
-  return { progress: eased, frame, done: progress === 1 };
+  // Constant travel speed lets concatenated enemy turns cross tile boundaries
+  // without braking to zero and accelerating again at every corner.
+  return { progress, frame, done: progress === 1 };
 }
 
 export function hostileIdleFrameAt(elapsedMs: number, offset = 0): number {

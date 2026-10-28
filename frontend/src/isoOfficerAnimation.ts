@@ -40,7 +40,10 @@ export function officerRouteStepAt(route: readonly string[], elapsedMs: number):
   const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
   const segment = Math.min(segments - 1, Math.floor(elapsed / OFFICER_ROUTE_STEP_MS));
   const fraction = (elapsed - segment * OFFICER_ROUTE_STEP_MS) / OFFICER_ROUTE_STEP_MS;
-  const progress = fraction * fraction * (3 - 2 * fraction);
+  // Keep a constant world-space speed through every BFS corner. Per-tile
+  // smoothstep used to brake and restart at *every* cell boundary, visibly
+  // stuttering on long routes even though the command was continuous.
+  const progress = fraction;
   return {
     from: route[segment], to: route[segment + 1], progress,
     frame: Math.min(WALK_ATLAS.frames - 1, Math.floor(fraction * WALK_ATLAS.frames)),

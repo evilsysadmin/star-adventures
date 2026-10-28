@@ -64,3 +64,19 @@ test('consecutive enemy turns preserve every real orthogonal step instead of jum
     assert.equal(step.progress, 0);
   }
 });
+
+test('hostile keeps its travel speed across two consecutive real turns', () => {
+  const route = joinHostileRoutes(['6:6', '6:5'], ['6:5', '5:5']);
+  assert.ok(route);
+  const delta = 18;
+  const before = hostileRouteStepAt(route, HOSTILE_STEP_MS - delta);
+  const corner = hostileRouteStepAt(route, HOSTILE_STEP_MS);
+  const after = hostileRouteStepAt(route, HOSTILE_STEP_MS + delta);
+  assert.equal(before.to, corner.from);
+  assert.equal(corner.from, after.from);
+  assert.equal(before.segment, 0);
+  assert.equal(after.segment, 1);
+  assert.ok(Math.abs((1 - before.progress) - delta / HOSTILE_STEP_MS) < 1e-10);
+  assert.ok(Math.abs(after.progress - delta / HOSTILE_STEP_MS) < 1e-10);
+  assert.equal(corner.progress, 0);
+});
