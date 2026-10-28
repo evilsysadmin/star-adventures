@@ -227,7 +227,18 @@ export function App() {
               <div className="field-encounter-return">
                 <span>SUPERFICIE · BALIZA DEL PERÍMETRO</span>
                 <button type="button" data-testid="field-encounter-return"
-                  onClick={() => setFieldEncounterOpen(false)}>Volver a explorar ↩</button>
+                  onClick={() => {
+                    setFieldEncounterOpen(false);
+                    // The tactical board can scroll far down the mobile page.
+                    // Restore the actual mission/exploration viewport rather
+                    // than leaving the player stranded in the journal.
+                    requestAnimationFrame(() => {
+                      document.querySelector('[data-testid="mission-transmission"]')
+                        ?.scrollIntoView({ block: 'start', behavior: 'auto' });
+                      document.querySelector<HTMLButtonElement>('[data-testid="explore-forward"]')
+                        ?.focus({ preventScroll: true });
+                    });
+                  }}>Volver a explorar ↩</button>
               </div>
               <Suspense fallback={<p role="status">Preparando el encuentro táctico…</p>}>
                 <FieldEncounter fieldEncounter onFieldResolved={setFieldResolution} />
