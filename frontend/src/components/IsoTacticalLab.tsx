@@ -65,7 +65,7 @@ export function IsoTacticalLab() {
   const routeVisual = useRef(new Map<string, THREE.Mesh>());
   const moveRef = useRef<Motion | null>(null);
   const fireRef = useRef<FireMotion | null>(null);
-  const fireRequest = useRef<((unitId: TrainingUnit['id']) => void) | null>(null);
+  const fireRequest = useRef<((unitId: TrainingUnit['id'], target: string) => void) | null>(null);
   const fireStepRequest = useRef<(() => void) | null>(null);
   const reviewEnabled = useRef(false);
   const committed = useRef(TRAINING_START);
@@ -333,14 +333,26 @@ export function IsoTacticalLab() {
       burst.frame=next === null ? FIRE_ATLAS.frames : next;
       setReviewFrame(next);
     };
-    const showFire = (unitId: TrainingUnit['id']) => {
+    const showFire = (unitId: TrainingUnit['id'], target: string) => {
       if (disposed || loadingFire || fireRef.current || moveRef.current) return;
       const deploy=deployments.find(unit=>unit.id===unitId);
-      if(!deploy || !unitTextures.has(unitId)) return;
+      const source=latestSquad.current.units.units.find(unit=>unit.id===unitId)?.cell;
+      if(!deploy || !source || !unitTextures.has(unitId) ||
+         !evaluatePracticeShot(latestSquad.current.units,unitId,target,currentHostileCells.current).allowed) return;
       const sex=deploy.sex;
       const start=() => {
         if(disposed) return;
         loadingFire=false;
+        // This direction is based on the shot's accepted source/target pair,
+        // not a stale React selection or the officer's previous walking leg.
+        const visual=unitsVisual.current.get(unitId);
+        if(visual){
+          const mirror=faceSprite(visual.sprite,source,target);
+          const idle=unitTextures.get(unitId);
+          if(idle)setFacingFrame(idle,0,mirror);
+          canvas.dataset[`spriteFacing${unitId[0].toUpperCase()+unitId.slice(1)}`]=mirror?'left':'right';
+          canvas.dataset.fireTarget=target;
+        }
         const manual=reviewEnabled.current;
         fireRef.current={unitId,sex,start:null,review:manual,frame:0};
         setReviewFrame(manual ? 0 : null);
@@ -500,8 +512,8 @@ export function IsoTacticalLab() {
           canvas.setAttribute('data-fire-frame', String(index));
           canvas.setAttribute('data-fire-unit', burst.unitId);
           canvas.setAttribute('data-fire-mode', burst.review ? 'manual' : 'auto');
-          const uv=walkFrameUv(index);
-          fireAtlas.offset.set(uv.x,uv.y);
+          setFacingFrame(fireAtlas,index,visual.sprite.userData.mirror===true);
+          canvas.dataset.fireSpriteUvX=String(fireAtlas.repeat.x);
           if(visual.sprite.material.map!==fireAtlas){
             visual.sprite.material.map=fireAtlas;
             visual.sprite.material.needsUpdate=true;
@@ -650,7 +662,7 @@ export function IsoTacticalLab() {
       return;
     // Recheck current immutable squad and target immediately before display.
     if(!evaluatePracticeShot(units,officer,active.id,hostileCells).allowed)return;
-    fireRequest.current(officer);
+    fireRequest.current(officer,active.id);
   };
   const choose = (col: number, row: number) => {
     if (col < 0 || col > 7 || row < 0 || row > 7) return;
