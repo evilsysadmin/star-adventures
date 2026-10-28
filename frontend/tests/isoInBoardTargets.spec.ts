@@ -31,6 +31,8 @@ for (const width of [360, 390, 1280]) {
   await expect(aegis).toHaveAttribute('aria-pressed','true');
   await expect(canvas).toHaveAttribute('data-aim-state','terrain-blocked');
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
+  await expect(page.getByTestId('scenario-fire')).toContainText('COBERTURA');
+  await expect(page.getByTestId('scenario-fire')).toHaveAttribute('aria-label',/Línea bloqueada por cobertura/);
   await expect(page.getByTestId('scenario-ap')).toHaveText(ap);
   await expect(canvas).not.toHaveAttribute('data-shot-sequence',/./);
   await shell.screenshot({path:`test-results/board-targets-blocked-${width}.png`});
@@ -44,6 +46,7 @@ for (const width of [360, 390, 1280]) {
   await aegis.click();
   await expect(canvas).toHaveAttribute('data-aim-state','ready');
   await expect(page.getByTestId('scenario-fire')).toBeEnabled();
+  await expect(page.getByTestId('scenario-fire')).toContainText('DISPARAR · aegis');
   await expect(aegis).toContainText('PV 2/2');
   await shell.screenshot({path:`test-results/board-targets-ready-${width}.png`});
   await page.getByTestId('scenario-fire').click();
