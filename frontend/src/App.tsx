@@ -211,6 +211,9 @@ export function App() {
             </div>
           </section>
           <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
+            missionTargetId={missionPhase === 'briefing' ? 'transporter'
+              : missionPhase === 'field' ? 'relief-point'
+              : missionPhase === 'extract' ? 'beam-out' : null}
             onSpatialEvent={onSpatialEvent}
             squad={awayTeam.squad.map((id: string) => {
               const officer = OFFICERS.find(candidate => candidate.id === id)!;

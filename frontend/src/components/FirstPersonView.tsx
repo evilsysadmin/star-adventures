@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import { startExploration, applyExploration, faceTile } from '../../../src/spatial.mjs';
 import { BridgeScene } from './BridgeScene';
+import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
 export type ViewState = {
   version: number; area: string; x: number; y: number; heading: string;
@@ -122,7 +123,12 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
   ctx.textAlign = 'right';ctx.fillText(`POS ${state.x}:${state.y}  ·  ${state.heading}`,WIDTH-19,HEIGHT-15);ctx.textAlign = 'left';
 }
 
-export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [] }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[] }) {
+const WAYPOINT_ORDERS: Record<WaypointCommand, string> = {
+  forward: '↑ AVANZA', 'turn-left': '↶ GIRA A LA IZQUIERDA',
+  'turn-right': 'GIRA A LA DERECHA ↷', use: 'E · INTERACTÚA',
+};
+
+export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [], missionTargetId = null }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[]; missionTargetId?: string | null }) {
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -131,6 +137,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const area = (world.scenes as Record<string, Scene>)[exploration.area];
   const front = faceTile(exploration);
   const facing = area.objects.find(object => object.x === front.x && object.y === front.y);
+  const waypoint = missionWaypoint(world, exploration, missionTargetId);
   const dispatch = useCallback((type: Command) => {
     // Sync ref prevents dropped turns when two keyboard events arrive before React rerenders.
     const result = applyExploration(world, stateRef.current, { type });
@@ -181,6 +188,12 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             <span data-testid="explore-heading">RUMBO {exploration.heading} · {exploration.x}:{exploration.y}</span>
             <span data-testid="explore-target">{facing ? `OBJETIVO: ${facing.label}` : 'Observando la estancia'}</span>
           </div>
+          {waypoint && <div className="firstperson-waypoint" data-testid="mission-waypoint"
+            data-action={waypoint.action} role="status" aria-live="polite">
+            <span className="firstperson-waypoint-label">RUTA DE MISIÓN · {waypoint.label}</span>
+            <strong data-testid="mission-waypoint-command">{WAYPOINT_ORDERS[waypoint.action]}</strong>
+            <span className="firstperson-waypoint-steps">{waypoint.steps === 0 ? 'Objetivo al alcance' : `${waypoint.steps} ${waypoint.steps === 1 ? 'casilla' : 'casillas'} por recorrer`}</span>
+          </div>}
           <div className="firstperson-controls" aria-label="Control de exploración">
             <button type="button" disabled={!!exploration.pending} data-testid="explore-left" onClick={() => dispatch('turn-left')}>↶ Girar</button>
             <button type="button" disabled={!!exploration.pending} data-testid="explore-forward" onClick={() => dispatch('forward')}>↑ Avanzar</button>
