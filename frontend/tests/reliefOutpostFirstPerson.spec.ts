@@ -47,6 +47,7 @@ for (const width of [390, 1280]) {
     const readSkyline = () => canvas.evaluate(element => {
       const context = (element as HTMLCanvasElement).getContext('2d')!;
       const pixels = context.getImageData(0, 110, 960, 130).data;
+      const moonPixel = [...context.getImageData(480, 100, 1, 1).data].slice(0, 3);
       let ridgePixels = 0;
       const silhouette: number[] = [];
       for (let x = 12; x < 948; x += 12) {
@@ -62,14 +63,16 @@ for (const width of [390, 1280]) {
         }
         silhouette.push(first);
       }
-      return { ridgePixels, silhouette };
+      return { ridgePixels, silhouette, moonPixel };
     });
     const northSky = await readSkyline();
     expect(northSky.ridgePixels).toBeGreaterThan(40);
+    expect(northSky.moonPixel[0]).toBeGreaterThan(170);
     const spawn = await canvas.screenshot({ path: `test-results/relief-outpost-spawn-${width}.png` });
     await page.getByTestId('explore-right').click();
     const eastSky = await readSkyline();
     expect(eastSky.ridgePixels).toBeGreaterThan(40);
+    expect(eastSky.moonPixel[0]).toBeLessThan(150);
     expect(eastSky.silhouette).not.toEqual(northSky.silhouette);
     await canvas.screenshot({ path: `test-results/relief-outpost-east-sky-${width}.png` });
     await page.getByTestId('explore-left').click();
