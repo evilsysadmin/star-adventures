@@ -339,35 +339,17 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
       : <span key={id} data-testid={`scenario-hostile-${id}`}>{text}</span>;
     })}
    </div>;
- return <section className="scenario-lab" data-testid="scenario-lab" aria-labelledby="scenario-heading">
-  <header className="scenario-head">
-   <span className="scenario-eyebrow">{fieldEncounter?'SUPERFICIE · CONTACTO HOSTIL':'OPERACIONES TÁCTICAS · LABORATORIO JUGABLE'}</span>
-   <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Tres misiones, un equipo'}</h2>
-   <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. Esta incursión es temporal.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
-   {!fieldEncounter&&!replayMode&&<button className="scenario-play-combat" type="button"
-    data-testid="scenario-play-combat" onClick={startPlayableCombat}>
-    Jugar combate con disparos
-   </button>}
-  </header>
-  {!fieldEncounter&&<div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
+ // During live combat, the map and orders must precede mode/mission settings.
+ // Keep DOM and visual order aligned for keyboard and screen-reader navigation.
+ const missionSelector = !fieldEncounter && <div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
    {order.map(id=><button key={id} type="button"
     data-testid={`scenario-tab-${id}`} aria-pressed={scenarioId===id}
     onClick={()=>change(id)}>
     <strong>{SCENARIOS[id].label}</strong>
     <span>{SCENARIOS[id].size} × {SCENARIOS[id].size} · {id==='relay'?'Comunicaciones':id==='derelict'?'Exploración / rescate':'Evacuación'}</span>
    </button>)}
-  </div>}
-  <div className="scenario-briefing">
-   <div><span className="scenario-eyebrow">OBJETIVO ACTUAL</span>
-    <h3 data-testid="scenario-name">{scenario.label}</h3>
-    <p>{scenario.briefing}</p>
-   </div>
-   <div className="scenario-turn" data-testid="scenario-turn">
-    <strong>Ronda {mission.round}</strong>
-    <span data-testid="scenario-ap">{mission.ap} / 3 órdenes</span>
-   </div>
-  </div>
-  {!fieldEncounter&&<div className="scenario-viewtools">
+  </div>;
+ const viewTools = !fieldEncounter && <div className="scenario-viewtools">
    <strong className="scenario-primary-mode" data-testid="scenario-primary-mode">
     {replayMode?'Combate táctico · disparos, enemigos y negociación':
      'Modo de pruebas · inicia el combate táctico para jugar'}
@@ -388,7 +370,29 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
-  </div>}
+  </div>;
+ return <section className="scenario-lab" data-testid="scenario-lab" aria-labelledby="scenario-heading">
+  <header className="scenario-head">
+   <span className="scenario-eyebrow">{fieldEncounter?'SUPERFICIE · CONTACTO HOSTIL':'OPERACIONES TÁCTICAS · LABORATORIO JUGABLE'}</span>
+   <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Tres misiones, un equipo'}</h2>
+   <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. Esta incursión es temporal.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
+   {!fieldEncounter&&!replayMode&&<button className="scenario-play-combat" type="button"
+    data-testid="scenario-play-combat" onClick={startPlayableCombat}>
+    Jugar combate con disparos
+   </button>}
+  </header>
+  {!replayMode&&missionSelector}
+  <div className="scenario-briefing">
+   <div><span className="scenario-eyebrow">OBJETIVO ACTUAL</span>
+    <h3 data-testid="scenario-name">{scenario.label}</h3>
+    <p>{scenario.briefing}</p>
+   </div>
+   <div className="scenario-turn" data-testid="scenario-turn">
+    <strong>Ronda {mission.round}</strong>
+    <span data-testid="scenario-ap">{mission.ap} / 3 órdenes</span>
+   </div>
+  </div>
+  {!replayMode&&viewTools}
   {replayMode&&replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-truce" role="status">
    Alto el fuego aceptado: ambos contactos han dejado de atacar. Completa los objetivos y solicita extracción sin disparar.
   </p>}
@@ -458,6 +462,8 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
     onClick={()=>execute(extract)}>Solicitar extracción</button>
    {!replayMode&&endTurnButton}
   </div>
+  {replayMode&&missionSelector}
+  {replayMode&&viewTools}
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
   {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
