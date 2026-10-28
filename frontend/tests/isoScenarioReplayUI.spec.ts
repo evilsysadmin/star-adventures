@@ -1,3 +1,11 @@
+// Historical variants remain available only under explicit QA tools.
+async function chooseLegacyMode(page: import('@playwright/test').Page, id:string){
+ const details=page.getByTestId('scenario-mode-advanced');
+ if((await details.getAttribute('open'))===null)
+  await details.locator('summary').click();
+ await page.getByTestId(id).click();
+}
+
 import { test, expect, type Page } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { COMBAT_REPLAY_SAVE_KEY, replayCombatCommands } from '../src/isoScenarioCombatReplay';
@@ -206,7 +214,7 @@ for(const width of [390,1280]){
   await page.screenshot({path:'test-results/combat-v4-victory-'+width+'.png',fullPage:true});
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await page.getByTestId('scenario-replay-toggle').click();
+  await chooseLegacyMode(page,'scenario-replay-toggle');
   await expect(page.getByTestId('scenario-notice')).toContainText('restaurado');
   await expect(page.getByTestId('scenario-combat-result')).toContainText('Amenazas neutralizadas');
   await expect(page.getByTestId('scenario-hostile-veil')).toContainText('PV 0/2');
@@ -228,13 +236,13 @@ for(const width of [390,1280]){
   await page.screenshot({path:'test-results/combat-v4-extracted-'+width+'.png',fullPage:true});
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await page.getByTestId('scenario-replay-toggle').click();
+  await chooseLegacyMode(page,'scenario-replay-toggle');
   await expect(page.getByTestId('scenario-combat-result')).toContainText('Extracción confirmada');
   await expect(page.getByTestId('scenario-end-turn')).toBeDisabled();
   await page.getByTestId('scenario-combat-retry').click();
   await expect(page.getByTestId('scenario-hostile-veil')).toContainText('PV 2/2');
   await expect(page.getByTestId('scenario-combat-result')).toHaveCount(0);
-  await page.getByTestId('scenario-combat-toggle').click();
+  await chooseLegacyMode(page,'scenario-combat-toggle');
   await expect(page.getByTestId('scenario-hostile-aegis')).toHaveJSProperty('tagName','SPAN');
  });
 }

@@ -8,6 +8,7 @@ for (const width of [390, 1280]) {
   await page.setViewportSize({ width, height: 850 });
   await page.goto('/');
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
   await page.getByTestId('scenario-hostile-toggle').click();
   const canvas = page.getByTestId('scenario-render-canvas');
   await expect(canvas).toBeVisible();

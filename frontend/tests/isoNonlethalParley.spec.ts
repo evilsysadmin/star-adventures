@@ -1,3 +1,11 @@
+// Historical variants remain available only under explicit QA tools.
+async function chooseLegacyMode(page: import('@playwright/test').Page, id:string){
+ const details=page.getByTestId('scenario-mode-advanced');
+ if((await details.getAttribute('open'))===null)
+  await details.locator('summary').click();
+ await page.getByTestId(id).click();
+}
+
 import { test, expect } from '@playwright/test';
 
 // P0: an actual third option, not a decorative dialog or fake choice.
@@ -39,7 +47,7 @@ for (const width of [390, 1280]) {
   await expect(canvas).not.toHaveAttribute('data-hostile-moving', '1');
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await page.getByTestId('scenario-replay-toggle').click();
+  await chooseLegacyMode(page,'scenario-replay-toggle');
   await expect(page.getByTestId('scenario-truce')).toBeVisible();
   await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
   await expect(page.getByTestId('scenario-hostile-status').locator('button')).toHaveText(pacifiedContacts);

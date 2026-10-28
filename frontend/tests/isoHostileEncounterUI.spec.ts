@@ -1,3 +1,11 @@
+// Historical variants remain available only under explicit QA tools.
+async function chooseLegacyMode(page: import('@playwright/test').Page, id:string){
+ const details=page.getByTestId('scenario-mode-advanced');
+ if((await details.getAttribute('open'))===null)
+  await details.locator('summary').click();
+ await page.getByTestId(id).click();
+}
+
 import { test, expect } from '@playwright/test';
 import { replayHostileEncounterCommands } from '../src/isoScenarioHostileCheckpoint';
 import { HOSTILE_ENCOUNTER_SAVE_KEY } from '../src/isoScenarioHostileCheckpoint';
@@ -14,7 +22,7 @@ test('opt-in hostile encounter advances visible enemies and survives F5 without 
  const before=replayHostileEncounterCommands('relay',[]).encounter.positions;
  const after=replayHostileEncounterCommands('relay',[{type:'end-turn'}]).encounter.positions;
  expect(after).not.toEqual(before);
- await page.getByTestId('scenario-hostile-toggle').click();
+ await chooseLegacyMode(page,'scenario-hostile-toggle');
  await expect(page.getByTestId('scenario-hostile-toggle')).toHaveAttribute('aria-pressed','true');
  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText(before.aegis);
  await expect(page.getByTestId('scenario-hostile-veil')).toContainText(before.veil);
@@ -30,15 +38,15 @@ test('opt-in hostile encounter advances visible enemies and survives F5 without 
  await page.reload();
  await page.getByTestId('tactical-view-missions').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 1');
- await page.getByTestId('scenario-hostile-toggle').click();
+ await chooseLegacyMode(page,'scenario-hostile-toggle');
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText(after.aegis);
  await expect(page.getByTestId('scenario-hostile-veil')).toContainText(after.veil);
  await expect(page.getByTestId('scenario-notice')).toContainText('restaurado');
- await page.getByTestId('scenario-training-toggle').click();
+ await chooseLegacyMode(page,'scenario-training-toggle');
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 1');
  await expect(page.getByTestId('scenario-hostile-status')).toHaveCount(0);
- await page.getByTestId('scenario-hostile-toggle').click();
+ await chooseLegacyMode(page,'scenario-hostile-toggle');
  await page.setViewportSize({width:1280,height:850});
  await page.screenshot({path:'test-results/hostile-v2-restored-desktop-1280.png',fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -54,7 +62,7 @@ test('hostile walk advances atlas frames, then returns to idle without altering 
  await page.setViewportSize({width:390,height:850});
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
- await page.getByTestId('scenario-hostile-toggle').click();
+ await chooseLegacyMode(page,'scenario-hostile-toggle');
  const canvas=page.getByTestId('scenario-render-canvas');
  await expect(canvas).toBeVisible();
  await page.evaluate(()=>{
@@ -88,7 +96,7 @@ test('reduced-motion hostile turns snap to authoritative saved positions',async(
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
- await page.getByTestId('scenario-hostile-toggle').click();
+ await chooseLegacyMode(page,'scenario-hostile-toggle');
  const positions=replayHostileEncounterCommands('relay',[{type:'end-turn'}]).encounter.positions;
  await page.getByTestId('scenario-end-turn').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
@@ -96,7 +104,7 @@ test('reduced-motion hostile turns snap to authoritative saved positions',async(
  // No cosmetic interpolation may delay persistence or introduce a new turn.
  await page.reload();
  await page.getByTestId('tactical-view-missions').click();
- await page.getByTestId('scenario-hostile-toggle').click();
+ await chooseLegacyMode(page,'scenario-hostile-toggle');
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText(positions.aegis);
  await expect(page.getByTestId('scenario-hostile-veil')).toContainText(positions.veil);

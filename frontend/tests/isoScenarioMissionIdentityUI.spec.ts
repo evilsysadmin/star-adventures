@@ -1,3 +1,11 @@
+// Historical variants remain available only under explicit QA tools.
+async function chooseLegacyMode(page: import('@playwright/test').Page, id:string){
+ const details=page.getByTestId('scenario-mode-advanced');
+ if((await details.getAttribute('open'))===null)
+  await details.locator('summary').click();
+ await page.getByTestId(id).click();
+}
+
 import { test, expect } from '@playwright/test';
 import { COMBAT_REPLAY_SAVE_KEY } from '../src/isoScenarioCombatReplay';
 import { COMBAT_MISSION_INSTANCE_SAVE_KEY } from '../src/isoScenarioCombatMissionInstanceSession';
@@ -11,7 +19,7 @@ for (const width of [390, 1280]) {
    [COMBAT_REPLAY_SAVE_KEY, COMBAT_MISSION_INSTANCE_SAVE_KEY]);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await page.getByTestId('scenario-replay-toggle').click();
+  await chooseLegacyMode(page,'scenario-replay-toggle');
   // Merely entering the replay view must not mint an ID for old saves.
   expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_MISSION_INSTANCE_SAVE_KEY)).toBeNull();
   await page.getByTestId('scenario-tab-relay').click();
@@ -31,7 +39,7 @@ for (const width of [390, 1280]) {
   expect(advanced.replay.actions).toEqual([{ type: 'end-turn' }]);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await page.getByTestId('scenario-replay-toggle').click();
+  await chooseLegacyMode(page,'scenario-replay-toggle');
   const restored = await read();
   expect(restored.identity.instanceId).toBe(started.identity.instanceId);
   expect(JSON.parse(restored.identity.checkpoint)).toEqual(restored.replay);
