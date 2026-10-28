@@ -20,7 +20,7 @@ import { startCombatMissionAttemptSession, persistCombatMissionAttemptProgress }
 import { COMBAT_HOSTILE_MAX_HP } from '../isoScenarioCombatFire';
 import { playAcceptedTacticalShot } from '../isoTacticalShotAudio';
 import { evaluateCombatAim } from '../isoScenarioCombatAim';
-import { describeCombatAim } from '../isoCombatAimFeedback';
+import { compactCombatFireLabel, describeCombatAim } from '../isoCombatAimFeedback';
 import type { HostileId } from '../isoScenarioHostileTurn';
 import './isoScenarioLab.css';
 
@@ -409,9 +409,15 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
     selected={selected} focus={focus} route={route} hostilePositions={hostilePositions} hostileHealth={hostileHealth} shot={shot} officerHit={officerHit} aimPreview={aimPreview} onPick={onBoardPick}/>
    {replayMode&&endTurnButton}
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
-    disabled={!fireReady} aria-label={replay?.truce?'Alto el fuego acordado':fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
+    disabled={!fireReady}
+    aria-label={replay?.truce?'Alto el fuego acordado':fireTarget
+     ?fireReady?'Disparar a '+fireTarget:fireAim?.reason==='ready'
+      ?'Orden de disparo no disponible en este turno'
+      :fireTarget+': '+describeCombatAim(fireAim)
+     :'Selecciona un enemigo para disparar'}
+    title={fireTarget&&!fireReady?describeCombatAim(fireAim):undefined}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
-    {replay?.truce?'ALTO EL FUEGO':fireReady?'DISPARAR · '+fireTarget:fireTarget?'TIRO BLOQUEADO':'APUNTAR · elige enemigo'}
+    {compactCombatFireLabel(fireAim,fireTarget??null,fireReady,!!replay?.truce)}
    </button>}
   </div>
   <div className="scenario-cell-bar">

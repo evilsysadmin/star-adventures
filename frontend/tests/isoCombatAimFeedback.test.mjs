@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { describeCombatAim } from '../src/isoCombatAimFeedback.ts';
+import { compactCombatFireLabel, describeCombatAim } from '../src/isoCombatAimFeedback.ts';
 import { evaluateCombatAim } from '../src/isoScenarioCombatAim.ts';
 import { replayCombatEncounter } from '../src/isoScenarioCombatEncounter.ts';
 
@@ -25,4 +25,19 @@ test('feedback distinguishes clear shots, intervening actors, AP and defeat',()=
  assert.match(describeCombatAim(evaluateCombatAim({...near,mission:{...near.mission,ap:0}},'security','veil')),/Sin órdenes/);
  assert.match(describeCombatAim(evaluateCombatAim({...near,failed:true},'security','veil')),/terminado/);
  assert.match(describeCombatAim(null),/Selecciona/);
+});
+
+test('in-board fire control names real blockers without pretending a shot is available',()=>{
+ const initial=replayCombatEncounter('relay',[]);
+ const blocked=evaluateCombatAim(initial,'security','aegis');
+ assert.equal(blocked.reason,'terrain-blocked');
+ assert.equal(compactCombatFireLabel(blocked,'aegis',false),'COBERTURA · '+blocked.blocker);
+ assert.equal(compactCombatFireLabel(evaluateCombatAim(initial,'science','veil'),'veil',false),'FUERA DE ALCANCE');
+ assert.equal(compactCombatFireLabel({...blocked,reason:'ally-blocked'},'aegis',false),'ALIADO EN LÍNEA');
+ assert.equal(compactCombatFireLabel({...blocked,reason:'contact-blocked'},'aegis',false),'ENEMIGO EN LÍNEA');
+ assert.equal(compactCombatFireLabel({...blocked,reason:'no-action-points'},'aegis',false),'SIN ÓRDENES');
+ assert.equal(compactCombatFireLabel({...blocked,reason:'ready',allowed:true},'aegis',false),'ORDEN NO DISPONIBLE');
+ assert.equal(compactCombatFireLabel({...blocked,reason:'ready',allowed:true},'aegis',true),'DISPARAR · aegis');
+ assert.equal(compactCombatFireLabel(null,null,false),'APUNTAR · elige enemigo');
+ assert.equal(compactCombatFireLabel(blocked,'aegis',false,true),'ALTO EL FUEGO');
 });
