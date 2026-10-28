@@ -18,6 +18,57 @@ const HORIZON = 240;
 const WIDTH = 960;
 const HEIGHT = 480;
 
+// Outdoor scenery is fixed to compass/world directions, not to the screen.
+// It never participates in the walkability, targeting or interaction model.
+function drawSurfaceSkyline(ctx: CanvasRenderingContext2D, heading: string) {
+  const angle = ANGLES[HEADINGS.indexOf(heading)];
+  for (const layer of [
+    { base: 49, color: '#475662', phase: .6 },
+    { base: 23, color: '#555e5c', phase: 2.1 },
+  ]) {
+    ctx.fillStyle = layer.color;
+    ctx.beginPath();
+    ctx.moveTo(0, HORIZON);
+    for (let x = 0; x <= WIDTH; x += 6) {
+      const bearing = angle + (x / WIDTH - .5) * (Math.PI / 2.7);
+      const ridge = 15 * Math.sin(bearing * 3 + layer.phase)
+        + 8 * Math.sin(bearing * 9 - layer.phase)
+        + 4 * Math.sin(bearing * 17 + layer.phase);
+      ctx.lineTo(x, HORIZON - layer.base - ridge);
+    }
+    ctx.lineTo(WIDTH, HORIZON);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawSurfaceGround(ctx: CanvasRenderingContext2D, state: ViewState, scene: Scene) {
+  const angle = ANGLES[HEADINGS.indexOf(state.heading)];
+  const forwardX = Math.cos(angle), forwardY = Math.sin(angle);
+  const focal = WIDTH / (2 * Math.tan(Math.PI / 5.4));
+  // Sparse deterministic stones are anchored to map coordinates. Turning or
+  // walking changes their projection instead of sliding a screen-space decal.
+  for (let y = 1; y < scene.height - 1; y++) {
+    for (let x = 1; x < scene.width - 1; x++) {
+      const seed = (x * 73 + y * 151 + x * y * 19) >>> 0;
+      if (seed % 4 === 0) continue;
+      const dx = x + .17 + (seed % 7) * .09 - (state.x + .5);
+      const dy = y + .18 + (seed % 5) * .11 - (state.y + .5);
+      const depth = dx * forwardX + dy * forwardY;
+      if (depth < .45 || depth > 7) continue;
+      const lateral = -dx * forwardY + dy * forwardX;
+      const screenX = WIDTH / 2 + lateral / depth * focal;
+      const screenY = HORIZON + 165 / (depth + .3);
+      if (screenX < -12 || screenX > WIDTH + 12 || screenY > HEIGHT - 42) continue;
+      const radius = Math.max(1, 7 / (depth + .5));
+      ctx.fillStyle = seed % 3 ? '#9e947765' : '#273f415c';
+      ctx.beginPath();
+      ctx.ellipse(screenX, screenY, radius * 1.8, radius * .6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, activeStation: string | null) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -33,6 +84,7 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
     ceiling.addColorStop(0, '#06101c'); ceiling.addColorStop(1, '#294353');
   }
   ctx.fillStyle = ceiling; ctx.fillRect(0, 0, WIDTH, HORIZON);
+  if (state.area === 'surface') drawSurfaceSkyline(ctx, state.heading);
   const floor = ctx.createLinearGradient(0, HORIZON, 0, HEIGHT);
   if (state.area === 'surface') {
     floor.addColorStop(0, '#635c51'); floor.addColorStop(1, '#1c292b');
@@ -88,14 +140,18 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
       ctx.lineTo(480 + half, y); ctx.stroke();
     }
   }
-  // The wireframe perspective grid is decorative; collision is strictly owned by src/spatial.mjs.
-  ctx.strokeStyle = '#9dbfc619'; ctx.lineWidth = 2;
-  for (let n = -8; n <= 8; n++) {
-    ctx.beginPath(); ctx.moveTo(WIDTH/2 + n*32, HORIZON); ctx.lineTo(WIDTH/2 + n*148, HEIGHT); ctx.stroke();
-  }
-  for (let n = 1; n < 8; n++) {
-    const y = HORIZON + 230 * (1 - 1/(n*.5+1));
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WIDTH,y); ctx.stroke();
+  if (state.area === 'surface') {
+    drawSurfaceGround(ctx, state, scene);
+  } else {
+    // Bridge deck reference lines remain decorative; navigation is spatial.mjs.
+    ctx.strokeStyle = '#9dbfc619'; ctx.lineWidth = 2;
+    for (let n = -8; n <= 8; n++) {
+      ctx.beginPath(); ctx.moveTo(WIDTH/2 + n*32, HORIZON); ctx.lineTo(WIDTH/2 + n*148, HEIGHT); ctx.stroke();
+    }
+    for (let n = 1; n < 8; n++) {
+      const y = HORIZON + 230 * (1 - 1/(n*.5+1));
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WIDTH,y); ctx.stroke();
+    }
   }
   const angle = ANGLES[HEADINGS.indexOf(state.heading)];
   const wallColumn = 3;
@@ -117,8 +173,11 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
       distance += .035;
     }
     const corrected = Math.max(.19, distance * Math.cos(offset));
-    const height = Math.min(HEIGHT * 1.65, HEIGHT*.94 / corrected);
-    const top = HORIZON - height/2;
+    const fullHeight = Math.min(HEIGHT * 1.65, HEIGHT*.94 / corrected);
+    // The planetary perimeter is a low rocky escarpment, not an indoor wall
+    // reaching to the ceiling. Keep its base/depth and all collision unchanged.
+    const height = state.area === 'surface' && !hitObject ? fullHeight * .64 : fullHeight;
+    const top = HORIZON + fullHeight / 2 - height;
     const fog = Math.max(.18, 1 - corrected/12);
     const edge = (Math.floor(distance*10)%4===0) ? 1.04 : 1;
     const base = state.area === 'surface'
@@ -424,7 +483,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
               event?.type === 'blocked' ? 'Paso bloqueado.' :
               event?.type === 'nothing-to-use' ? 'No hay nada a tu alcance.' :
               event?.type === 'transition-declined' ? 'Permaneces en la misma casilla. Puedes volver a usar el acceso.' :
-              event?.type === 'area-entered' ? 'Cambio de área confirmado. Escenario exploratorio de prueba.' :
+              event?.type === 'area-entered' ? 'Transporte completado. Equipo listo para continuar la misión.' :
               'Flechas o WASD · E para interactuar · mueve la mirada antes de usar una estación.'}
           </p>
           {exploration.pending && (
