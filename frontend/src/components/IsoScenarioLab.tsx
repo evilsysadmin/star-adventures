@@ -411,7 +411,9 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
    {replayMode&&<button className="scenario-fire-overlay" type="button" data-testid="scenario-fire"
     disabled={!fireReady}
     aria-label={replay?.truce?'Alto el fuego acordado':fireTarget
-     ?fireReady?'Disparar a '+fireTarget:fireTarget+': '+describeCombatAim(fireAim)
+     ?fireReady?'Disparar a '+fireTarget:fireAim?.reason==='ready'
+      ?'Orden de disparo no disponible en este turno'
+      :fireTarget+': '+describeCombatAim(fireAim)
      :'Selecciona un enemigo para disparar'}
     title={fireTarget&&!fireReady?describeCombatAim(fireAim):undefined}
     onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
