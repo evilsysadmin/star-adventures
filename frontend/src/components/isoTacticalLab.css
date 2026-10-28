@@ -1,5 +1,16 @@
 /* Isolated visual experiment: no edits to Codex-owned tactical-camera styles. */
 .iso-mode-switcher{min-width:0;margin-top:1rem;border:1px solid #426879;background:#0c1e2b;padding:13px}
+.iso-mode-switcher.is-collapsed{border-color:#43695f;background:linear-gradient(110deg,#122e34,#0b1c2b);padding:12px 14px}
+.iso-mode-entry{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 18px}
+.iso-mode-entry-copy{display:grid;gap:5px;min-width:0;flex:1 1 210px}
+.iso-mode-entry-copy strong{font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.12em;color:#c7e6d6}
+.iso-mode-entry-copy span{font:400 11px/1.45 'DM Sans',sans-serif;color:#9bb7bc}
+.iso-mode-entry-toggle{min-height:44px;padding:10px 14px;border:1px solid #91bfa9;background:#315b51;color:#f1f8e9;cursor:pointer;font:700 11px 'Space Grotesk',sans-serif}
+.iso-mode-entry-toggle:hover{background:#3d7061}
+.iso-mode-entry-toggle:focus-visible{outline:2px solid #f0d397;outline-offset:3px}
+#tactical-lab-content{margin-top:12px;padding-top:12px;border-top:1px solid #365463}
+#tactical-lab-content>.tactical-probe{margin-top:12px}
+@media(max-width:520px){.iso-mode-entry{align-items:stretch}.iso-mode-entry-copy{flex-basis:100%}.iso-mode-entry-toggle{width:100%}}
 .iso-mode-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .iso-mode-title>span{color:#c9ddd9;letter-spacing:.12em;font:700 10px 'Space Grotesk',sans-serif}
 .iso-mode-tabs{display:flex;gap:6px;flex-wrap:wrap}
