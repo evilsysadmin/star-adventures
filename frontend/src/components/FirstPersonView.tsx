@@ -26,10 +26,19 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
   const targets = new Map(scene.objects.map(target => [target.x + ',' + target.y, target]));
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   const ceiling = ctx.createLinearGradient(0, 0, 0, HORIZON);
-  ceiling.addColorStop(0, '#06101c'); ceiling.addColorStop(1, '#294353');
+  if (state.area === 'surface') {
+    ceiling.addColorStop(0, '#111c2d'); ceiling.addColorStop(.68, '#394b59');
+    ceiling.addColorStop(1, '#806d68');
+  } else {
+    ceiling.addColorStop(0, '#06101c'); ceiling.addColorStop(1, '#294353');
+  }
   ctx.fillStyle = ceiling; ctx.fillRect(0, 0, WIDTH, HORIZON);
   const floor = ctx.createLinearGradient(0, HORIZON, 0, HEIGHT);
-  floor.addColorStop(0, '#1d313c'); floor.addColorStop(1, '#09141e');
+  if (state.area === 'surface') {
+    floor.addColorStop(0, '#635c51'); floor.addColorStop(1, '#1c292b');
+  } else {
+    floor.addColorStop(0, '#1d313c'); floor.addColorStop(1, '#09141e');
+  }
   ctx.fillStyle = floor; ctx.fillRect(0, HORIZON, WIDTH, HEIGHT);
   if (state.area === 'bridge') {
     // A deck, not an infinite wireframe: perspective walkway and ceiling
@@ -57,6 +66,26 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
       ctx.lineTo(WIDTH / 2 + halfWidth, y); ctx.stroke();
       ctx.fillStyle = '#a8dcd7a8';
       ctx.fillRect(WIDTH / 2 - 24 * perspective, y - 2, 48 * perspective, 3);
+    }
+  } else {
+    // The relief outpost has a grounded, dusty approach instead of the
+    // bridge's polished deck. These marks are scenery, never collision.
+    const path = ctx.createLinearGradient(0, HORIZON, 0, HEIGHT);
+    path.addColorStop(0, '#8a7b67'); path.addColorStop(1, '#3e4945');
+    ctx.fillStyle = path;
+    ctx.beginPath(); ctx.moveTo(465, HORIZON); ctx.lineTo(495, HORIZON);
+    ctx.lineTo(760, HEIGHT); ctx.lineTo(200, HEIGHT); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#c2aa805c'; ctx.lineWidth = 2;
+    for (const side of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(480 + side * 15, HORIZON);
+      ctx.lineTo(480 + side * 280, HEIGHT); ctx.stroke();
+    }
+    for (let depth = 1; depth <= 6; depth++) {
+      const y = HORIZON + 240 * (1 - 1 / (1 + depth * .65));
+      const half = (y - HORIZON) * 1.16;
+      ctx.strokeStyle = depth % 2 ? '#c3ad8055' : '#233d415e';
+      ctx.beginPath(); ctx.moveTo(480 - half, y);
+      ctx.lineTo(480 + half, y); ctx.stroke();
     }
   }
   // The wireframe perspective grid is decorative; collision is strictly owned by src/spatial.mjs.
@@ -92,8 +121,11 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
     const top = HORIZON - height/2;
     const fog = Math.max(.18, 1 - corrected/12);
     const edge = (Math.floor(distance*10)%4===0) ? 1.04 : 1;
-    const base = hitObject ? (hitObject.type === 'transition' ? [45,117,117] : [43,89,101]) :
-      state.area === 'bridge' ? [73,112,136] : [87,118,118];
+    const base = state.area === 'surface'
+      ? hitObject ? hitObject.type === 'transition' ? [47, 111, 117] : [80, 98, 97]
+        : [118, 108, 94]
+      : hitObject ? hitObject.type === 'transition' ? [45, 117, 117] : [43, 89, 101]
+        : [73, 112, 136];
     ctx.fillStyle = `rgb(${base.map(channel=>Math.round(channel*fog*edge)).join(',')})`;
     ctx.fillRect(col, top, wallColumn+1, height);
     ctx.fillStyle = `rgba(8,19,30,${Math.min(.88, .22 + corrected*.045)})`;
@@ -147,6 +179,53 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
         } else if (Math.floor(along * 12) % 4 === 0) {
           ctx.fillStyle = '#9dbfc32b';
           ctx.fillRect(col, top + height * .30, wallColumn + 1, height * .37);
+        }
+      }
+    }
+    if (state.area === 'surface') {
+      // Outpost masonry and rock strata are attached to the *ray-hit tile*,
+      // so the same structures remain in place when the player turns.
+      const contactX = state.x + .5 + Math.cos(ray) * distance;
+      const contactY = state.y + .5 + Math.sin(ray) * distance;
+      const along = Math.abs(Math.sin(ray)) >= Math.abs(Math.cos(ray))
+        ? contactX - Math.floor(contactX) : contactY - Math.floor(contactY);
+      const seam = along < .055 || along > .945;
+      if (seam) {
+        ctx.fillStyle = '#182e32b8';
+        ctx.fillRect(col, top, wallColumn + 1, height * .83);
+      } else if (hitObject) {
+        // Distinct physical landmarks: science, medical relief, perimeter
+        // warning and transporter, rather than identical anonymous slabs.
+        const accent = hitObject.type === 'transition' ? '#9cebd3'
+          : hitObject.action === 'assist-evacuees' ? '#efc88c'
+          : hitObject.action === 'secure-perimeter' ? '#eaa18a'
+          : hitObject.action === 'extract-sensor-core' ? '#b4b8f0' : '#8dded6';
+        ctx.fillStyle = '#152e36ed';
+        ctx.fillRect(col, top + height * .19, wallColumn + 1, height * .59);
+        if (along > .13 && along < .87) {
+          ctx.fillStyle = '#09212ae8';
+          ctx.fillRect(col, top + height * .28, wallColumn + 1, height * .37);
+          ctx.fillStyle = accent;
+          ctx.fillRect(col, top + height * .33, wallColumn + 1, Math.max(2, height * .024));
+          ctx.fillRect(col, top + height * .60, wallColumn + 1, Math.max(2, height * .018));
+          if (Math.floor(along * 24) % 5 === 0) {
+            ctx.fillStyle = '#b6d6d7a8';
+            ctx.fillRect(col, top + height * .43, wallColumn + 1, height * .085);
+          }
+        }
+        ctx.fillStyle = '#d1bb9870';
+        ctx.fillRect(col, top + height * .74, wallColumn + 1, Math.max(2, height * .017));
+      } else {
+        // Horizontal sediment bands and sparse fissures break the flat walls
+        // without fake interactive props or random texture flicker.
+        const stratum = (hitX * 13 + hitY * 7) % 4;
+        ctx.fillStyle = '#e2c8a326';
+        ctx.fillRect(col, top + height * (.26 + stratum * .025), wallColumn + 1, Math.max(2, height * .016));
+        ctx.fillStyle = '#23383b66';
+        ctx.fillRect(col, top + height * .65, wallColumn + 1, Math.max(2, height * .028));
+        if (Math.floor(along * 19 + hitX * 3 + hitY * 5) % 9 === 0) {
+          ctx.fillStyle = '#263e4088';
+          ctx.fillRect(col, top + height * .36, wallColumn + 1, height * .23);
         }
       }
     }
