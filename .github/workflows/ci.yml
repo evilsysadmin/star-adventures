@@ -42,8 +42,11 @@ jobs:
         run: npm run test:grid --prefix frontend
       - name: Typecheck and bundle
         run: npm run build --prefix frontend
-      - name: Browser journey, keyboard and mobile widths
-        run: npm run test:e2e --prefix frontend
+      # The full 237+ Chrome journeys exceeded this job's 15-minute cap on
+      # the P0 surface visual PR. Both shards are mandatory; this job retains
+      # its original name for the Infra staging source-admission contract.
+      - name: Browser journey, keyboard and mobile widths (shard 1/2)
+        run: npm run test:e2e --prefix frontend -- --shard=1/2
       - name: Upload browser screenshots and lockfile
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,9 +58,33 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  web-browser-rest:
+    name: Remaining Chrome journeys (shard 2/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Verify runner-installed Chrome
+        run: google-chrome --version
+      - name: Browser journey, keyboard and mobile widths (shard 2/2)
+        run: npm run test:e2e --prefix frontend -- --shard=2/2
+      - name: Upload second-shard screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-adventures-react-visual-part2-${{ github.sha }}
+          path: frontend/test-results/*.png
+          if-no-files-found: warn
+          retention-days: 7
+
   infra-staging-notification:
     name: Request Infra-owned staging sync
-    needs: [core, web]
+    needs: [core, web, web-browser-rest]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'evilsysadmin/star-adventures'
     runs-on: ubuntu-latest
     timeout-minutes: 2
