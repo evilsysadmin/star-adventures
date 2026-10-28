@@ -42,7 +42,38 @@ for (const width of [390, 1280]) {
     expect(palette.colors).toBeGreaterThan(35);
     expect(palette.warm).toBeGreaterThan(15);
 
+    // An outdoor view must expose a real rocky horizon, not full-height
+    // room walls. Its silhouette is anchored to heading, not the screen.
+    const readSkyline = () => canvas.evaluate(element => {
+      const context = (element as HTMLCanvasElement).getContext('2d')!;
+      const pixels = context.getImageData(0, 110, 960, 130).data;
+      let ridgePixels = 0;
+      const silhouette: number[] = [];
+      for (let x = 12; x < 948; x += 12) {
+        let first = -1;
+        for (let y = 0; y < 130; y++) {
+          const i = (y * 960 + x) * 4;
+          const distant = pixels[i] === 71 && pixels[i + 1] === 86 && pixels[i + 2] === 98;
+          const nearby = pixels[i] === 85 && pixels[i + 1] === 94 && pixels[i + 2] === 92;
+          if (distant || nearby) {
+            ridgePixels++;
+            if (first === -1) first = y;
+          }
+        }
+        silhouette.push(first);
+      }
+      return { ridgePixels, silhouette };
+    });
+    const northSky = await readSkyline();
+    expect(northSky.ridgePixels).toBeGreaterThan(40);
     const spawn = await canvas.screenshot({ path: `test-results/relief-outpost-spawn-${width}.png` });
+    await page.getByTestId('explore-right').click();
+    const eastSky = await readSkyline();
+    expect(eastSky.ridgePixels).toBeGreaterThan(40);
+    expect(eastSky.silhouette).not.toEqual(northSky.silhouette);
+    await canvas.screenshot({ path: `test-results/relief-outpost-east-sky-${width}.png` });
+    await page.getByTestId('explore-left').click();
+    expect(await readSkyline()).toEqual(northSky);
     await page.getByTestId('explore-forward').click();
     await expect(page.getByTestId('explore-heading')).toContainText('4:4');
     const approach = await canvas.screenshot({ path: `test-results/relief-outpost-approach-${width}.png` });
