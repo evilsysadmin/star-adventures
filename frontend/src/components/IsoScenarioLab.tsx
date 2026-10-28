@@ -368,7 +368,13 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
    </div>
   </div>
   {!fieldEncounter&&<div className="scenario-viewtools">
-   <div className="scenario-mode-select" role="group" aria-label="Tipo de ejercicio táctico">
+   <strong className="scenario-primary-mode" data-testid="scenario-primary-mode">
+    {replayMode?'Combate táctico · disparos, enemigos y negociación':
+     'Modo de pruebas · inicia el combate táctico para jugar'}
+   </strong>
+   <details className="scenario-mode-advanced" data-testid="scenario-mode-advanced">
+    <summary>Otras simulaciones · herramientas de prueba</summary>
+    <div className="scenario-mode-select" role="group" aria-label="Modos históricos de pruebas tácticas">
     <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode&&!combatMode&&!replayMode}
      onClick={()=>switchEncounter('training')}>Entrenamiento</button>
     <button type="button" data-testid="scenario-hostile-toggle" aria-pressed={hostileMode}
@@ -376,8 +382,9 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
     <button type="button" data-testid="scenario-combat-toggle" aria-pressed={combatMode}
      onClick={()=>switchEncounter('combat')}>Combate v3 · daño</button>
     <button type="button" data-testid="scenario-replay-toggle" aria-pressed={replayMode}
-     onClick={()=>switchEncounter('replay')}>Combate jugable · disparos</button>
-   </div>
+     onClick={()=>switchEncounter('replay')}>Combate completo</button>
+    </div>
+   </details>
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
@@ -497,7 +504,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
    <ol>{mission.events.map((event,index)=><li key={index}>{event}</li>)}</ol>
   </details>
   <p className="scenario-disclaimer">{replayMode
-   ?'Combate experimental v4 · selecciona un oficial y después la casilla de un enemigo para disparar. Los disparos consumen una orden, los contactos derrotados desaparecen y el historial sobrevive a F5 en un guardado independiente.'
+   ?'Combate táctico · selecciona un oficial y después a un enemigo para disparar. Los disparos consumen una orden, los contactos derrotados desaparecen y la partida sobrevive a F5.'
    :combatMode
    ?'Combate experimental v3 · los contactos adyacentes causan un punto de daño al terminar el turno. Un oficial a 0 PV termina el encuentro. Sin contraataques ni curación todavía. Guardado independiente de v1, v2 y la campaña.'
    :hostileMode

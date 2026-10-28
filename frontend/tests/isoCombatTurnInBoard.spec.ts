@@ -1,3 +1,11 @@
+// Historical variants remain available only under explicit QA tools.
+async function chooseLegacyMode(page: import('@playwright/test').Page, id:string){
+ const details=page.getByTestId('scenario-mode-advanced');
+ if((await details.getAttribute('open'))===null)
+  await details.locator('summary').click();
+ await page.getByTestId(id).click();
+}
+
 import { test, expect } from '@playwright/test';
 
 // The playable combat loop must keep BOTH decisive turn actions at the board:
@@ -44,7 +52,7 @@ for (const width of [360, 390, 1280]) {
 
   // Only the playable v4 firefight moves End Turn into the scene. Legacy
   // training retains the original action row and never gets duplicate buttons.
-  await page.getByTestId('scenario-training-toggle').click();
+  await chooseLegacyMode(page,'scenario-training-toggle');
   await expect(page.getByTestId('scenario-end-turn')).toHaveCount(1);
   await expect(page.getByTestId('scenario-end-turn')).not.toHaveClass(/scenario-turn-overlay/);
   await expect(page.locator('.scenario-orders').getByTestId('scenario-end-turn')).toBeVisible();

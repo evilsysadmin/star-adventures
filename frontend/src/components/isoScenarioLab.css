@@ -219,3 +219,27 @@
 @media(min-width:1001px){
  .bridge-layout:has(.scenario-lab){grid-template-columns:minmax(0,1.75fr) minmax(330px,.65fr)}
 }
+
+
+/* One playable tactical mode; historical simulators stay opt-in and
+   keyboard-accessible for QA instead of competing with the actual game. */
+.scenario-primary-mode{
+ grid-column:1/-1;display:block;min-width:0;
+ font:700 12px/1.5 'Space Grotesk',sans-serif;color:#e9dfba;
+}
+.scenario-viewtools .scenario-mode-advanced{
+ grid-column:1/-1;min-width:0;border-top:1px solid #375562;margin-top:2px;
+ color:#9ec5c4;
+}
+.scenario-mode-advanced>summary{
+ display:list-item;cursor:pointer;min-height:44px;padding:12px 3px;
+ font:600 11px/1.6 'Space Grotesk',sans-serif;
+}
+.scenario-mode-advanced>summary:focus-visible{
+ outline:2px solid #f0d597;outline-offset:2px;
+}
+.scenario-mode-advanced .scenario-mode-select{padding:4px 0 7px}
+@media(max-width:520px){
+ .scenario-primary-mode{font-size:11px}
+ .scenario-mode-advanced>summary{font-size:10px}
+}
