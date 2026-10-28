@@ -148,3 +148,20 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
   .mission-transmission-route>span{font-size:9px;padding:6px 4px;gap:4px}
   .mission-transmission-route>span>span{width:16px;height:16px;font-size:8px}
 }
+
+
+/* Mission wayfinding uses real blocked-tile paths; never a decorative teleport. */
+.firstperson-waypoint{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px 14px;
+  padding:10px 14px;border-top:1px solid #456a70;border-bottom:1px solid #294b57;
+  background:linear-gradient(100deg,#193b46,#0d2533);min-width:0;
+}
+.firstperson-waypoint-label{min-width:0;color:#b7d9d5;font:700 10px/1.4 'Space Grotesk',sans-serif;letter-spacing:.045em}
+.firstperson-waypoint strong{color:#f5d29b;font:700 12px/1.3 'Space Grotesk',sans-serif;white-space:nowrap}
+.firstperson-waypoint-steps{color:#94b9b9;font:600 10px/1.4 'DM Sans',sans-serif;white-space:nowrap}
+@media(max-width:520px){
+  .firstperson-waypoint{grid-template-columns:minmax(0,1fr) auto;padding:9px 10px;gap:4px 9px}
+  .firstperson-waypoint-label{font-size:9px;grid-column:1/-1}
+  .firstperson-waypoint strong{font-size:11px}
+  .firstperson-waypoint-steps{font-size:9px}
+}
