@@ -104,6 +104,7 @@
 .scenario-debrief .scenario-success{border:0;padding:0;background:transparent}
 .scenario-debrief .scenario-debrief-scope{color:#abc8c6}
 .scenario-debrief button{margin-top:9px;padding:11px 16px;min-height:44px;background:#275a50;border:1px solid #94d7b4;color:#e9f6e7;font-weight:700}
+.scenario-debrief .scenario-resume-rescue{display:block;width:100%;min-height:48px;background:#e2c68d;border-color:#ffe7ad;color:#152e30;font-size:13px;text-align:center}
 .scenario-training-records{margin:10px 17px;border:1px solid #476b66;background:#11312f}
 .scenario-training-records summary{padding:12px;cursor:pointer;color:#c5e4d7;font-size:11px}
 .scenario-training-records ul{padding:0 16px 0 33px;font-size:11px;line-height:1.9}

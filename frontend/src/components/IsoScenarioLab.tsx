@@ -32,7 +32,7 @@ const officers: readonly {id:SquadId;name:string;role:string}[]=[
 ];
 const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 
-export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEncounter?:boolean;onFieldResolved?:(result:'truce'|'victory')=>void}={}){
+export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToSurface}:{fieldEncounter?:boolean;onFieldResolved?:(result:'truce'|'victory')=>void;onReturnToSurface?:()=>void}={}){
  const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
  const [history,setHistory]=useState(startup.history);
  const [hostileStartup]=useState(()=>restoreHostileEncounterSession(localStorageOrNull()));
@@ -465,8 +465,13 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
   <p className="scenario-notice" data-testid="scenario-notice" role="status">{notice}</p>
   {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
-   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':replay?.truce?'Alto el fuego acordado · completa objetivos y solicita extracción':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
-   <p>{fieldEncounter?'Contacto resuelto para esta incursión. Regresa a explorar o completa los objetivos tácticos.':'Estado reconstruido del encuentro '+(replayMode?'v4':'v3')+'; no modifica el entrenamiento ni la campaña.'}</p>
+   <strong>{combat.failed?'Escuadra incapacitada · combate terminado':fieldEncounter
+    ?replay?.truce?'Alto el fuego acordado · continúa el rescate':replay?.victory?'Perímetro asegurado · continúa el rescate':'Incursión táctica finalizada · continúa el rescate'
+    :mission.completed?'Extracción confirmada · misión completada':replay?.truce?'Alto el fuego acordado · completa objetivos y solicita extracción':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
+   <p>{fieldEncounter?(combat.failed?'La escuadra ha caído. El perímetro sigue siendo peligroso.':'El encuentro táctico ha terminado, pero los civiles aún necesitan asistencia médica en el puesto de socorro. Puedes continuar sin completar más objetivos del tablero.'):'Estado reconstruido del encuentro '+(replayMode?'v4':'v3')+'; no modifica el entrenamiento ni la campaña.'}</p>
+   {fieldEncounter&&!combat.failed&&(replay?.truce||replay?.victory||mission.completed)&&onReturnToSurface&&
+    <button type="button" className="scenario-resume-rescue" data-testid="scenario-resume-rescue"
+     onClick={onReturnToSurface}>Continuar rescate en superficie ↩</button>}
    <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
   </section>}
   <div className="scenario-objectives" data-testid="scenario-objectives">
