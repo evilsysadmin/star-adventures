@@ -4,14 +4,43 @@ import { createIsoCamera } from '../src/tacticalIsoCamera';
 import { createIsoDetailCamera } from '../src/tacticalIsoFocus';
 import { SCENARIOS, createMission, missionPath, applyMissionAction, type SquadId, type MissionAction } from '../src/isoScenarioCampaign';
 
-test('the playable tactical mission loop is the initial tactical view', async ({ page }) => {
+test('first-time bridge mission leads, and optional tactics opens the playable mission', async ({ page }) => {
  await page.setViewportSize({width:390,height:850});
  await page.addInitScript(() => localStorage.removeItem('shadowops.star-adventures.tactical-view.v1'));
  await page.goto('/');
+ await expect(page.getByTestId('mission-phase')).toHaveText('TRANSMISIÓN ENTRANTE');
+ await expect(page.getByTestId('tactical-lab-toggle')).toHaveAttribute('aria-expanded','false');
+ await expect(page.getByTestId('scenario-lab')).not.toBeVisible();
+ await page.getByTestId('tactical-lab-toggle').click();
  await expect(page.getByTestId('scenario-lab')).toBeVisible();
  await expect(page.getByTestId('scenario-move')).toBeVisible();
  await page.screenshot({path:'test-results/scenario-initial-390.png',fullPage:true});
 });
+
+for (const width of [390, 1280]) {
+ test(`bridge and rescue remain the main playable scene until tactical opt-in at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:width === 390 ? 850 : 820});
+  await page.addInitScript(() => localStorage.removeItem('shadowops.star-adventures.tactical-view.v1'));
+  await page.goto('/');
+  await expect(page.getByTestId('mission-transmission')).toBeVisible();
+  await expect(page.getByTestId('explore-area')).toContainText('Puente de mando');
+  await expect(page.getByTestId('tactical-lab-toggle')).toBeVisible();
+  await expect(page.getByTestId('tactical-lab-content')).toHaveCount(0);
+  const compactHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.screenshot({path:`test-results/bridge-first-compact-${width}.png`,fullPage:true});
+  await page.getByTestId('explore-right').click();
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO E');
+  await page.getByTestId('tactical-lab-toggle').click();
+  await expect(page.getByTestId('scenario-render-canvas')).toBeVisible();
+  const expandedHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  expect(expandedHeight - compactHeight).toBeGreaterThan(200);
+  await page.screenshot({path:`test-results/bridge-first-optional-tactics-${width}.png`,fullPage:true});
+  await page.getByTestId('tactical-lab-toggle').click();
+  await expect(page.getByTestId('tactical-lab-content')).toHaveCount(0);
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO E');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+ });
+}
 
 async function openMissions(page:Page,width:number) {
  await page.setViewportSize({width,height:850});
