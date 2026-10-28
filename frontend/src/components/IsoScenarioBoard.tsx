@@ -517,6 +517,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     actor.hitRing.visible=false;
     actor.hitRing.scale.setScalar(1);
     if(actor.idle){actor.sprite.material.map=actor.idle;actor.sprite.material.needsUpdate=true;}
+    delete canvas.dataset['squadHitUv'+id[0].toUpperCase()+id.slice(1)];
    }
    officerHitMotion=null;
    delete canvas.dataset.squadHitUnits;
@@ -721,8 +722,13 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
        if(actor.sprite.material.map!==actor.hit){
         actor.sprite.material.map=actor.hit;actor.sprite.material.needsUpdate=true;
        }
-       const uv=walkFrameUv(frame);
+       // Keep the wounded officer facing the direction of its last action.
+       // Each officer owns an independent hit atlas, not a shared UV state.
+       const uv=mirroredAtlasUv(frame,actor.sprite.userData.mirror===true,
+        HIT_ATLAS.columns,HIT_ATLAS.rows);
+       actor.hit.repeat.set(uv.repeatX,uv.repeatY);
        actor.hit.offset.set(uv.x,uv.y);
+       canvas.dataset['squadHitUv'+id[0].toUpperCase()+id.slice(1)]=String(actor.hit.repeat.x);
       }
       actor.hitRing.visible=true;
       actor.hitRing.scale.setScalar(1+.2*Math.sin(Math.PI*elapsed/(HIT_ATLAS.frames*OFFICER_HIT_FRAME_MS)));
