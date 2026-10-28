@@ -1,0 +1,110 @@
+/* P0: once a real firefight is active, put the map and its commands ahead
+   of repeated briefings on narrow screens. :has() keys off the actual live
+   Fire control, not a saved preference or a synthetic "playing" flag.
+   The story, mission title, objectives and accessible grid remain available. */
+@media (max-width: 520px) {
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-head {
+    padding: 9px 11px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-head h2 {
+    font-size: 17px;
+    margin: 3px 0 0;
+  }
+  /* The full instructions are repeated in the actionable fire guide below. */
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-head > p {
+    display: none;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-selector {
+    padding: 5px 7px;
+    gap: 4px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-selector button {
+    min-height: 44px;
+    padding: 6px 4px;
+    justify-content: center;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-selector button span {
+    display: none;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-briefing {
+    padding: 8px 10px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-briefing h3 {
+    margin: 2px 0;
+    font-size: 14px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-briefing p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.35;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-turn {
+    gap: 2px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-viewtools {
+    padding: 6px 10px;
+    gap: 4px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-primary-mode {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-mode-advanced > summary {
+    min-height: 36px;
+    padding: 7px 3px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-viewtools > button {
+    min-height: 44px;
+    padding: 7px;
+    font-size: 10px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-fire-guide {
+    padding: 6px 9px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-roster {
+    padding: 6px;
+    gap: 4px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-roster button {
+    min-height: 58px;
+    padding: 6px 5px;
+    gap: 2px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-roster button span {
+    display: none;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-roster small {
+    font-size: 10px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-viewport {
+    height: clamp(340px, 100vw, 410px);
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-cell-bar {
+    padding: 7px 10px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-cell-bar strong {
+    font-size: 17px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-legend {
+    gap: 6px;
+    font-size: 9px;
+  }
+  /* Six actual actions remain visible at once, in two rows instead of
+     three. Buttons grow naturally if a translated label needs more lines. */
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-orders {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 8px;
+  }
+  .scenario-lab:has(.scenario-fire-overlay) .scenario-orders button {
+    min-height: 64px;
+    padding: 7px 3px;
+    font-size: 9px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+}
