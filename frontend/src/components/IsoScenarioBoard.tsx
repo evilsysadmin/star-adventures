@@ -385,7 +385,11 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      const visual=squad.get(officer.id)!;
      // Independent UVs: changing this officer must not mirror the other two.
      const isolated=texture.clone();isolated.needsUpdate=true;
+     // The CDN may finish loading after an instant/reduced-motion turn.
+     // Adopt that officer's persisted visual bearing on first paint.
+     if(visual.sprite.userData.mirror===true){isolated.repeat.x=-1;isolated.offset.x=1;}
      visual.idle=isolated;textures.push(isolated);
+     canvas.dataset[`spriteIdleUv${officer.id[0].toUpperCase()+officer.id.slice(1)}`]=String(isolated.repeat.x);
      visual.sprite.material.map=isolated;
      visual.sprite.material.needsUpdate=true;
      visual.sprite.visible=true;
@@ -483,7 +487,15 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const texture=loader.load(assets.assets[key].url,()=>{
      if(disposed)return;
      visual[clip]=texture;
-     if(clip==='idle'){sprite.material.map=texture;sprite.material.needsUpdate=true;}
+     if(clip==='idle'){
+      if(sprite.userData.mirror===true){
+       const uv=mirroredAtlasUv(0,true);
+       texture.repeat.set(uv.repeatX,uv.repeatY);
+       texture.offset.set(uv.x,uv.y);
+      }
+      sprite.material.map=texture;sprite.material.needsUpdate=true;
+      canvas.dataset[`hostileIdleUv${hostile.id[0].toUpperCase()+hostile.id.slice(1)}`]=String(texture.repeat.x);
+     }
      render();
     },undefined,()=>{if(!disposed)render();});
     texture.colorSpace=THREE.SRGBColorSpace;
@@ -811,7 +823,15 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      const before=previous[hostile.id],after=h[hostile.id];
      if(before===after||hp?.[hostile.id]===0)continue;
      const p=atCell(after,scenario.size);
-     placeFacing(hostileVisuals.get(hostile.id)!.facing,p.x,p.z,before,after,hostile.id);
+     const visual=hostileVisuals.get(hostile.id)!;
+     const side=isoSpriteSideFromCells(before,after);
+     if(side!==null){
+      visual.sprite.userData.mirror=side==='left';
+      showFrame(visual,'idle',0);
+      canvas.dataset[`spriteFacing${hostile.id[0].toUpperCase()+hostile.id.slice(1)}`]=side;
+      if(visual.idle)canvas.dataset[`hostileIdleUv${hostile.id[0].toUpperCase()+hostile.id.slice(1)}`]=String(visual.idle.repeat.x);
+     }
+     placeFacing(visual.facing,p.x,p.z,before,after,hostile.id);
     }
    }
    if(!reduceMotion&&!document.hidden&&previousMission){
@@ -846,7 +866,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      const before=previousMission.locations[unit.id],after=m.locations[unit.id];
      if(before===after)continue;
      const p=atCell(after,scenario.size);
-     placeFacing(squad.get(unit.id)!.facing,p.x,p.z,before,after,unit.id);
+     const visual=squad.get(unit.id)!;
+     const side=isoSpriteSideFromCells(before,after);
+     if(side!==null){
+      const mirror=side==='left';
+      visual.sprite.userData.mirror=mirror;
+      if(visual.idle){
+       visual.idle.repeat.x=mirror?-1:1;
+       visual.idle.offset.x=mirror?1:0;
+       canvas.dataset[`spriteIdleUv${unit.id[0].toUpperCase()+unit.id.slice(1)}`]=String(visual.idle.repeat.x);
+      }
+      canvas.dataset[`spriteFacing${unit.id[0].toUpperCase()+unit.id.slice(1)}`]=side;
+     }
+     placeFacing(visual.facing,p.x,p.z,before,after,unit.id);
     }
    }
    view={mission:m,selected:s,focus:f,route:r,hostilePositions:h,hostileHealth:hp,shot:firing,officerHit:incomingHit,aimPreview:nextAim};
