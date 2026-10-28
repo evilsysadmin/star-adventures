@@ -37,6 +37,10 @@ for (const width of [360, 390, 430]) {
     expect(canvas!.y).toBeLessThan(viewTools!.y);
     const orders = await page.locator('.scenario-orders').boundingBox();
     expect(orders!.y).toBeLessThan(afterSelector!.y);
+    const notice = await page.getByTestId('scenario-notice').boundingBox();
+    const objectives = await page.getByTestId('scenario-objectives').boundingBox();
+    expect(notice!.y).toBeLessThan(afterSelector!.y);
+    expect(objectives!.y).toBeLessThan(afterSelector!.y);
 
     const columns = await page.locator('.scenario-orders').evaluate(el =>
       getComputedStyle(el).gridTemplateColumns.split(' ').length);
