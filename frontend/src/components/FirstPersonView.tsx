@@ -22,18 +22,36 @@ const HEIGHT = 480;
 // It never participates in the walkability, targeting or interaction model.
 function drawSurfaceSkyline(ctx: CanvasRenderingContext2D, heading: string) {
   const angle = ANGLES[HEADINGS.indexOf(heading)];
+  // A fixed celestial bearing makes the sky legible as a place: the pale
+  // satellite appears above the northern ridge and disappears when facing E.
+  const northBearing = -Math.PI / 2;
+  const delta = Math.atan2(Math.sin(northBearing - angle), Math.cos(northBearing - angle));
+  const halfFov = Math.PI / 5.4;
+  if (Math.abs(delta) < halfFov + .08) {
+    const moonX = WIDTH / 2 + delta / halfFov * WIDTH / 2;
+    const glow = ctx.createRadialGradient(moonX, 100, 8, moonX, 100, 78);
+    glow.addColorStop(0, '#d4d2c1a8');
+    glow.addColorStop(.45, '#a3b9b15c');
+    glow.addColorStop(1, '#a3b9b100');
+    ctx.fillStyle = glow;
+    ctx.fillRect(moonX - 78, 22, 156, 156);
+    ctx.fillStyle = '#d4d1b7';
+    ctx.beginPath(); ctx.arc(moonX, 100, 23, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#aeb5aa55';
+    ctx.beginPath(); ctx.arc(moonX - 7, 95, 7, 0, Math.PI * 2); ctx.fill();
+  }
   for (const layer of [
-    { base: 49, color: '#475662', phase: .6 },
-    { base: 23, color: '#555e5c', phase: 2.1 },
+    { base: 88, color: '#536574', phase: .6 },
+    { base: 36, color: '#59625e', phase: 2.1 },
   ]) {
     ctx.fillStyle = layer.color;
     ctx.beginPath();
     ctx.moveTo(0, HORIZON);
     for (let x = 0; x <= WIDTH; x += 6) {
       const bearing = angle + (x / WIDTH - .5) * (Math.PI / 2.7);
-      const ridge = 15 * Math.sin(bearing * 3 + layer.phase)
-        + 8 * Math.sin(bearing * 9 - layer.phase)
-        + 4 * Math.sin(bearing * 17 + layer.phase);
+      const ridge = 24 * Math.sin(bearing * 3 + layer.phase)
+        + 14 * Math.sin(bearing * 9 - layer.phase)
+        + 7 * Math.sin(bearing * 17 + layer.phase);
       ctx.lineTo(x, HORIZON - layer.base - ridge);
     }
     ctx.lineTo(WIDTH, HORIZON);
