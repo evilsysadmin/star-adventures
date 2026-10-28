@@ -14,27 +14,51 @@ for (const width of [390, 1280]) {
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute('data-officer-hit-atlases-ready','3',{timeout:25_000});
 
-  const commands:CombatReplayAction[]=[];
+  // Legitimate WESTWARD moves put every officer on the reflected side.
+  // The subsequent enemy retaliation must not snap any wounded sprite right.
+  const orders:CombatReplayAction[]=[
+   {type:'move',officer:'science',cell:'0:1'},
+   {type:'move',officer:'security',cell:'0:4'},
+   {type:'move',officer:'medic',cell:'0:7'},
+  ];
+  const grid=page.getByTestId('scenario-accessible-grid');
+  await grid.locator('summary').click();
+  for(const order of orders){
+   if(order.type!=='move')throw new Error('Expected move');
+   await page.getByTestId('scenario-unit-'+order.officer).click();
+   await page.getByRole('button',{name:'Casilla '+order.cell,exact:true}).click();
+   await expect(page.getByTestId('scenario-move')).toBeEnabled();
+   await page.getByTestId('scenario-move').click();
+   await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:10000});
+   await expect(canvas).toHaveAttribute('data-sprite-facing-'+order.officer,'left');
+  }
+  const commands:CombatReplayAction[]=[...orders];
   let state=replayCombatCommands('relay',commands);
-  while(commands.length<60 && state.combat.encounter.hits.length===0){
+  while(commands.length<orders.length+60 && state.combat.encounter.hits.length===0){
    commands.push({type:'end-turn'});
    state=replayCombatCommands('relay',commands);
   }
   const hits=state.combat.encounter.hits;
   expect(hits.length,'relay encounter must have a real enemy retaliation').toBeGreaterThan(0);
-  for(const command of commands){
+  for(const command of commands.slice(orders.length)){
    expect(command.type).toBe('end-turn');
    await page.getByTestId('scenario-end-turn').click();
   }
   const wounded=[...new Set(hits.map(hit=>hit.officer))].join(',');
   await expect(canvas).toHaveAttribute('data-squad-hit-units',wounded,{timeout:2500});
   await expect(canvas).toHaveAttribute('data-squad-hit-frame',/^[1-4]$/,{timeout:2500});
+  // All three officers really walked left; the wounded hit atlas must preserve
+  // negative repeat.x even when the impact advances between animation frames.
+  for(const officer of new Set(hits.map(hit=>hit.officer)))
+   await expect(canvas).toHaveAttribute('data-squad-hit-uv-'+officer,String(-1/3));
   await canvas.screenshot({path:`test-results/officer-hit-canvas-${width}.png`});
   await page.screenshot({path:`test-results/officer-hit-page-${width}.png`,fullPage:true});
   for(const id of ['science','security','medic'] as const)
    await expect(page.getByTestId('scenario-hp-'+id)).toHaveText(
     `PV ${state.combat.encounter.health[id]} / 3`);
   await expect(canvas).not.toHaveAttribute('data-squad-hit-units',/./,{timeout:5000});
+  for(const officer of new Set(hits.map(hit=>hit.officer)))
+   await expect(canvas).not.toHaveAttribute('data-squad-hit-uv-'+officer,/./);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
   await page.getByTestId('scenario-play-combat').click();
