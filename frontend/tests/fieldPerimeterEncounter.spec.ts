@@ -44,6 +44,11 @@ for (const width of [390, 1280]) {
 
     await page.getByTestId('field-encounter-return').click();
     await expect(page.getByTestId('field-encounter-scene')).toHaveCount(0);
+    // Returning from a scrolled tactical board must not strand the player
+    // halfway down the mobile journal, with exploration offscreen.
+    await expect(page.getByTestId('mission-transmission')).toBeInViewport();
+    await expect(page.getByTestId('explore-area')).toBeInViewport();
+    await expect(page.getByTestId('explore-forward')).toBeFocused();
     await expect(page.getByTestId('explore-heading')).toContainText('6:5');
     await expect(page.getByTestId('explore-target')).toContainText('Baliza de seguridad');
     await expect(page.getByTestId('field-resolution')).toHaveCount(0);
@@ -83,5 +88,8 @@ test('a real tactical ceasefire updates the optional field objective without fab
   await page.getByTestId('field-encounter-return').click();
   await expect(page.getByTestId('explore-heading')).toContainText('6:5');
   await expect(page.getByTestId('field-resolution')).toContainText('Alto el fuego negociado');
+  await expect(page.getByTestId('field-resolution')).toBeInViewport();
+  await expect(page.getByTestId('explore-area')).toBeInViewport();
+  await expect(page.getByTestId('explore-forward')).toBeFocused();
   await page.screenshot({ path: 'test-results/field-truce-390.png', fullPage: false });
 });
