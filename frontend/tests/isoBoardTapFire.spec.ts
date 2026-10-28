@@ -63,6 +63,10 @@ for(const width of [390,1280]){
   await expect(canvas).toHaveAttribute('data-shot-sequence','1');
   await expect(canvas).toHaveAttribute('data-shot-from','5:6');
   await expect(canvas).toHaveAttribute('data-shot-to','6:6');
+  // Firing must turn the actual Security sprite toward Aegis and preserve
+  // the authored fire atlas UV, not keep the last walking direction.
+  await expect(canvas).toHaveAttribute('data-sprite-facing-security','right');
+  await expect(canvas).toHaveAttribute('data-fire-sprite-uv-x',String(1/3));
   // Actual canvas reaction must reach the target promptly, not after the old
   // 640 ms tracer. Keep a real impact frame as mobile/desktop visual evidence.
   await expect(canvas).toHaveAttribute('data-shot-phase','impact',{timeout:1500});
