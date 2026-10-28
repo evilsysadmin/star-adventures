@@ -31,6 +31,34 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
   const floor = ctx.createLinearGradient(0, HORIZON, 0, HEIGHT);
   floor.addColorStop(0, '#1d313c'); floor.addColorStop(1, '#09141e');
   ctx.fillStyle = floor; ctx.fillRect(0, HORIZON, WIDTH, HEIGHT);
+  if (state.area === 'bridge') {
+    // A deck, not an infinite wireframe: perspective walkway and ceiling
+    // light wells are decorative only. Navigation stays in spatial.mjs.
+    const deck = ctx.createLinearGradient(0, HORIZON, 0, HEIGHT);
+    deck.addColorStop(0, '#223e4c'); deck.addColorStop(1, '#0d202b');
+    ctx.fillStyle = deck;
+    ctx.beginPath();
+    ctx.moveTo(449, HORIZON); ctx.lineTo(511, HORIZON);
+    ctx.lineTo(826, HEIGHT); ctx.lineTo(134, HEIGHT);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#bda77b70'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(449, HORIZON); ctx.lineTo(134, HEIGHT);
+    ctx.moveTo(511, HORIZON); ctx.lineTo(826, HEIGHT); ctx.stroke();
+    ctx.fillStyle = '#162d3b';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(960, 0);
+    ctx.lineTo(730, 67); ctx.lineTo(230, 67); ctx.closePath(); ctx.fill();
+    for (let depth = 1; depth <= 4; depth++) {
+      const perspective = 1 / (1 + depth * .72);
+      const y = HORIZON - 215 * perspective;
+      const halfWidth = 90 + 400 * perspective;
+      ctx.strokeStyle = depth % 2 ? '#5c899480' : '#bda77b55';
+      ctx.lineWidth = Math.max(2, 9 * perspective);
+      ctx.beginPath(); ctx.moveTo(WIDTH / 2 - halfWidth, y);
+      ctx.lineTo(WIDTH / 2 + halfWidth, y); ctx.stroke();
+      ctx.fillStyle = '#a8dcd7a8';
+      ctx.fillRect(WIDTH / 2 - 24 * perspective, y - 2, 48 * perspective, 3);
+    }
+  }
   // The wireframe perspective grid is decorative; collision is strictly owned by src/spatial.mjs.
   ctx.strokeStyle = '#9dbfc619'; ctx.lineWidth = 2;
   for (let n = -8; n <= 8; n++) {
@@ -70,6 +98,58 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
     ctx.fillRect(col, top, wallColumn+1, height);
     ctx.fillStyle = `rgba(8,19,30,${Math.min(.88, .22 + corrected*.045)})`;
     ctx.fillRect(col, top+height*.83, wallColumn+1, height*.17);
+    if (state.area === 'bridge') {
+      // Every strip is attached to the ray-hit cell. Turning and walking
+      // therefore reveal the same architectural panels from new angles.
+      const contactX = state.x + .5 + Math.cos(ray) * distance;
+      const contactY = state.y + .5 + Math.sin(ray) * distance;
+      const along = Math.abs(Math.sin(ray)) >= Math.abs(Math.cos(ray))
+        ? contactX - Math.floor(contactX) : contactY - Math.floor(contactY);
+      const rib = along < .07 || along > .93;
+      const trim = Math.max(2, height * .018);
+      if (rib) {
+        ctx.fillStyle = '#0a1b28d9';
+        ctx.fillRect(col, top, wallColumn + 1, height * .83);
+      } else {
+        ctx.fillStyle = '#b5a17988';
+        ctx.fillRect(col, top + height * .18, wallColumn + 1, trim);
+        ctx.fillStyle = '#6d9fa477';
+        ctx.fillRect(col, top + height * .78, wallColumn + 1, trim);
+        if (hitObject?.type === 'station') {
+          // Recessed display and readable illuminated controls replace the
+          // solid, full-height teal slab seen on the initial bridge.
+          if (along > .13 && along < .87) {
+            ctx.fillStyle = '#061923ed';
+            ctx.fillRect(col, top + height * .27, wallColumn + 1, height * .37);
+            ctx.fillStyle = '#164354';
+            ctx.fillRect(col, top + height * .30, wallColumn + 1, height * .25);
+            ctx.fillStyle = hitObject.action === 'tactical' ? '#e5a17b' : '#78d9c8';
+            ctx.fillRect(col, top + height * .43, wallColumn + 1, Math.max(2, height * .017));
+            if (Math.floor(along * 30) % 5 === 0) {
+              ctx.fillStyle = '#b7e7d5b0';
+              ctx.fillRect(col, top + height * .33, wallColumn + 1, height * .065);
+            }
+          }
+          ctx.fillStyle = '#d1b68c';
+          ctx.fillRect(col, top + height * .67, wallColumn + 1, Math.max(2, height * .02));
+          if (Math.floor(along * 22) % 3 === 0) {
+            ctx.fillStyle = '#70b6b1';
+            ctx.fillRect(col, top + height * .70, wallColumn + 1, height * .035);
+          }
+        } else if (hitObject?.type === 'transition') {
+          if (along > .14 && along < .86) {
+            ctx.fillStyle = '#0b303c';
+            ctx.fillRect(col, top + height * .25, wallColumn + 1, height * .48);
+            ctx.fillStyle = '#8ee5d1';
+            ctx.fillRect(col, top + height * .30, wallColumn + 1, Math.max(2, height * .018));
+            ctx.fillRect(col, top + height * .67, wallColumn + 1, Math.max(2, height * .018));
+          }
+        } else if (Math.floor(along * 12) % 4 === 0) {
+          ctx.fillStyle = '#9dbfc32b';
+          ctx.fillRect(col, top + height * .30, wallColumn + 1, height * .37);
+        }
+      }
+    }
     if(hitObject && Math.floor(hitX+hitY)%2===0) {
       ctx.fillStyle = hitObject.type === 'transition' ? '#7be3d2' : '#f0cc8c';
       ctx.globalAlpha = Math.max(.12, Math.min(.65, fog));
