@@ -697,8 +697,12 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      if(actor.sprite.material.map!==actor.fire){
       actor.sprite.material.map=actor.fire;actor.sprite.material.needsUpdate=true;
      }
-     const uv=walkFrameUv(frame);
+     // The firing atlas must face the accepted target, not the last walk step.
+     // These are mirrored poses of one authored view, not invented directions.
+     const uv=mirroredAtlasUv(frame,actor.sprite.userData.mirror===true);
+     actor.fire.repeat.x=uv.repeatX;
      actor.fire.offset.set(uv.x,uv.y);
+     canvas.dataset.fireSpriteUvX=String(actor.fire.repeat.x);
      canvas.dataset.fireUnit=fireMotion.officer;
      canvas.dataset.fireFrame=String(frame);
     }
@@ -863,7 +867,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     canvas.dataset.shotFrom=firing.from;
     canvas.dataset.shotTo=firing.to;
     const shooterCell=atCell(firing.from,scenario.size);
-    placeFacing(squad.get(firing.officer)!.facing,shooterCell.x,shooterCell.z,firing.from,firing.to,firing.officer);
+    const shooter=squad.get(firing.officer)!;
+    const shotSide=isoSpriteSideFromCells(firing.from,firing.to);
+    if(shotSide!==null){
+     const mirrored=shotSide==='left';
+     shooter.sprite.userData.mirror=mirrored;
+     // Returning to idle after the burst must retain the same target bearing.
+     if(shooter.idle){
+      shooter.idle.repeat.x=mirrored?-1:1;
+      shooter.idle.offset.x=mirrored?1:0;
+     }
+     canvas.dataset[`spriteFacing${firing.officer[0].toUpperCase()+firing.officer.slice(1)}`]=shotSide;
+    }
+    placeFacing(shooter.facing,shooterCell.x,shooterCell.z,firing.from,firing.to,firing.officer);
     if(!reduceMotion&&!document.hidden){
      fireMotion={officer:firing.officer,started:performance.now()};
      const from=atCell(firing.from,scenario.size),to=atCell(firing.to,scenario.size);
