@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { IsoScenarioBoard } from './IsoScenarioBoard';
 import {
  SCENARIOS, MAX_MOVE_STEPS, applyMissionAction, missionPath, nextMissionWaypoint,
@@ -69,6 +69,16 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
  const nextShotId=useRef(0);
  // The explicit Play action should reveal the playable board immediately.
  const boardRef=useRef<HTMLDivElement>(null);
+ // A physical surface interaction must reveal the actual playable board,
+ // not strand the player above a long tactical briefing on mobile.
+ useEffect(()=>{
+  if(!fieldEncounter)return;
+  const frame=requestAnimationFrame(()=>{
+   boardRef.current?.scrollIntoView({block:'center',behavior:'auto'});
+   boardRef.current?.focus({preventScroll:true});
+  });
+  return ()=>cancelAnimationFrame(frame);
+ },[fieldEncounter]);
  // Only accepted live enemy turns trigger presentation. Replaying an F5 save
  // restores health but never replays a wound as if it had just happened.
  const [officerHit,setOfficerHit]=useState<{id:number;officers:readonly SquadId[]}|null>(null);
