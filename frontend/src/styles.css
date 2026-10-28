@@ -198,3 +198,24 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
   .mission-return-facts{font-size:10px;gap:5px 12px}
   .mission-return-report button{width:100%}
 }
+
+
+/* P0: make first-person exploration the hero on narrow screens. Preserve
+   the 960x480 render's proportions: crop the peripheral edges instead of
+   stretching the raycaster, and let the accessible HTML HUD replace the
+   canvas's cropped corner labels. Navigation and target IDs are unchanged. */
+@media(max-width:600px){
+  .firstperson-canvas{
+    height:clamp(250px,70vw,310px);
+    aspect-ratio:auto;
+    object-fit:cover;
+    object-position:center center;
+  }
+  .firstperson-hud{
+    position:relative;
+    z-index:1;
+    margin-top:-26px;
+    min-height:48px;
+    background:#132836;
+  }
+}
