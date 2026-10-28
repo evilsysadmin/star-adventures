@@ -54,8 +54,8 @@ for (const width of [390, 1280]) {
         let first = -1;
         for (let y = 0; y < 130; y++) {
           const i = (y * 960 + x) * 4;
-          const distant = pixels[i] === 71 && pixels[i + 1] === 86 && pixels[i + 2] === 98;
-          const nearby = pixels[i] === 85 && pixels[i + 1] === 94 && pixels[i + 2] === 92;
+          const distant = pixels[i] === 83 && pixels[i + 1] === 101 && pixels[i + 2] === 116;
+          const nearby = pixels[i] === 89 && pixels[i + 1] === 98 && pixels[i + 2] === 94;
           if (distant || nearby) {
             ridgePixels++;
             if (first === -1) first = y;
