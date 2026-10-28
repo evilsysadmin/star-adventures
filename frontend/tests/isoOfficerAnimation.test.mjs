@@ -95,3 +95,21 @@ test('consecutive legal movement orders extend the active route instead of jumpi
     assert.equal(sample.progress, .5);
   }
 });
+
+// A two-tile route must keep moving through its corner instead of stopping
+// for a full ease-out/ease-in at the intermediate cell.
+test('officer retains walking speed through an intermediate BFS corner', () => {
+  const route = ['1:1', '2:1', '2:2'];
+  const delta = 16;
+  const before = officerRouteStepAt(route, OFFICER_ROUTE_STEP_MS - delta);
+  const corner = officerRouteStepAt(route, OFFICER_ROUTE_STEP_MS);
+  const after = officerRouteStepAt(route, OFFICER_ROUTE_STEP_MS + delta);
+  assert.equal(before.segment, 0);
+  assert.equal(corner.segment, 1);
+  assert.equal(after.segment, 1);
+  assert.equal(before.to, corner.from);
+  assert.equal(corner.from, after.from);
+  assert.ok(Math.abs((1 - before.progress) - delta / OFFICER_ROUTE_STEP_MS) < 1e-10);
+  assert.ok(Math.abs(after.progress - delta / OFFICER_ROUTE_STEP_MS) < 1e-10);
+  assert.equal(corner.progress, 0);
+});
