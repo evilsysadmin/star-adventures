@@ -12,7 +12,7 @@ import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
 import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
-import { performMedicalEvacuation } from '../../src/medicalEvacuation.mjs';
+import { performMedicalEvacuation, EVACUATION_INCIDENT } from '../../src/medicalEvacuation.mjs';
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
@@ -151,6 +151,36 @@ export function App() {
 
   const last = state.log.at(-1);
   const showDamage = state.stats.shipDamage > 0;
+  // A visible story beat follows the *physical* rescue and return. Never
+  // mistake legacy/simulated archive completion for an actual evacuation.
+  const rescued = mandate.orders.evacuate === 'completed' &&
+    mandate.incidents.some(incident => incident.id === EVACUATION_INCIDENT);
+  const missionPhase = rescued
+    ? exploration.area === 'bridge' ? 'debrief' : 'extract'
+    : exploration.area === 'bridge' ? 'briefing' : 'field';
+  const missionBeat = {
+    briefing: {
+      title: 'TRANSMISIÓN ENTRANTE',
+      story: 'Un SOS del puesto científico interrumpe la guardia. Hay civiles esperando asistencia. Tu primera orden es preparar el equipo de rescate.',
+      next: 'Elige a un oficial con Medicina y localiza el acceso a la sala de transporte en la parte posterior del puente.',
+    },
+    field: {
+      title: 'MISIÓN EN SUPERFICIE',
+      story: 'El equipo ha desembarcado. El puesto de socorro está al este de la zona de llegada; la evacuación requiere capacidad médica real.',
+      next: 'Acércate al puesto de socorro y pulsa E para atender a los civiles. Investigar la sonda es opcional.',
+    },
+    extract: {
+      title: 'RESCATE CONFIRMADO',
+      story: 'El puesto de socorro confirma la evacuación. El resultado ya consta en el registro oficial de servicio.',
+      next: 'Vuelve al punto de llegada y usa el transporte de regreso al puente.',
+    },
+    debrief: {
+      title: 'REGRESO AL PUENTE',
+      story: 'El equipo ha regresado. Los civiles están a salvo y el rescate consta en el registro de servicio de la nave.',
+      next: 'Consulta el archivo de órdenes. Puedes continuar la investigación o volver a desembarcar.',
+    },
+  }[missionPhase];
+  const missionProgress = { briefing: 0, field: 1, extract: 2, debrief: 3 }[missionPhase];
 
   return (
     <div className="app-shell">
@@ -165,7 +195,21 @@ export function App() {
         <section className="hero-panel" aria-labelledby="mission-title">
           <div className="eyebrow"><span className="eyebrow-line" /> MISIÓN 001 <span className="eyebrow-muted">/ SECTOR DISPUTADO</span></div>
           <h1 id="mission-title">Ecos en la <em>frontera</em></h1>
-          <p className="mission-summary">Un SOS en territorio disputado. Dos capitanes al borde del combate. El próximo movimiento es tuyo.</p>
+          <section className={`mission-transmission mission-transmission-${missionPhase}`} data-testid="mission-transmission" aria-label="Transmisión y progreso de la misión">
+            <div className="mission-transmission-top">
+              <span className="mission-transmission-kicker"><span className="mission-transmission-beacon" aria-hidden="true" /> CANAL DE SERVICIO · PRIORIDAD ALTA</span>
+              <span className="mission-transmission-phase" data-testid="mission-phase">{missionBeat.title}</span>
+            </div>
+            <p className="mission-transmission-story">{missionBeat.story}</p>
+            <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
+            <div className="mission-transmission-route" role="list" aria-label="Progreso del rescate">
+              {['Desembarco', 'Evacuación', 'Regreso'].map((step, index) => (
+                <span role="listitem" key={step} data-state={missionProgress > index ? 'done' : missionProgress === index ? 'current' : 'pending'}>
+                  <span aria-hidden="true">{missionProgress > index ? '✓' : String(index + 1).padStart(2, '0')}</span>{step}
+                </span>
+              ))}
+            </div>
+          </section>
           <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
             onSpatialEvent={onSpatialEvent}
             squad={awayTeam.squad.map((id: string) => {
