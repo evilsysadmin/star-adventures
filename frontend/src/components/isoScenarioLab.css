@@ -184,7 +184,7 @@
  background:#8b4b2c;color:#fff7de;font:800 12px 'Space Grotesk',sans-serif;
  box-shadow:0 4px 17px #071a24aa;cursor:pointer;
 }
-.scenario-fire-overlay:disabled{
+.scenario-lab .scenario-fire-overlay:disabled{
  /* The blocked reason is the important feedback, not a faded mystery button. */
  opacity:1;border-color:#b79b74;background:#273845;color:#ffe0ad;cursor:default;
 }
