@@ -7,6 +7,7 @@ import { createIsoDetailCamera } from '../tacticalIsoFocus';
 import { WALK_ATLAS, FIRE_ATLAS, walkFrameAt, walkFrameUv } from '../tacticalAnimation';
 import { isoFireFrame, nextFireReviewFrame } from '../isoFirePlayback';
 import { isoOfficerFrame } from '../isoOfficerAnimation';
+import { isoSpriteSideFromCells, mirroredAtlasUv } from '../isoActorFacing';
 import { evaluatePracticeShot } from '../isoTrainingLineOfSight';
 import { HOSTILE_PATROLS, hostilePatrolCellsAt, hostilePatrolPositionAt } from '../isoHostilePatrol';
 import { IsoAtlasMagnifier } from './IsoAtlasMagnifier';
@@ -36,6 +37,19 @@ const cellFromId = (id: string) => {
   return cellCenter({ col, row });
 };
 const initial: Cell = { col: 0, row: 0, id: '0:0' };
+
+// Display-only facing shared with the live scenario. No changes to grid,
+// pathfinding, line-of-sight or mission state. V1 has no rear/side art.
+const faceSprite = (sprite: THREE.Sprite, from: string, to: string) => {
+  const side = isoSpriteSideFromCells(from, to);
+  if (side !== null) sprite.userData.mirror = side === 'left';
+  return sprite.userData.mirror === true;
+};
+const setFacingFrame = (texture: THREE.Texture, frame: number, mirrored: boolean) => {
+  const uv = mirroredAtlasUv(frame, mirrored);
+  texture.repeat.set(uv.repeatX, uv.repeatY);
+  texture.offset.set(uv.x, uv.y);
+};
 
 export function IsoTacticalLab() {
   const host = useRef<HTMLDivElement>(null);
@@ -237,7 +251,7 @@ export function IsoTacticalLab() {
     const unitTextures = new Map<string, THREE.Texture>();
     const fireAtlases = new Map<'female'|'male', THREE.Texture>();
     let loadingFire = false;
-    const lastFrames = new Map<string, number>();
+    const lastFrames = new Map<string, string>();
     const loader = new THREE.TextureLoader();
     const textures: Record<string, THREE.Texture> = {};
     let settled = 0;
@@ -261,8 +275,7 @@ export function IsoTacticalLab() {
           const visual = unitsVisual.current.get(unit.id);
           if (!visual) continue;
           const isolated = loaded.clone();
-          isolated.repeat.set(1 / WALK_ATLAS.columns, 1 / WALK_ATLAS.rows);
-          isolated.offset.set(walkFrameUv(0).x, walkFrameUv(0).y);
+          setFacingFrame(isolated, 0, visual.sprite.userData.mirror === true);
           isolated.needsUpdate = true;
           unitTextures.set(unit.id, isolated);
           atlasTextures.push(isolated);
@@ -281,7 +294,7 @@ export function IsoTacticalLab() {
       atlasTextures.push(tex);
     }
     const hostileTextures = new Map<string, THREE.Texture>();
-    const hostileLastFrames = new Map<string, number>();
+    const hostileLastFrames = new Map<string, string>();
     const hostileAssets = [
       { id: 'aegis' as const, name: 'Incursor Aegis', url: aegisRaiderUrl, scale: [1.64, 2.52] as const },
       { id: 'veil' as const, name: 'Agente Velo', url: veilAgentUrl, scale: [1.46, 2.34] as const },
@@ -291,8 +304,7 @@ export function IsoTacticalLab() {
       const texture = loader.load(hostile.url, loaded => {
         if (disposed) return;
         const isolated = loaded.clone();
-        isolated.repeat.set(1 / WALK_ATLAS.columns, 1 / WALK_ATLAS.rows);
-        isolated.offset.set(walkFrameUv(0).x, walkFrameUv(0).y);
+        setFacingFrame(isolated, 0, false);
         isolated.needsUpdate = true;
         const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: isolated, transparent: true, depthWrite: false, alphaTest: .06 }));
         sprite.name = hostile.name;
@@ -440,6 +452,9 @@ export function IsoTacticalLab() {
         const to = cellFromId(motion.cells[leg + 1]);
         const visual = unitsVisual.current.get(motion.unitId);
         if (visual) {
+          faceSprite(visual.sprite, motion.cells[leg], motion.cells[leg + 1]);
+          canvas.dataset[`spriteFacing${motion.unitId[0].toUpperCase()+motion.unitId.slice(1)}`] =
+            visual.sprite.userData.mirror ? 'left' : 'right';
           const x = from.x + (to.x - from.x) * t;
           const z = from.z + (to.z - from.z) * t;
           visual.sprite.position.set(x, .13, z);
@@ -499,10 +514,13 @@ export function IsoTacticalLab() {
         const index = isoOfficerFrame(
           unit.id, moveRef.current, time, !reduced && animateEnabled.current
         );
-        if (lastFrames.get(unit.id) !== index) {
-          const uv = walkFrameUv(index);
-          isolated.offset.set(uv.x, uv.y);
-          lastFrames.set(unit.id, index);
+        const mirror = unitsVisual.current.get(unit.id)?.sprite.userData.mirror === true;
+        const key = `${index}:${mirror}`;
+        if (lastFrames.get(unit.id) !== key) {
+          setFacingFrame(isolated, index, mirror);
+          lastFrames.set(unit.id, key);
+          if (moveRef.current?.unitId === unit.id)
+            canvas.dataset.officerSpriteUvX = String(isolated.repeat.x);
         }
       }
       const patrolEnabledNow = patrolEnabled.current && !reduced;
@@ -531,12 +549,16 @@ export function IsoTacticalLab() {
           const z = from.z + (to.z - from.z) * position.fraction;
           visual.sprite.position.set(x, .13, z);
           visual.shadow.position.set(x, .106, z);
+          faceSprite(visual.sprite, position.from, position.to);
+          canvas.dataset[`spriteFacing${patrol.id[0].toUpperCase()+patrol.id.slice(1)}`] =
+            visual.sprite.userData.mirror ? 'left' : 'right';
           const texture = hostileTextures.get(patrol.id);
           const frameIndex = walkFrameAt(elapsed);
-          if (texture && hostileLastFrames.get(patrol.id) !== frameIndex) {
-            const uv = walkFrameUv(frameIndex);
-            texture.offset.set(uv.x, uv.y);
-            hostileLastFrames.set(patrol.id, frameIndex);
+          const mirror = visual.sprite.userData.mirror === true;
+          const key = `${frameIndex}:${mirror}`;
+          if (texture && hostileLastFrames.get(patrol.id) !== key) {
+            setFacingFrame(texture, frameIndex, mirror);
+            hostileLastFrames.set(patrol.id, key);
           }
         }
       } else {
@@ -598,6 +620,12 @@ export function IsoTacticalLab() {
   const moveOfficer = () => {
     if (moving || firing || !path || path.cells.length < 2 || moveRef.current || fireRef.current) return;
     if (!unitsVisual.current.size || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const visual=unitsVisual.current.get(officer);
+      if(visual){
+        faceSprite(visual.sprite,path.cells[path.cells.length-2],path.cells[path.cells.length-1]);
+        if(visual.sprite.material.map)
+          setFacingFrame(visual.sprite.material.map,0,visual.sprite.userData.mirror===true);
+      }
       const next = commitTrainingMove(units, officer, active.id, hostileCells);
       committed.current = next;
       setUnits(next);
