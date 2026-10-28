@@ -31,6 +31,16 @@ for (const width of [360, 390, 430]) {
     expect(afterSelector!.height).toBeLessThan(beforeSelector!.height - 15);
     expect(roster!.height).toBeLessThan(95);
     expect(canvas!.height).toBeGreaterThanOrEqual(340);
+    const viewTools = await page.locator('.scenario-viewtools').boundingBox();
+    // The real play surface and six orders precede secondary configuration.
+    expect(canvas!.y).toBeLessThan(afterSelector!.y);
+    expect(canvas!.y).toBeLessThan(viewTools!.y);
+    const orders = await page.locator('.scenario-orders').boundingBox();
+    expect(orders!.y).toBeLessThan(afterSelector!.y);
+    const notice = await page.getByTestId('scenario-notice').boundingBox();
+    const objectives = await page.getByTestId('scenario-objectives').boundingBox();
+    expect(notice!.y).toBeLessThan(afterSelector!.y);
+    expect(objectives!.y).toBeLessThan(afterSelector!.y);
 
     const columns = await page.locator('.scenario-orders').evaluate(el =>
       getComputedStyle(el).gridTemplateColumns.split(' ').length);
@@ -41,7 +51,11 @@ for (const width of [360, 390, 430]) {
       expect(bounds!.height).toBeGreaterThanOrEqual(44);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: `test-results/live-combat-compact-${width}.png`, fullPage: true });
+    // Changing missions remains possible without exiting combat.
+    await page.getByTestId('scenario-tab-derelict').click();
+    await expect(page.getByTestId('scenario-tab-derelict')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('scenario-fire')).toBeVisible();
+    await page.screenshot({ path: `test-results/live-combat-board-first-${width}.png`, fullPage: true });
   });
 }
 
