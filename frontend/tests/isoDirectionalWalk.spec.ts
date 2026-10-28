@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {createHash} from 'node:crypto';
-import manifest from '../src/assets/r2-assets-manifest.json';
+import {readFileSync} from 'node:fs';
+const manifest=JSON.parse(readFileSync(new URL('../src/assets/r2-assets-manifest.json',import.meta.url),'utf8'));
 
 const female=manifest.assets['starAdventures.tactical.officerFemaleWalk4V1'];
 test('R2 serves the exact immutable 24-frame female atlas, not a 404 or wrong upload',async({request})=>{
