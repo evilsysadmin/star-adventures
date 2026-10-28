@@ -50,7 +50,7 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
     for (let depth = 1; depth <= 4; depth++) {
       const perspective = 1 / (1 + depth * .72);
       const y = HORIZON - 215 * perspective;
-      const halfWidth = 90 + 400 * (1 - perspective);
+      const halfWidth = 90 + 400 * perspective;
       ctx.strokeStyle = depth % 2 ? '#5c899480' : '#bda77b55';
       ctx.lineWidth = Math.max(2, 9 * perspective);
       ctx.beginPath(); ctx.moveTo(WIDTH / 2 - halfWidth, y);
