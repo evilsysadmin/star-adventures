@@ -9,6 +9,7 @@ const world = JSON.parse(readFileSync(
 ));
 
 function follow(state, target) {
+  const initial = state;
   const original = structuredClone(state);
   let turns = 0;
   for (let i = 0; i < 50; i++) {
@@ -19,7 +20,7 @@ function follow(state, target) {
     assert.notEqual(outcome.event.type, 'blocked', 'waypoint must never guide into a wall or object');
     if (hint.action === 'use') {
       assert.equal(hint.steps, 0);
-      assert.deepEqual(original, structuredClone(original), 'guidance does not alter original state');
+      assert.deepEqual(initial, original, 'guidance must not mutate the original state');
       return { ...outcome, turns };
     }
     state = outcome.state;
