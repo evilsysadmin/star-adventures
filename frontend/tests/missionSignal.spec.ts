@@ -10,25 +10,6 @@ async function reachSurface(page: Page) {
   await page.getByTestId('transport-confirm').click();
 }
 
-async function rescueAndReturn(page: Page) {
-  // Surface 4:5 N -> 4:4 N -> 5:4 E; relief station is at 6:4.
-  await page.getByTestId('explore-forward').click();
-  await page.getByTestId('explore-right').click();
-  await page.getByTestId('explore-forward').click();
-  await expect(page.getByTestId('explore-target')).toContainText('Puesto de socorro');
-  await page.getByTestId('explore-use').click();
-  await expect(page.getByTestId('medical-report')).toContainText('Evacuación completada');
-  // 5:4 E -> 5:5 S -> 4:5 W -> face transporter at 4:6.
-  await page.getByTestId('explore-right').click();
-  await page.getByTestId('explore-forward').click();
-  await page.getByTestId('explore-right').click();
-  await page.getByTestId('explore-forward').click();
-  await page.getByTestId('explore-left').click();
-  await page.getByTestId('explore-use').click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.getByTestId('transport-confirm').click();
-}
-
 for (const width of [390, 1280]) {
   test(`real mission signal follows bridge → rescue → extraction → debrief at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 850 : 820 });
