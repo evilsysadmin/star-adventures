@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import episode from '../../content/episodes/border-signal.json';
 import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
@@ -17,6 +17,7 @@ import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
 
+const FieldEncounter = lazy(() => import('./components/IsoScenarioLab').then(module => ({ default: module.IsoScenarioLab })));
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
 const stationNames: Record<string, string> = { command: 'Mando', science: 'Ciencia', diplomacy: 'Diplomacia', tactical: 'Táctica', engineering: 'Ingeniería', medicine: 'Medicina' };
 
@@ -61,6 +62,8 @@ export function App() {
   const [mandate, setMandate] = useState<MandateState>(() => initialMandate.state);
   const [medicalNotice, setMedicalNotice] = useState<string | null>(null);
   const [coreNotice, setCoreNotice] = useState<string | null>(null);
+  const [fieldEncounterOpen, setFieldEncounterOpen] = useState(false);
+  const [fieldResolution, setFieldResolution] = useState<'truce' | 'victory' | null>(null);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
@@ -81,6 +84,10 @@ export function App() {
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
+    if (event.type === 'area-entered') setFieldEncounterOpen(false);
+    if (event.type === 'station' && event.action === 'secure-perimeter' && !fieldResolution) {
+      setFieldEncounterOpen(true);
+    }
     if (event.type === 'station' && event.action === 'inspect-probe') {
       try {
         const outcome = investigateProbe(world, position, session.crew, awayTeam);
@@ -121,7 +128,7 @@ export function App() {
           : 'La intervención no puede completarse en este momento.');
       }
     }
-  }, [session.crew, awayTeam, mandate]);
+  }, [session.crew, awayTeam, mandate, fieldResolution]);
   const restart = () => {
     setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
     setAwayTeam(previous => ({ ...startAwayTeam(), squad: [...previous.squad] }));
@@ -129,6 +136,8 @@ export function App() {
     setActiveStation(null);
     setMedicalNotice(null);
     setCoreNotice(null);
+    setFieldEncounterOpen(false);
+    setFieldResolution(null);
     setExplorationKey(key => key + 1);
   };
   const select = (id: string) => setSession(prev => issueConsoleOrder(world, exploration, episode, prev, id));
@@ -167,7 +176,7 @@ export function App() {
     field: {
       title: 'MISIÓN EN SUPERFICIE',
       story: 'El equipo ha desembarcado. El puesto de socorro está al este de la zona de llegada; la evacuación requiere capacidad médica real.',
-      next: 'Acércate al puesto de socorro y pulsa E para atender a los civiles. Investigar la sonda es opcional.',
+      next: 'Atiende a los civiles en el puesto de socorro. La baliza del perímetro permite un encuentro táctico opcional; no bloquea el rescate.',
     },
     extract: {
       title: 'RESCATE CONFIRMADO',
@@ -201,6 +210,9 @@ export function App() {
               <span className="mission-transmission-phase" data-testid="mission-phase">{missionBeat.title}</span>
             </div>
             <p className="mission-transmission-story">{missionBeat.story}</p>
+            {fieldResolution && <p className="mission-transmission-optional" data-testid="field-resolution">{fieldResolution === 'truce'
+              ? 'PERÍMETRO · Alto el fuego negociado por el equipo. El rescate sigue su curso.'
+              : 'PERÍMETRO · Amenazas neutralizadas. El rescate sigue su curso.'}</p>}
             <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
             <div className="mission-transmission-route" role="list" aria-label="Progreso del rescate">
               {['Desembarco', 'Evacuación', 'Regreso'].map((step, index) => (
@@ -210,16 +222,29 @@ export function App() {
               ))}
             </div>
           </section>
-          <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
-            missionTargetId={missionPhase === 'briefing' ? 'transporter'
-              : missionPhase === 'field' ? 'relief-point'
-              : missionPhase === 'extract' ? 'beam-out' : null}
-            onSpatialEvent={onSpatialEvent}
-            squad={awayTeam.squad.map((id: string) => {
-              const officer = OFFICERS.find(candidate => candidate.id === id)!;
-              return { id: officer.id, name: officer.name };
-            })} />
-          <TacticalViewSwitcher />
+          {fieldEncounterOpen && exploration.area === 'surface' ? (
+            <section className="field-encounter-scene" data-testid="field-encounter-scene" aria-label="Encuentro del perímetro">
+              <div className="field-encounter-return">
+                <span>SUPERFICIE · BALIZA DEL PERÍMETRO</span>
+                <button type="button" data-testid="field-encounter-return"
+                  onClick={() => setFieldEncounterOpen(false)}>Volver a explorar ↩</button>
+              </div>
+              <Suspense fallback={<p role="status">Preparando el encuentro táctico…</p>}>
+                <FieldEncounter fieldEncounter onFieldResolved={setFieldResolution} />
+              </Suspense>
+            </section>
+          ) : (
+            <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
+              missionTargetId={missionPhase === 'briefing' ? 'transporter'
+                : missionPhase === 'field' ? 'relief-point'
+                : missionPhase === 'extract' ? 'beam-out' : null}
+              onSpatialEvent={onSpatialEvent}
+              squad={awayTeam.squad.map((id: string) => {
+                const officer = OFFICERS.find(candidate => candidate.id === id)!;
+                return { id: officer.id, name: officer.name };
+              })} />
+          )}
+          {exploration.area === 'bridge' && <TacticalViewSwitcher />}
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
