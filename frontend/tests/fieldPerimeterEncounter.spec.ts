@@ -64,8 +64,9 @@ for (const width of [390, 1280]) {
   });
 }
 
-test('a real tactical ceasefire updates the optional field objective without fabricating a civilian rescue', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 850 });
+for (const width of [390, 1280]) {
+test(`a real tactical ceasefire updates the optional field objective without fabricating a civilian rescue (${width}px)`, async ({ page }) => {
+  await page.setViewportSize({ width, height: width === 390 ? 850 : 900 });
   await page.goto('/');
   await enterSurface(page);
   await reachPerimeterUplink(page);
@@ -87,7 +88,8 @@ test('a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('mission-phase')).toHaveText('MISIÓN EN SUPERFICIE');
   await expect(page.getByTestId('scenario-combat-result')).toContainText('los civiles aún necesitan asistencia médica');
   await expect(page.getByTestId('scenario-resume-rescue')).toBeVisible();
-  await page.screenshot({ path: 'test-results/field-truce-resume-390.png', fullPage: false });
+  await page.getByTestId('scenario-resume-rescue').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `test-results/field-truce-resume-${width}.png`, fullPage: false });
   // A resolved optional encounter must offer an immediate, physical way back
   // to the SAME surface tile. It must not award a rescue or beam out for free.
   await page.getByTestId('scenario-resume-rescue').click();
@@ -97,7 +99,7 @@ test('a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('field-resolution')).toBeInViewport();
   await expect(page.getByTestId('explore-area')).toBeInViewport();
   await expect(page.getByTestId('explore-forward')).toBeFocused();
-  await page.screenshot({ path: 'test-results/field-truce-390.png', fullPage: false });
+  await page.screenshot({ path: `test-results/field-truce-${width}.png`, fullPage: false });
 
   // The negotiated contact becomes a distinct, visible outcome of the real
   // evacuation only after medical rescue and physical return to the bridge.
@@ -112,5 +114,6 @@ test('a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('mission-phase')).toHaveText('REGRESO AL PUENTE');
   await expect(page.getByTestId('mission-perimeter-outcome')).toContainText('Tregua negociada');
   await expect(page.getByTestId('mission-return-report')).toContainText('Civiles a salvo');
-  await page.screenshot({ path: 'test-results/mission-debrief-truce-390.png', fullPage: false });
+  await page.screenshot({ path: `test-results/mission-debrief-truce-${width}.png`, fullPage: false });
 });
+}
