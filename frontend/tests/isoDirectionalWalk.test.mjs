@@ -7,7 +7,7 @@ test('four orthogonal world headings select distinct authored views',()=>{
   ['3:3','3:4','south'],['3:3','2:3','west'],
   ['3:3','3:3',null],['3:3','4:4',null],['bad','3:4',null],
   ['-1:3','3:4',null]
- ] as const)assert.equal(walk4Direction(from,to),direction);
+ ])assert.equal(walk4Direction(from,to),direction);
 });
 test('all 24 UV cells select exactly one view and one animation frame',()=>{
  assert.equal(new Set(WALK4_DIRECTIONS).size,4);
@@ -21,7 +21,7 @@ test('all 24 UV cells select exactly one view and one animation frame',()=>{
   }
   assert.deepEqual(walk4Uv(6,direction),walk4Uv(0,direction));
  }
- assert.throws(()=>walk4Uv(0,'diagonal' as never),RangeError);
+ assert.throws(()=>walk4Uv(0,'diagonal'),RangeError);
  assert.throws(()=>walk4Uv(1.2,'north'),RangeError);
 });
 test('malformed or too-small CDN atlases fall back to V1',()=>{
