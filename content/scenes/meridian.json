@@ -345,6 +345,14 @@
           "y": 4
         },
         {
+          "id": "perimeter-uplink",
+          "label": "Baliza de seguridad del perímetro",
+          "type": "station",
+          "action": "secure-perimeter",
+          "x": 7,
+          "y": 5
+        },
+        {
           "id": "beam-out",
           "label": "Solicitar teletransporte de regreso",
           "type": "transition",

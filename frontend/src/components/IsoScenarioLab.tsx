@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { IsoScenarioBoard } from './IsoScenarioBoard';
 import {
  SCENARIOS, MAX_MOVE_STEPS, applyMissionAction, missionPath, nextMissionWaypoint,
@@ -32,7 +32,7 @@ const officers: readonly {id:SquadId;name:string;role:string}[]=[
 ];
 const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 
-export function IsoScenarioLab(){
+export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEncounter?:boolean;onFieldResolved?:(result:'truce'|'victory')=>void}={}){
  const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
  const [history,setHistory]=useState(startup.history);
  const [hostileStartup]=useState(()=>restoreHostileEncounterSession(localStorageOrNull()));
@@ -42,8 +42,8 @@ export function IsoScenarioLab(){
  const [combatHistory,setCombatHistory]=useState(combatStartup.history);
  const [combatMode,setCombatMode]=useState(false);
  const [replayStartup]=useState(()=>restoreCombatReplaySession(localStorageOrNull()));
- const [replayHistory,setReplayHistory]=useState(replayStartup.history);
- const [replayMode,setReplayMode]=useState(false);
+ const [replayHistory,setReplayHistory]=useState(()=>fieldEncounter?newCombatReplaySession('evacuation'):replayStartup.history);
+ const [replayMode,setReplayMode]=useState(fieldEncounter);
  const [initialRecords]=useState(()=>{
   const stored=restoreTrainingRecords(localStorageOrNull());
   if(!startup.history.state.completed)return stored;
@@ -63,12 +63,22 @@ export function IsoScenarioLab(){
  const [officer,setOfficer]=useState<SquadId>('science');
  const [selected,setSelected]=useState(startup.history.state.locations.science);
  const [focus,setFocus]=useState(false);
- const [notice,setNotice]=useState(startup.notice);
+ const [notice,setNotice]=useState(fieldEncounter?'Contacto hostil detectado · negocia o asegura el perímetro':startup.notice);
  // Fire feedback is transient presentation only; never enters the replay/save.
  const [shot,setShot]=useState<{id:number;from:string;to:string;officer:SquadId}|null>(null);
  const nextShotId=useRef(0);
  // The explicit Play action should reveal the playable board immediately.
  const boardRef=useRef<HTMLDivElement>(null);
+ // A physical surface interaction must reveal the actual playable board,
+ // not strand the player above a long tactical briefing on mobile.
+ useEffect(()=>{
+  if(!fieldEncounter)return;
+  const frame=requestAnimationFrame(()=>{
+   boardRef.current?.scrollIntoView({block:'center',behavior:'auto'});
+   boardRef.current?.focus({preventScroll:true});
+  });
+  return ()=>cancelAnimationFrame(frame);
+ },[fieldEncounter]);
  // Only accepted live enemy turns trigger presentation. Replaying an F5 save
  // restores health but never replays a wound as if it had just happened.
  const [officerHit,setOfficerHit]=useState<{id:number;officers:readonly SquadId[]}|null>(null);
@@ -126,8 +136,12 @@ export function IsoScenarioLab(){
   }
   try{
    const next=replayCombatCommands(scenarioId,[...replayHistory.actions,command]);
-   const {replaySaved:saved}=persistCombatMissionAttemptProgress(next,localStorageOrNull());
+   const saved=fieldEncounter?true:persistCombatMissionAttemptProgress(next,localStorageOrNull()).replaySaved;
    setReplayHistory(next);
+   if(fieldEncounter&&!replayHistory.combat.truce&&!replayHistory.combat.victory){
+    if(next.combat.truce)onFieldResolved?.('truce');
+    else if(next.combat.victory)onFieldResolved?.('victory');
+   }
    presentHits(command.type==='end-turn'?next.combat.encounter.hits:[]);
    if(command.type==='fire'){
     // The reducer has accepted this shot. Play immediately in the click gesture;
@@ -212,7 +226,7 @@ export function IsoScenarioLab(){
    const next=newCombatReplaySession(id);
    const storage=localStorageOrNull();
    const instanceId=globalThis.crypto?.randomUUID?.();
-   const saved=instanceId
+   const saved=fieldEncounter?true:instanceId
     ?startCombatMissionAttemptSession(instanceId,id,storage).replaySaved
     :persistCombatReplaySession(next,storage);
    setReplayHistory(next);
@@ -327,22 +341,22 @@ export function IsoScenarioLab(){
    </div>;
  return <section className="scenario-lab" data-testid="scenario-lab" aria-labelledby="scenario-heading">
   <header className="scenario-head">
-   <span className="scenario-eyebrow">OPERACIONES TÁCTICAS · LABORATORIO JUGABLE</span>
-   <h2 id="scenario-heading">Tres misiones, un equipo</h2>
-   <p>Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.</p>
-   {!replayMode&&<button className="scenario-play-combat" type="button"
+   <span className="scenario-eyebrow">{fieldEncounter?'SUPERFICIE · CONTACTO HOSTIL':'OPERACIONES TÁCTICAS · LABORATORIO JUGABLE'}</span>
+   <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Tres misiones, un equipo'}</h2>
+   <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. Esta incursión es temporal.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
+   {!fieldEncounter&&!replayMode&&<button className="scenario-play-combat" type="button"
     data-testid="scenario-play-combat" onClick={startPlayableCombat}>
     Jugar combate con disparos
    </button>}
   </header>
-  <div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
+  {!fieldEncounter&&<div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
    {order.map(id=><button key={id} type="button"
     data-testid={`scenario-tab-${id}`} aria-pressed={scenarioId===id}
     onClick={()=>change(id)}>
     <strong>{SCENARIOS[id].label}</strong>
     <span>{SCENARIOS[id].size} × {SCENARIOS[id].size} · {id==='relay'?'Comunicaciones':id==='derelict'?'Exploración / rescate':'Evacuación'}</span>
    </button>)}
-  </div>
+  </div>}
   <div className="scenario-briefing">
    <div><span className="scenario-eyebrow">OBJETIVO ACTUAL</span>
     <h3 data-testid="scenario-name">{scenario.label}</h3>
@@ -353,7 +367,7 @@ export function IsoScenarioLab(){
     <span data-testid="scenario-ap">{mission.ap} / 3 órdenes</span>
    </div>
   </div>
-  <div className="scenario-viewtools">
+  {!fieldEncounter&&<div className="scenario-viewtools">
    <div className="scenario-mode-select" role="group" aria-label="Tipo de ejercicio táctico">
     <button type="button" data-testid="scenario-training-toggle" aria-pressed={!hostileMode&&!combatMode&&!replayMode}
      onClick={()=>switchEncounter('training')}>Entrenamiento</button>
@@ -367,7 +381,7 @@ export function IsoScenarioLab(){
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
-  </div>
+  </div>}
   {replayMode&&replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-truce" role="status">
    Alto el fuego aceptado: ambos contactos han dejado de atacar. Completa los objetivos y solicita extracción sin disparar.
   </p>}
@@ -435,7 +449,7 @@ export function IsoScenarioLab(){
   {combat&&(combat.failed||mission.completed||!!replay?.victory||!!replay?.truce)&&<section className="scenario-debrief"
    data-testid="scenario-combat-result" aria-label="Resultado del combate experimental">
    <strong>{combat.failed?'Escuadra incapacitada · combate terminado':mission.completed?'Extracción confirmada · misión completada':replay?.truce?'Alto el fuego acordado · completa objetivos y solicita extracción':'Amenazas neutralizadas · completa objetivos y solicita extracción'}</strong>
-   <p>Estado reconstruido del encuentro {replayMode?'v4':'v3'}; no modifica el entrenamiento ni la campaña.</p>
+   <p>{fieldEncounter?'Contacto resuelto para esta incursión. Regresa a explorar o completa los objetivos tácticos.':'Estado reconstruido del encuentro '+(replayMode?'v4':'v3')+'; no modifica el entrenamiento ni la campaña.'}</p>
    <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
   </section>}
   <div className="scenario-objectives" data-testid="scenario-objectives">

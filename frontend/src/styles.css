@@ -165,3 +165,12 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
   .firstperson-waypoint strong{font-size:11px}
   .firstperson-waypoint-steps{font-size:9px}
 }
+
+/* The optional surface encounter replaces first-person input while active.
+   Never leave two simultaneously interactive exploration/combat scenes. */
+.field-encounter-scene{min-width:0;max-width:100%;border:1px solid #446a73;border-radius:12px;background:#091b27;padding:10px}
+.field-encounter-return{position:sticky;top:0;z-index:6;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding:8px;background:#091b27;color:#a8d9d1;font-size:11px;font-weight:700;letter-spacing:.08em}
+.field-encounter-return button{min-height:44px;padding:9px 15px;border:1px solid #7ebbb0;border-radius:7px;color:#e1f9f4;background:#173a43;cursor:pointer}
+.field-encounter-return button:hover{background:#22545c}
+.mission-transmission-optional{margin:8px 0;color:#a7e6c8;font-size:12px;font-weight:700}
+@media(max-width:600px){.field-encounter-scene{padding:5px}.field-encounter-return{padding:8px}}
