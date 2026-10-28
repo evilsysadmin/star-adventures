@@ -339,8 +339,9 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
       : <span key={id} data-testid={`scenario-hostile-${id}`}>{text}</span>;
     })}
    </div>;
- // During live combat, the map and orders must precede mode/mission settings.
- // Keep DOM and visual order aligned for keyboard and screen-reader navigation.
+ // During live combat, the map and orders precede mission selection.
+ // Advanced tools always follow the objectives, preserving their open state
+ // when switching between live combat and training. DOM and visual order match.
  const missionSelector = !fieldEncounter && <div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
    {order.map(id=><button key={id} type="button"
     data-testid={`scenario-tab-${id}`} aria-pressed={scenarioId===id}
@@ -392,7 +393,6 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
     <span data-testid="scenario-ap">{mission.ap} / 3 órdenes</span>
    </div>
   </div>
-  {!replayMode&&viewTools}
   {replayMode&&replay?.truce&&<p className="scenario-fire-guide" data-testid="scenario-truce" role="status">
    Alto el fuego aceptado: ambos contactos han dejado de atacar. Completa los objetivos y solicita extracción sin disparar.
   </p>}
@@ -477,7 +477,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved}:{fieldEnco
    </div>)}
   </div>
   {replayMode&&missionSelector}
-  {replayMode&&viewTools}
+  {viewTools}
   {completedResult&&<section className="scenario-debrief" data-testid="scenario-debrief" aria-label="Informe táctico de entrenamiento">
    <span className="scenario-eyebrow">EXTRACCIÓN CONFIRMADA · INFORME DE MANIOBRAS</span>
    <h3>{completedResult.label}</h3>
