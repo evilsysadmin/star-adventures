@@ -85,8 +85,14 @@ test('a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('scenario-truce')).toContainText('Alto el fuego aceptado');
   await expect(page.getByTestId('field-resolution')).toContainText('Alto el fuego negociado');
   await expect(page.getByTestId('mission-phase')).toHaveText('MISIÓN EN SUPERFICIE');
-  await page.getByTestId('field-encounter-return').click();
+  await expect(page.getByTestId('scenario-combat-result')).toContainText('los civiles aún necesitan asistencia médica');
+  await expect(page.getByTestId('scenario-resume-rescue')).toBeVisible();
+  await page.screenshot({ path: 'test-results/field-truce-resume-390.png', fullPage: false });
+  // A resolved optional encounter must offer an immediate, physical way back
+  // to the SAME surface tile. It must not award a rescue or beam out for free.
+  await page.getByTestId('scenario-resume-rescue').click();
   await expect(page.getByTestId('explore-heading')).toContainText('6:5');
+  await expect(page.getByTestId('medical-report')).toHaveCount(0);
   await expect(page.getByTestId('field-resolution')).toContainText('Alto el fuego negociado');
   await expect(page.getByTestId('field-resolution')).toBeInViewport();
   await expect(page.getByTestId('explore-area')).toBeInViewport();
