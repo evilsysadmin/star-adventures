@@ -236,8 +236,54 @@ function drawScene(canvas: HTMLCanvasElement, state: ViewState, alert: boolean, 
       ctx.globalAlpha = 1;
     }
   }
-  // Adjacent live station gets a readable embedded console; no fabricated telemetry.
+  // At interaction range, a real outpost landmark must not collapse into
+  // a full-screen anonymous wall. Show its recessed, readable faceplate,
+  // tied strictly to the object on the cell the player is facing.
   const front = faceTile(state);
+  const surfaceFocus = state.area === 'surface' && !activeStation
+    ? scene.objects.find(item => item.x === front.x && item.y === front.y) : undefined;
+  if (surfaceFocus) {
+    const medical = surfaceFocus.action === 'assist-evacuees';
+    const security = surfaceFocus.action === 'secure-perimeter';
+    const transport = surfaceFocus.type === 'transition';
+    const accent = medical ? '#e6c392' : security ? '#ec9e8b'
+      : transport ? '#8ae4d1' : '#a6c4e5';
+    const title = medical ? 'PUESTO DE SOCORRO' : security ? 'CONTROL DEL PERÍMETRO'
+      : transport ? 'TRANSPORTE DE REGRESO'
+        : surfaceFocus.action === 'inspect-probe' ? 'SONDA CIENTÍFICA' : 'ARCHIVO DE SENSORES';
+    const instruction = medical ? 'E · ASISTIR A LOS CIVILES' : security ? 'E · ESTABLECER CONTACTO'
+      : transport ? 'E · SOLICITAR TRANSPORTE' : 'E · INSPECCIONAR';
+    // Bevelled inset is a close-up of the same ray-hit station, not a
+    // teleport, popup choice or invented mission state.
+    ctx.fillStyle = '#071720e8'; ctx.fillRect(142, 78, 676, 294);
+    ctx.fillStyle = '#263d42'; ctx.fillRect(154, 90, 652, 270);
+    ctx.fillStyle = '#0c222b'; ctx.fillRect(174, 110, 612, 230);
+    ctx.strokeStyle = '#8d9d8b'; ctx.lineWidth = 3;
+    ctx.strokeRect(154, 90, 652, 270);
+    ctx.fillStyle = accent; ctx.fillRect(174, 110, 612, 6);
+    ctx.fillStyle = '#152f39'; ctx.fillRect(192, 139, 576, 178);
+    ctx.strokeStyle = '#668b8c'; ctx.lineWidth = 2;
+    ctx.strokeRect(192, 139, 576, 178);
+    ctx.fillStyle = accent; ctx.font = 'bold 29px system-ui';
+    ctx.fillText(title, 216, 180, 510);
+    ctx.fillStyle = '#d5e5dc'; ctx.font = 'bold 23px system-ui';
+    ctx.fillText(instruction, 216, 289, 500);
+    ctx.fillStyle = accent;
+    if (medical) {
+      ctx.fillRect(681, 199, 18, 65); ctx.fillRect(658, 222, 64, 18);
+    } else if (transport) {
+      ctx.strokeStyle = accent; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.ellipse(687, 231, 33, 46, 0, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      ctx.strokeStyle = accent; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(688, 229, 32, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(688, 206); ctx.lineTo(688, 252);
+      ctx.moveTo(665, 229); ctx.lineTo(711, 229); ctx.stroke();
+    }
+    ctx.fillStyle = '#bbd0c5'; ctx.font = 'bold 15px system-ui';
+    ctx.fillText('PUESTO DE CAMPO  /  INTERFAZ LOCAL', 216, 209, 420);
+  }
+  // Adjacent live station gets a readable embedded console; no fabricated telemetry.
   const station = scene.objects.find(item => item.type === 'station' &&
     item.x === front.x && item.y === front.y && item.id === activeStation);
   if (station) {
