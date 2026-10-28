@@ -185,7 +185,8 @@
  box-shadow:0 4px 17px #071a24aa;cursor:pointer;
 }
 .scenario-fire-overlay:disabled{
- border-color:#8199a2;background:#1b3440df;color:#bfd0d4;cursor:default;
+ /* The blocked reason is the important feedback, not a faded mystery button. */
+ opacity:1;border-color:#b79b74;background:#273845;color:#ffe0ad;cursor:default;
 }
 .scenario-fire-overlay:focus-visible{outline:3px solid #fff8b9;outline-offset:3px}
 @media(max-width:520px){.scenario-fire-overlay{right:10px;bottom:12px;min-width:146px}}
