@@ -15,3 +15,23 @@ export function describeCombatAim(aim: CombatAim | null): string {
     default: return 'No se puede disparar a este objetivo.';
   }
 }
+
+/** Short, readable in-board command label. The same authoritative aim gate
+ * supplies the detailed explanation; presentation cannot authorize a shot. */
+export function compactCombatFireLabel(
+  aim: CombatAim | null, target: string | null, enabled: boolean, truce = false,
+): string {
+  if (truce) return 'ALTO EL FUEGO';
+  if (!target) return 'APUNTAR · elige enemigo';
+  if (enabled) return 'DISPARAR · ' + target;
+  switch (aim?.reason) {
+    case 'out-of-range': return 'FUERA DE ALCANCE';
+    case 'terrain-blocked': return 'COBERTURA · ' + (aim.blocker ?? '?');
+    case 'ally-blocked': return 'ALIADO EN LÍNEA';
+    case 'contact-blocked': return 'ENEMIGO EN LÍNEA';
+    case 'no-action-points': return 'SIN ÓRDENES';
+    case 'incapacitated': return 'OFICIAL INCAPACITADO';
+    case 'encounter-ended': return 'ENCUENTRO TERMINADO';
+    default: return 'ORDEN NO DISPONIBLE';
+  }
+}
