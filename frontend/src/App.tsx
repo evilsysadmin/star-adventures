@@ -12,6 +12,7 @@ import { startExploration } from '../../src/spatial.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
 import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
+import { startMandate } from '../../src/dualMandate.mjs';
 import { performMedicalEvacuation, EVACUATION_INCIDENT } from '../../src/medicalEvacuation.mjs';
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
@@ -132,6 +133,8 @@ export function App() {
   const restart = () => {
     setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
     setAwayTeam(previous => ({ ...startAwayTeam(), squad: [...previous.squad] }));
+    // A new rescue must not inherit the previous mission's completed orders.
+    setMandate(startMandate(MANDATE_DEFINITION));
     setExploration(startExploration(world));
     setActiveStation(null);
     setMedicalNotice(null);
@@ -210,7 +213,7 @@ export function App() {
               <span className="mission-transmission-phase" data-testid="mission-phase">{missionBeat.title}</span>
             </div>
             <p className="mission-transmission-story">{missionBeat.story}</p>
-            {fieldResolution && <p className="mission-transmission-optional" data-testid="field-resolution">{fieldResolution === 'truce'
+            {fieldResolution && missionPhase !== 'debrief' && <p className="mission-transmission-optional" data-testid="field-resolution">{fieldResolution === 'truce'
               ? 'PERÍMETRO · Alto el fuego negociado por el equipo. El rescate sigue su curso.'
               : 'PERÍMETRO · Amenazas neutralizadas. El rescate sigue su curso.'}</p>}
             <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
@@ -221,6 +224,19 @@ export function App() {
                 </span>
               ))}
             </div>
+            {missionPhase === 'debrief' && (
+              <div className="mission-return-report" data-testid="mission-return-report" aria-label="Informe de regreso">
+                <div className="mission-return-facts">
+                  <span><strong>EVACUACIÓN</strong> Civiles a salvo</span>
+                  <span data-testid="mission-perimeter-outcome"><strong>PERÍMETRO</strong> {fieldResolution === 'truce'
+                    ? 'Tregua negociada'
+                    : fieldResolution === 'victory'
+                      ? 'Amenazas neutralizadas'
+                      : 'Sin resolución táctica registrada'}</span>
+                </div>
+                <button type="button" data-testid="mission-replay" onClick={restart}>Repetir rescate ↻</button>
+              </div>
+            )}
           </section>
           {fieldEncounterOpen && exploration.area === 'surface' ? (
             <section className="field-encounter-scene" data-testid="field-encounter-scene" aria-label="Encuentro del perímetro">
