@@ -46,6 +46,9 @@ async function openMissions(page:Page,width:number) {
  await page.setViewportSize({width,height:850});
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
+ // Older exploration/record checks intentionally run the opt-in training lab.
+ await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+ await page.getByTestId('scenario-training-toggle').click();
  await expect(page.getByTestId('scenario-lab')).toBeVisible();
  await expect(page.getByTestId('scenario-render-canvas')).toBeVisible();
 }
