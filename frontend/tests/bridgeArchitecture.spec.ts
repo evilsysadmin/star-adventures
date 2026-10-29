@@ -10,9 +10,17 @@ for (const width of [360, 390, 430, 1280]) {
     await page.goto('/');
     await expect(page.getByTestId('mission-phase')).toHaveText('TRANSMISIÓN ENTRANTE');
     const canvas = page.getByTestId('bridge-interior');
-    await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true');
+    await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     await expect(canvas).toHaveAttribute('data-bridge-art-loaded', 'true');
     await expect(canvas).toHaveAttribute('data-bridge-pose', '3:5:N');
+    const viewport = await canvas.evaluate(element => {
+      const canvas = element as HTMLCanvasElement;
+      const bounds = canvas.getBoundingClientRect();
+      return { backing: canvas.width / canvas.height, visible: bounds.width / bounds.height,
+        pixels: canvas.width * canvas.height };
+    });
+    expect(Math.abs(viewport.backing - viewport.visible)).toBeLessThan(.01);
+    expect(viewport.pixels).toBeLessThanOrEqual(960 * 480);
     const before = await canvas.screenshot({ path: `test-results/bridge-interior-spawn-${width}.png` });
     await page.getByTestId('explore-forward').click();
     await expect(canvas).toHaveAttribute('data-bridge-pose', '3:4:N');
@@ -35,6 +43,33 @@ for (const width of [360, 390, 430, 1280]) {
   });
 }
 
+test('bridge reprojects after rotation and resize while preserving the real station and position', async ({ page }) => {
+  test.setTimeout(70_000);
+  await page.setViewportSize({ width: 1280, height: 850 });
+  await page.goto('/');
+  const canvas = page.getByTestId('bridge-interior');
+  await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
+  await expect(canvas).toHaveAttribute('data-bridge-art-loaded', 'true');
+  for (const action of ['left', 'forward', 'right', 'forward', 'forward', 'left'])
+    await page.getByTestId(`explore-${action}`).click();
+  await expect(canvas).toHaveAttribute('data-bridge-pose', '2:3:W');
+  await expect(page.getByTestId('explore-target')).toContainText('Estación científica');
+  await page.getByTestId('explore-use').click();
+  await expect(page.getByTestId('explore-feedback')).toContainText('Estación científica: consola seleccionada');
+  for (const size of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1280, height: 850 }]) {
+    await page.setViewportSize(size);
+    await expect.poll(async () => canvas.evaluate(element => {
+      const canvas = element as HTMLCanvasElement, bounds = canvas.getBoundingClientRect();
+      return Math.abs(canvas.width / canvas.height - bounds.width / bounds.height);
+    })).toBeLessThan(.01);
+    await expect(canvas).toHaveAttribute('data-bridge-pose', '2:3:W');
+    await expect(page.getByTestId('explore-target')).toContainText('Estación científica');
+    expect(await canvas.evaluate(element => (element as HTMLCanvasElement).width * (element as HTMLCanvasElement).height)).toBeLessThanOrEqual(960 * 480);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await canvas.screenshot({ path: `test-results/bridge-science-${size.width}.png` });
+  }
+});
+
 test('WebGL denial leaves a usable first-person bridge and real transporter', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
@@ -55,7 +90,7 @@ test('WebGL denial leaves a usable first-person bridge and real transporter', as
 test('a lost WebGL context falls back without resetting the captain position', async ({ page }) => {
   await page.goto('/');
   const canvas = page.getByTestId('bridge-interior');
-  await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true');
+  await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
   await page.getByTestId('explore-left').click();
   await page.getByTestId('explore-forward').click();
   await expect(canvas).toHaveAttribute('data-bridge-pose', '2:5:W');

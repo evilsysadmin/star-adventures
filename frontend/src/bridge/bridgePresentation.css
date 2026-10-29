@@ -35,11 +35,19 @@ body{background:radial-gradient(ellipse at 20% 0,#1a2833 0,transparent 60%),#090
 .firstperson-map-toggle{min-height:32px;padding:7px 10px;border:1px solid #75848b4a;border-radius:2px;background:#1c2931;font-size:9px;font-weight:400;color:#becbd0}
 .firstperson-render-stage{position:relative;overflow:hidden}
 .bridge-interior-canvas{background:#0b1623}
+.bridge-loading{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;background:linear-gradient(#0a1828c9,#09121bf2),url('/art/meridian-orbit-v1.webp') center/cover;color:#c3cfcf}
+.bridge-loading>span{font:9px ui-monospace,monospace;letter-spacing:.2em;color:#ccad80}.bridge-loading>strong{font-size:22px;font-weight:400;letter-spacing:-.02em}.bridge-loading>small{font-size:11px;color:#8cabb5}
+.firstperson-bridge .firstperson-render-stage{border-top:1px solid #e4d7ae20;border-bottom:1px solid #a6c7cc35}
+.firstperson-bridge .bridge-interior-canvas{height:clamp(350px,35vw,560px);aspect-ratio:auto;object-fit:fill}
+.firstperson-bridge .firstperson-top{background:linear-gradient(100deg,#26363c,#131e26);min-height:54px}
+.firstperson-bridge .firstperson-top::before{color:#e6c9a1}
+.firstperson-bridge .firstperson-name{letter-spacing:.07em}
 .bridge-lens{position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,#07121b73,transparent 22%,transparent 90%,#07121b33);color:#bdcfd4}
 .bridge-lens-deck{position:absolute;left:21px;bottom:19px;font:8px ui-monospace,monospace;letter-spacing:.22em;color:#a5bec7}
 .bridge-lens-deck b{display:block;margin-top:6px;font-size:11px;font-weight:400;color:#e2e6de;letter-spacing:.16em}
 .bridge-lens-mode{position:absolute;right:20px;bottom:20px;font:7px ui-monospace,monospace;letter-spacing:.12em;color:#a6bdc6}
-.bridge-reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:300 18px monospace;color:#c2dce178;text-shadow:0 1px 4px #000}
+.bridge-reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border:1px solid #e3eee86b;border-radius:50%;box-shadow:0 0 0 4px #07121b19,0 0 8px #07121b55;font-size:0}
+.bridge-reticle::after{content:'';position:absolute;inset:4px;background:#e2e8d69c;border-radius:50%}
 .firstperson-hud{border-color:#66777c30;background:#111d25;padding:10px 15px;font:9px ui-monospace,monospace;letter-spacing:0;color:#94b1bc}
 .firstperson-hud span:last-child{color:#c8bb9f}
 .firstperson-waypoint{background:#16252c;border-color:#748a862a;padding:10px 15px;gap:8px 12px}
@@ -72,6 +80,7 @@ body{background:radial-gradient(ellipse at 20% 0,#1a2833 0,transparent 60%),#090
 @media(max-width:1050px){.app-shell{padding:0 22px}.bridge-layout{grid-template-columns:minmax(0,1fr) 300px;gap:18px}.bridge-navigation{margin-left:30px;gap:20px}.masthead-right{font-size:8px}.firstperson-waypoint{grid-template-columns:minmax(0,1fr) auto}.firstperson-waypoint-label{grid-column:1/-1}}
 @media(max-width:850px){.bridge-layout{grid-template-columns:1fr}.orders-panel{margin-top:6px}.away-squad-slots{grid-template-columns:repeat(3,minmax(0,1fr))}.bridge-navigation{margin-left:auto}.masthead-right{display:none}.hero-panel h1{font-size:36px}.bridge-layout{padding-top:24px}}
 @media(max-width:520px){
+ .firstperson-bridge .bridge-interior-canvas{height:300px;max-height:none}.firstperson-bridge .firstperson-name{letter-spacing:0}.firstperson-bridge .firstperson-top{min-height:50px}.firstperson-bridge .firstperson-hud{margin-top:0}
  .app-shell{padding:0 14px}.masthead{height:73px;gap:12px}.brand-name{font-size:12px;letter-spacing:.11em}.brand-caption{font-size:6px;letter-spacing:.12em}.brand-mark{width:25px;height:25px;font-size:18px}.bridge-navigation{gap:14px}.bridge-navigation a{font-size:10px}.bridge-navigation a:last-child{display:none}
  .bridge-layout{padding-top:21px;gap:18px}.hero-panel h1{font-size:32px;margin:12px 0 17px}.eyebrow{font-size:8px;letter-spacing:.09em;gap:8px}.mission-transmission{padding:11px 12px;margin-bottom:14px}.mission-transmission-story{font-size:11px;line-height:1.6}.mission-transmission-kicker{font-size:7px;letter-spacing:.05em}.mission-transmission-phase{font-size:8px}.mission-transmission-next{font-size:10px;line-height:1.6}.mission-transmission-route{gap:17px}.mission-transmission-route>span{font-size:8px;gap:5px}
  .firstperson-top{padding:10px;font-size:8px;gap:8px}.firstperson-top::before{padding-right:8px}.firstperson-name{max-width:185px}.firstperson-map-toggle{font-size:8px;padding:6px}.firstperson-canvas{height:clamp(280px,75vw,330px)}.bridge-lens-deck{left:14px;bottom:15px;font-size:7px}.bridge-lens-deck b{font-size:9px}.bridge-lens-mode{display:none}.firstperson-hud{font-size:8px;padding:9px 10px;gap:7px;position:relative;z-index:1}.firstperson-waypoint{padding:10px;font-size:9px}.firstperson-waypoint-label{font-size:8px}.firstperson-waypoint strong{font-size:10px}.firstperson-waypoint-steps{font-size:8px}

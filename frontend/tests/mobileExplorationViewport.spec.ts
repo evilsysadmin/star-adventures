@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-// The real 960x480 first-person renderer must gain physical presence on
-// phones without stretching objects, clipping controls or breaking transport.
+// The responsive 3D bridge and fixed-resolution 2D surface must retain physical
+// presence without stretching objects, clipping controls or breaking transport.
 for (const width of [360, 390, 430, 1280]) {
   test(`first-person bridge and surface remain legible at ${width}px`, async ({ page }) => {
     test.setTimeout(70_000);
@@ -23,19 +23,16 @@ for (const width of [360, 390, 430, 1280]) {
       return { box, hudBox, css };
     };
 
+    await expect(page.getByTestId('bridge-interior')).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     const bridge = await geometry();
-    expect(bridge.css.sourceWidth).toBe(960);
-    expect(bridge.css.sourceHeight).toBe(480);
+    expect(bridge.css.sourceWidth * bridge.css.sourceHeight).toBeLessThanOrEqual(960 * 480);
+    expect(bridge.css.sourceWidth / bridge.css.sourceHeight).toBeCloseTo(bridge.box.width / bridge.box.height, 2);
+    expect(bridge.css.objectFit).toBe('fill');
     if (width <= 600) {
-      expect(bridge.css.objectFit).toBe('cover');
       expect(bridge.box.height).toBeGreaterThanOrEqual(250);
       expect(bridge.box.height / bridge.box.width).toBeGreaterThan(0.65);
-      // Accessible HTML readouts cover the now-cropped canvas corner text.
-      expect(bridge.hudBox.y).toBeLessThan(bridge.box.y + bridge.box.height);
-    } else {
-      expect(bridge.box.height / bridge.box.width).toBeCloseTo(0.5, 1);
-      expect(bridge.hudBox.y).toBeGreaterThanOrEqual(bridge.box.y + bridge.box.height - 1);
     }
+    expect(bridge.hudBox.y).toBeGreaterThanOrEqual(bridge.box.y + bridge.box.height - 1);
     await canvas.screenshot({ path: `test-results/mobile-explore-bridge-${width}.png` });
 
     // Travel through the real bridge transporter; no fake scene swap.
@@ -46,7 +43,15 @@ for (const width of [360, 390, 430, 1280]) {
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
     const surface = await geometry();
-    expect(surface.box.height).toBeCloseTo(bridge.box.height, 0);
+    expect(surface.css.sourceWidth).toBe(960);
+    expect(surface.css.sourceHeight).toBe(480);
+    if (width <= 600) {
+      expect(surface.box.height).toBeGreaterThanOrEqual(250);
+      expect(surface.css.objectFit).toBe('cover');
+      expect(surface.hudBox.y).toBeLessThan(surface.box.y + surface.box.height);
+    } else {
+      expect(surface.box.height / surface.box.width).toBeCloseTo(.5, 1);
+    }
     await canvas.screenshot({ path: `test-results/mobile-explore-surface-${width}.png` });
     await expect(page.getByTestId('explore-forward')).toBeVisible();
     await expect(page.getByTestId('explore-use')).toBeVisible();
