@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './styles.css';
 import './components/isoScenarioPlay.css';
+import './bridge/bridgePresentation.css';
 
 // The camera proof is an opt-in diagnostic route, not a replacement for the playable mission.
 const TacticalCameraProbe = React.lazy(() => import('./tactical/TacticalCameraProbe'));

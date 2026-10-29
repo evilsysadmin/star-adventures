@@ -34,6 +34,9 @@ for (const width of [390, 1280]) {
     // Reviewable first frame: the board, not a page of explanatory copy,
     // must be onscreen immediately on both mobile and desktop.
     await expect(page.getByTestId('scenario-keyboard')).toBeFocused();
+    // The independently lazy-loaded renderer can mount after its keyboard
+    // wrapper gains focus; require the actual canvas before measuring it.
+    await expect(page.getByTestId('scenario-render-canvas')).toBeVisible();
     const board = await page.getByTestId('scenario-render-canvas').boundingBox();
     expect(board).not.toBeNull();
     expect(board!.y).toBeGreaterThanOrEqual(-30);

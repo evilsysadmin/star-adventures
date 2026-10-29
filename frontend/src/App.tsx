@@ -209,8 +209,12 @@ export function App() {
       <a href="#orders" className="skip-link">Ir a las órdenes</a>
       <header className="masthead">
         <div className="brand-mark" aria-hidden="true">✦</div>
-        <div className="brand-block"><div className="brand-name">STAR <span>ADVENTURES</span></div><div className="brand-caption">SHADOWOPS · PROTOTIPO DE CAMPAÑA</div></div>
-        <div className="masthead-right"><span className="status-dot" /> SISTEMAS OPERATIVOS <span className="masthead-separator">/</span> V 0.1</div>
+        <div className="brand-block"><div className="brand-name">STAR <span>ADVENTURES</span></div><div className="brand-caption">SHADOWOPS · EXPLORACIÓN Y MANDO</div></div>
+        <nav className="bridge-navigation" aria-label="Navegación del juego">
+          <a href="#exploration">{exploration.area === 'bridge' ? 'Puente' : 'Superficie'}</a>
+          <a href="#orders">Diario de misión</a>
+        </nav>
+        <div className="masthead-right"><span className="status-dot" /> PARTIDA LOCAL</div>
       </header>
 
       <main className="bridge-layout">
@@ -249,7 +253,7 @@ export function App() {
             )}
           </section>
           {fieldEncounterOpen && exploration.area === 'surface' ? (
-            <section className="field-encounter-scene" data-testid="field-encounter-scene" aria-label="Encuentro del perímetro">
+            <section id="exploration" className="field-encounter-scene" data-testid="field-encounter-scene" aria-label="Encuentro del perímetro">
               <div className="field-encounter-return">
                 <span>SUPERFICIE · BALIZA DEL PERÍMETRO</span>
                 <button type="button" data-testid="field-encounter-return"
@@ -363,7 +367,7 @@ export function App() {
         </section>
       </main>
 
-      <footer className="footer-line"><span>✦ SHADOWOPS <span className="footer-muted">/ UNIVERSO EN CONSTRUCCIÓN</span></span><span aria-live="polite">{last ? `ÚLTIMA ORDEN: ${spanishChoices[last.choiceId] ?? last.choiceId}` : initialSession.notice}</span></footer>
+      <footer className="footer-line"><span>✦ SHADOWOPS <span className="footer-muted">/ DIARIO DEL CAPITÁN</span></span><span aria-live="polite">{last ? `ÚLTIMA ORDEN: ${spanishChoices[last.choiceId] ?? last.choiceId}` : initialSession.notice}</span></footer>
     </div>
   );
 }

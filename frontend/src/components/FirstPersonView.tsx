@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import { startExploration, applyExploration, faceTile } from '../../../src/spatial.mjs';
 import { BridgeScene } from './BridgeScene';
+import { BridgeInteriorView } from './BridgeInteriorView';
 import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
 export type ViewState = {
@@ -414,6 +415,8 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [bridgeFallback, setBridgeFallback] = useState(false);
+  const useCompatibleBridge = useCallback(() => setBridgeFallback(true), []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(exploration);
   const area = (world.scenes as Record<string, Scene>)[exploration.area];
@@ -430,8 +433,9 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     onSpatialEvent?.(result.state, result.event);
   }, [onSpatialEvent]);
   useEffect(() => {
-    if (canvas.current) drawScene(canvas.current, exploration, alert, event?.type === 'station' ? (event.stationId ?? null) : null);
-  }, [exploration, alert, showMap, event]);
+    if (canvas.current && (exploration.area !== 'bridge' || bridgeFallback))
+      drawScene(canvas.current, exploration, alert, event?.type === 'station' ? (event.stationId ?? null) : null);
+  }, [exploration, alert, showMap, event, bridgeFallback]);
   useEffect(() => {
     const onKey = (key: KeyboardEvent) => {
       if (showMap || key.repeat || key.defaultPrevented || key.altKey || key.ctrlKey || key.metaKey) return;
@@ -455,7 +459,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     return () => window.removeEventListener('keydown', onKey);
   }, [dispatch, exploration.pending, showMap]);
   return (
-    <section className="firstperson" aria-label="Exploración del puente y del equipo de desembarco">
+    <section id="exploration" className={`firstperson firstperson-${exploration.area}`} aria-label="Exploración del puente y del equipo de desembarco">
       <div className="firstperson-top">
         <span className="firstperson-name" data-testid="explore-area">{area.title}</span>
         <button type="button" className="firstperson-map-toggle" onClick={() => setShowMap(m => !m)}>
@@ -464,8 +468,17 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
       </div>
       {showMap ? <BridgeScene alert={alert} terminal={terminal} /> : (
         <>
-          <canvas ref={canvas} className="firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
-            aria-label={`Perspectiva en primera persona: ${area.title}, posición ${exploration.x} ${exploration.y}, rumbo ${exploration.heading}`} />
+          <div className="firstperson-render-stage">
+          {exploration.area === 'bridge' && !bridgeFallback
+            ? <BridgeInteriorView pose={exploration} alert={alert} onUnavailable={useCompatibleBridge} />
+            : <canvas key={exploration.area} ref={canvas} className="firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
+                aria-label={`Perspectiva en primera persona: ${area.title}, posición ${exploration.x} ${exploration.y}, rumbo ${exploration.heading}`} />}
+          {exploration.area === 'bridge' && !bridgeFallback && <div className="bridge-lens" aria-hidden="true">
+            <span className="bridge-lens-deck">MERIDIAN <b>PUENTE · 01</b></span>
+            <span className="bridge-reticle">+</span>
+            <span className="bridge-lens-mode">EXPLORACIÓN EN PRIMERA PERSONA</span>
+          </div>}
+          </div>
           <div className="firstperson-hud">
             <span data-testid="explore-heading">RUMBO {exploration.heading} · {exploration.x}:{exploration.y}</span>
             <span data-testid="explore-target">{facing ? `OBJETIVO: ${facing.label}` : 'Observando la estancia'}</span>
