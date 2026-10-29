@@ -76,6 +76,8 @@ test('bridge reprojects after rotation and resize while preserving the real stat
 });
 
 test('WebGL denial leaves a usable first-person bridge and real transporter', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
@@ -84,12 +86,14 @@ test('WebGL denial leaves a usable first-person bridge and real transporter', as
     } as typeof original;
   });
   await page.goto('/');
+  // Wait for actual fallback mount, not an initially empty React root.
+  await expect(page.getByTestId('compatible-firstperson-canvas')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('bridge-interior')).toHaveCount(0);
-  await expect(page.locator('.firstperson-canvas')).toBeVisible();
   for (const action of ['right', 'forward', 'right', 'use']) await page.getByTestId(`explore-${action}`).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByTestId('transport-confirm').click();
   await expect(page.getByTestId('explore-area')).toContainText('Superficie');
+  expect(errors).toEqual([]);
 });
 
 test('a lost WebGL context falls back without resetting the captain position', async ({ page }) => {

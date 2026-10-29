@@ -475,7 +475,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           <div className="firstperson-render-stage">
           {exploration.area === 'bridge' && !bridgeFallback
             ? <BridgeInteriorView pose={{ ...bridgePose, seated }} alert={alert} onUnavailable={useCompatibleBridge} />
-            : <canvas key={exploration.area} ref={canvas} className="firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
+            : <canvas key={exploration.area} ref={canvas} className="firstperson-canvas" data-testid="compatible-firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
                 aria-label={`Perspectiva en primera persona: ${area.title}, posición ${exploration.x} ${exploration.y}, rumbo ${exploration.heading}`} />}
           {exploration.area === 'bridge' && !bridgeFallback && <div className="bridge-lens" aria-hidden="true">
             <span className="bridge-lens-deck">MERIDIAN <b>PUENTE · 01</b></span>

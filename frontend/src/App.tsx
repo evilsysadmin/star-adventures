@@ -223,7 +223,8 @@ export function App() {
     briefing: {
       title: 'TRANSMISIÓN ENTRANTE',
       story: 'Un SOS del puesto científico interrumpe la guardia. Hay civiles esperando asistencia. Tu primera orden es preparar el equipo de rescate.',
-      next: 'Elige a un oficial con Medicina y ordena el transporte desde tu puesto de mando.',
+      next: seated ? 'Elige a un oficial con Medicina y ordena el transporte desde tu puesto de mando.'
+        : 'Elige a un oficial con Medicina y localiza el acceso a la sala de transporte en la parte posterior del puente.',
     },
     field: {
       title: 'MISIÓN EN SUPERFICIE',
