@@ -105,7 +105,6 @@ export function IsoTacticalLab() {
     cameraRefresh.current?.(detail, focusCell, !!inspectionCell);
   }, [detail, active, inspectionCell?.id]);
 
-  useEffect(() => { patrolEnabled.current = patrolling; }, [patrolling]);
   useEffect(() => { currentHostileCells.current = hostileCells; }, [hostileCells]);
   const path = moving || firing ? null : planTrainingMove(units, officer, active.id, hostileCells);
   const aim = !moving && !firing && hostileCells.includes(active.id)
@@ -536,6 +535,7 @@ export function IsoTacticalLab() {
         }
       }
       const patrolEnabledNow = patrolEnabled.current && !reduced;
+      canvas.dataset.patrolActive = String(patrolEnabledNow);
       if (patrolEnabledNow) {
         if (patrolSuspended.current || moveRef.current) {
           // A squad move owns its discrete occupancy snapshot. Hold the hostile
@@ -546,6 +546,7 @@ export function IsoTacticalLab() {
           }
         } else if (patrolStarted === null) patrolStarted = time;
         const elapsed = patrolElapsed + (patrolStarted === null ? 0 : time - patrolStarted);
+        canvas.dataset.patrolElapsed = String(elapsed);
         const cellsAtStep = hostilePatrolCellsAt(elapsed);
         const nextKey = cellsAtStep.join(',');
         if (nextKey !== hostileCellKey) {
@@ -574,6 +575,7 @@ export function IsoTacticalLab() {
           }
         }
       } else {
+        canvas.dataset.patrolElapsed = '0';
         patrolElapsed = 0;
         patrolStarted = null;
         const initialKey = initialHostileCells.join(',');
@@ -730,7 +732,12 @@ export function IsoTacticalLab() {
         {playing ? 'Pausar caminata' : 'Reproducir caminata'}
       </button>
       <button className="iso-motion" type="button" data-testid="iso-patrol" aria-pressed={patrolling}
-        onClick={() => setPatrolling(value => !value)}>
+        onClick={() => {
+          // Accept the command synchronously; the next RAF must not depend
+          // on when React flushes a passive effect under a controlled clock.
+          patrolEnabled.current = !patrolEnabled.current;
+          setPatrolling(patrolEnabled.current);
+        }}>
         {patrolling ? 'Detener patrulla' : 'Activar patrulla'}
       </button>
     </div>
