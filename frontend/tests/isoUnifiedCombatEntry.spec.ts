@@ -8,6 +8,10 @@ for(const width of [390,1280]){
   await page.setViewportSize({width,height:850});
   await page.goto('/');
   await page.getByTestId('tactical-view-missions').click();
+  // The single entry offers real shooting before any extra Play click.
+  await expect(page.getByTestId('scenario-fire')).toBeVisible();
+  await expect(page.getByTestId('scenario-fire-order')).toBeVisible();
+  await expect(page.getByTestId('scenario-fire-order')).toBeDisabled();
   await expect(page.getByTestId('scenario-play-combat')).toBeVisible();
   const advanced=page.getByTestId('scenario-mode-advanced');
   await expect(advanced).not.toHaveAttribute('open',/./);
