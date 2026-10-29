@@ -11,11 +11,8 @@ for (const width of [360, 390, 430]) {
 
     const head = page.locator('.scenario-head');
     const selector = page.locator('.scenario-selector');
-    const beforeHead = await head.boundingBox();
-    const beforeSelector = await selector.boundingBox();
-    expect(beforeHead).not.toBeNull();
-    expect(beforeSelector).not.toBeNull();
-
+    // The live combat is already compact and playable on entry.
+    await expect(page.getByTestId('scenario-fire-order')).toBeVisible();
     await page.getByTestId('scenario-play-combat').click();
     await expect(page.getByTestId('scenario-fire')).toBeVisible();
     await expect(page.getByTestId('scenario-keyboard')).toBeFocused();
@@ -27,8 +24,8 @@ for (const width of [360, 390, 430]) {
     const afterSelector = await selector.boundingBox();
     const roster = await page.locator('.scenario-roster').boundingBox();
     const canvas = await page.getByTestId('scenario-render-canvas').boundingBox();
-    expect(afterHead!.height).toBeLessThan(beforeHead!.height - 20);
-    expect(afterSelector!.height).toBeLessThan(beforeSelector!.height - 15);
+    expect(afterHead!.height).toBeLessThan(160);
+    expect(afterSelector!.height).toBeLessThan(180);
     expect(roster!.height).toBeLessThan(95);
     expect(canvas!.height).toBeGreaterThanOrEqual(340);
     const viewTools = await page.locator('.scenario-viewtools').boundingBox();
@@ -45,7 +42,7 @@ for (const width of [360, 390, 430]) {
     const columns = await page.locator('.scenario-orders').evaluate(el =>
       getComputedStyle(el).gridTemplateColumns.split(' ').length);
     expect(columns).toBe(3);
-    expect(await page.locator('.scenario-orders button').count()).toBe(6);
+    expect(await page.locator('.scenario-orders button').count()).toBe(7);
     for (const button of await page.locator('.scenario-orders button').all()) {
       const bounds = await button.boundingBox();
       expect(bounds!.height).toBeGreaterThanOrEqual(44);
