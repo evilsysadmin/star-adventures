@@ -2,7 +2,7 @@
 // authoritative; audio never changes hit chances, AP, health, saves or replay.
 // Match the mission board's fast tracer arrival exactly.
 import { SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from './isoFirePlayback.ts';
-import { readGamePreferences } from './gamePreferences';
+import { readGamePreferences } from './gamePreferences.ts';
 export const SHOT_IMPACT_DELAY_SECONDS = SHOT_DURATION_MS * SHOT_TRAVEL_FRACTION / 1000;
 
 let context: AudioContext | null = null;
