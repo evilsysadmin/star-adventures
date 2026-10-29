@@ -17,15 +17,19 @@ async function choose(page: import('@playwright/test').Page, id: string) {
 for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking atlases and updates logical target cells at ${width}px`, async ({ page }) => {
   test.setTimeout(30_000);
   await page.setViewportSize({ width, height: 850 });
+  await page.clock.install({ time: new Date('2026-10-29T00:00:00Z') });
   await page.goto('/');
   await page.getByTestId('tactical-view-iso').click();
   await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 4/4', { timeout: 20_000 });
+  // Freeze browser time only after loading. Pointer selection then observes
+  // one real patrol frame instead of racing a second 900ms cell transition.
+  await page.clock.pauseAt(new Date('2026-10-29T01:00:00Z'));
 
   await choose(page, '6:2');
   await expect(page.getByTestId('iso-aim-status')).toContainText('línea despejada');
   await page.getByTestId('iso-patrol').click();
   await expect(page.getByTestId('iso-patrol')).toContainText('Detener patrulla');
-  await page.waitForTimeout(1_050);
+  await page.clock.runFor(1_050);
 
   await choose(page, '6:1');
   await expect(page.getByTestId('iso-selected')).toContainText('Hostil de entrenamiento');
@@ -35,13 +39,15 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await expect(page.getByTestId('iso-move')).toBeEnabled();
   await page.getByTestId('iso-move').click();
   const frozenCells = await page.getByTestId('iso-hostile-cells').textContent();
-  await page.waitForTimeout(500);
+  await page.clock.runFor(500);
   expect(await page.getByTestId('iso-hostile-cells').textContent()).toBe(frozenCells);
+  await page.clock.runFor(1_500);
   await expect(page.getByTestId('iso-motion-status')).toContainText('Recorrido completado', { timeout: 10_000 });
   // Stopping patrol resets both contacts to authored start cells on the
   // next animation frame. Wait for that authoritative state instead of
   // clicking a stale moving position immediately after the button flips.
   await page.getByTestId('iso-patrol').click();
+  await page.clock.runFor(32);
   await expect(page.getByTestId('iso-patrol')).toContainText('Activar patrulla');
   const initialCells = hostilePatrolCellsAt(0);
   await expect.poll(async () =>

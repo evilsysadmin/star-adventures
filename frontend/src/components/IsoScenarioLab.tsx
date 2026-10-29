@@ -14,7 +14,7 @@ import { replayHostileEncounterCommands } from '../isoScenarioHostileCheckpoint'
 import { newCombatEncounterSession, restoreCombatEncounterSession, persistCombatEncounterSession } from '../isoScenarioCombatSession';
 import { replayCombatEncounterCommands } from '../isoScenarioCombatCheckpoint';
 import { COMBAT_OFFICER_MAX_HP } from '../isoScenarioCombatEncounter';
-import { replayCombatCommands, type CombatReplayAction } from '../isoScenarioCombatReplay';
+import { replayCombatCommands, type CombatReplayAction, type CombatReplayHistory } from '../isoScenarioCombatReplay';
 import { newCombatReplaySession, restoreCombatReplaySession, persistCombatReplaySession } from '../isoScenarioCombatReplaySession';
 import { startCombatMissionAttemptSession, persistCombatMissionAttemptProgress } from '../isoScenarioCombatMissionInstanceSession';
 import { COMBAT_HOSTILE_MAX_HP } from '../isoScenarioCombatFire';
@@ -32,7 +32,7 @@ const officers: readonly {id:SquadId;name:string;role:string}[]=[
 ];
 const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 
-export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToSurface}:{fieldEncounter?:boolean;onFieldResolved?:(result:'truce'|'victory')=>void;onReturnToSurface?:()=>void}={}){
+export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,onFieldProgress,onReturnToSurface}:{fieldEncounter?:boolean;fieldHistory?:CombatReplayHistory;fieldNotice?:string;onFieldProgress?:(history:CombatReplayHistory)=>boolean;onReturnToSurface?:()=>void}={}){
  const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
  const [history,setHistory]=useState(startup.history);
  const [hostileStartup]=useState(()=>restoreHostileEncounterSession(localStorageOrNull()));
@@ -42,7 +42,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
  const [combatHistory,setCombatHistory]=useState(combatStartup.history);
  const [combatMode,setCombatMode]=useState(false);
  const [replayStartup]=useState(()=>restoreCombatReplaySession(localStorageOrNull()));
- const [replayHistory,setReplayHistory]=useState(()=>fieldEncounter?newCombatReplaySession('evacuation'):replayStartup.history);
+ const [replayHistory,setReplayHistory]=useState(()=>fieldEncounter?(fieldHistory??newCombatReplaySession('evacuation')):replayStartup.history);
  // The unified tactical entry is live combat; legacy labs remain opt-in.
  const [replayMode,setReplayMode]=useState(true);
  const [initialRecords]=useState(()=>{
@@ -64,7 +64,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
  const [officer,setOfficer]=useState<SquadId>('science');
  const [selected,setSelected]=useState(replayHistory.combat.encounter.mission.locations.science);
  const [focus,setFocus]=useState(false);
- const [notice,setNotice]=useState(fieldEncounter?'Contacto hostil detectado · negocia o asegura el perímetro':replayStartup.notice);
+ const [notice,setNotice]=useState(fieldEncounter?(fieldNotice??'Contacto hostil detectado · negocia o asegura el perímetro'):replayStartup.notice);
  // Fire feedback is transient presentation only; never enters the replay/save.
  const [shot,setShot]=useState<{id:number;from:string;to:string;officer:SquadId}|null>(null);
  const nextShotId=useRef(0);
@@ -137,12 +137,8 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
   }
   try{
    const next=replayCombatCommands(scenarioId,[...replayHistory.actions,command]);
-   const saved=fieldEncounter?true:persistCombatMissionAttemptProgress(next,localStorageOrNull()).replaySaved;
+   const saved=fieldEncounter?(onFieldProgress?.(next)??false):persistCombatMissionAttemptProgress(next,localStorageOrNull()).replaySaved;
    setReplayHistory(next);
-   if(fieldEncounter&&!replayHistory.combat.truce&&!replayHistory.combat.victory){
-    if(next.combat.truce)onFieldResolved?.('truce');
-    else if(next.combat.victory)onFieldResolved?.('victory');
-   }
    presentHits(command.type==='end-turn'?next.combat.encounter.hits:[]);
    if(command.type==='fire'){
     // The reducer has accepted this shot. Play immediately in the click gesture;
@@ -227,7 +223,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
    const next=newCombatReplaySession(id);
    const storage=localStorageOrNull();
    const instanceId=globalThis.crypto?.randomUUID?.();
-   const saved=fieldEncounter?true:instanceId
+   const saved=fieldEncounter?(onFieldProgress?.(next)??false):instanceId
     ?startCombatMissionAttemptSession(instanceId,id,storage).replaySaved
     :persistCombatReplaySession(next,storage);
    setReplayHistory(next);
@@ -377,7 +373,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
   <header className="scenario-head">
    <span className="scenario-eyebrow">{fieldEncounter?'SUPERFICIE · CONTACTO HOSTIL':'OPERACIONES TÁCTICAS · LABORATORIO JUGABLE'}</span>
    <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Tres misiones, un equipo'}</h2>
-   <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. Esta incursión es temporal.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
+   <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. El progreso del perímetro pertenece a este intento de rescate.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
    {!fieldEncounter&&<button className="scenario-play-combat" type="button"
     data-testid="scenario-play-combat" onClick={startPlayableCombat}>
     {replayMode?'Ir al tablero · combate activo':'Jugar combate con disparos'}
@@ -479,7 +475,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
    {fieldEncounter&&!combat.failed&&(replay?.truce||replay?.victory||mission.completed)&&onReturnToSurface&&
     <button type="button" className="scenario-resume-rescue" data-testid="scenario-resume-rescue"
      onClick={onReturnToSurface}>Continuar rescate en superficie ↩</button>}
-   <button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>
+   {(!fieldEncounter||combat.failed)&&<button type="button" data-testid="scenario-combat-retry" onClick={()=>change(scenarioId)}>Reiniciar combate</button>}
   </section>}
   <div className="scenario-objectives" data-testid="scenario-objectives">
    {objectives.map(item=><div key={item.key}

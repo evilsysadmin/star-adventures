@@ -16,30 +16,30 @@ export type SessionState = {
 export const CHECKPOINT_KEY = 'shadowops.star-adventures.border-signal.v2';
 export const LEGACY_CHECKPOINT_KEY = 'shadowops.star-adventures.border-signal.v1';
 
-export function restoreSession(episode: Parameters<typeof startCrewSession>[0], storage: Pick<Storage, 'getItem'> | null): { state: SessionState; notice: string } {
+export function restoreSession(episode: Parameters<typeof startCrewSession>[0], storage: Pick<Storage, 'getItem'> | null): { state: SessionState; notice: string; restored: boolean } {
   const fresh = () => startCrewSession(episode);
-  if (!storage) return { state: fresh(), notice: 'Sesión temporal · almacenamiento no disponible' };
+  if (!storage) return { state: fresh(), notice: 'Sesión temporal · almacenamiento no disponible', restored: false };
   try {
     const raw = storage.getItem(CHECKPOINT_KEY);
     if (raw !== null) {
       try {
-        return { state: deserializeCrewCheckpoint(episode, raw), notice: 'Tripulación y misión restauradas' };
+        return { state: deserializeCrewCheckpoint(episode, raw), notice: 'Tripulación y misión restauradas', restored: true };
       } catch {
         // A corrupt v2 must never silently roll back to stale v1 progress.
-        return { state: fresh(), notice: 'Guardado incompatible · misión reiniciada' };
+        return { state: fresh(), notice: 'Guardado incompatible · misión reiniciada', restored: false };
       }
     }
     const legacy = storage.getItem(LEGACY_CHECKPOINT_KEY);
     if (legacy !== null) {
       try {
-        return { state: migrateLegacyCheckpoint(episode, legacy), notice: 'Partida anterior recuperada · tripulación preparada' };
+        return { state: migrateLegacyCheckpoint(episode, legacy), notice: 'Partida anterior recuperada · tripulación preparada', restored: false };
       } catch {
-        return { state: fresh(), notice: 'Guardado incompatible · misión reiniciada' };
+        return { state: fresh(), notice: 'Guardado incompatible · misión reiniciada', restored: false };
       }
     }
-    return { state: fresh(), notice: 'Nueva misión · progreso local' };
+    return { state: fresh(), notice: 'Nueva misión · progreso local', restored: false };
   } catch {
-    return { state: fresh(), notice: 'Sesión temporal · almacenamiento no disponible' };
+    return { state: fresh(), notice: 'Sesión temporal · almacenamiento no disponible', restored: false };
   }
 }
 

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
 import { projectCell } from '../src/tacticalGrid';
 import { createIsoCamera } from '../src/tacticalIsoCamera';
 
@@ -56,6 +57,25 @@ for(const width of [390,1280]){
   await expect(canvas).not.toHaveAttribute('data-shot-sequence',/./);
   await canvas.screenshot({path:`test-results/board-tap-aim-${width}.png`});
 
+  // Observe the real rendered phase before firing. Polling after several
+  // assertions can miss the entire recoil on a busy software-rendered runner.
+  await canvas.evaluate(element => {
+   const node=element as HTMLCanvasElement;
+   let started:number|null=null;
+   const observer=new MutationObserver(()=>{
+    if(started===null&&node.dataset.shotSequence==='1')started=performance.now();
+    if(node.dataset.shotPhase!=='impact'||node.dataset.hitPhase!=='impact')return;
+    node.dataset.testImpactElapsed=String(performance.now()-started!);
+    node.dataset.testImpactTarget=node.dataset.shotTo;
+    // Mutation delivery follows the same RAF's renderer.render(), before
+    // browser compositing clears the WebGL drawing buffer. Save real pixels.
+    (window as Window & {acceptedImpactImage?:string}).acceptedImpactImage=node.toDataURL('image/png');
+    node.dataset.testImpactObserved='true';
+    observer.disconnect();
+   });
+   observer.observe(node,{attributes:true,attributeFilter:['data-shot-sequence','data-shot-phase','data-hit-phase']});
+  });
+
   // A second tap on that selected enemy is the same real reducer-backed shot
   // as the visible Disparar button; no speculative damage or synthetic event.
   await tapBoardCell(page,'6:6');
@@ -69,9 +89,12 @@ for(const width of [390,1280]){
   await expect(canvas).toHaveAttribute('data-fire-sprite-uv-x',String(1/3));
   // Actual canvas reaction must reach the target promptly, not after the old
   // 640 ms tracer. Keep a real impact frame as mobile/desktop visual evidence.
-  await expect(canvas).toHaveAttribute('data-shot-phase','impact',{timeout:1500});
-  await expect(canvas).toHaveAttribute('data-hit-phase','impact');
-  await canvas.screenshot({path:`test-results/board-fast-shot-impact-${width}.png`});
+  await expect(canvas).toHaveAttribute('data-test-impact-observed','true');
+  await expect(canvas).toHaveAttribute('data-test-impact-target','6:6');
+  expect(Number(await canvas.getAttribute('data-test-impact-elapsed'))).toBeLessThan(1500);
+  const impactImage=await page.evaluate(()=>(window as Window & {acceptedImpactImage?:string}).acceptedImpactImage);
+  expect(impactImage).toMatch(/^data:image\/png;base64,/);
+  writeFileSync(`test-results/board-fast-shot-impact-${width}.png`,Buffer.from(impactImage!.split(',')[1],'base64'));
   await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
   await page.screenshot({path:`test-results/board-tap-shot-${width}.png`,fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
