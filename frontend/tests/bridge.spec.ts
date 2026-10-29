@@ -436,15 +436,13 @@ test('corrupted away-team save resets safely without erasing ship mission histor
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 1:4');
 });
 
-test('surface away-party layout remains within mobile and desktop widths', async ({ page }) => {
-  for(const width of [360, 390, 430, 1280]) {
+for(const width of [360, 390, 430, 1280]) {
+  test(`surface away-party layout remains within ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/');
     await beamDown(page);
     await expect(page.getByTestId('away-party')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
     await page.screenshot({ path: `test-results/away-party-${width}.png`, fullPage: true });
-    await page.goto('/');
-    await page.evaluate(() => { localStorage.removeItem('shadowops.star-adventures.spatial.v1'); });
-  }
-});
+  });
+}
