@@ -17,6 +17,7 @@ test('opt-in hostile encounter advances visible enemies and survives F5 without 
  await page.setViewportSize({width:390,height:850});
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
+ await chooseLegacyMode(page,'scenario-training-toggle');
  await expect(page.getByTestId('scenario-training-toggle')).toHaveAttribute('aria-pressed','true');
  const legacy=await page.evaluate(key=>localStorage.getItem(key),SCENARIO_SAVE_KEY);
  const before=replayHostileEncounterCommands('relay',[]).encounter.positions;

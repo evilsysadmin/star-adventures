@@ -38,9 +38,10 @@ for(const width of [390,1280]){
  });
 }
 
-test('shoot action is accessible from the single tactical entry and damages a real target',async({page})=>{
+for(const width of [390,1280]){
+test(`shoot action from the single tactical entry damages and restores a real target at ${width}px`,async({page})=>{
  test.setTimeout(90_000);
- await page.setViewportSize({width:390,height:850});
+ await page.setViewportSize({width,height:850});
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
  await expect(page.getByTestId('scenario-primary-mode')).toContainText('Combate táctico');
@@ -62,5 +63,19 @@ test('shoot action is accessible from the single tactical entry and damages a re
  await fire.click();
  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
  await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
- await page.screenshot({path:'test-results/unified-combat-fire-mobile-390.png',fullPage:true});
+ await fire.scrollIntoViewIfNeeded();
+ await page.screenshot({path:`test-results/unified-combat-fire-${width}.png`,fullPage:false});
+ await page.reload();
+ await page.getByTestId('tactical-view-missions').click();
+ await expect(page.getByTestId('scenario-primary-mode')).toContainText('Combate táctico');
+ await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
+ await expect(page.getByTestId('scenario-unit-security')).toContainText('5:6');
+ await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
+ // Revealing the board must not restart the restored firefight or refill AP.
+ await page.getByTestId('scenario-play-combat').click();
+ await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
+ await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
+ await expect(fire).toBeDisabled();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+}
