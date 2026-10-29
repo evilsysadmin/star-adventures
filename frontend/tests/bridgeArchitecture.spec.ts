@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-// Exercise the player's bridge, independently of opted-in diagnostic scenes.
-test.use({ storageState: { cookies: [], origins: [] } });
+// The optional walking layout retains physical station authorization.
+// The default seated bridge is exercised in gameShell.spec.ts.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('shadowops.star-adventures.presentation.v1',
+    JSON.stringify({version:1,layout:'journal',hints:true,muted:false,volume:.6})));
+});
 
 for (const width of [360, 390, 430, 1280]) {
   test(`navigable bridge renders, opens its real helm and survives F5 at ${width}px`, async ({ page }) => {
@@ -20,7 +24,7 @@ for (const width of [360, 390, 430, 1280]) {
         pixels: canvas.width * canvas.height };
     });
     expect(Math.abs(viewport.backing - viewport.visible)).toBeLessThan(.01);
-    expect(viewport.pixels).toBeLessThanOrEqual(960 * 480);
+    expect(viewport.pixels).toBeLessThanOrEqual(1280 * 720);
     const before = await canvas.screenshot({ path: `test-results/bridge-interior-spawn-${width}.png` });
     await page.getByTestId('explore-forward').click();
     await expect(canvas).toHaveAttribute('data-bridge-pose', '3:4:N');
@@ -65,7 +69,7 @@ test('bridge reprojects after rotation and resize while preserving the real stat
     })).toBeLessThan(.01);
     await expect(canvas).toHaveAttribute('data-bridge-pose', '2:3:W');
     await expect(page.getByTestId('explore-target')).toContainText('Estación científica');
-    expect(await canvas.evaluate(element => (element as HTMLCanvasElement).width * (element as HTMLCanvasElement).height)).toBeLessThanOrEqual(960 * 480);
+    expect(await canvas.evaluate(element => (element as HTMLCanvasElement).width * (element as HTMLCanvasElement).height)).toBeLessThanOrEqual(1280 * 720);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await canvas.screenshot({ path: `test-results/bridge-science-${size.width}.png` });
   }

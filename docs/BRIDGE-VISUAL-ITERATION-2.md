@@ -23,15 +23,16 @@ documented in [BRIDGE-VISUALS.md](BRIDGE-VISUALS.md).
 ## Responsive rendering
 
 The camera now projects for the actual canvas dimensions, including phone and
-landscape layouts. It uses a wider vertical field of view at narrow aspect ratios
-to retain a useful view of the room rather than cutting off the peripheral desks.
+landscape layouts. It adapts the vertical field of view at narrow aspect ratios, capped at 78 degrees
+for the taller fullscreen phone view.
 A `ResizeObserver` redraws the current pose when the viewport changes. It is
 removed on disposal. There is no animation loop, bloom or postprocessing.
 
-Backing dimensions preserve the visible aspect ratio and remain within **460,800
-pixels** (the previous 960×480 budget), with a maximum width of 960. A phone canvas
-may consequently have more than 480 backing rows; the total pixel budget remains
-the same. This supersedes the fixed 960×480 dimensions in BRIDGE-VISUALS.md.
+Backing dimensions preserve the visible aspect ratio and remain within **921,600
+pixels** (1280×720), with a maximum width of 1280. Output follows the actual display
+size and a maximum density of 1.5. Tall phone views may have more than 720 backing
+rows while respecting the total pixel budget. This supersedes the original fixed
+960×480 card dimensions now that the bridge occupies the entire window.
 
 The renderer still uses one cached 1024px furniture shadow map and a small
 authored light probe. Repeated opaque furniture and architecture are batched by

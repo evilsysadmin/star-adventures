@@ -23,9 +23,11 @@ The separate elevated tactical camera and picking system are unchanged.
 `frontend/src/bridge/bridgeInterior.ts` renders on state changes and when the
 orbital texture loads. No continuous animation loop or postprocessing is added.
 A small, canvas-authored light probe and one cached 1024px shadow map support
-beveled furniture. The output stays within 460,800 backing pixels (the original
-960×480 budget), including on high-DPR devices. The second pass projects for the
-actual viewport aspect instead of cropping the bridge on phones. See
+beveled furniture. The output stays within 921,600 backing pixels (a maximum budget of
+1280×720 pixels), including on high-DPR devices. The second pass projects for the
+actual viewport aspect instead of cropping the bridge on phones. The fullscreen
+interface uses display-sized output with density capped at 1.5 and vertical FOV
+capped at 78 degrees. See
 [the second visual pass](BRIDGE-VISUAL-ITERATION-2.md) for its rendering contract.
 
 `BridgeInteriorView` loads the renderer asynchronously. On unmount it disposes

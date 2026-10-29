@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Presentation only. Every furnishing occupies the cell authored in the world;
 // the existing spatial engine remains the sole authority for navigation/use.
-export type BridgePose = { x: number; y: number; heading: string };
+export type BridgePose = { x: number; y: number; heading: string; seated?: boolean };
 type Station = { id: string; x: number; y: number; label: string; type: string };
 type BridgeMap = { width: number; height: number; objects: Station[] };
 
@@ -447,17 +447,22 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const draw = () => {
     if (disposed || !lastPose) return;
     const rect = canvas.getBoundingClientRect();
-    const aspect = Math.max(.5, rect.width / Math.max(1, rect.height));
+    const aspect = Math.max(.2, rect.width / Math.max(1, rect.height));
     // Match the real viewport instead of cropping half the room on a phone.
-    // Total backing pixels stay within the original 960×480 budget.
-    const width = Math.max(1, Math.min(960, Math.floor(Math.sqrt(960 * 480 * aspect))));
+    // Size to the real display, with bounded high-DPR supersampling. The
+    // fullscreen view needs more detail than the previous small page card.
+    const density = Math.min(1.5, window.devicePixelRatio || 1);
+    const pixels = Math.min(1280 * 720, Math.max(1, rect.width * rect.height * density * density));
+    const width = Math.max(1, Math.min(1280, Math.floor(Math.sqrt(pixels * aspect))));
     const height = Math.max(1, Math.floor(width / aspect));
     if (canvas.width !== width || canvas.height !== height) renderer.setSize(width, height, false);
     camera.aspect = aspect;
-    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(29)) * Math.max(1, 1.7 / aspect)));
+    camera.fov = Math.min(78, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(29)) * Math.max(1, 1.7 / aspect))));
     camera.updateProjectionMatrix();
-    const p = point(lastPose.x, lastPose.y);
-    camera.position.set(p.x, 1.72, p.z);
+    const seat = lastPose.seated ? map.objects.find(item => item.id === 'captain') : null;
+    const p = point(seat?.x ?? lastPose.x, seat?.y ?? lastPose.y);
+    camera.position.set(p.x, seat ? 1.55 : 1.72, p.z);
+    canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';
     camera.rotation.set(-.035, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
     aft.color.set(lastAlert ? '#f39975' : '#e4bc88');
     renderer.render(scene, camera);

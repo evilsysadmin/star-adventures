@@ -4,7 +4,14 @@
     {
       "origin": "http://127.0.0.1:4173",
       "localStorage": [
-        { "name": "shadowops.star-adventures.tactical-view.v1", "value": "existing" }
+        {
+          "name": "shadowops.star-adventures.tactical-view.v1",
+          "value": "existing"
+        },
+        {
+          "name": "shadowops.star-adventures.presentation.v1",
+          "value": "{\"version\":1,\"layout\":\"journal\",\"hints\":true,\"muted\":false,\"volume\":0.6}"
+        }
       ]
     }
   ]
