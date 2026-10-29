@@ -37,3 +37,30 @@ for(const width of [390,1280]){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
+
+test('shoot action is accessible from the single tactical entry and damages a real target',async({page})=>{
+ test.setTimeout(90_000);
+ await page.setViewportSize({width:390,height:850});
+ await page.goto('/');
+ await page.getByTestId('tactical-view-missions').click();
+ await expect(page.getByTestId('scenario-primary-mode')).toContainText('Combate táctico');
+ await expect(page.getByTestId('scenario-play-combat')).toContainText('combate activo');
+ const fire=page.getByTestId('scenario-fire-order');
+ await expect(fire).toBeVisible();
+ await expect(fire).toBeDisabled();
+ await page.getByTestId('scenario-accessible-grid').locator('summary').click();
+ await page.getByTestId('scenario-unit-security').click();
+ await page.getByTestId('scenario-hostile-aegis').click();
+ await expect(fire).toBeDisabled(); // Terrain blocks this initial line of sight.
+ for(const cell of ['3:7','5:6']){
+  await page.getByRole('button',{name:'Casilla '+cell,exact:true}).click();
+  await page.getByTestId('scenario-move').click();
+ }
+ await page.getByTestId('scenario-hostile-aegis').click();
+ await expect(fire).toBeEnabled();
+ await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 2/2');
+ await fire.click();
+ await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
+ await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
+ await page.screenshot({path:'test-results/unified-combat-fire-mobile-390.png',fullPage:true});
+});
