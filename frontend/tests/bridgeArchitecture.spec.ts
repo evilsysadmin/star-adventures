@@ -36,6 +36,7 @@ for (const width of [360, 390, 430, 1280]) {
     await expect(page.getByTestId('explore-feedback')).toContainText('Paso bloqueado');
     await expect(canvas).toHaveAttribute('data-bridge-pose', '3:3:N');
     await page.reload();
+    await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     await expect(canvas).toHaveAttribute('data-bridge-pose', '3:3:N');
     await expect(page.getByTestId('explore-heading')).toContainText('3:3');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
