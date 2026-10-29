@@ -43,7 +43,8 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
  const [combatMode,setCombatMode]=useState(false);
  const [replayStartup]=useState(()=>restoreCombatReplaySession(localStorageOrNull()));
  const [replayHistory,setReplayHistory]=useState(()=>fieldEncounter?newCombatReplaySession('evacuation'):replayStartup.history);
- const [replayMode,setReplayMode]=useState(fieldEncounter);
+ // The unified tactical entry is live combat; legacy labs remain opt-in.
+ const [replayMode,setReplayMode]=useState(true);
  const [initialRecords]=useState(()=>{
   const stored=restoreTrainingRecords(localStorageOrNull());
   if(!startup.history.state.completed)return stored;
@@ -61,9 +62,9 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
  const combat=replay?replay.encounter:combatMode?combatHistory.encounter:null;
  const hostileHealth=replay?.hostileHealth;
  const [officer,setOfficer]=useState<SquadId>('science');
- const [selected,setSelected]=useState(startup.history.state.locations.science);
+ const [selected,setSelected]=useState(replayHistory.combat.encounter.mission.locations.science);
  const [focus,setFocus]=useState(false);
- const [notice,setNotice]=useState(fieldEncounter?'Contacto hostil detectado · negocia o asegura el perímetro':startup.notice);
+ const [notice,setNotice]=useState(fieldEncounter?'Contacto hostil detectado · negocia o asegura el perímetro':replayStartup.notice);
  // Fire feedback is transient presentation only; never enters the replay/save.
  const [shot,setShot]=useState<{id:number;from:string;to:string;officer:SquadId}|null>(null);
  const nextShotId=useRef(0);
@@ -270,7 +271,7 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
    mode==='hostile'?hostileStartup.notice:startup.notice);
  };
  const startPlayableCombat=()=>{
-  switchEncounter('replay');
+  if(!replayMode)switchEncounter('replay');
   // The scene remains in its existing layout; move the viewport only after
   // the combat controls have rendered, and give keyboard users the board.
   requestAnimationFrame(()=>{
@@ -377,9 +378,9 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
    <span className="scenario-eyebrow">{fieldEncounter?'SUPERFICIE · CONTACTO HOSTIL':'OPERACIONES TÁCTICAS · LABORATORIO JUGABLE'}</span>
    <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Tres misiones, un equipo'}</h2>
    <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. Esta incursión es temporal.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
-   {!fieldEncounter&&!replayMode&&<button className="scenario-play-combat" type="button"
+   {!fieldEncounter&&<button className="scenario-play-combat" type="button"
     data-testid="scenario-play-combat" onClick={startPlayableCombat}>
-    Jugar combate con disparos
+    {replayMode?'Ir al tablero · combate activo':'Jugar combate con disparos'}
    </button>}
   </header>
   {!replayMode&&missionSelector}
@@ -447,6 +448,12 @@ export function IsoScenarioLab({fieldEncounter=false,onFieldResolved,onReturnToS
    </div>
   </div>
   <div className="scenario-orders" role="group" aria-label="Órdenes tácticas con resultados reales">
+   {replayMode&&<button type="button" className="scenario-fire-order" data-testid="scenario-fire-order"
+    disabled={!fireReady} aria-label={fireTarget?'Disparar a '+fireTarget:'Selecciona un enemigo para disparar'}
+    title={!fireReady?describeCombatAim(fireAim):undefined}
+    onClick={()=>fireTarget&&executeReplay({type:'fire',officer,hostile:fireTarget})}>
+    Disparar{fireTarget?' · '+fireTarget:''}
+   </button>}
    <button type="button" data-testid="scenario-move" disabled={!available(move)}
     onClick={()=>execute(move)}>{route&&route.length>MAX_MOVE_STEPS+1
      ?`Avanzar ${MAX_MOVE_STEPS} casillas hacia ${selected}`:'Mover · máximo 5 casillas'}</button>

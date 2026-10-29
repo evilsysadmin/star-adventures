@@ -46,6 +46,9 @@ async function openMissions(page:Page,width:number) {
  await page.setViewportSize({width,height:850});
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
+ // Older exploration/record checks intentionally run the opt-in training lab.
+ await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+ await page.getByTestId('scenario-training-toggle').click();
  await expect(page.getByTestId('scenario-lab')).toBeVisible();
  await expect(page.getByTestId('scenario-render-canvas')).toBeVisible();
 }
@@ -215,6 +218,10 @@ test('evacuation scenario can actually be completed by science, medic and extrac
  expect(state.completed).toBe(true);
  await page.reload();
  await page.getByTestId('tactical-view-missions').click();
+ // Reload returns to live combat; the completed v1 mission remains in its
+ // explicitly selected training view, with the same saved round and record.
+ await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+ await page.getByTestId('scenario-training-toggle').click();
  await expect(page.getByTestId('scenario-debrief')).toContainText('Superviviente rescatada');
  await expect(page.getByTestId('scenario-record-evacuation')).toContainText(`Ronda ${state.round}`);
  await page.getByTestId('scenario-retry').click();

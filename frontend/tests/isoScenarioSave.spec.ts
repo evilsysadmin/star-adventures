@@ -6,6 +6,8 @@ test('F5 restores 12x12 mission, real squad position, round, AP and objective lo
   await page.setViewportSize({width:390,height:850});
   await page.goto('/');
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+  await page.getByTestId('scenario-training-toggle').click();
   await page.getByTestId('scenario-tab-derelict').click();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   await page.getByRole('button',{name:'Casilla 1:2'}).click();
@@ -19,6 +21,8 @@ test('F5 restores 12x12 mission, real squad position, round, AP and objective lo
   expect(JSON.parse(saved!).actions).toHaveLength(2);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+  await page.getByTestId('scenario-training-toggle').click();
   await expect(page.getByTestId('scenario-name')).toContainText('Instalación abandonada');
   await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
   await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
@@ -32,6 +36,8 @@ test('F5 restores 12x12 mission, real squad position, round, AP and objective lo
   await expect(page.getByTestId('scenario-unit-science')).toContainText('1:1');
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+  await page.getByTestId('scenario-training-toggle').click();
   await expect(page.getByTestId('scenario-name')).toContainText('Repetidor silencioso');
   await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 1');
 });
@@ -48,6 +54,8 @@ test('impossible and future-version checkpoints recover safely without overwriti
   },{key:SCENARIO_SAVE_KEY,sentinel});
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+  await page.getByTestId('scenario-training-toggle').click();
   await expect(page.getByTestId('scenario-name')).toContainText('Repetidor silencioso');
   await expect(page.getByTestId('scenario-notice')).toContainText('incompatible');
   await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
@@ -58,6 +66,8 @@ test('impossible and future-version checkpoints recover safely without overwriti
   })),SCENARIO_SAVE_KEY);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+  await page.getByTestId('scenario-training-toggle').click();
   await expect(page.getByTestId('scenario-notice')).toContainText('incompatible');
   expect(await page.evaluate(key=>localStorage.getItem(key),sentinel)).toBe('preserve-me');
 });
@@ -72,6 +82,8 @@ test('storage writes denied: orders remain playable and never pretend to be save
   },SCENARIO_SAVE_KEY);
   await page.goto('/');
   await page.getByTestId('tactical-view-missions').click();
+  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
+  await page.getByTestId('scenario-training-toggle').click();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   await page.getByRole('button',{name:'Casilla 2:1'}).click();
   await page.getByTestId('scenario-move').click();

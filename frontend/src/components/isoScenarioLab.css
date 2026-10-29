@@ -46,6 +46,8 @@
 .scenario-orders{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px 17px;border-top:1px solid #345464}
 .scenario-orders button{min-width:0;min-height:48px;padding:10px 8px;border:1px solid #88b7a6;background:#224f4a;color:#e1f8e8;font:700 11px/1.4 'Space Grotesk',sans-serif}
 .scenario-orders button:disabled{background:#1b3440;border-color:#4e6873;color:#98a6aa}
+.scenario-orders .scenario-fire-order{background:#8b4b2c;border-color:#ffe2a2;color:#fff7de}
+.scenario-orders .scenario-fire-order:disabled{background:#273845;border-color:#b79b74;color:#ffe0ad}
 .scenario-orders button[data-testid="scenario-end-turn"]{background:#554631;border-color:#ab9166;color:#fcebcf}
 .scenario-notice{margin:0;padding:11px 17px;background:#17313a;color:#c7ddd5;font-size:11px;line-height:1.6;min-height:40px}
 .scenario-objectives{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:12px 17px;background:#0b1f2c}
