@@ -1,0 +1,79 @@
+/* Bridge art direction: restrained flight-deck typography, warm metal, a large
+   navigable viewport and a secondary service journal. No simulated telemetry. */
+:root{color:#e5e7e5;background:#090d12}
+body{background:radial-gradient(ellipse at 20% 0,#1a2833 0,transparent 60%),#090d12}
+.app-shell{max-width:1720px;padding:0 36px}
+.masthead{height:84px;border-color:#ffffff12;gap:18px}
+.brand-mark{border-color:#a88a60;color:#dfc799;width:30px;height:30px;font-size:22px}
+.brand-name{font-size:17px;letter-spacing:.15em}.brand-caption{font-size:8px;letter-spacing:.19em;color:#8c9b9f}
+.bridge-navigation{display:flex;align-items:center;gap:30px;margin-left:64px;height:100%}
+.bridge-navigation a{height:100%;display:flex;align-items:center;border-bottom:2px solid transparent;color:#a5b0b5;text-decoration:none;font-size:12px;letter-spacing:.04em}
+.bridge-navigation a:first-child{border-color:#bfa16e;color:#e5d2ac}
+.bridge-navigation a:hover{color:#fff;border-color:#9cbfc6}
+.masthead-right{font:10px ui-monospace,monospace;color:#8fa3a8;letter-spacing:.1em}
+.bridge-layout{grid-template-columns:minmax(0,1fr) 340px;gap:26px;padding:26px 0 35px}
+.hero-panel{padding:0}.eyebrow{font:10px ui-monospace,monospace;letter-spacing:.14em;color:#bcc8c9}
+.eyebrow-muted{color:#8c999f}.eyebrow-line{background:#bc9c64}
+.hero-panel h1{font-size:clamp(32px,3vw,46px);letter-spacing:-.045em;margin:13px 0 21px;font-weight:500}
+.hero-panel h1 em{color:#d6bd93}
+.mission-transmission{border:1px solid #b9a68027;border-left:2px solid #c0a16c;background:linear-gradient(100deg,#22292caa,#151e2599);box-shadow:none;padding:14px 18px;margin-bottom:18px}
+.mission-transmission::after{opacity:.35}
+.mission-transmission-story{font-size:12px;color:#cdd6d6;line-height:1.6;margin:8px 0 5px;max-width:90ch}
+.mission-transmission-kicker{font-size:8px;color:#c6ad86;letter-spacing:.12em}
+.mission-transmission-phase{font:9px ui-monospace,monospace;letter-spacing:.08em;color:#a3c4c6}
+.mission-transmission-next{font-size:11px;max-width:100ch;color:#a0b3b6}
+.mission-transmission-next strong{font-size:8px;color:#d9c199}
+.mission-transmission-route{display:flex;gap:20px;margin-top:11px}
+.mission-transmission-route>span{border:0!important;background:none!important;padding:0;color:#7b8b94;font-size:9px;letter-spacing:.04em}
+.mission-transmission-route>span>span{width:17px;height:17px;font-size:8px}
+.mission-transmission-route>span[data-state=current]{color:#e2c99c}
+.mission-transmission-route>span[data-state=done]{color:#9bcab9}
+.firstperson{border:1px solid #66777c5c;background:#0b141b;box-shadow:0 16px 44px #0005;scroll-margin-top:15px}
+.firstperson-top{background:#111c24;border:0;padding:12px 16px;color:#b6c8cd;font:10px ui-monospace,monospace;letter-spacing:.04em}
+.firstperson-top::before{content:'01';color:#d4bb93;padding-right:12px;border-right:1px solid #a48c653f}
+.firstperson-name{margin-right:auto}
+.firstperson-map-toggle{min-height:32px;padding:7px 10px;border:1px solid #75848b4a;border-radius:2px;background:#1c2931;font-size:9px;font-weight:400;color:#becbd0}
+.firstperson-render-stage{position:relative;overflow:hidden}
+.bridge-interior-canvas{background:#0b1623}
+.bridge-lens{position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,#07121b73,transparent 22%,transparent 90%,#07121b33);color:#bdcfd4}
+.bridge-lens-deck{position:absolute;left:21px;bottom:19px;font:8px ui-monospace,monospace;letter-spacing:.22em;color:#a5bec7}
+.bridge-lens-deck b{display:block;margin-top:6px;font-size:11px;font-weight:400;color:#e2e6de;letter-spacing:.16em}
+.bridge-lens-mode{position:absolute;right:20px;bottom:20px;font:7px ui-monospace,monospace;letter-spacing:.12em;color:#a6bdc6}
+.bridge-reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:300 18px monospace;color:#c2dce178;text-shadow:0 1px 4px #000}
+.firstperson-hud{border-color:#66777c30;background:#111d25;padding:10px 15px;font:9px ui-monospace,monospace;letter-spacing:0;color:#94b1bc}
+.firstperson-hud span:last-child{color:#c8bb9f}
+.firstperson-waypoint{background:#16252c;border-color:#748a862a;padding:10px 15px;gap:8px 12px}
+.firstperson-waypoint-label{font-size:9px;font-weight:500;color:#a1b8bf;letter-spacing:.02em}
+.firstperson-waypoint strong{font-size:10px;color:#e6d0a7;font-weight:600}
+.firstperson-waypoint-steps{font-size:9px;color:#7f9ca6}
+.firstperson-controls{background:#101b23;padding:10px 12px;gap:7px}
+.firstperson-controls button{border-color:#b1c7d02a;background:linear-gradient(#24343d,#1a2b35);font-size:10px;font-weight:500;color:#bcd0d7;min-height:44px;border-radius:3px}
+.firstperson-controls button:hover:not(:disabled){background:#314853;border-color:#91a6ad}
+.firstperson-controls .firstperson-interact{color:#f1d8a9;background:linear-gradient(#514939,#37392f);border-color:#bda16b80}
+.firstperson-feedback{font-size:10px;line-height:1.5;color:#7b98a3;background:#101b23;padding-bottom:12px}
+.stat-band{border-color:#ffffff12;background:none;margin-top:18px}
+.stat{padding:12px 18px}.stat+.stat{border-color:#ffffff12}
+.stat-heading{font:8px ui-monospace,monospace;letter-spacing:.12em;color:#879ba4}.stat-value{font-size:24px;font-weight:400;color:#d2dbdc}.stat-sub{font-size:7px;letter-spacing:.13em;color:#74888f}
+.orders-panel{margin-top:0;border:1px solid #a9bdc022;background:linear-gradient(150deg,#16212b,#101921);box-shadow:0 18px 45px #0002;scroll-margin-top:18px}
+.panel-topline{border-color:#a9bdc018;background:#18242d;padding:14px 18px;font-size:8px;letter-spacing:.1em;color:#a4b8c0}
+.officer{padding:19px 18px}.officer-avatar{border-color:#9d8968;background:#2e3b43;color:#e7ce9e;border-radius:50%;width:38px;height:38px;font-size:15px}
+.officer-name{font-size:15px;font-weight:500;color:#e2e6e0}.officer-role{font-size:8px;color:#8fa6af;letter-spacing:.13em}.comms-live{font-size:7px;letter-spacing:.1em;color:#a5c7b6}
+.crew-roster,.away-squad,.bridge-combat-report{margin-left:18px;margin-right:18px;border-color:#778c9440;background:#162630}
+.crew-roster summary,.away-squad-heading,.bridge-combat-report>summary{font-size:8px;letter-spacing:.045em}
+.crew-roster summary{padding:12px 10px}.crew-roster-action{color:#bcae92}
+.away-squad{padding:13px 10px}.away-squad-slots{grid-template-columns:1fr;gap:7px}.away-squad-slot select{padding:9px;background:#1e303a;border-color:#687d8652;border-radius:2px;font-size:11px;color:#d0dcdd}
+.away-squad-heading span:last-child{font-size:7px;color:#c2b18e}.away-finding{color:#91a7b0;font-size:10px}
+.divider-fine{margin:0 18px;background:#a9bdc018}
+.narrative{padding:20px 18px;min-height:0}.panel-label{font:8px ui-monospace,monospace;letter-spacing:.15em;color:#bda67d}.narrative h2{font-size:21px;font-weight:500;line-height:1.2;letter-spacing:-.025em;color:#e1e6df}.narrative p{font-size:12px;color:#99adb7;line-height:1.75}
+.decision-section{padding:0 18px}.decision-heading{font-size:8px;color:#bac6c7;letter-spacing:.09em}.console-locked{background:#14232c;border:1px solid #68808b3b;min-height:90px;padding:15px 12px}.console-locked p{font-size:11px;color:#96adb8}.console-locked>span{font-size:22px;color:#bea77d}
+.orders-footer{margin:18px;font-size:8px}.restart-button{color:#b9aaa0;font-size:9px}.shortcut-hint{font-size:7px;color:#7c939f}
+.footer-line{border-color:#ffffff12;color:#8b9da4;padding:18px 0 24px;font-size:8px;letter-spacing:.08em}
+@media(min-width:1500px){.bridge-layout{grid-template-columns:minmax(0,1fr) 370px;gap:32px}.firstperson-canvas{max-height:560px;object-fit:cover}}
+@media(max-width:1050px){.app-shell{padding:0 22px}.bridge-layout{grid-template-columns:minmax(0,1fr) 300px;gap:18px}.bridge-navigation{margin-left:30px;gap:20px}.masthead-right{font-size:8px}.firstperson-waypoint{grid-template-columns:minmax(0,1fr) auto}.firstperson-waypoint-label{grid-column:1/-1}}
+@media(max-width:850px){.bridge-layout{grid-template-columns:1fr}.orders-panel{margin-top:6px}.away-squad-slots{grid-template-columns:repeat(3,minmax(0,1fr))}.bridge-navigation{margin-left:auto}.masthead-right{display:none}.hero-panel h1{font-size:36px}.bridge-layout{padding-top:24px}}
+@media(max-width:520px){
+ .app-shell{padding:0 14px}.masthead{height:73px;gap:12px}.brand-name{font-size:12px;letter-spacing:.11em}.brand-caption{font-size:6px;letter-spacing:.12em}.brand-mark{width:25px;height:25px;font-size:18px}.bridge-navigation{gap:14px}.bridge-navigation a{font-size:10px}.bridge-navigation a:last-child{display:none}
+ .bridge-layout{padding-top:21px;gap:18px}.hero-panel h1{font-size:32px;margin:12px 0 17px}.eyebrow{font-size:8px;letter-spacing:.09em;gap:8px}.mission-transmission{padding:11px 12px;margin-bottom:14px}.mission-transmission-story{font-size:11px;line-height:1.6}.mission-transmission-kicker{font-size:7px;letter-spacing:.05em}.mission-transmission-phase{font-size:8px}.mission-transmission-next{font-size:10px;line-height:1.6}.mission-transmission-route{gap:17px}.mission-transmission-route>span{font-size:8px;gap:5px}
+ .firstperson-top{padding:10px;font-size:8px;gap:8px}.firstperson-top::before{padding-right:8px}.firstperson-name{max-width:185px}.firstperson-map-toggle{font-size:8px;padding:6px}.firstperson-canvas{height:clamp(280px,75vw,330px)}.bridge-lens-deck{left:14px;bottom:15px;font-size:7px}.bridge-lens-deck b{font-size:9px}.bridge-lens-mode{display:none}.firstperson-hud{font-size:8px;padding:9px 10px;gap:7px;position:relative;z-index:1}.firstperson-waypoint{padding:10px;font-size:9px}.firstperson-waypoint-label{font-size:8px}.firstperson-waypoint strong{font-size:10px}.firstperson-waypoint-steps{font-size:8px}
+ .firstperson-controls{padding:8px 10px;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.firstperson-controls button{font-size:10px}.firstperson-feedback{font-size:9px;padding:7px 12px 12px;min-height:0}.stat{padding:11px 14px}.stat-heading{font-size:7px;letter-spacing:.06em}.stat-value{font-size:23px}.stat-sub{font-size:6px}.away-squad-slots{grid-template-columns:1fr}.footer-line{font-size:7px}.bridge-lens{bottom:0}
+}

@@ -1,42 +1,71 @@
 import { expect, test } from '@playwright/test';
 
-// Inspect the actual Canvas2D viewport, not a mock SVG or a synthetic fixture.
-// The panels belong to the navigable bridge cells and must remain readable
-// when the captain moves. The surface renderer is deliberately unchanged.
-for (const width of [390, 1280]) {
-  test(`bridge architecture stays visible and responds to walking at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: width === 390 ? 850 : 820 });
+// Exercise the player's bridge, independently of opted-in diagnostic scenes.
+test.use({ storageState: { cookies: [], origins: [] } });
+
+for (const width of [360, 390, 430, 1280]) {
+  test(`navigable bridge renders, opens its real helm and survives F5 at ${width}px`, async ({ page }) => {
+    test.setTimeout(70_000);
+    await page.setViewportSize({ width, height: 850 });
     await page.goto('/');
-    // A first-time player starts in the real rescue mission, not the lab.
-    await page.evaluate(() => localStorage.removeItem('shadowops.star-adventures.tactical-view.v1'));
-    await page.reload();
     await expect(page.getByTestId('mission-phase')).toHaveText('TRANSMISIÓN ENTRANTE');
-    const canvas = page.locator('.firstperson-canvas');
-    await expect(canvas).toBeVisible();
-    const palette = await canvas.evaluate(element => {
-      const ctx = (element as HTMLCanvasElement).getContext('2d');
-      if (!ctx) return { colors: 0, brass: 0 };
-      const pixels = ctx.getImageData(0, 0, 960, 480).data;
-      const colors = new Set<string>();
-      let brass = 0;
-      for (let y = 72; y < 428; y += 4) {
-        for (let x = 96; x < 864; x += 4) {
-          const index = (y * 960 + x) * 4;
-          const r = pixels[index], g = pixels[index + 1], b = pixels[index + 2];
-          colors.add(`${r >> 4}:${g >> 4}:${b >> 4}`);
-          if (r > 100 && r > g + 10 && g > b + 10) brass++;
-        }
-      }
-      return { colors: colors.size, brass };
-    });
-    expect(palette.colors).toBeGreaterThan(30);
-    expect(palette.brass).toBeGreaterThan(5);
-    const before = await canvas.screenshot({ path: `test-results/bridge-architecture-spawn-${width}.png` });
+    const canvas = page.getByTestId('bridge-interior');
+    await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true');
+    await expect(canvas).toHaveAttribute('data-bridge-art-loaded', 'true');
+    await expect(canvas).toHaveAttribute('data-bridge-pose', '3:5:N');
+    const before = await canvas.screenshot({ path: `test-results/bridge-interior-spawn-${width}.png` });
     await page.getByTestId('explore-forward').click();
-    await expect(page.getByTestId('explore-heading')).toContainText('3:4');
-    const after = await canvas.screenshot({ path: `test-results/bridge-architecture-near-helm-${width}.png` });
+    await expect(canvas).toHaveAttribute('data-bridge-pose', '3:4:N');
+    const after = await canvas.screenshot({ path: `test-results/bridge-interior-walk-${width}.png` });
     expect(after.equals(before)).toBe(false);
+    // Geometry must not supply a remote interaction or new collision rules.
+    await page.getByTestId('explore-forward').click();
+    await expect(page.getByTestId('explore-heading')).toContainText('3:3');
+    await expect(page.getByTestId('explore-target')).toContainText('Consola de navegación');
+    await page.getByTestId('explore-use').click();
+    await expect(page.getByTestId('console-locked')).toContainText('Esta estación');
+    await page.getByTestId('explore-forward').click();
+    await expect(page.getByTestId('explore-feedback')).toContainText('Paso bloqueado');
+    await expect(canvas).toHaveAttribute('data-bridge-pose', '3:3:N');
+    await page.reload();
+    await expect(canvas).toHaveAttribute('data-bridge-pose', '3:3:N');
+    await expect(page.getByTestId('explore-heading')).toContainText('3:3');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: `test-results/bridge-architecture-page-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/bridge-interior-page-${width}.png`, fullPage: true });
   });
 }
+
+test('WebGL denial leaves a usable first-person bridge and real transporter', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null;
+      return original.apply(this, [type, ...args] as Parameters<typeof original>);
+    } as typeof original;
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('bridge-interior')).toHaveCount(0);
+  await expect(page.locator('.firstperson-canvas')).toBeVisible();
+  for (const action of ['right', 'forward', 'right', 'use']) await page.getByTestId(`explore-${action}`).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('explore-area')).toContainText('Superficie');
+});
+
+test('a lost WebGL context falls back without resetting the captain position', async ({ page }) => {
+  await page.goto('/');
+  const canvas = page.getByTestId('bridge-interior');
+  await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true');
+  await page.getByTestId('explore-left').click();
+  await page.getByTestId('explore-forward').click();
+  await expect(canvas).toHaveAttribute('data-bridge-pose', '2:5:W');
+  await canvas.evaluate(element => {
+    const gl = (element as HTMLCanvasElement).getContext('webgl2');
+    if (!gl) throw new Error('Missing live WebGL context');
+    gl.getExtension('WEBGL_lose_context')!.loseContext();
+  });
+  await expect(canvas).toHaveCount(0);
+  await expect(page.getByTestId('explore-heading')).toContainText('2:5');
+  await page.getByTestId('explore-forward').click();
+  await expect(page.getByTestId('explore-heading')).toContainText('1:5');
+});
