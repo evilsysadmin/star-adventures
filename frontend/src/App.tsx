@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import episode from '../../content/episodes/border-signal.json';
 import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
@@ -17,6 +17,8 @@ import { performMedicalEvacuation, EVACUATION_INCIDENT } from '../../src/medical
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
+import { atPerimeterStation, newPerimeterHistory, perimeterResolution, persistPerimeterSession, restorePerimeterSession } from './perimeterSession';
+import type { CombatReplayHistory } from './isoScenarioCombatReplay';
 
 const FieldEncounter = lazy(() => import('./components/IsoScenarioLab').then(module => ({ default: module.IsoScenarioLab })));
 type Command = { id: string; label: string; next: string; effects?: Record<string, number> };
@@ -63,11 +65,25 @@ export function App() {
   const [mandate, setMandate] = useState<MandateState>(() => initialMandate.state);
   const [medicalNotice, setMedicalNotice] = useState<string | null>(null);
   const [coreNotice, setCoreNotice] = useState<string | null>(null);
-  const [fieldEncounterOpen, setFieldEncounterOpen] = useState(false);
-  const [fieldResolution, setFieldResolution] = useState<'truce' | 'victory' | null>(null);
+  const rescueRun = session.actions.filter(action => action.type === 'restart').length;
+  const [initialPerimeter] = useState(() => initialSession.restored
+    ? restorePerimeterSession(localStorageOrNull(), rescueRun)
+    : { history: newPerimeterHistory(), active: false, notice: 'Perímetro nuevo · sin órdenes guardadas', status: 'missing' });
+  const [fieldHistory, setFieldHistory] = useState(initialPerimeter.history);
+  const [perimeterNotice, setPerimeterNotice] = useState(initialPerimeter.notice);
+  const [perimeterWarning, setPerimeterWarning] = useState(initialPerimeter.status === 'incompatible' || initialPerimeter.status === 'unavailable');
+  const [fieldEncounterOpen, setFieldEncounterOpen] = useState(() =>
+    initialPerimeter.active && atPerimeterStation(world, initialSpatial.state));
+  const fieldResolution = useMemo(() => perimeterResolution(fieldHistory), [fieldHistory]);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
+  // A fresh/recovered crew campaign cannot adopt an orphaned field result.
+  // Write the empty field slot before the recovered crew checkpoint.
+  useEffect(() => {
+    if (!initialSession.restored)
+      persistPerimeterSession(initialPerimeter.history, rescueRun, false, localStorageOrNull());
+  }, [initialSession, initialPerimeter]);
   useEffect(() => { persistSession(episode, session, localStorageOrNull()); }, [session]);
   useEffect(() => { persistSpatialSession(world, exploration, localStorageOrNull()); }, [exploration]);
   useEffect(() => { persistAwaySession(awayTeam, localStorageOrNull()); }, [awayTeam]);
@@ -82,11 +98,19 @@ export function App() {
   const access = availableConsoleOrders(world, exploration, episode, state);
   const openedConsole = access.console?.id === activeStation ? access.console : null;
   const choices: Command[] = openedConsole ? access.choices : [];
+  const savePerimeter = useCallback((history: CombatReplayHistory, active: boolean) => {
+    setFieldHistory(history);
+    const saved = persistPerimeterSession(history, rescueRun, active, localStorageOrNull());
+    setPerimeterNotice(saved ? 'Perímetro guardado' : 'Perímetro temporal · no se ha podido guardar');
+    setPerimeterWarning(!saved);
+    return saved;
+  }, [rescueRun]);
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
     if (event.type === 'area-entered') setFieldEncounterOpen(false);
     if (event.type === 'station' && event.action === 'secure-perimeter' && !fieldResolution) {
+      savePerimeter(fieldHistory, true);
       setFieldEncounterOpen(true);
     }
     if (event.type === 'station' && event.action === 'inspect-probe') {
@@ -129,7 +153,7 @@ export function App() {
           : 'La intervención no puede completarse en este momento.');
       }
     }
-  }, [session.crew, awayTeam, mandate, fieldResolution]);
+  }, [session.crew, awayTeam, mandate, fieldResolution, fieldHistory, savePerimeter]);
   const restart = () => {
     setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
     setAwayTeam(previous => ({ ...startAwayTeam(), squad: [...previous.squad] }));
@@ -140,10 +164,15 @@ export function App() {
     setMedicalNotice(null);
     setCoreNotice(null);
     setFieldEncounterOpen(false);
-    setFieldResolution(null);
+    const freshField = newPerimeterHistory();
+    setFieldHistory(freshField);
+    const fieldSaved = persistPerimeterSession(freshField, rescueRun + 1, false, localStorageOrNull());
+    setPerimeterNotice(fieldSaved ? 'Perímetro nuevo' : 'Perímetro temporal · no se ha podido guardar');
+    setPerimeterWarning(!fieldSaved);
     setExplorationKey(key => key + 1);
   };
   const returnFromFieldEncounter = () => {
+    savePerimeter(fieldHistory, false);
     setFieldEncounterOpen(false);
     // Return to the actual surface viewport, not the tactical journal.
     requestAnimationFrame(() => {
@@ -230,6 +259,8 @@ export function App() {
             {fieldResolution && missionPhase !== 'debrief' && <p className="mission-transmission-optional" data-testid="field-resolution">{fieldResolution === 'truce'
               ? 'PERÍMETRO · Alto el fuego negociado por el equipo. El rescate sigue su curso.'
               : 'PERÍMETRO · Amenazas neutralizadas. El rescate sigue su curso.'}</p>}
+            {perimeterWarning && <p
+              className="mission-transmission-optional" data-testid="perimeter-save-notice" role="status">{perimeterNotice}</p>}
             <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
             <div className="mission-transmission-route" role="list" aria-label="Progreso del rescate">
               {['Desembarco', 'Evacuación', 'Regreso'].map((step, index) => (
@@ -260,11 +291,13 @@ export function App() {
                   onClick={returnFromFieldEncounter}>Volver a explorar ↩</button>
               </div>
               <Suspense fallback={<p role="status">Preparando el encuentro táctico…</p>}>
-                <FieldEncounter fieldEncounter onFieldResolved={setFieldResolution} onReturnToSurface={returnFromFieldEncounter} />
+                <FieldEncounter fieldEncounter fieldHistory={fieldHistory} fieldNotice={perimeterNotice}
+                  onFieldProgress={history => savePerimeter(history, true)} onReturnToSurface={returnFromFieldEncounter} />
               </Suspense>
             </section>
           ) : (
             <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
+              perimeterResolved={fieldResolution !== null}
               missionTargetId={missionPhase === 'briefing' ? 'transporter'
                 : missionPhase === 'field' ? 'relief-point'
                 : missionPhase === 'extract' ? 'beam-out' : null}
