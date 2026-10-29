@@ -71,3 +71,26 @@ test('invented mandate outcomes and invalid away reports cannot authorize briefi
   const wrongScene = { ...atChair, area: 'surface' };
   assert.equal(canBriefScientificFinding(def, mandate, away, world, wrongScene, 'captain'), false);
 });
+
+test('seated command briefs real science without changing spatial state, once only', () => {
+  const { away, mandate } = realSurvey();
+  const pose = { ...awayFromChair };
+  assert.equal(canBriefScientificFinding(def, mandate, away, world, pose, 'captain', 'seated'), true);
+  const informed = briefScientificFinding(def, mandate, away, world, pose, 'captain', 'seated');
+  assert.deepEqual(pose, awayFromChair);
+  assert.deepEqual(informed.knowledge.solan, [PROBE_SURVEY_INCIDENT]);
+  assert.deepEqual(mandate.knowledge.solan, []);
+  assert.deepEqual(deserializeMandateCheckpoint(def, serializeMandateCheckpoint(def, informed)), informed);
+  assert.throws(() => briefScientificFinding(def, informed, away, world, pose, 'captain', 'seated'), MandateError);
+});
+
+test('seated briefing still requires command selection, bridge access and genuine discovery', () => {
+  const { away, mandate } = realSurvey();
+  for (const id of [null, 'science', 'comms', 'transporter'])
+    assert.equal(canBriefScientificFinding(def, mandate, away, world, awayFromChair, id, 'seated'), false);
+  for (const pose of [onSurface, { ...awayFromChair, pending: { id: 'transporter', to: 'surface' } }])
+    assert.throws(() => briefScientificFinding(def, mandate, away, world, pose, 'captain', 'seated'), MandateError);
+  assert.equal(canBriefScientificFinding(def, startMandate(def), startAwayTeam(), world, atChair, 'captain', 'seated'), false);
+  assert.equal(canBriefScientificFinding(def, startMandate(def), away, world, atChair, 'captain', 'seated'), false);
+  assert.throws(() => canBriefScientificFinding(def, mandate, away, world, atChair, 'captain', 'unknown'), MandateError);
+});

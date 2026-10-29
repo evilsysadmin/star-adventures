@@ -92,3 +92,13 @@ backend, licensed media or deployment.
   `/tmp/bridge-v2-preview-390.png` (local review artifacts, not committed media).
 - These are local results, not CI or hardware performance claims. The PR remains
   Draft pending the remaining regression suite and exact-head CI verification.
+
+## Scientific debrief from command
+
+A real surface probe discovery can be shared with the first officer by selecting
+**Mando** in the seated bridge and opening the orders archive. Science selection,
+being on the bridge alone, a pending transport or a fabricated discovery do not
+permit that briefing. Walking mode retains the physical chair requirement.
+Both modes append the same single `inform` action to the versioned mandate save;
+F5 must preserve officer knowledge without repeating the action. The engine uses
+an explicit `walking`/`seated` command mode and never fabricates spatial movement.

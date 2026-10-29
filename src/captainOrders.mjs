@@ -4,15 +4,20 @@ import { CONSOLE_ORDERS, ConsoleOrderError } from './consoleOrders.mjs';
 import { currentNode } from './episode.mjs';
 import { applyCrewAction } from './crewSession.mjs';
 
-export function captainOrders(world, exploration, episode, state, stationId) {
+export function captainConsole(world, exploration, stationId) {
   validateExploration(world, exploration);
   const station = exploration.area === 'bridge' && exploration.pending === null
     ? world.scenes.bridge.objects.find(item => item.id === stationId && item.type === 'station' &&
       Object.hasOwn(CONSOLE_ORDERS, item.action)) : null;
-  if (!station) return { console: null, choices: [] };
-  return { console: { id: station.id, action: station.action, label: station.label },
+  return station ? { id: station.id, action: station.action, label: station.label } : null;
+}
+
+export function captainOrders(world, exploration, episode, state, stationId) {
+  const console = captainConsole(world, exploration, stationId);
+  if (!console) return { console: null, choices: [] };
+  return { console,
     choices: (currentNode(episode, state).choices ?? []).filter(choice =>
-      CONSOLE_ORDERS[station.action].includes(choice.id)) };
+      CONSOLE_ORDERS[console.action].includes(choice.id)) };
 }
 
 export function issueCaptainOrder(world, exploration, episode, session, stationId, choiceId) {

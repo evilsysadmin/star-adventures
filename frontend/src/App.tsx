@@ -397,7 +397,8 @@ export function App() {
             ) : !openedConsole || choices.length === 0 ? (
               <div className="console-locked" data-testid="console-locked">
                 <span aria-hidden="true">⌁</span>
-                <p>{openedConsole ? 'Esta estación no dispone de órdenes para la situación actual. Busca otro puesto del puente.' :
+                <p>{openedConsole ? seated ? 'Esta estación no dispone de órdenes para la situación actual. Selecciona otro oficial en el panel de mando.'
+                  : 'Esta estación no dispone de órdenes para la situación actual. Busca otro puesto del puente.' :
                   seated ? 'Selecciona Ciencia, Comunicaciones, Táctica o Timón en tu panel de mando.' : exploration.area === 'bridge' ? 'Muévete por el puente y pulsa E delante de Ciencia, Comunicaciones, Táctica o el timón para dar una orden real.' :
                   'Estás en la superficie. Las operaciones de la nave solo se realizan desde el puente.'}</p>
               </div>
@@ -413,7 +414,7 @@ export function App() {
               </div>
             )}
           </div>
-          <DualMandatePanel awayTeam={awayTeam} exploration={exploration}
+          <DualMandatePanel awayTeam={awayTeam} exploration={exploration} commandMode={game.immersive ? 'seated' : 'walking'}
             accessedStationId={openedConsole?.id ?? null} mandate={mandate}
             setMandate={setMandate} initialNotice={initialMandate.notice} />
           <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : openedConsole ? 'TECLAS 1–3 · ORDEN DE LA CONSOLA' : 'FLECHAS / WASD · E PARA USAR'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
