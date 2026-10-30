@@ -39,12 +39,16 @@ test('science, diplomacy and tactical choices produce distinct genuine outcomes'
   await expect(page.getByRole('button', { name: /Nueva misión/i })).toBeVisible();
   await page.getByRole('button', { name: /Nueva misión/i }).click();
   await expect(page.getByTestId('science-score')).toHaveText('00');
+  // The restart remounts the first-person viewport; wait for its new spawn
+  // before sending walking commands to avoid acting on the outgoing view.
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 3:5');
   await openStation(page, 'communications');
   await page.getByTestId('choice-hail').click();
   await page.getByTestId('choice-mediate').click();
   await expect(page.getByTestId('diplomacy-score')).toHaveText('05');
   await expect(page.getByTestId('ending')).toContainText('Paz negociada');
   await page.getByRole('button', { name: /Nueva misión/i }).click();
+  await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 3:5');
   await openStation(page, 'tactical');
   await page.getByTestId('choice-intercept').click();
   await page.getByTestId('choice-disable').click();
