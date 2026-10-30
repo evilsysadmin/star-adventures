@@ -1,9 +1,23 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Route to a station from the bridge spawn (3:5 N). No warp/remote cheats.
-async function openStation(page: Page, station: 'science' | 'communications' | 'tactical' | 'helm' | 'command') {
+async function openStation(page: Page, station: 'science' | 'communications' | 'tactical' | 'helm' | 'command', trace = false) {
   const act = async (id: string, n = 1) => {
-    for(let i=0;i<n;i++) await page.getByTestId('explore-' + id).click();
+    for (let i = 0; i < n; i++) {
+      if (trace) {
+        const snapshot = await page.evaluate(() => ({
+          layout: document.querySelector('[data-testid="game-shell"]')?.getAttribute('data-interface'),
+          heading: document.querySelector('[data-testid="explore-heading"]')?.textContent?.trim(),
+          controls: [...document.querySelectorAll('[data-testid^="explore-"]')].map(node => node.getAttribute('data-testid')),
+          captain: !!document.querySelector('[data-testid="captain-controls"]'),
+          dialog: !!document.querySelector('[role="dialog"]'),
+          mission: document.querySelector('[data-testid="mission-phase"]')?.textContent?.trim(),
+          content: document.body.textContent?.slice(0, 500),
+        }));
+        console.log('[bridge-regression]', station, id, i + 1, JSON.stringify(snapshot));
+      }
+      await page.getByTestId('explore-' + id).click();
+    }
   };
   if(station === 'science') { await act('left'); await act('forward',2); await act('right'); await act('forward'); }
   else if(station === 'communications') { await act('right'); await act('forward',2); await act('left'); await act('forward',2); }
@@ -29,6 +43,7 @@ for (const width of [360, 390, 430, 1280]) {
 }
 
 test('science, diplomacy and tactical choices produce distinct genuine outcomes', async ({ page }) => {
+  page.on('pageerror', error => console.error('[bridge-runtime-error]', error.message));
   await page.goto('/');
   await openStation(page, 'science');
   await page.getByTestId('choice-scan').click();
@@ -42,7 +57,7 @@ test('science, diplomacy and tactical choices produce distinct genuine outcomes'
   // The restart remounts the first-person viewport; wait for its new spawn
   // before sending walking commands to avoid acting on the outgoing view.
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 3:5');
-  await openStation(page, 'communications');
+  await openStation(page, 'communications', true);
   await page.getByTestId('choice-hail').click();
   await page.getByTestId('choice-mediate').click();
   await expect(page.getByTestId('diplomacy-score')).toHaveText('05');
