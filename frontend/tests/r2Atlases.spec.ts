@@ -90,6 +90,10 @@ test('manifest retains mandatory originals, paired officer motions and original 
   const officerIds = ids.filter(id => id.startsWith('starAdventures.tactical.officer'));
   for (const id of officerIds) {
     expect(id).toMatch(/^starAdventures\.tactical\.officer(?:Female|Male)[A-Z][A-Za-z0-9]*V[1-9]\d*$/);
+    // New, independent four-view motion is published gender by gender.
+    // Preserve paired-gender enforcement for legacy animations, while
+    // allowing an optional V2 art pilot without inventing its male counterpart.
+    if (/Walk4V[1-9]\d*$/.test(id)) continue;
     const partner = id.includes('officerFemale')
       ? id.replace('officerFemale', 'officerMale')
       : id.replace('officerMale', 'officerFemale');
