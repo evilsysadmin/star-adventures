@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import type { BridgePose, createBridgeInterior } from '../bridge/bridgeInterior';
 
@@ -6,6 +6,7 @@ export function BridgeInteriorView({ pose, alert, onUnavailable }: {
   pose: BridgePose; alert: boolean; onUnavailable: () => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
   const renderer = useRef<ReturnType<typeof createBridgeInterior> | null>(null);
   const latest = useRef({ pose, alert }); latest.current = { pose, alert };
   useEffect(() => {
@@ -19,6 +20,7 @@ export function BridgeInteriorView({ pose, alert, onUnavailable }: {
       try {
         renderer.current = createBridgeInterior(node, world.scenes.bridge);
         renderer.current.render(latest.current.pose, latest.current.alert);
+        setReady(true);
       } catch { onUnavailable(); }
     }).catch(() => { if (!cancelled) onUnavailable(); });
     return () => {
@@ -28,7 +30,13 @@ export function BridgeInteriorView({ pose, alert, onUnavailable }: {
     };
   }, [onUnavailable]);
   useEffect(() => { renderer.current?.render(pose, alert); }, [pose, alert]);
-  return <canvas ref={canvas} className="firstperson-canvas bridge-interior-canvas"
+  return <><canvas ref={canvas} className="firstperson-canvas bridge-interior-canvas"
     data-testid="bridge-interior" width={960} height={480} role="img"
-    aria-label={`Puente en primera persona, posición ${pose.x} ${pose.y}, rumbo ${pose.heading}`} />;
+    aria-busy={!ready}
+    aria-label={`Puente en primera persona, posición ${pose.x} ${pose.y}, rumbo ${pose.heading}`} />
+    {!ready && <div className="bridge-loading" role="status">
+      <span>MERIDIAN · CUBIERTA 01</span>
+      <strong>Entrando en el puente</strong>
+      <small>Preparando el interior…</small>
+    </div>}</>;
 }

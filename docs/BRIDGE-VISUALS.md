@@ -11,8 +11,8 @@ The separate elevated tactical camera and picking system are unchanged.
   original console diagrams, overhead structure and a panoramic orbital view.
 - Every interactive furnishing is located at its existing authored station.
   Decorative light strips and carpet add no collision or movement shortcuts.
-- Wider scene and a quieter service journal on desktop; cropped, proportional
-  first-person viewport and full-size movement controls on phones.
+- Wider scene and a quieter service journal on desktop; responsive first-person
+  projection and full-size movement controls on phones.
 - Instrument screens are decorative station diagrams, not live sensor readings.
   Actual objectives, targets and outcomes remain in the accessible HTML HUD.
 - This is an interior/presentation iteration, not a claim of a complete campaign,
@@ -23,8 +23,12 @@ The separate elevated tactical camera and picking system are unchanged.
 `frontend/src/bridge/bridgeInterior.ts` renders on state changes and when the
 orbital texture loads. No continuous animation loop or postprocessing is added.
 A small, canvas-authored light probe and one cached 1024px shadow map support
-beveled furniture. The output is capped at 960×480 backing pixels, including on
-high-DPR devices. Mobile uses proportional cropping rather than stretching.
+beveled furniture. The output stays within 921,600 backing pixels (a maximum budget of
+1280×720 pixels), including on high-DPR devices. The second pass projects for the
+actual viewport aspect instead of cropping the bridge on phones. The fullscreen
+interface uses display-sized output with density capped at 1.5 and vertical FOV
+capped at 78 degrees. See
+[the second visual pass](BRIDGE-VISUAL-ITERATION-2.md) for its rendering contract.
 
 `BridgeInteriorView` loads the renderer asynchronously. On unmount it disposes
 geometries, materials, textures, the environment target, shadow resources and the

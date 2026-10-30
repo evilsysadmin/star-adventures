@@ -28,28 +28,42 @@ for (const width of [360, 390, 430, 1280]) {
   });
 }
 
-test('science, diplomacy and tactical choices produce distinct genuine outcomes', async ({ page }) => {
-  await page.goto('/');
-  await openStation(page, 'science');
-  await page.getByTestId('choice-scan').click();
-  await expect(page.getByTestId('science-score')).toHaveText('02');
-  await page.getByTestId('choice-broadcast').click();
-  await expect(page.getByTestId('ending')).toContainText('Paz negociada');
-  await expect(page.getByTestId('science-score')).toHaveText('05');
-  await expect(page.getByRole('button', { name: /Nueva misión/i })).toBeVisible();
-  await page.getByRole('button', { name: /Nueva misión/i }).click();
-  await expect(page.getByTestId('science-score')).toHaveText('00');
-  await openStation(page, 'communications');
-  await page.getByTestId('choice-hail').click();
-  await page.getByTestId('choice-mediate').click();
-  await expect(page.getByTestId('diplomacy-score')).toHaveText('05');
-  await expect(page.getByTestId('ending')).toContainText('Paz negociada');
-  await page.getByRole('button', { name: /Nueva misión/i }).click();
-  await openStation(page, 'tactical');
-  await page.getByTestId('choice-intercept').click();
-  await page.getByTestId('choice-disable').click();
-  await expect(page.getByTestId('damage-score')).toHaveText('01');
-  await expect(page.getByTestId('ending')).toContainText('Victoria táctica');
+test.describe('puesto del capitán: tres finales reales', () => {
+  // Exercise the primary interface rather than coupling narrative outcomes
+  // to the separate first-person bridge walking/navigation regression tests.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('science, diplomacy and tactical choices produce distinct genuine outcomes', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('game-shell')).toHaveAttribute('data-interface', 'game');
+    await expect(page.getByTestId('captain-controls')).toBeVisible();
+    await page.getByTestId('captain-science').click();
+    await expect(page.getByTestId('choice-scan')).toBeVisible();
+    await page.getByTestId('choice-scan').click();
+    await expect(page.getByTestId('science-score')).toHaveText('02');
+    await page.getByTestId('choice-broadcast').click();
+    await expect(page.getByTestId('ending')).toContainText('Paz negociada');
+    await expect(page.getByTestId('science-score')).toHaveText('05');
+
+    await page.getByRole('button', { name: /Nueva misión/i }).click();
+    await expect(page.getByTestId('science-score')).toHaveText('00');
+    await expect(page.getByTestId('captain-controls')).toBeVisible();
+    await page.getByTestId('captain-comms').click();
+    await expect(page.getByTestId('choice-hail')).toBeVisible();
+    await page.getByTestId('choice-hail').click();
+    await page.getByTestId('choice-mediate').click();
+    await expect(page.getByTestId('diplomacy-score')).toHaveText('05');
+    await expect(page.getByTestId('ending')).toContainText('Paz negociada');
+
+    await page.getByRole('button', { name: /Nueva misión/i }).click();
+    await expect(page.getByTestId('captain-controls')).toBeVisible();
+    await page.getByTestId('captain-tactical').click();
+    await expect(page.getByTestId('choice-intercept')).toBeVisible();
+    await page.getByTestId('choice-intercept').click();
+    await page.getByTestId('choice-disable').click();
+    await expect(page.getByTestId('damage-score')).toHaveText('01');
+    await expect(page.getByTestId('ending')).toContainText('Victoria táctica');
+  });
 });
 
 test('keyboard choices and skip-navigation work', async ({ page }) => {

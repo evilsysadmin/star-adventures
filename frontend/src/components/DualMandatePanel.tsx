@@ -28,13 +28,14 @@ type ActualAwayFinding = {
   lastReport: null | { officerId: string; skill: number; result: string };
 };
 
-export function DualMandatePanel({ awayTeam, exploration, accessedStationId, mandate, setMandate, initialNotice }: {
+export function DualMandatePanel({ awayTeam, exploration, accessedStationId, mandate, setMandate, initialNotice, commandMode = 'walking' }: {
   awayTeam: ActualAwayFinding;
   exploration: ViewState;
   accessedStationId: string | null;
   mandate: MandateState;
   setMandate: Dispatch<SetStateAction<MandateState>>;
   initialNotice: string;
+  commandMode?: 'walking' | 'seated';
 }) {
 
   // Reports always come from the SAME canonical sequence, not from UI flags.
@@ -54,7 +55,7 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
     mandate.knowledge.solan.includes(secretIncident.id);
   const scienceBriefed = mandate.knowledge.solan.includes(PROBE_SURVEY_INCIDENT);
   const canBriefScience = canBriefScientificFinding(
-    MANDATE_DEFINITION, mandate, awayTeam, world, exploration, accessedStationId
+    MANDATE_DEFINITION, mandate, awayTeam, world, exploration, accessedStationId, commandMode
   );
 
   const run = (actions: MandateDecision[]) => setMandate(before =>
@@ -90,11 +91,14 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
             {canBriefScience ? <button type="button" className="mandate-secondary"
               data-testid="mandate-brief-science"
               onClick={() => setMandate(before => briefScientificFinding(
-                MANDATE_DEFINITION, before, awayTeam, world, exploration, accessedStationId
+                MANDATE_DEFINITION, before, awayTeam, world, exploration, accessedStationId, commandMode
               ))}>
               Informar a Idris Solan desde el puesto de mando
             </button> : !scienceBriefed && <p className="mandate-caveat">
-              Regresa al puente y usa el sillón del capitán para transmitirle el informe.
+              {commandMode === 'seated' ? exploration.area === 'bridge'
+                ? 'Selecciona Mando en el panel del capitán para transmitirle el informe.'
+                : 'Regresa al puente y selecciona Mando en el panel del capitán para transmitirle el informe.'
+                : 'Regresa al puente y usa el sillón del capitán para transmitirle el informe.'}
             </p>}
           </div>}
           {openOrder.status === 'active' && <p className="mandate-caveat" data-testid="mandate-rescue-guidance">

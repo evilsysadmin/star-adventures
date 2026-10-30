@@ -3,6 +3,7 @@
 import { MandateError, applyMandateAction } from './dualMandate.mjs';
 import { eligibleMandateBranches } from './mandateGates.mjs';
 import { facedConsole } from './consoleOrders.mjs';
+import { captainConsole } from './captainOrders.mjs';
 import { PROBE_FINDING } from './awayTeam.mjs';
 import { reconcileObservedProbe, PROBE_SURVEY_INCIDENT, PROBE_SURVEY_ORDER } from './observedMandate.mjs';
 
@@ -17,7 +18,8 @@ const BRIEF_BRANCH = Object.freeze([{
   ] },
 }]);
 
-export function canBriefScientificFinding(definition, mandate, away, world, exploration, accessedStationId) {
+export function canBriefScientificFinding(definition, mandate, away, world, exploration, accessedStationId, commandMode = 'walking') {
+  if (!['walking', 'seated'].includes(commandMode)) throw new MandateError('Unknown bridge command mode');
   // Check both canonical records: a historical entry alone cannot replace
   // the separately validated real away-team discovery on the same device.
   const consistent = reconcileObservedProbe(definition, mandate, away);
@@ -28,13 +30,14 @@ export function canBriefScientificFinding(definition, mandate, away, world, expl
   const incident = mandate.incidents.find(item => item.id === PROBE_SURVEY_INCIDENT);
   if (!incident || !incident.witnesses.includes(away.lastReport.officerId) ||
       mandate.knowledge[FIRST_OFFICER].includes(PROBE_SURVEY_INCIDENT)) return false;
-  const console = facedConsole(world, exploration);
+  const console = commandMode === 'seated'
+    ? captainConsole(world, exploration, accessedStationId) : facedConsole(world, exploration);
   return console?.id === 'captain' && console.action === 'command' &&
     accessedStationId === console.id;
 }
 
-export function briefScientificFinding(definition, mandate, away, world, exploration, accessedStationId) {
-  if (!canBriefScientificFinding(definition, mandate, away, world, exploration, accessedStationId))
+export function briefScientificFinding(definition, mandate, away, world, exploration, accessedStationId, commandMode = 'walking') {
+  if (!canBriefScientificFinding(definition, mandate, away, world, exploration, accessedStationId, commandMode))
     throw new MandateError('Scientific briefing requires an authentic discovery and captain chair access');
   return applyMandateAction(definition, mandate, {
     type: 'inform', incidentId: PROBE_SURVEY_INCIDENT, from: 'captain', to: FIRST_OFFICER,

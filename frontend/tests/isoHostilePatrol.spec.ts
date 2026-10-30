@@ -15,7 +15,7 @@ async function choose(page: import('@playwright/test').Page, id: string) {
 }
 
 for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking atlases and updates logical target cells at ${width}px`, async ({ page }) => {
-  test.setTimeout(30_000);
+  test.setTimeout(60_000);
   await page.setViewportSize({ width, height: 850 });
   await page.clock.install({ time: new Date('2026-10-29T00:00:00Z') });
   await page.goto('/');
@@ -29,7 +29,16 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await expect(page.getByTestId('iso-aim-status')).toContainText('línea despejada');
   await page.getByTestId('iso-patrol').click();
   await expect(page.getByTestId('iso-patrol')).toContainText('Detener patrulla');
+  // Establish the first patrol frame before measuring its 900ms cell step.
+  // A delayed first RAF must not consume the test's entire time advance.
+  await page.clock.runFor(32);
+  const canvas = page.getByTestId('iso-render-canvas');
+  // A first rendered frame may legitimately have elapsed=0. Require the
+  // acknowledged command, then prove a whole real patrol step has elapsed.
+  await expect(canvas).toHaveAttribute('data-patrol-active', 'true');
   await page.clock.runFor(1_050);
+  await expect.poll(async () => Number(await canvas.getAttribute('data-patrol-elapsed'))).toBeGreaterThanOrEqual(900);
+  await expect(page.getByTestId('iso-hostile-cells')).toContainText('6:1');
 
   await choose(page, '6:1');
   await expect(page.getByTestId('iso-selected')).toContainText('Hostil de entrenamiento');

@@ -64,6 +64,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   const canvas=renderer.domElement;
   canvas.setAttribute('data-testid','scenario-render-canvas');
   canvas.setAttribute('role','img');
+  canvas.setAttribute('aria-busy','true');
   canvas.setAttribute('aria-label',`Mapa táctico ${scenario.size} por ${scenario.size}; hay un selector accesible más abajo`);
   element.appendChild(canvas);
   const scene=new THREE.Scene();
@@ -1029,11 +1030,19 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    if(b.width<=0||b.height<=0)return;
    renderer.setSize(b.width,b.height,false);
    sync();
+   canvas.dataset.tacticalReady='true';
+   canvas.setAttribute('aria-busy','false');
   };
   const observer=new ResizeObserver(resize);
   observer.observe(element);
   let down:{id:number;x:number;y:number}|null=null;
-  const onDown=(event:PointerEvent)=>{down={id:event.pointerId,x:event.clientX,y:event.clientY};};
+  const onDown=(event:PointerEvent)=>{
+   // Native focus can scroll the enclosing keyboard board between down/up,
+   // moving the grid underneath a stationary pointer on narrow screens.
+   event.preventDefault();
+   canvas.closest<HTMLElement>('[tabindex]')?.focus({preventScroll:true});
+   down={id:event.pointerId,x:event.clientX,y:event.clientY};
+  };
   const onCancel=()=>{down=null;};
   const onUp=(event:PointerEvent)=>{
    if(!down||event.pointerId!==down.id)return;

@@ -33,26 +33,26 @@ function initiallyExpanded(): boolean {
 }
 
 
-export function TacticalViewSwitcher() {
+export function TacticalViewSwitcher({ gameOverlay = false, onClose }: { gameOverlay?: boolean; onClose?: () => void }) {
   // Lead with the complete stateful loop. The other two views remain explicit,
   // reversible inspection tools rather than leaving a new player in a probe.
-  const [mode, setMode] = useState<TacticalViewMode>(initialMode);
-  const [expanded, setExpanded] = useState(initiallyExpanded);
+  const [mode, setMode] = useState<TacticalViewMode>(() => gameOverlay ? 'missions' : initialMode());
+  const [expanded, setExpanded] = useState(() => gameOverlay || initiallyExpanded());
   const chooseMode = (next: TacticalViewMode) => {
     setMode(next);
-    try { localStorage.setItem(TACTICAL_VIEW_PREFERENCE, next); } catch { /* non-persistent fallback */ }
+    if (!gameOverlay) try { localStorage.setItem(TACTICAL_VIEW_PREFERENCE, next); } catch { /* non-persistent fallback */ }
   };
   return <section className={`iso-mode-switcher ${expanded ? 'is-expanded' : 'is-collapsed'}`}
     data-testid="tactical-mode-switcher" aria-label="Escenario táctico opcional">
     <div className="iso-mode-entry">
       <div className="iso-mode-entry-copy">
-        <strong>ENCUENTRO TÁCTICO · OPCIONAL</strong>
-        <span>Un escenario de combate independiente. La misión de rescate continúa en el puente.</span>
+        <strong>{gameOverlay ? 'COMBATE TÁCTICO · POC' : 'ENCUENTRO TÁCTICO · OPCIONAL'}</strong>
+        <span>{gameOverlay ? 'Escenario independiente · tu misión conserva su progreso.' : 'Un escenario de combate independiente. La misión de rescate continúa en el puente.'}</span>
       </div>
-      <button type="button" className="iso-mode-entry-toggle" data-testid="tactical-lab-toggle"
+      <button type="button" className="iso-mode-entry-toggle" data-testid={gameOverlay ? 'game-poc-return' : 'tactical-lab-toggle'}
         aria-expanded={expanded} aria-controls="tactical-lab-content"
-        onClick={() => setExpanded(open => !open)}>
-        {expanded ? 'Cerrar escenario ↑' : 'Explorar combate táctico ↗'}
+        onClick={() => gameOverlay ? onClose?.() : setExpanded(open => !open)}>
+        {gameOverlay ? 'Volver a explorar ↩' : expanded ? 'Cerrar escenario ↑' : 'Explorar combate táctico ↗'}
       </button>
     </div>
     {expanded && <div id="tactical-lab-content" data-testid="tactical-lab-content">

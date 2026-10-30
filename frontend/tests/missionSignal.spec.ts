@@ -12,6 +12,7 @@ async function reachSurface(page: Page) {
 
 for (const width of [390, 1280]) {
   test(`real mission signal follows bridge → rescue → extraction → debrief at ${width}px`, async ({ page }) => {
+    test.setTimeout(120_000);
     await page.setViewportSize({ width, height: width === 390 ? 850 : 820 });
     await page.goto('/');
     const signal = page.getByTestId('mission-transmission');

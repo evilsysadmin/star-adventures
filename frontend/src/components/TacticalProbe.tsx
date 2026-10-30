@@ -34,7 +34,14 @@ export function TacticalProbe() {
   useEffect(() => {
     const element = host.current;
     if (!element) return;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer: THREE.WebGLRenderer;
+    try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
+    catch {
+      // The optional probe must not unmount the playable bridge when WebGL
+      // is denied. Its HTML cell controls remain available below.
+      element.textContent = 'Vista 3D no disponible. Usa el selector de casillas.';
+      return () => { element.textContent = ''; };
+    }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     element.appendChild(renderer.domElement);
     const scene = new THREE.Scene();

@@ -7,8 +7,10 @@ import { FirstPersonView, type ViewState, type ExplorationEvent } from './compon
 import { TacticalViewSwitcher } from './components/TacticalViewSwitcher';
 import { DualMandatePanel } from './components/DualMandatePanel';
 import { BridgeCombatReport } from './components/BridgeCombatReport';
+import { GameShell, useGamePresentation } from './components/GameShell';
 import world from '../../content/scenes/meridian.json';
 import { startExploration } from '../../src/spatial.mjs';
+import { captainOrders, issueCaptainOrder } from '../../src/captainOrders.mjs';
 import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrders.mjs';
 import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
@@ -55,6 +57,7 @@ const spanishChoices: Record<string, string> = {
 };
 
 export function App() {
+  const game = useGamePresentation();
   const [initialSession] = useState(() => restoreSession(episode, localStorageOrNull()));
   const [session, setSession] = useState<SessionState>(() => initialSession.state);
   const [initialSpatial] = useState(() => restoreSpatialSession(world, localStorageOrNull()));
@@ -95,7 +98,9 @@ export function App() {
   }, [awayTeam]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
-  const access = availableConsoleOrders(world, exploration, episode, state);
+  const seated = game.immersive && exploration.area === 'bridge';
+  const access = seated ? captainOrders(world, exploration, episode, state, activeStation)
+    : availableConsoleOrders(world, exploration, episode, state);
   const openedConsole = access.console?.id === activeStation ? access.console : null;
   const choices: Command[] = openedConsole ? access.choices : [];
   const savePerimeter = useCallback((history: CombatReplayHistory, active: boolean) => {
@@ -108,6 +113,7 @@ export function App() {
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
+    if (game.immersive && event.type === 'station' && position.area === 'bridge') game.setJournalOpen(true);
     if (event.type === 'area-entered') setFieldEncounterOpen(false);
     if (event.type === 'station' && event.action === 'secure-perimeter' && !fieldResolution) {
       savePerimeter(fieldHistory, true);
@@ -153,8 +159,9 @@ export function App() {
           : 'La intervención no puede completarse en este momento.');
       }
     }
-  }, [session.crew, awayTeam, mandate, fieldResolution, fieldHistory, savePerimeter]);
+  }, [session.crew, awayTeam, mandate, fieldResolution, fieldHistory, savePerimeter, game.immersive, game.setJournalOpen]);
   const restart = () => {
+    game.setJournalOpen(false);
     setSession(prev => applyCrewAction(episode, prev, { type: 'restart' }));
     setAwayTeam(previous => ({ ...startAwayTeam(), squad: [...previous.squad] }));
     // A new rescue must not inherit the previous mission's completed orders.
@@ -182,10 +189,13 @@ export function App() {
         ?.focus({ preventScroll: true });
     });
   };
-  const select = (id: string) => setSession(prev => issueConsoleOrder(world, exploration, episode, prev, id));
+  const select = (id: string) => setSession(prev => seated
+    ? issueCaptainOrder(world, exploration, episode, prev, activeStation, id)
+    : issueConsoleOrder(world, exploration, episode, prev, id));
 
   useEffect(() => {
     const keyHandler = (event: KeyboardEvent) => {
+      if (game.menu || game.atTitle || game.pocOpen) return;
       if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.defaultPrevented) return;
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
@@ -198,7 +208,7 @@ export function App() {
     };
     window.addEventListener('keydown', keyHandler);
     return () => window.removeEventListener('keydown', keyHandler);
-  }, [choices, terminal]);
+  }, [choices, terminal, game.menu, game.atTitle, game.pocOpen]);
 
   const last = state.log.at(-1);
   const showDamage = state.stats.shipDamage > 0;
@@ -213,7 +223,8 @@ export function App() {
     briefing: {
       title: 'TRANSMISIÓN ENTRANTE',
       story: 'Un SOS del puesto científico interrumpe la guardia. Hay civiles esperando asistencia. Tu primera orden es preparar el equipo de rescate.',
-      next: 'Elige a un oficial con Medicina y localiza el acceso a la sala de transporte en la parte posterior del puente.',
+      next: seated ? 'Elige a un oficial con Medicina y ordena el transporte desde tu puesto de mando.'
+        : 'Elige a un oficial con Medicina y localiza el acceso a la sala de transporte en la parte posterior del puente.',
     },
     field: {
       title: 'MISIÓN EN SUPERFICIE',
@@ -234,8 +245,10 @@ export function App() {
   const missionProgress = { briefing: 0, field: 1, extract: 2, debrief: 3 }[missionPhase];
 
   return (
+    <GameShell presentation={game} location={exploration.area === 'bridge' ? 'PUENTE · CUBIERTA 01' : 'EQUIPO DE DESEMBARCO'}
+      transportPending={!!exploration.pending} canOpenPoc={!fieldEncounterOpen}>
     <div className="app-shell">
-      <a href="#orders" className="skip-link">Ir a las órdenes</a>
+      <a href="#orders" className="skip-link" onClick={() => { if (game.immersive) game.setJournalOpen(true); }}>Ir a las órdenes</a>
       <header className="masthead">
         <div className="brand-mark" aria-hidden="true">✦</div>
         <div className="brand-block"><div className="brand-name">STAR <span>ADVENTURES</span></div><div className="brand-caption">SHADOWOPS · EXPLORACIÓN Y MANDO</div></div>
@@ -244,6 +257,8 @@ export function App() {
           <a href="#orders">Diario de misión</a>
         </nav>
         <div className="masthead-right"><span className="status-dot" /> PARTIDA LOCAL</div>
+        {!game.immersive && <button type="button" className="classic-game-menu" data-testid="game-menu-open"
+          onClick={() => game.setMenu('pause')}>Menú del juego</button>}
       </header>
 
       <main className="bridge-layout">
@@ -297,8 +312,10 @@ export function App() {
             </section>
           ) : (
             <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
+              paused={game.paused} captainMode={game.immersive}
+              onCaptainStation={id => { setActiveStation(id); game.setJournalOpen(true); }}
               perimeterResolved={fieldResolution !== null}
-              missionTargetId={missionPhase === 'briefing' ? 'transporter'
+              missionTargetId={!game.preferences.hints ? null : missionPhase === 'briefing' ? 'transporter'
                 : missionPhase === 'field' ? 'relief-point'
                 : missionPhase === 'extract' ? 'beam-out' : null}
               onSpatialEvent={onSpatialEvent}
@@ -307,7 +324,8 @@ export function App() {
                 return { id: officer.id, name: officer.name };
               })} />
           )}
-          {exploration.area === 'bridge' && <TacticalViewSwitcher />}
+          {((!game.immersive && exploration.area === 'bridge') || (game.immersive && game.pocOpen)) &&
+            <TacticalViewSwitcher gameOverlay={game.immersive} onClose={() => game.setPocOpen(false)} />}
           <div className="stat-band" aria-label="Estado de la expedición">
             <div className="stat"><div className="stat-heading">CIENCIA</div><div className="stat-value" data-testid="science-score">{state.stats.science.toString().padStart(2, '0')}</div><span className="stat-sub">EVIDENCIA</span></div>
             <div className="stat"><div className="stat-heading">DIPLOMACIA</div><div className="stat-value" data-testid="diplomacy-score">{state.stats.diplomacy.toString().padStart(2, '0')}</div><span className="stat-sub">INFLUENCIA</span></div>
@@ -316,6 +334,8 @@ export function App() {
         </section>
 
         <section className="orders-panel" id="orders" aria-labelledby="orders-title">
+          {game.immersive && <button type="button" className="game-journal-close" data-testid="game-journal-close"
+            onClick={() => game.setJournalOpen(false)}>← Volver a explorar <span aria-hidden="true">×</span></button>}
           <div className="panel-topline"><span>{openedConsole ? `01 / ${openedConsole.label.toUpperCase()}` : '01 / DIARIO DE MISIÓN'}</span><span className="panel-diamond" aria-hidden="true">◆</span></div>
           <div className="officer"><span className="officer-avatar" aria-hidden="true">C</span><div><div className="officer-role">OFICIAL AL MANDO</div><div className="officer-name">{officerAt(session.crew, 'command').name}</div></div><span className="comms-live" aria-label="Canal activo">ENLACE ABIERTO</span></div>
           <details className="crew-roster" data-testid="crew-roster">
@@ -367,18 +387,19 @@ export function App() {
           <div className="divider-fine" />
           <div aria-live="polite" aria-atomic="true" className="narrative" data-testid="narrative">
             <div className="panel-label">{terminal ? 'INFORME FINAL' : 'SITUACIÓN ACTUAL'}</div>
-            <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : openedConsole ? `Consola · ${openedConsole.label}` : exploration.area === 'bridge' ? 'Accede a una estación del puente' : 'Exploración de superficie'}</h2>
+            <h2 id="orders-title">{terminal ? outcomeText[node.outcome!] : openedConsole ? `Consola · ${openedConsole.label}` : exploration.area === 'bridge' ? seated ? 'Selecciona un oficial del puente' : 'Accede a una estación del puente' : 'Exploración de superficie'}</h2>
             <p>{last?.check === 'failed' ? `La orden fracasa: ${last.officerId ? OFFICERS.find(officer => officer.id === last.officerId)?.name : 'el oficial'} carece de preparación para ejecutar esta maniobra. La misión queda sin resolver.` : (spanishText[state.nodeId] ?? node.text)}</p>
           </div>
           <div className="decision-section">
-            <div className="decision-heading"><span>{terminal ? 'MISIÓN COMPLETADA' : openedConsole ? 'ÓRDENES DE ESTA ESTACIÓN' : 'ACÉRCATE A UNA CONSOLA'}</span>{!terminal && openedConsole && <span>{choices.length} OPCIONES</span>}</div>
+            <div className="decision-heading"><span>{terminal ? 'MISIÓN COMPLETADA' : openedConsole ? 'ÓRDENES DE ESTA ESTACIÓN' : seated ? 'SELECCIONA UN OFICIAL' : 'ACÉRCATE A UNA CONSOLA'}</span>{!terminal && openedConsole && <span>{choices.length} OPCIONES</span>}</div>
             {terminal ? (
               <div className="ending" data-testid="ending"><span className="ending-icon" aria-hidden="true">✧</span><div><strong>Registro de misión cerrado</strong><p>{state.log.length} decisiones · {outcomeText[node.outcome!]}</p></div></div>
             ) : !openedConsole || choices.length === 0 ? (
               <div className="console-locked" data-testid="console-locked">
                 <span aria-hidden="true">⌁</span>
-                <p>{openedConsole ? 'Esta estación no dispone de órdenes para la situación actual. Busca otro puesto del puente.' :
-                  exploration.area === 'bridge' ? 'Muévete por el puente y pulsa E delante de Ciencia, Comunicaciones, Táctica o el timón para dar una orden real.' :
+                <p>{openedConsole ? seated ? 'Esta estación no dispone de órdenes para la situación actual. Selecciona otro oficial en el panel de mando.'
+                  : 'Esta estación no dispone de órdenes para la situación actual. Busca otro puesto del puente.' :
+                  seated ? 'Selecciona Ciencia, Comunicaciones, Táctica o Timón en tu panel de mando.' : exploration.area === 'bridge' ? 'Muévete por el puente y pulsa E delante de Ciencia, Comunicaciones, Táctica o el timón para dar una orden real.' :
                   'Estás en la superficie. Las operaciones de la nave solo se realizan desde el puente.'}</p>
               </div>
             ) : (
@@ -393,7 +414,7 @@ export function App() {
               </div>
             )}
           </div>
-          <DualMandatePanel awayTeam={awayTeam} exploration={exploration}
+          <DualMandatePanel awayTeam={awayTeam} exploration={exploration} commandMode={game.immersive ? 'seated' : 'walking'}
             accessedStationId={openedConsole?.id ?? null} mandate={mandate}
             setMandate={setMandate} initialNotice={initialMandate.notice} />
           <div className="orders-footer"><span className="shortcut-hint">{terminal ? 'R · REINICIAR MISIÓN' : openedConsole ? 'TECLAS 1–3 · ORDEN DE LA CONSOLA' : 'FLECHAS / WASD · E PARA USAR'}</span><button className="restart-button" type="button" onClick={restart}>{terminal ? 'Nueva misión ↗' : 'Reiniciar ↺'}</button></div>
@@ -402,5 +423,6 @@ export function App() {
 
       <footer className="footer-line"><span>✦ SHADOWOPS <span className="footer-muted">/ DIARIO DEL CAPITÁN</span></span><span aria-live="polite">{last ? `ÚLTIMA ORDEN: ${spanishChoices[last.choiceId] ?? last.choiceId}` : initialSession.notice}</span></footer>
     </div>
+    </GameShell>
   );
 }
