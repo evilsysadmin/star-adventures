@@ -3,6 +3,8 @@ import * as THREE from 'three';
 // Presentation only. Every furnishing occupies the cell authored in the world;
 // the existing spatial engine remains the sole authority for navigation/use.
 export type BridgePose = { x: number; y: number; heading: string; seated?: boolean };
+export type BridgeCrewStation = 'captain' | 'helm' | 'science' | 'comms' | 'tactical';
+export type BridgeCrewRoster = Readonly<Record<BridgeCrewStation, Readonly<{ id: string; name: string }>>>;
 type Station = { id: string; x: number; y: number; label: string; type: string };
 type BridgeMap = { width: number; height: number; objects: Station[] };
 
@@ -354,24 +356,70 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // officers; assignments, checks and commands stay authoritative in the UI.
   // Shared geometry/materials join the room's existing batching/disposal path.
   const officerOval = new THREE.SphereGeometry(1, 14, 10); geometries.add(officerOval);
-  const coats: Record<string, THREE.Material> = {
+  const coats: Record<string, THREE.MeshStandardMaterial> = {
     helm: mat('#8f593e', .08, .77),
     science: mat('#287b83', .08, .77),
     comms: mat('#665c92', .08, .77),
     tactical: mat('#9b783a', .08, .77),
   };
   const uniformTrim = mat('#d0ab7a', .35, .56);
-  const skins = ['#bb896d', '#805a46', '#d4a47d', '#ab765d'].map(color => mat(color, .03, .9));
-  const hair = ['#352e2a', '#1b2630', '#60452e', '#322f40'].map(color => mat(color, .04, .9));
+  // Materials belong to a physical post; updating an assignment recolors its
+  // existing instanced geometry without rebuilding the room or its shadows.
+  const skinByPost: Record<string, THREE.MeshStandardMaterial> = {
+    helm: mat('#bb896d', .03, .9), science: mat('#805a46', .03, .9),
+    comms: mat('#d4a47d', .03, .9), tactical: mat('#ab765d', .03, .9),
+  };
+  const hairByPost: Record<string, THREE.MeshStandardMaterial> = {
+    helm: mat('#352e2a', .04, .9), science: mat('#1b2630', .04, .9),
+    comms: mat('#60452e', .04, .9), tactical: mat('#322f40', .04, .9),
+  };
+  const captainSkin = mat('#d4a47d', .03, .9);
+  const captainHair = mat('#1b2630', .04, .9);
+  // Original illustrative palettes keyed by the game's six canonical IDs.
+  // They follow the officer between posts, but do not claim to be portraits.
+  const appearances: Record<string, readonly [string, string, string]> = {
+    varela: ['#355967', '#d4a47d', '#1b2630'],
+    solan: ['#566a84', '#805a46', '#1b2630'],
+    venn: ['#287b83', '#bb896d', '#352e2a'],
+    dorn: ['#9b783a', '#ab765d', '#322f40'],
+    rhee: ['#8f593e', '#d8a988', '#60452e'],
+    mira: ['#665c92', '#a57862', '#332527'],
+  };
+  // The original bridge has no separate navigation/helm staff slot.
+  // The helm console is covered visually by the assigned engineering officer;
+  // orders still use their existing canonical station checks.
+  const deckPosts = ['helm', 'science', 'comms', 'tactical'] as const;
+  const nameplates = new Map<string, (name: string) => void>();
+  const makeNameplate = (post: string, title: string) => {
+    const source = document.createElement('canvas'); source.width = 768; source.height = 256;
+    const ctx = source.getContext('2d')!;
+    const texture = new THREE.CanvasTexture(source);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    textures.add(texture);
+    const material = new THREE.MeshBasicMaterial({ map: texture }); materials.add(material);
+    nameplates.set(post, name => {
+      ctx.fillStyle = '#091922'; ctx.fillRect(0, 0, 768, 256);
+      ctx.fillStyle = '#be9f74'; ctx.fillRect(22, 26, 5, 204);
+      ctx.fillStyle = '#9dbac1'; ctx.font = '500 23px system-ui';
+      ctx.fillText(title, 53, 65, 660);
+      ctx.fillStyle = '#e2e5d7'; ctx.font = '600 42px system-ui';
+      ctx.fillText(name.toLocaleUpperCase('es'), 53, 151, 670);
+      ctx.fillStyle = '#71929b'; ctx.font = '22px monospace';
+      ctx.fillText('TRIPULACIÓN ASIGNADA', 53, 208);
+      texture.needsUpdate = true;
+    });
+    nameplates.get(post)!('PUESTO ASIGNADO');
+    return material;
+  };
   const shoulder = new THREE.Vector3(), hand = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
-  const addSeatedOfficer = (parent: THREE.Object3D, role: string, ordinal: number) => {
+  const addSeatedOfficer = (parent: THREE.Object3D, role: string) => {
     const officer = new THREE.Group();
     officer.name = `bridge-operator-${role}`;
     parent.add(officer);
     const coat = coats[role] ?? coats.helm;
-    const skin = skins[ordinal % skins.length];
-    const hairMaterial = hair[ordinal % hair.length];
+    const skin = skinByPost[role];
+    const hairMaterial = hairByPost[role];
     // Seat cushion is around y=.5; a slight forward lean faces the console.
     mesh(officerOval, coat, officer, 0, .92, .4, .29, .32, .2);
     mesh(officerOval, coat, officer, 0, .69, .41, .25, .13, .19);
@@ -405,9 +453,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   mesh(officerOval, captainCoat, captainAvatar, 0, 1.19, .04, .33, .39, .24);
   mesh(officerOval, captainCoat, captainAvatar, 0, .87, -.015, .28, .16, .24);
   mesh(officerOval, uniformTrim, captainAvatar, 0, 1.47, .055, .27, .065, .205);
-  mesh(officerOval, skins[2], captainAvatar, 0, 1.73, -.025, .18, .225, .175);
-  mesh(officerOval, hair[1], captainAvatar, 0, 1.89, .015, .19, .087, .18);
-  mesh(officerOval, hair[1], captainAvatar, 0, 1.79, .133, .175, .16, .065);
+  mesh(officerOval, captainSkin, captainAvatar, 0, 1.73, -.025, .18, .225, .175);
+  mesh(officerOval, captainHair, captainAvatar, 0, 1.89, .015, .19, .087, .18);
+  mesh(officerOval, captainHair, captainAvatar, 0, 1.79, .133, .175, .16, .065);
   for (const side of [-1, 1]) {
     const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
     sleeve.rotation.z = side * .3;
@@ -467,10 +515,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     // Back monitor has enough height to read across the bridge.
     for (const x of [-.56, .56]) block(group, bronze, x, 1.37, -.43, .035, .27, .035);
     rounded(group, instrumentShell, 0, 1.54, -.43, 1.68, .52, .14);
-    decal(group, display(title, '#a5cdd4', station.y), 0, 1.54, -.349, 1.5, .41);
-    // Chairs stay inside the already solid station tile.
+    // Nameplate replaces only the rear duplicate schematic. Front controls
+    // remain the original physical instrument, and the station stays playable.
+    decal(group, makeNameplate(station.id, title), 0, 1.54, -.349, 1.5, .41);
     chair(group, 0, .4);
-    addSeatedOfficer(group, station.id, visibleOfficers++);
+    addSeatedOfficer(group, station.id);
+    visibleOfficers++;
   }
 
   canvas.dataset.bridgeOfficers = String(visibleOfficers);
@@ -520,6 +570,24 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
 
   let lastPose: BridgePose | undefined;
   let lastAlert = false;
+  let rosterKey = '';
+  const applyRoster = (roster: BridgeCrewRoster) => {
+    const nextKey = (['captain', ...deckPosts] as BridgeCrewStation[])
+      .map(post => `${post}:${roster[post].id}:${roster[post].name}`).join('|');
+    if (nextKey === rosterKey) return;
+    rosterKey = nextKey;
+    const apply = (post: BridgeCrewStation, coat: THREE.MeshStandardMaterial,
+      skin: THREE.MeshStandardMaterial, hair: THREE.MeshStandardMaterial) => {
+      const officer = roster[post];
+      const palette = appearances[officer.id];
+      if (!palette) return;
+      coat.color.set(palette[0]); skin.color.set(palette[1]); hair.color.set(palette[2]);
+      canvas.dataset[`bridgeOfficer${post[0].toUpperCase() + post.slice(1)}`] = officer.id;
+      nameplates.get(post)?.(officer.name);
+    };
+    for (const post of deckPosts) apply(post, coats[post], skinByPost[post], hairByPost[post]);
+    apply('captain', captainCoat, captainSkin, captainHair);
+  };
   const draw = () => {
     if (disposed || !lastPose) return;
     const rect = canvas.getBoundingClientRect();
@@ -557,8 +625,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const resize = new ResizeObserver(draw); resize.observe(canvas);
 
   return {
-    render(pose: BridgePose, alert: boolean) {
+    render(pose: BridgePose, alert: boolean, roster: BridgeCrewRoster) {
       if (disposed) return;
+      applyRoster(roster);
       lastPose = pose; lastAlert = alert; draw();
     },
     dispose() {
