@@ -98,6 +98,16 @@ export function App() {
   }, [awayTeam]);
   const node = currentNode(episode, state);
   const terminal = typeof node.outcome === 'string';
+  // Map existing validated crew assignments to physical bridge positions.
+  // Navigation has no dedicated staffing role yet; Engineering covers its
+  // decorative helm post without changing command authorization or skill rolls.
+  const bridgeCrew = useMemo(() => ({
+    captain: officerAt(session.crew, 'command'),
+    helm: officerAt(session.crew, 'engineering'),
+    science: officerAt(session.crew, 'science'),
+    comms: officerAt(session.crew, 'diplomacy'),
+    tactical: officerAt(session.crew, 'tactical'),
+  }), [session.crew]);
   const seated = game.immersive && exploration.area === 'bridge';
   const access = seated ? captainOrders(world, exploration, episode, state, activeStation)
     : availableConsoleOrders(world, exploration, episode, state);
@@ -312,7 +322,7 @@ export function App() {
             </section>
           ) : (
             <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
-              paused={game.paused} captainMode={game.immersive}
+              paused={game.paused} captainMode={game.immersive} bridgeCrew={bridgeCrew}
               onCaptainStation={id => { setActiveStation(id); game.setJournalOpen(true); }}
               perimeterResolved={fieldResolution !== null}
               missionTargetId={!game.preferences.hints ? null : missionPhase === 'briefing' ? 'transporter'

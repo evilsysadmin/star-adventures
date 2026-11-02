@@ -1,4 +1,5 @@
 import { requestCaptainTransport } from '../../../src/captainOrders.mjs';
+import type { BridgeCrewRoster } from '../bridge/bridgeInterior';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import { startExploration, applyExploration, faceTile } from '../../../src/spatial.mjs';
@@ -412,7 +413,7 @@ const WAYPOINT_ORDERS: Record<WaypointCommand, string> = {
   'turn-right': 'GIRA A LA DERECHA ↷', use: 'E · INTERACTÚA',
 };
 
-export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [], missionTargetId = null, perimeterResolved = false, paused = false, captainMode = false, onCaptainStation }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[]; missionTargetId?: string | null; perimeterResolved?: boolean; paused?: boolean; captainMode?: boolean; onCaptainStation?: (id: string) => void }) {
+export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [], missionTargetId = null, perimeterResolved = false, paused = false, captainMode = false, onCaptainStation, bridgeCrew }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[]; missionTargetId?: string | null; perimeterResolved?: boolean; paused?: boolean; captainMode?: boolean; onCaptainStation?: (id: string) => void; bridgeCrew: BridgeCrewRoster }) {
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -474,7 +475,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
         <>
           <div className="firstperson-render-stage">
           {exploration.area === 'bridge' && !bridgeFallback
-            ? <BridgeInteriorView pose={{ ...bridgePose, seated }} alert={alert} onUnavailable={useCompatibleBridge} />
+            ? <BridgeInteriorView pose={{ ...bridgePose, seated }} alert={alert} roster={bridgeCrew} onUnavailable={useCompatibleBridge} />
             : <canvas key={exploration.area} ref={canvas} className="firstperson-canvas" data-testid="compatible-firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
                 aria-label={`Perspectiva en primera persona: ${area.title}, posición ${exploration.x} ${exploration.y}, rumbo ${exploration.heading}`} />}
           {exploration.area === 'bridge' && !bridgeFallback && <div className="bridge-lens" aria-hidden="true">
@@ -485,7 +486,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           </div>
           <div className="firstperson-hud">
             <span data-testid="explore-heading">{seated ? 'CAPITÁN · MANDO DE LA NAVE' : `RUMBO ${exploration.heading} · ${exploration.x}:${exploration.y}`} </span>
-            <span data-testid="explore-target">{seated ? 'Selecciona un oficial para transmitir tus órdenes' : facing ? `OBJETIVO: ${facing.label}` : 'Observando la estancia'}</span>
+            <span data-testid="explore-target">{seated ? `Mando: ${bridgeCrew.captain.name} · selecciona una estación` : facing ? `OBJETIVO: ${facing.label}` : 'Observando la estancia'}</span>
           </div>
           {waypoint && <div className="firstperson-waypoint" data-testid="mission-waypoint"
             data-action={waypoint.action} role="status" aria-live="polite">
