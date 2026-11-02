@@ -44,6 +44,35 @@ for (const width of [390, 1280]) {
 }
 
 
+// A real console responds diegetically to pointer, keyboard and selection.
+// The canvas pixels must change without opening a fake, decorative action.
+for (const width of [390, 1280]) {
+  test(`bridge physical console responds to focus and selection at ${width}px`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto('/');
+    const bridge = page.getByTestId('bridge-interior');
+    await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'none');
+    const before = await bridge.screenshot();
+    await page.getByTestId('captain-science').hover();
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'science');
+    const after = await bridge.screenshot();
+    expect(after.equals(before)).toBe(false);
+    await page.screenshot({ path: `test-results/bridge-console-focus-${width}.png` });
+    await page.getByTestId('captain-science').click();
+    await expect(page.getByTestId('choice-scan')).toBeVisible();
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'science');
+    await page.getByTestId('game-journal-close').click();
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'none');
+    await page.getByTestId('captain-tactical').focus();
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'tactical');
+    await page.getByTestId('captain-tactical').evaluate(element => (element as HTMLButtonElement).blur());
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'none');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  });
+}
+
 // Decor-only operators must not alter orders, bridge coordinates or small
 // viewport usability. Real browser screenshots are required for visual review.
 for (const width of [390, 1280]) {
