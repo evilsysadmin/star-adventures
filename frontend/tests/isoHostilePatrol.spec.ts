@@ -34,9 +34,11 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await expect(page.getByTestId('iso-patrol')).toContainText('Detener patrulla');
   const canvas = page.getByTestId('iso-render-canvas');
   await expect(canvas).toHaveAttribute('data-patrol-active', 'true', { timeout: 15_000 });
-  // Freeze only after a live render. The one-hour jump preserves the 3600ms
-  // patrol cycle; advance by an authored 900ms cell step deterministically.
-  await page.clock.pauseAt(new Date('2026-10-29T01:00:00Z'));
+  // Freeze at the clock's *current* instant, not at an arbitrary later
+  // hour: a large leap would skip several real patrol segments and make the
+  // next exact logical cell dependent on how long R2 assets took to load.
+  const simulatedNow = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(new Date(simulatedNow));
   await page.clock.runFor(1_050);
   await expect.poll(async () => Number(await canvas.getAttribute('data-patrol-elapsed'))).toBeGreaterThanOrEqual(900);
   await expect(page.getByTestId('iso-hostile-cells')).toContainText('6:1');
