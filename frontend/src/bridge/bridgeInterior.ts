@@ -352,8 +352,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const contactShadow = new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false });
   materials.add(contactShadow);
 
-  // Original, low-poly bridge personnel. They are scenery rather than named
-  // officers; assignments, checks and commands stay authoritative in the UI.
+  // Original, low-poly bridge personnel. Their identity and appearance follow
+  // the saved roster; the pure engine remains authoritative for commands.
   // Shared geometry/materials join the room's existing batching/disposal path.
   const officerOval = new THREE.SphereGeometry(1, 14, 10); geometries.add(officerOval);
   const coats: Record<string, THREE.MeshStandardMaterial> = {
@@ -420,20 +420,28 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     const coat = coats[role] ?? coats.helm;
     const skin = skinByPost[role];
     const hairMaterial = hairByPost[role];
-    // Seat cushion is around y=.5; a slight forward lean faces the console.
+    // Real seated proportions: a broad upper back/shoulder line, visible
+    // neck and nape, and elbows reaching the physical instrument. The old
+    // floating spherical heads were hard to read above the chair at 390 px.
     mesh(officerOval, coat, officer, 0, .92, .4, .29, .32, .2);
+    mesh(officerOval, coat, officer, 0, 1.10, .40, .39, .235, .225);
     mesh(officerOval, coat, officer, 0, .69, .41, .25, .13, .19);
-    mesh(officerOval, uniformTrim, officer, 0, 1.15, .39, .29, .065, .205);
-    mesh(officerOval, skin, officer, 0, 1.40, .35, .17, .20, .165);
-    mesh(officerOval, hairMaterial, officer, 0, 1.55, .375, .181, .085, .174);
+    mesh(officerOval, uniformTrim, officer, 0, 1.205, .435, .255, .045, .21);
+    mesh(officerOval, skin, officer, 0, 1.295, .375, .105, .13, .10);
+    mesh(officerOval, skin, officer, 0, 1.43, .35, .18, .225, .165);
+    mesh(officerOval, hairMaterial, officer, 0, 1.575, .385, .192, .10, .18);
+    // Shaped rear hairline: no false helmet or a face pasted to the back.
+    mesh(officerOval, hairMaterial, officer, 0, 1.445, .475, .153, .105, .085);
     // Hands rest in front of the torso at the real decorative instrument.
     for (const side of [-1, 1]) {
-      shoulder.set(side * .24, 1.10, .38);
+      mesh(officerOval, coat, officer, side * .32, 1.15, .385, .135, .14, .17);
+      mesh(officerOval, uniformTrim, officer, side * .33, 1.26, .495, .095, .016, .06);
+      shoulder.set(side * .29, 1.10, .38);
       hand.set(side * .39, .93, -.04);
       const direction = hand.clone().sub(shoulder);
       const sleeve = mesh(cylinder, coat, officer,
         (shoulder.x + hand.x) / 2, (shoulder.y + hand.y) / 2,
-        (shoulder.z + hand.z) / 2, .085, direction.length(), .085);
+        (shoulder.z + hand.z) / 2, .09, direction.length(), .09);
       sleeve.quaternion.setFromUnitVectors(up, direction.normalize());
       mesh(officerOval, skin, officer, hand.x, hand.y, hand.z - .045, .09, .06, .12);
       mesh(officerOval, coat, officer, side * .145, .53, .14, .125, .11, .26);
@@ -451,15 +459,18 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // Body sits inside the existing command chair. A recognizable head,
   // shoulders and discreet rank stripes give the foreground a human anchor.
   mesh(officerOval, captainCoat, captainAvatar, 0, 1.19, .04, .33, .39, .24);
+  mesh(officerOval, captainCoat, captainAvatar, 0, 1.39, .045, .40, .17, .215);
   mesh(officerOval, captainCoat, captainAvatar, 0, .87, -.015, .28, .16, .24);
-  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.47, .055, .27, .065, .205);
-  mesh(officerOval, captainSkin, captainAvatar, 0, 1.73, -.025, .18, .225, .175);
-  mesh(officerOval, captainHair, captainAvatar, 0, 1.89, .015, .19, .087, .18);
-  mesh(officerOval, captainHair, captainAvatar, 0, 1.79, .133, .175, .16, .065);
+  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.49, .15, .27, .047, .13);
+  mesh(officerOval, captainSkin, captainAvatar, 0, 1.57, -.01, .11, .14, .11);
+  mesh(officerOval, captainSkin, captainAvatar, 0, 1.76, -.025, .18, .225, .175);
+  mesh(officerOval, captainHair, captainAvatar, 0, 1.915, .015, .19, .092, .18);
+  mesh(officerOval, captainHair, captainAvatar, 0, 1.80, .135, .173, .15, .083);
   for (const side of [-1, 1]) {
     const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
     sleeve.rotation.z = side * .3;
-    mesh(officerOval, captainCoat, captainAvatar, side * .27, 1.43, .055, .13, .105, .19);
+    mesh(officerOval, captainCoat, captainAvatar, side * .33, 1.44, .055, .175, .12, .19);
+    mesh(officerOval, captainBadge, captainAvatar, side * .34, 1.52, .175, .093, .013, .048);
     for (let stripe = 0; stripe < 2; stripe++)
       block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
   }
