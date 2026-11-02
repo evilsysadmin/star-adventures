@@ -632,7 +632,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     // legibility of the captain, officers and instruments. Phone views keep
     // more vertical room for the existing status and command controls.
     // Walking retains its own first-person eye line and unchanged grid pose.
-    const cameraPitch = seat ? (crewWide ? .045 : .115) : -.025;
+    const cameraPitch = seat ? (crewWide ? -.070 : -.130) : -.025;
     camera.rotation.set(cameraPitch, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
     canvas.dataset.bridgeCameraPitch = cameraPitch.toFixed(3);
     aft.color.set(lastAlert ? '#f39975' : '#e4bc88');
