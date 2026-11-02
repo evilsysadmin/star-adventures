@@ -55,6 +55,9 @@ for (const width of [390, 1280]) {
     await expect(bridge).toHaveAttribute('data-bridge-officers', '4');
     await expect(bridge).toHaveAttribute('data-bridge-framing', width === 390 ? 'crew-wide' : 'command-wide');
     await expect(bridge).toHaveAttribute('data-bridge-captain-visible', 'true');
+    // Assert the actual WebGL camera receives the command-only composition;
+    // the screenshot below remains mandatory for independent visual review.
+    await expect(bridge).toHaveAttribute('data-bridge-camera-pitch', width === 390 ? '-0.070' : '-0.130');
     await expect(bridge).toHaveAttribute('data-bridge-pose', '3:5:N');
     await page.screenshot({ path: `test-results/bridge-crew-command-${width}.png` });
     await page.getByTestId('captain-science').click();

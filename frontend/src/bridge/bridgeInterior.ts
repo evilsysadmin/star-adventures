@@ -627,7 +627,14 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     canvas.dataset.bridgeCaptainVisible = String(!!seat);
     canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'command-wide' : 'exploration';
     canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';
-    camera.rotation.set(-.025, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
+    // The seated composition should frame the *working deck*, not a large
+    // unused band of dark ceiling. A restrained downward pitch improves
+    // legibility of the captain, officers and instruments. Phone views keep
+    // more vertical room for the existing status and command controls.
+    // Walking retains its own first-person eye line and unchanged grid pose.
+    const cameraPitch = seat ? (crewWide ? -.070 : -.130) : -.025;
+    camera.rotation.set(cameraPitch, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
+    canvas.dataset.bridgeCameraPitch = cameraPitch.toFixed(3);
     aft.color.set(lastAlert ? '#f39975' : '#e4bc88');
     renderer.render(scene, camera);
     canvas.dataset.bridgePose = `${lastPose.x}:${lastPose.y}:${lastPose.heading}`;
