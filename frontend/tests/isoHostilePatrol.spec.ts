@@ -25,21 +25,18 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await page.goto('/');
   await page.getByTestId('tactical-view-iso').click();
   await expect(page.getByTestId('iso-atlas-status')).toContainText('Atlas R2 reales: 4/4', { timeout: 20_000 });
-  // Freeze browser time only after loading. Pointer selection then observes
-  // one real patrol frame instead of racing a second 900ms cell transition.
-  await page.clock.pauseAt(new Date('2026-10-29T01:00:00Z'));
-
+  // Let the real RAF acknowledge the opt-in command *before* freezing time.
+  // A paused Playwright clock can starve this first frame on busy desktop CI,
+  // producing a false negative even though React accepted the command.
   await choose(page, '6:2');
   await expect(page.getByTestId('iso-aim-status')).toContainText('línea despejada');
   await page.getByTestId('iso-patrol').click();
   await expect(page.getByTestId('iso-patrol')).toContainText('Detener patrulla');
-  // Establish the first patrol frame before measuring its 900ms cell step.
-  // A delayed first RAF must not consume the test's entire time advance.
-  await page.clock.runFor(160);
   const canvas = page.getByTestId('iso-render-canvas');
-  // A first rendered frame may legitimately have elapsed=0. Require the
-  // acknowledged command, then prove a whole real patrol step has elapsed.
-  await expect(canvas).toHaveAttribute('data-patrol-active', 'true');
+  await expect(canvas).toHaveAttribute('data-patrol-active', 'true', { timeout: 15_000 });
+  // Freeze only after a live render. The one-hour jump preserves the 3600ms
+  // patrol cycle; advance by an authored 900ms cell step deterministically.
+  await page.clock.pauseAt(new Date('2026-10-29T01:00:00Z'));
   await page.clock.runFor(1_050);
   await expect.poll(async () => Number(await canvas.getAttribute('data-patrol-elapsed'))).toBeGreaterThanOrEqual(900);
   await expect(page.getByTestId('iso-hostile-cells')).toContainText('6:1');
