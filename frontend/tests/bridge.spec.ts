@@ -34,9 +34,12 @@ test.describe('puesto del capitán: tres finales reales', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('science, diplomacy and tactical choices produce distinct genuine outcomes', async ({ page }) => {
+    // Three WebGL remounts plus outcome checks can exceed the default 30 s
+    // when several independent browser shards run on shared CI workers.
+    test.setTimeout(90_000);
     await page.goto('/');
     await expect(page.getByTestId('game-shell')).toHaveAttribute('data-interface', 'game');
-    await expect(page.getByTestId('captain-controls')).toBeVisible();
+    await expect(page.getByTestId('captain-controls')).toBeVisible({ timeout: 20_000 });
     await page.getByTestId('captain-science').click();
     await expect(page.getByTestId('choice-scan')).toBeVisible();
     await page.getByTestId('choice-scan').click();
@@ -47,7 +50,7 @@ test.describe('puesto del capitán: tres finales reales', () => {
 
     await page.getByRole('button', { name: /Nueva misión/i }).click();
     await expect(page.getByTestId('science-score')).toHaveText('00');
-    await expect(page.getByTestId('captain-controls')).toBeVisible();
+    await expect(page.getByTestId('captain-controls')).toBeVisible({ timeout: 20_000 });
     await page.getByTestId('captain-comms').click();
     await expect(page.getByTestId('choice-hail')).toBeVisible();
     await page.getByTestId('choice-hail').click();
@@ -56,7 +59,7 @@ test.describe('puesto del capitán: tres finales reales', () => {
     await expect(page.getByTestId('ending')).toContainText('Paz negociada');
 
     await page.getByRole('button', { name: /Nueva misión/i }).click();
-    await expect(page.getByTestId('captain-controls')).toBeVisible();
+    await expect(page.getByTestId('captain-controls')).toBeVisible({ timeout: 20_000 });
     await page.getByTestId('captain-tactical').click();
     await expect(page.getByTestId('choice-intercept')).toBeVisible();
     await page.getByTestId('choice-intercept').click();

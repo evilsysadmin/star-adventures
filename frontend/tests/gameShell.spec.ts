@@ -3,6 +3,30 @@ import { projectCell } from '../src/tacticalGrid';
 import { createIsoCamera } from '../src/tacticalIsoCamera';
 
 test.use({ storageState: { cookies: [], origins: [] } });
+
+// Decor-only operators must not alter orders, bridge coordinates or small
+// viewport usability. Real browser screenshots are required for visual review.
+for (const width of [390, 1280]) {
+  test(`seated command bridge renders its four original operators at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto('/');
+    const bridge = page.getByTestId('bridge-interior');
+    await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
+    await expect(bridge).toHaveAttribute('data-bridge-officers', '4');
+    await expect(bridge).toHaveAttribute('data-bridge-framing', width === 390 ? 'crew-wide' : 'captain');
+    await expect(bridge).toHaveAttribute('data-bridge-pose', '3:5:N');
+    await page.screenshot({ path: `test-results/bridge-crew-command-${width}.png` });
+    await page.getByTestId('captain-science').click();
+    await expect(page.getByTestId('choice-scan')).toBeVisible();
+    await page.getByTestId('game-journal-close').click();
+    await expect(bridge).toHaveAttribute('data-bridge-pose', '3:5:N');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    await page.reload();
+    await expect(bridge).toHaveAttribute('data-bridge-officers', '4', { timeout: 20_000 });
+    await expect(bridge).toHaveAttribute('data-bridge-pose', '3:5:N');
+  });
+}
+
 test.describe.configure({ mode: 'parallel' });
 const settingsKey = 'shadowops.star-adventures.presentation.v1';
 

@@ -350,6 +350,49 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const contactShadow = new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false });
   materials.add(contactShadow);
 
+  // Original, low-poly bridge personnel. They are scenery rather than named
+  // officers; assignments, checks and commands stay authoritative in the UI.
+  // Shared geometry/materials join the room's existing batching/disposal path.
+  const officerOval = new THREE.SphereGeometry(1, 14, 10); geometries.add(officerOval);
+  const coats: Record<string, THREE.Material> = {
+    helm: mat('#8f593e', .08, .77),
+    science: mat('#287b83', .08, .77),
+    comms: mat('#665c92', .08, .77),
+    tactical: mat('#9b783a', .08, .77),
+  };
+  const uniformTrim = mat('#d0ab7a', .35, .56);
+  const skins = ['#bb896d', '#805a46', '#d4a47d', '#ab765d'].map(color => mat(color, .03, .9));
+  const hair = ['#352e2a', '#1b2630', '#60452e', '#322f40'].map(color => mat(color, .04, .9));
+  const shoulder = new THREE.Vector3(), hand = new THREE.Vector3();
+  const up = new THREE.Vector3(0, 1, 0);
+  const addSeatedOfficer = (parent: THREE.Object3D, role: string, ordinal: number) => {
+    const officer = new THREE.Group();
+    officer.name = `bridge-operator-${role}`;
+    parent.add(officer);
+    const coat = coats[role] ?? coats.helm;
+    const skin = skins[ordinal % skins.length];
+    const hairMaterial = hair[ordinal % hair.length];
+    // Seat cushion is around y=.5; a slight forward lean faces the console.
+    mesh(officerOval, coat, officer, 0, .92, .4, .29, .32, .2);
+    mesh(officerOval, coat, officer, 0, .69, .41, .25, .13, .19);
+    mesh(officerOval, uniformTrim, officer, 0, 1.15, .39, .29, .065, .205);
+    mesh(officerOval, skin, officer, 0, 1.40, .35, .17, .20, .165);
+    mesh(officerOval, hairMaterial, officer, 0, 1.55, .375, .181, .085, .174);
+    // Hands rest in front of the torso at the real decorative instrument.
+    for (const side of [-1, 1]) {
+      shoulder.set(side * .24, 1.10, .38);
+      hand.set(side * .39, .93, -.04);
+      const direction = hand.clone().sub(shoulder);
+      const sleeve = mesh(cylinder, coat, officer,
+        (shoulder.x + hand.x) / 2, (shoulder.y + hand.y) / 2,
+        (shoulder.z + hand.z) / 2, .085, direction.length(), .085);
+      sleeve.quaternion.setFromUnitVectors(up, direction.normalize());
+      mesh(officerOval, skin, officer, hand.x, hand.y, hand.z - .045, .09, .06, .12);
+      mesh(officerOval, coat, officer, side * .145, .53, .14, .125, .11, .26);
+    }
+  };
+  let visibleOfficers = 0;
+
   for (const station of map.objects) {
     const p = point(station.x, station.y);
     const group = new THREE.Group(); group.position.set(p.x, 0, p.z);
@@ -403,7 +446,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     decal(group, display(title, '#a5cdd4', station.y), 0, 1.54, -.349, 1.5, .41);
     // Chairs stay inside the already solid station tile.
     chair(group, 0, .4);
+    addSeatedOfficer(group, station.id, visibleOfficers++);
   }
+
+  canvas.dataset.bridgeOfficers = String(visibleOfficers);
 
   // Include nested chair frames, while excluding the room envelope and the
   // flat screen/contact-shadow decals from the cached furniture shadow map.
@@ -461,9 +507,15 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     camera.updateProjectionMatrix();
     const seat = lastPose.seated ? map.objects.find(item => item.id === 'captain') : null;
     const p = point(seat?.x ?? lastPose.x, seat?.y ?? lastPose.y);
-    camera.position.set(p.x, seat ? 1.55 : 1.72, p.z);
+    // The portrait canvas needs a real crew-inclusive composition, not a
+    // cropped desktop close-up. Move only the presentation camera behind the
+    // captain's chair; the saved position and legal station access are intact.
+    const crewWide = !!seat && aspect < .7;
+    const retreat = seat ? THREE.MathUtils.clamp((.85 - aspect) * 11, 0, 4.4) : 0;
+    camera.position.set(p.x, crewWide ? 1.8 : seat ? 1.55 : 1.72, p.z + retreat);
+    canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'captain' : 'exploration';
     canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';
-    camera.rotation.set(-.035, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
+    camera.rotation.set(crewWide ? -.015 : -.035, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
     aft.color.set(lastAlert ? '#f39975' : '#e4bc88');
     renderer.render(scene, camera);
     canvas.dataset.bridgePose = `${lastPose.x}:${lastPose.y}:${lastPose.heading}`;
