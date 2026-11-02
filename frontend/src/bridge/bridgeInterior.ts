@@ -402,6 +402,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // orders still use their existing canonical station checks.
   const deckPosts = ['helm', 'science', 'comms', 'tactical'] as const;
   const nameplates = new Map<string, (name: string) => void>();
+  const stationFocusMaterials = new Map<string, THREE.MeshBasicMaterial>();
+  const makeStationFocus = (id: string) => {
+    const material = luminous('#1d404a');
+    stationFocusMaterials.set(id, material);
+    return material;
+  };
   const makeNameplate = (post: string, title: string) => {
     const source = document.createElement('canvas'); source.width = 768; source.height = 256;
     const ctx = source.getContext('2d')!;
@@ -495,6 +501,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     if (station.id === 'captain') {
       chair(group, 0, 0, true);
       group.add(captainAvatar);
+      // Embedded armrest indicators follow the real captain station focus.
+      const commandFocus = makeStationFocus('captain');
+      for (const side of [-1, 1])
+        block(group, commandFocus, side * .57, 1.145, -.09, .022, .02, .39);
       block(group, bronze, 0, .03, 0, 1.75, .025, 1.75);
       block(group, dark, 0, .05, 0, 1.65, .025, 1.65);
       // Re-add chair's pedestal above the flat decorative base.
@@ -545,6 +555,11 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     // Nameplate replaces only the rear duplicate schematic. Front controls
     // remain the original physical instrument, and the station stays playable.
     decal(group, makeNameplate(station.id, title), 0, 1.54, -.349, 1.5, .41);
+    // Accent trim belongs to this physical post; never fabricates data.
+    const stationFocus = makeStationFocus(station.id);
+    for (const side of [-1, 1])
+      block(group, stationFocus, side * .775, 1.54, -.335, .028, .41, .026);
+    block(group, stationFocus, 0, 1.317, -.334, 1.57, .022, .027);
     chair(group, 0, .4);
     addSeatedOfficer(group, station.id);
     visibleOfficers++;
@@ -597,6 +612,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
 
   let lastPose: BridgePose | undefined;
   let lastAlert = false;
+  const applyFocus = (focusedStation: string | null) => {
+    const selected = focusedStation && stationFocusMaterials.has(focusedStation) ? focusedStation : null;
+    for (const [id, material] of stationFocusMaterials)
+      material.color.set(id === selected ? '#ffce83' : '#1d404a');
+    canvas.dataset.bridgeFocusedStation = selected ?? 'none';
+  };
   let rosterKey = '';
   const applyRoster = (roster: BridgeCrewRoster) => {
     const nextKey = (['captain', ...deckPosts] as BridgeCrewStation[])
@@ -659,9 +680,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const resize = new ResizeObserver(draw); resize.observe(canvas);
 
   return {
-    render(pose: BridgePose, alert: boolean, roster: BridgeCrewRoster) {
+    render(pose: BridgePose, alert: boolean, roster: BridgeCrewRoster, focusedStation: string | null) {
       if (disposed) return;
       applyRoster(roster);
+      applyFocus(pose.seated ? focusedStation : null);
       lastPose = pose; lastAlert = alert; draw();
     },
     dispose() {
