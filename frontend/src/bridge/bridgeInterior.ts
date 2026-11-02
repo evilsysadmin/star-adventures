@@ -507,9 +507,15 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     camera.updateProjectionMatrix();
     const seat = lastPose.seated ? map.objects.find(item => item.id === 'captain') : null;
     const p = point(seat?.x ?? lastPose.x, seat?.y ?? lastPose.y);
-    camera.position.set(p.x, seat ? 1.55 : 1.72, p.z);
+    // The portrait canvas needs a real crew-inclusive composition, not a
+    // cropped desktop close-up. Move only the presentation camera behind the
+    // captain's chair; the saved position and legal station access are intact.
+    const crewWide = !!seat && aspect < .7;
+    const retreat = seat ? THREE.MathUtils.clamp((.85 - aspect) * 11, 0, 4.4) : 0;
+    camera.position.set(p.x, crewWide ? 1.8 : seat ? 1.55 : 1.72, p.z + retreat);
+    canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'captain' : 'exploration';
     canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';
-    camera.rotation.set(-.035, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
+    camera.rotation.set(crewWide ? -.015 : -.035, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
     aft.color.set(lastAlert ? '#f39975' : '#e4bc88');
     renderer.render(scene, camera);
     canvas.dataset.bridgePose = `${lastPose.x}:${lastPose.y}:${lastPose.heading}`;
