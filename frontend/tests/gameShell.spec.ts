@@ -24,12 +24,14 @@ for (const width of [390, 1280]) {
     await page.getByTestId('station-science').selectOption('rhee');
     await expect(bridge).toHaveAttribute('data-bridge-officer-science', 'rhee');
     await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'venn');
-    const after = await bridge.screenshot();
-    expect(after.equals(before)).toBe(false);
     await page.getByTestId('station-command').selectOption('solan');
     await expect(bridge).toHaveAttribute('data-bridge-officer-captain', 'solan');
     await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'varela');
+    // Close the journal before the pixel comparison: otherwise the overlay
+    // itself would make screenshots differ without proving a 3D crew change.
     await page.getByTestId('game-journal-close').click();
+    const after = await bridge.screenshot();
+    expect(after.equals(before)).toBe(false);
     await page.screenshot({ path: `test-results/bridge-real-crew-${width}.png` });
     await page.reload();
     await expect(bridge).toHaveAttribute('data-bridge-officer-science', 'rhee', { timeout: 20_000 });
