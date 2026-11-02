@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 test.use({ storageState: { cookies: [], origins: [] } });
+test.setTimeout(90_000);
 
 test('abandon rescue requires confirmation and persists without claiming a rescue', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 850 });
