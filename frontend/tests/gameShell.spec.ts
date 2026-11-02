@@ -13,7 +13,8 @@ for (const width of [390, 1280]) {
     const bridge = page.getByTestId('bridge-interior');
     await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     await expect(bridge).toHaveAttribute('data-bridge-officers', '4');
-    await expect(bridge).toHaveAttribute('data-bridge-framing', width === 390 ? 'crew-wide' : 'captain');
+    await expect(bridge).toHaveAttribute('data-bridge-framing', width === 390 ? 'crew-wide' : 'command-wide');
+    await expect(bridge).toHaveAttribute('data-bridge-captain-visible', 'true');
     await expect(bridge).toHaveAttribute('data-bridge-pose', '3:5:N');
     await page.screenshot({ path: `test-results/bridge-crew-command-${width}.png` });
     await page.getByTestId('captain-science').click();
