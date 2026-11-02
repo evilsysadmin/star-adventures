@@ -323,6 +323,7 @@ export function App() {
           ) : (
             <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
               paused={game.paused} captainMode={game.immersive} bridgeCrew={bridgeCrew}
+              focusedStation={game.journalOpen ? activeStation : null}
               onCaptainStation={id => { setActiveStation(id); game.setJournalOpen(true); }}
               perimeterResolved={fieldResolution !== null}
               missionTargetId={!game.preferences.hints ? null : missionPhase === 'briefing' ? 'transporter'
