@@ -4,6 +4,44 @@ import { createIsoCamera } from '../src/tacticalIsoCamera';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+// The visible bridge follows the authoritative crew swaps, including their
+// persisted state. No duplicate officers and no made-up skills on the screens.
+for (const width of [390, 1280]) {
+  test(`bridge 3D personnel follows saved crew swaps at ${width}px`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto('/');
+    const bridge = page.getByTestId('bridge-interior');
+    await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
+    await expect(bridge).toHaveAttribute('data-bridge-officer-science', 'venn');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'rhee');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'solan');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-captain', 'varela');
+    const before = await bridge.screenshot();
+    await page.getByTestId('game-journal-toggle').click();
+    await page.getByTestId('crew-roster').locator('summary').click();
+    // Swapping science with engineering must visibly swap both operators.
+    await page.getByTestId('station-science').selectOption('rhee');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-science', 'rhee');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'venn');
+    const after = await bridge.screenshot();
+    expect(after.equals(before)).toBe(false);
+    await page.getByTestId('station-command').selectOption('solan');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-captain', 'solan');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'varela');
+    await page.getByTestId('game-journal-close').click();
+    await page.screenshot({ path: `test-results/bridge-real-crew-${width}.png` });
+    await page.reload();
+    await expect(bridge).toHaveAttribute('data-bridge-officer-science', 'rhee', { timeout: 20_000 });
+    await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'venn');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-captain', 'solan');
+    await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'varela');
+    await expect(bridge).toHaveAttribute('data-bridge-pose', '3:5:N');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  });
+}
+
+
 // Decor-only operators must not alter orders, bridge coordinates or small
 // viewport usability. Real browser screenshots are required for visual review.
 for (const width of [390, 1280]) {
