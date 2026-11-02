@@ -261,6 +261,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     block(scene, soft, 0, 3.84, z, 8.8, .025, .075);
     for (const side of [-1, 1]) {
       block(scene, panel, side * 4.9, 4.09, z + .7, 2.8, .04, .95);
+      // Warm recessed diffusers give the overhead structure a recognizable
+      // source of light, without another shadowed light or animation loop.
+      block(scene, soft, side * 4.9, 3.98, z + .7, 2.3, .018, .54);
+      block(scene, bronze, side * 4.9, 3.985, z + .97, 2.4, .024, .026);
       const brace = block(scene, hull, side * 5.8, 3.69, z, 2.2, .15, .35);
       brace.rotation.z = side * -.4;
     }
@@ -340,6 +344,14 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       block(parent, dark, x + side * .5, .81, z, .12, .45, .7);
       rounded(parent, captain ? bronze : panel, x + side * .5, 1.04, z, .17, .07, .72);
       block(parent, cyan, x + side * .5, 1.09, z - .16, .1, .012, .19);
+      if (captain) {
+        // Tiny practical controls sit on the existing armrest, not in a
+        // floating HUD. They remain decorative; actions use the real menu.
+        block(parent, dark, x + side * .5, 1.105, z - .23, .13, .012, .34);
+        for (let i = 0; i < 4; i++)
+          block(parent, i === 3 ? amber : cyan, x + side * .5, 1.114,
+            z - .35 + i * .08, .075, .008, .045);
+      }
     }
   }
 
@@ -511,6 +523,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     block(group, dark, 0, .5, -.22, 1.1, .43, .42);
     mesh(deskGeometry, instrumentShell, group, 0, 0, 0, 1, 1, 1);
     block(group, bronze, 0, 1.035, .48, 1.72, .035, .035);
+    // Instrument-edge task lighting gives every real console a visual
+    // hierarchy while keeping its existing label, picking and state intact.
+    block(group, station.id === 'tactical' ? amber : cyan, 0, 1.015, .515,
+      1.5, .014, .018);
     const screen = rounded(group, dark, 0, 1.29, -.015, 1.6, .055, .83);
     screen.rotation.x = .405;
     const title = station.id === 'science' ? 'CIENCIA' : station.id === 'tactical' ? 'SEGURIDAD'
