@@ -16,7 +16,7 @@ import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } fro
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
 import { startMandate } from '../../src/dualMandate.mjs';
 import { performMedicalEvacuation, EVACUATION_INCIDENT } from '../../src/medicalEvacuation.mjs';
-import { abandonRescue } from '../../src/abandonRescue.mjs';
+import { abandonRescue, returnAfterAbandonedRescue } from '../../src/abandonRescue.mjs';
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
@@ -122,6 +122,20 @@ export function App() {
     setPerimeterWarning(!saved);
     return saved;
   }, [rescueRun]);
+  const returnAbandonedTeam = (resolved: MandateState) => {
+    const returned = returnAfterAbandonedRescue(world, exploration, MANDATE_DEFINITION, resolved);
+    if (fieldEncounterOpen) savePerimeter(fieldHistory, false);
+    setFieldEncounterOpen(false);
+    setActiveStation(null);
+    setExploration(returned);
+    setExplorationKey(key => key + 1);
+  };
+  const confirmRescueAbandonment = () => {
+    const resolved = abandonRescue(MANDATE_DEFINITION, mandate);
+    if (exploration.area === 'surface') returnAbandonedTeam(resolved);
+    setMandate(resolved);
+    setConfirmAbandon(false);
+  };
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
@@ -238,7 +252,7 @@ export function App() {
       title: 'RESCATE ABANDONADO',
       story: 'Has cerrado la orden de evacuación sin rescatar a los civiles. La decisión figura en el registro oficial.',
       next: exploration.area === 'bridge' ? 'Puedes continuar con las demás órdenes. Reiniciar desde el diario comienza una partida nueva.'
-        : 'Regresa al punto de llegada y usa el transporte para volver al puente.',
+        : 'Ordena la extracción del equipo para volver al puente.',
     },
     briefing: {
       title: 'TRANSMISIÓN ENTRANTE',
@@ -310,11 +324,12 @@ export function App() {
             <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
             {mandate.orders.evacuate === 'active' && <div className="mission-abandon">
               {!confirmAbandon ? <button type="button" data-testid="mission-abandon" onClick={() => setConfirmAbandon(true)}>Abandonar misión de rescate</button> : <div role="group" aria-label="Confirmar abandono del rescate">
-                <p>La evacuación quedará rechazada y los civiles no constarán como rescatados.</p>
-                <button type="button" data-testid="mission-abandon-confirm" onClick={() => { setMandate(before => abandonRescue(MANDATE_DEFINITION, before)); setConfirmAbandon(false); }}>Confirmar abandono</button>
+                <p>La evacuación quedará rechazada y los civiles no constarán como rescatados.{exploration.area === 'surface' ? ' El equipo regresará al puente.' : ''}</p>
+                <button type="button" data-testid="mission-abandon-confirm" onClick={confirmRescueAbandonment}>Confirmar abandono</button>
                 <button type="button" onClick={() => setConfirmAbandon(false)}>Continuar misión</button>
               </div>}
             </div>}
+            {abandoned && exploration.area === 'surface' && <button type="button" className="mission-return-abandoned" data-testid="abandoned-return" disabled={!!exploration.pending} onClick={() => returnAbandonedTeam(mandate)}>Extraer equipo y volver al puente</button>}
             {!abandoned && <div className="mission-transmission-route" role="list" aria-label="Progreso del rescate">
               {['Desembarco', 'Evacuación', 'Regreso'].map((step, index) => (
                 <span role="listitem" key={step} data-state={missionProgress > index ? 'done' : missionProgress === index ? 'current' : 'pending'}>
