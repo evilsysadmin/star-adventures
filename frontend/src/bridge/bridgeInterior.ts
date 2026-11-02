@@ -494,12 +494,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     sleeve.rotation.z = side * .3;
     mesh(officerOval, captainCoat, captainAvatar, side * .33, 1.44, .055, .175, .12, .19);
     mesh(officerOval, captainBadge, captainAvatar, side * .34, 1.52, .175, .093, .013, .048);
-    // Resting sleeves follow the chair-arm direction. Ellipsoids avoid the
-    // large circular cylinder caps that read as green balls in WebGL captures.
-    mesh(officerOval, captainCoat, captainAvatar, side * .59, 1.19, .125, .09, .065, .235);
-    mesh(officerOval, captainBadge, captainAvatar, side * .59, 1.155, .265, .078, .024, .025);
-    // Actual hands sit at the near ends of the existing physical armrests.
-    mesh(officerOval, captainSkin, captainAvatar, side * .59, 1.145, .345, .072, .037, .095);
+    // Wider shoulders remain visibly connected to the captain's torso.
+    // Do not invent free-floating hands: that requires a full articulated rig.
+    mesh(officerOval, captainCoat, captainAvatar, side * .42, 1.40, .065, .145, .11, .18);
     for (let stripe = 0; stripe < 2; stripe++)
       block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
   }
