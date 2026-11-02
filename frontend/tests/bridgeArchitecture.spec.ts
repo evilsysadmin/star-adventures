@@ -17,6 +17,7 @@ for (const width of [360, 390, 430, 1280]) {
     await expect(canvas).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     await expect(canvas).toHaveAttribute('data-bridge-art-loaded', 'true');
     await expect(canvas).toHaveAttribute('data-bridge-pose', '3:5:N');
+    await expect(canvas).toHaveAttribute('data-bridge-captain-visible', 'false');
     const viewport = await canvas.evaluate(element => {
       const canvas = element as HTMLCanvasElement;
       const bounds = canvas.getBoundingClientRect();
