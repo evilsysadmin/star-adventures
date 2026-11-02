@@ -34,11 +34,12 @@ for (const width of [390, 1280]) test(`opt-in hostile patrol moves real walking 
   await expect(page.getByTestId('iso-patrol')).toContainText('Detener patrulla');
   const canvas = page.getByTestId('iso-render-canvas');
   await expect(canvas).toHaveAttribute('data-patrol-active', 'true', { timeout: 15_000 });
-  // Freeze at the clock's *current* instant, not at an arbitrary later
-  // hour: a large leap would skip several real patrol segments and make the
-  // next exact logical cell dependent on how long R2 assets took to load.
+  // The page clock continues advancing between the two RPCs. Always
+  // freeze slightly in the future: pauseAt(now) can already be in the past
+  // by the time Playwright forwards the command on a busy CI worker.
+  // 100 ms stays inside the first authored 900 ms patrol segment.
   const simulatedNow = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(new Date(simulatedNow));
+  await page.clock.pauseAt(new Date(simulatedNow + 100));
   await page.clock.runFor(1_050);
   await expect.poll(async () => Number(await canvas.getAttribute('data-patrol-elapsed'))).toBeGreaterThanOrEqual(900);
   await expect(page.getByTestId('iso-hostile-cells')).toContainText('6:1');
