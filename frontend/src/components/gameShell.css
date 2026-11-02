@@ -113,6 +113,9 @@
 }
 @media (min-width:701px) and (max-height:750px){.game-shell[data-interface=game][data-location=bridge] .bridge-status{max-height:calc(50% - 70px);overflow:auto}.game-shell[data-interface=game][data-location=bridge] .mission-transmission{top:52%;max-height:calc(48% - 18px)}}
 
+.mission-return-abandoned{min-height:44px;padding:9px 12px;border:1px solid #dbb572;border-radius:5px;background:#5e4829;color:#fff0d0;font-weight:700;cursor:pointer}
+.mission-return-abandoned:focus-visible{outline:2px solid white;outline-offset:2px}
+
 /* Command stations use the same visual language as the bridge status cards. */
 .game-shell[data-interface=game][data-location=bridge] .captain-controls button{min-height:57px;gap:12px;transition:border-color .15s,background .15s,box-shadow .15s}
 .game-shell[data-interface=game][data-location=bridge] .captain-controls button:hover:not(:disabled),
