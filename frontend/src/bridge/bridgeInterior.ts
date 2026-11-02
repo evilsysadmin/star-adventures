@@ -392,6 +392,29 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     }
   };
   let visibleOfficers = 0;
+  // Separate, non-batched avatar: the captain appears only in the seated
+  // command camera and disappears in first-person walking exploration.
+  const captainCoat = mat('#355967', .14, .72);
+  const captainBadge = mat('#d9b77b', .58, .39);
+  const captainAvatar = new THREE.Group();
+  captainAvatar.name = 'command-chair-captain';
+  captainAvatar.userData.commandAvatar = true;
+  captainAvatar.visible = false;
+  // Body sits inside the existing command chair. A recognizable head,
+  // shoulders and discreet rank stripes give the foreground a human anchor.
+  mesh(officerOval, captainCoat, captainAvatar, 0, 1.19, .04, .33, .39, .24);
+  mesh(officerOval, captainCoat, captainAvatar, 0, .87, -.015, .28, .16, .24);
+  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.47, .055, .27, .065, .205);
+  mesh(officerOval, skins[2], captainAvatar, 0, 1.73, -.025, .18, .225, .175);
+  mesh(officerOval, hair[1], captainAvatar, 0, 1.89, .015, .19, .087, .18);
+  mesh(officerOval, hair[1], captainAvatar, 0, 1.79, .133, .175, .16, .065);
+  for (const side of [-1, 1]) {
+    const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
+    sleeve.rotation.z = side * .3;
+    mesh(officerOval, captainCoat, captainAvatar, side * .27, 1.43, .055, .13, .105, .19);
+    for (let stripe = 0; stripe < 2; stripe++)
+      block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
+  }
 
   for (const station of map.objects) {
     const p = point(station.x, station.y);
@@ -400,6 +423,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     decal(group, contactShadow, 0, .072, .15, 2.05, 2.05, -Math.PI / 2);
     if (station.id === 'captain') {
       chair(group, 0, 0, true);
+      group.add(captainAvatar);
       block(group, bronze, 0, .03, 0, 1.75, .025, 1.75);
       block(group, dark, 0, .05, 0, 1.65, .025, 1.65);
       // Re-add chair's pedestal above the flat decorative base.
@@ -456,7 +480,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   for (const child of scene.children) if (child instanceof THREE.Group && child.name) {
     child.traverse(item => {
       if (item instanceof THREE.Mesh && item.geometry !== plane) {
-        item.castShadow = true; item.receiveShadow = true;
+        // The toggled captain cannot leave a stale baked shadow when the
+        // viewer changes between walking and seated command.
+        item.castShadow = item.parent?.userData.commandAvatar !== true;
+        item.receiveShadow = true;
       }
     });
   }
@@ -475,7 +502,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   scene.updateMatrixWorld(true);
   const repeated = new Map<string, THREE.Mesh[]>();
   scene.traverse(item => {
-    if (!(item instanceof THREE.Mesh) || Array.isArray(item.material) || item.material.transparent) return;
+    // Keep the avatar out of static instancing: visibility must change on
+    // seat/walking transitions without rebuilding the WebGL scene.
+    if (!(item instanceof THREE.Mesh) || item.parent?.userData.commandAvatar ||
+      Array.isArray(item.material) || item.material.transparent) return;
     const key = `${item.geometry.uuid}:${item.material.uuid}:${item.castShadow}:${item.receiveShadow}`;
     const group = repeated.get(key) ?? []; group.push(item); repeated.set(key, group);
   });
@@ -507,15 +537,18 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     camera.updateProjectionMatrix();
     const seat = lastPose.seated ? map.objects.find(item => item.id === 'captain') : null;
     const p = point(seat?.x ?? lastPose.x, seat?.y ?? lastPose.y);
-    // The portrait canvas needs a real crew-inclusive composition, not a
-    // cropped desktop close-up. Move only the presentation camera behind the
-    // captain's chair; the saved position and legal station access are intact.
+    // A composed command-deck view places the actual captain between
+    // the viewer and the two forward consoles. Walking remains first person;
+    // only the presentation camera moves, never the saved simulation cell.
     const crewWide = !!seat && aspect < .7;
-    const retreat = seat ? THREE.MathUtils.clamp((.85 - aspect) * 11, 0, 4.4) : 0;
-    camera.position.set(p.x, crewWide ? 1.8 : seat ? 1.55 : 1.72, p.z + retreat);
-    canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'captain' : 'exploration';
+    const retreat = seat
+      ? Math.max(2.4, THREE.MathUtils.clamp((.85 - aspect) * 11, 0, 4.4)) : 0;
+    camera.position.set(p.x, seat ? 1.8 : 1.72, p.z + retreat);
+    captainAvatar.visible = !!seat;
+    canvas.dataset.bridgeCaptainVisible = String(!!seat);
+    canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'command-wide' : 'exploration';
     canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';
-    camera.rotation.set(crewWide ? -.015 : -.035, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
+    camera.rotation.set(-.025, ANGLES[lastPose.heading] ?? 0, 0, 'YXZ');
     aft.color.set(lastAlert ? '#f39975' : '#e4bc88');
     renderer.render(scene, camera);
     canvas.dataset.bridgePose = `${lastPose.x}:${lastPose.y}:${lastPose.heading}`;
