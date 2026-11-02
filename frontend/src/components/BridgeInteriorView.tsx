@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import world from '../../../content/scenes/meridian.json';
-import type { BridgePose, createBridgeInterior } from '../bridge/bridgeInterior';
+import type { BridgePose, BridgeCrewRoster, createBridgeInterior } from '../bridge/bridgeInterior';
 
-export function BridgeInteriorView({ pose, alert, onUnavailable }: {
-  pose: BridgePose; alert: boolean; onUnavailable: () => void;
+export function BridgeInteriorView({ pose, alert, roster, onUnavailable }: {
+  pose: BridgePose; alert: boolean; roster: BridgeCrewRoster; onUnavailable: () => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const renderer = useRef<ReturnType<typeof createBridgeInterior> | null>(null);
-  const latest = useRef({ pose, alert }); latest.current = { pose, alert };
+  const latest = useRef({ pose, alert, roster }); latest.current = { pose, alert, roster };
   useEffect(() => {
     let cancelled = false;
     const node = canvas.current!;
@@ -19,7 +19,7 @@ export function BridgeInteriorView({ pose, alert, onUnavailable }: {
       if (cancelled) return;
       try {
         renderer.current = createBridgeInterior(node, world.scenes.bridge);
-        renderer.current.render(latest.current.pose, latest.current.alert);
+        renderer.current.render(latest.current.pose, latest.current.alert, latest.current.roster);
         setReady(true);
       } catch { onUnavailable(); }
     }).catch(() => { if (!cancelled) onUnavailable(); });
@@ -29,7 +29,7 @@ export function BridgeInteriorView({ pose, alert, onUnavailable }: {
       renderer.current?.dispose(); renderer.current = null;
     };
   }, [onUnavailable]);
-  useEffect(() => { renderer.current?.render(pose, alert); }, [pose, alert]);
+  useEffect(() => { renderer.current?.render(pose, alert, roster); }, [pose, alert, roster]);
   return <><canvas ref={canvas} className="firstperson-canvas bridge-interior-canvas"
     data-testid="bridge-interior" width={960} height={480} role="img"
     aria-busy={!ready}
