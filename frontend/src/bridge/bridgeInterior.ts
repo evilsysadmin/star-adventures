@@ -494,15 +494,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     sleeve.rotation.z = side * .3;
     mesh(officerOval, captainCoat, captainAvatar, side * .33, 1.44, .055, .175, .12, .19);
     mesh(officerOval, captainBadge, captainAvatar, side * .34, 1.52, .175, .093, .013, .048);
-    // Hands reach the real chair controls instead of vanishing behind the back.
-    const elbow = new THREE.Vector3(side * .58, 1.25, .15);
-    const wrist = new THREE.Vector3(side * .52, 1.15, -.12);
-    const direction = wrist.clone().sub(elbow);
-    const forearm = mesh(cylinder, captainCoat, captainAvatar,
-      (elbow.x + wrist.x) / 2, (elbow.y + wrist.y) / 2,
-      (elbow.z + wrist.z) / 2, .09, direction.length(), .09);
-    forearm.quaternion.setFromUnitVectors(up, direction.normalize());
-    mesh(officerOval, captainSkin, captainAvatar, wrist.x, wrist.y, wrist.z, .085, .045, .095);
+    // Resting sleeves follow the chair-arm direction. Ellipsoids avoid the
+    // large circular cylinder caps that read as green balls in WebGL captures.
+    mesh(officerOval, captainCoat, captainAvatar, side * .59, 1.19, .125, .09, .065, .235);
+    mesh(officerOval, captainBadge, captainAvatar, side * .59, 1.155, .265, .078, .024, .025);
+    // Actual hands sit at the near ends of the existing physical armrests.
+    mesh(officerOval, captainSkin, captainAvatar, side * .59, 1.145, .345, .072, .037, .095);
     for (let stripe = 0; stripe < 2; stripe++)
       block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
   }
