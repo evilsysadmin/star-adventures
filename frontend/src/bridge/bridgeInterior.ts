@@ -58,10 +58,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     const material = new THREE.MeshBasicMaterial({ color });
     materials.add(material); return material;
   };
-  const hull = mat('#6b767a', .52, .4), dark = mat('#111d24', .48, .38);
-  const panel = mat('#a5ada7', .46, .41), bronze = mat('#ac8861', .72, .32);
-  const instrumentShell = mat('#344c53', .38, .62);
-  const seat = mat('#223d40', .03, .94), seatEdge = mat('#53656a', .55, .42);
+  const hull = mat('#827779', .52, .4), dark = mat('#181a28', .48, .38);
+  const panel = mat('#b1a4a1', .46, .41), bronze = mat('#bd9368', .72, .32);
+  const instrumentShell = mat('#484654', .38, .62);
+  const seat = mat('#593c47', .03, .94), seatEdge = mat('#77616a', .55, .42);
   const cyan = luminous('#80d2d4'), amber = luminous('#f0ba78');
   const soft = luminous('#fff1cd');
   // Small deterministic surface maps provide scale at standing distance.
@@ -217,7 +217,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     const p = point(x, y);
     block(scene, (x + y) % 2 ? floorA : floorB, p.x, .001, p.z, 1.985, .035, 1.985).receiveShadow = true;
   }
-  const carpet = mat('#263f42', .02, 1); carpet.bumpMap = seat.bumpMap; carpet.bumpScale = .02;
+  const carpet = mat('#403541', .02, 1); carpet.bumpMap = seat.bumpMap; carpet.bumpScale = .02;
   block(scene, carpet, 0, .025, 1, 4.3, .016, 7.6).receiveShadow = true;
   for (const x of [-2.25, 2.25]) {
     block(scene, bronze, x, .045, 1, .045, .014, 7.7);
@@ -501,7 +501,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     if (station.id === 'captain') {
       chair(group, 0, 0, true);
       group.add(captainAvatar);
-      // Embedded armrest indicators follow the real captain station focus.
+      // Embedded armrest indicators follow the real command-station focus.
       const commandFocus = makeStationFocus('captain');
       for (const side of [-1, 1])
         block(group, commandFocus, side * .57, 1.145, -.09, .022, .02, .39);
@@ -555,7 +555,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     // Nameplate replaces only the rear duplicate schematic. Front controls
     // remain the original physical instrument, and the station stays playable.
     decal(group, makeNameplate(station.id, title), 0, 1.54, -.349, 1.5, .41);
-    // Accent trim belongs to this physical post; never fabricates data.
+    // One decorative focus trim per real post, using the current station ID.
     const stationFocus = makeStationFocus(station.id);
     for (const side of [-1, 1])
       block(group, stationFocus, side * .775, 1.54, -.335, .028, .41, .026);

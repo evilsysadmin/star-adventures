@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import episode from '../../content/episodes/border-signal.json';
 import { currentNode } from '../../src/episode.mjs';
 import { applyCrewAction } from '../../src/crewSession.mjs';
@@ -16,6 +16,7 @@ import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } fro
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
 import { startMandate } from '../../src/dualMandate.mjs';
 import { performMedicalEvacuation, EVACUATION_INCIDENT } from '../../src/medicalEvacuation.mjs';
+import { abandonRescue, returnAfterAbandonedRescue } from '../../src/abandonRescue.mjs';
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
@@ -67,6 +68,7 @@ export function App() {
   const [initialMandate] = useState(() => restoreMandateSession(localStorageOrNull()));
   const [mandate, setMandate] = useState<MandateState>(() => initialMandate.state);
   const [medicalNotice, setMedicalNotice] = useState<string | null>(null);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [coreNotice, setCoreNotice] = useState<string | null>(null);
   const rescueRun = session.actions.filter(action => action.type === 'restart').length;
   const [initialPerimeter] = useState(() => initialSession.restored
@@ -79,6 +81,9 @@ export function App() {
     initialPerimeter.active && atPerimeterStation(world, initialSpatial.state));
   const fieldResolution = useMemo(() => perimeterResolution(fieldHistory), [fieldHistory]);
   const [activeStation, setActiveStation] = useState<string | null>(null);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const crewRoster = useRef<HTMLDetailsElement>(null);
+  useEffect(() => { if (game.paused) setStatusOpen(false); }, [game.paused]);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
   // A fresh/recovered crew campaign cannot adopt an orphaned field result.
@@ -120,6 +125,20 @@ export function App() {
     setPerimeterWarning(!saved);
     return saved;
   }, [rescueRun]);
+  const returnAbandonedTeam = (resolved: MandateState) => {
+    const returned = returnAfterAbandonedRescue(world, exploration, MANDATE_DEFINITION, resolved);
+    if (fieldEncounterOpen) savePerimeter(fieldHistory, false);
+    setFieldEncounterOpen(false);
+    setActiveStation(null);
+    setExploration(returned);
+    setExplorationKey(key => key + 1);
+  };
+  const confirmRescueAbandonment = () => {
+    const resolved = abandonRescue(MANDATE_DEFINITION, mandate);
+    if (exploration.area === 'surface') returnAbandonedTeam(resolved);
+    setMandate(resolved);
+    setConfirmAbandon(false);
+  };
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
@@ -179,6 +198,7 @@ export function App() {
     setExploration(startExploration(world));
     setActiveStation(null);
     setMedicalNotice(null);
+    setConfirmAbandon(false);
     setCoreNotice(null);
     setFieldEncounterOpen(false);
     const freshField = newPerimeterHistory();
@@ -226,10 +246,17 @@ export function App() {
   // mistake legacy/simulated archive completion for an actual evacuation.
   const rescued = mandate.orders.evacuate === 'completed' &&
     mandate.incidents.some(incident => incident.id === EVACUATION_INCIDENT);
-  const missionPhase = rescued
+  const abandoned = mandate.orders.evacuate === 'refused';
+  const missionPhase = abandoned ? 'abandoned' : rescued
     ? exploration.area === 'bridge' ? 'debrief' : 'extract'
     : exploration.area === 'bridge' ? 'briefing' : 'field';
   const missionBeat = {
+    abandoned: {
+      title: 'RESCATE ABANDONADO',
+      story: 'Has cerrado la orden de evacuación sin rescatar a los civiles. La decisión figura en el registro oficial.',
+      next: exploration.area === 'bridge' ? 'Puedes continuar con las demás órdenes. Reiniciar desde el diario comienza una partida nueva.'
+        : 'Ordena la extracción del equipo para volver al puente.',
+    },
     briefing: {
       title: 'TRANSMISIÓN ENTRANTE',
       story: 'Un SOS del puesto científico interrumpe la guardia. Hay civiles esperando asistencia. Tu primera orden es preparar el equipo de rescate.',
@@ -252,7 +279,7 @@ export function App() {
       next: 'Consulta el archivo de órdenes. Puedes continuar la investigación o volver a desembarcar.',
     },
   }[missionPhase];
-  const missionProgress = { briefing: 0, field: 1, extract: 2, debrief: 3 }[missionPhase];
+  const missionProgress = { briefing: 0, field: 1, extract: 2, debrief: 3, abandoned: -1 }[missionPhase];
 
   return (
     <GameShell presentation={game} location={exploration.area === 'bridge' ? 'PUENTE · CUBIERTA 01' : 'EQUIPO DE DESEMBARCO'}
@@ -275,6 +302,21 @@ export function App() {
         <section className="hero-panel" aria-labelledby="mission-title">
           <div className="eyebrow"><span className="eyebrow-line" /> MISIÓN 001 <span className="eyebrow-muted">/ SECTOR DISPUTADO</span></div>
           <h1 id="mission-title">Ecos en la <em>frontera</em></h1>
+          {seated && <aside className="bridge-status" data-testid="bridge-status" data-expanded={statusOpen} aria-label="Estado de la nave y tripulación">
+            <button type="button" className="bridge-status-toggle" aria-expanded={statusOpen} aria-controls="bridge-status-details"
+              disabled={game.paused} onClick={() => setStatusOpen(open => !open)}>◇ Estado de la nave <span aria-hidden="true">{statusOpen ? '×' : '▾'}</span></button>
+            <div id="bridge-status-details" className="bridge-status-details">
+            <div className="bridge-status-heading"><span>◇ &nbsp;ESTADO DE LA NAVE</span><span className={showDamage ? 'bridge-status-alert' : 'bridge-status-ok'}>● {showDamage ? 'Daños registrados' : 'Sin daños'}</span></div>
+            <svg className="bridge-status-ship" viewBox="0 0 260 74" role="img" aria-label="Esquema de la nave Meridian">
+              <g fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 38 84 30 115 31 140 20 204 18 239 28 204 37 140 39 116 45 84 45 17 38Z"/><path d="M84 30 99 17 161 17 182 21 M84 45 103 57 163 57 181 40 M100 34 200 29 M101 41 200 33"/><ellipse cx="188" cy="28" rx="47" ry="9"/><path d="M30 38h41 M112 22h55 M115 53h51"/></g>
+            </svg>
+            <div className="bridge-status-name">USS MERIDIAN <small>Nave de exploración</small></div>
+            <div className="bridge-status-facts"><span>Daño acumulado</span><strong data-testid="bridge-damage">{state.stats.shipDamage}</strong><span>Órdenes registradas</span><strong>{state.log.length}</strong></div>
+            <div className="bridge-status-section">♟ &nbsp;TRIPULACIÓN ASIGNADA</div>
+            <div className="bridge-status-crew">{STATIONS.map(station => <div key={station}><span>{stationNames[station]}</span><strong>{officerAt(session.crew, station).name}</strong></div>)}</div>
+            <button type="button" className="bridge-status-manage" onClick={() => { setStatusOpen(false); if (crewRoster.current) crewRoster.current.open = true; game.setJournalOpen(true); }}>Gestionar tripulación <span aria-hidden="true">›</span></button>
+            </div>
+          </aside>}
           <section className={`mission-transmission mission-transmission-${missionPhase}`} data-testid="mission-transmission" aria-label="Transmisión y progreso de la misión">
             <div className="mission-transmission-top">
               <span className="mission-transmission-kicker"><span className="mission-transmission-beacon" aria-hidden="true" /> CANAL DE SERVICIO · PRIORIDAD ALTA</span>
@@ -287,13 +329,21 @@ export function App() {
             {perimeterWarning && <p
               className="mission-transmission-optional" data-testid="perimeter-save-notice" role="status">{perimeterNotice}</p>}
             <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
-            <div className="mission-transmission-route" role="list" aria-label="Progreso del rescate">
+            {mandate.orders.evacuate === 'active' && <div className="mission-abandon">
+              {!confirmAbandon ? <button type="button" data-testid="mission-abandon" onClick={() => setConfirmAbandon(true)}>Abandonar misión de rescate</button> : <div role="group" aria-label="Confirmar abandono del rescate">
+                <p>La evacuación quedará rechazada y los civiles no constarán como rescatados.{exploration.area === 'surface' ? ' El equipo regresará al puente.' : ''}</p>
+                <button type="button" data-testid="mission-abandon-confirm" onClick={confirmRescueAbandonment}>Confirmar abandono</button>
+                <button type="button" onClick={() => setConfirmAbandon(false)}>Continuar misión</button>
+              </div>}
+            </div>}
+            {abandoned && exploration.area === 'surface' && <button type="button" className="mission-return-abandoned" data-testid="abandoned-return" disabled={!!exploration.pending} onClick={() => returnAbandonedTeam(mandate)}>Extraer equipo y volver al puente</button>}
+            {!abandoned && <div className="mission-transmission-route" role="list" aria-label="Progreso del rescate">
               {['Desembarco', 'Evacuación', 'Regreso'].map((step, index) => (
                 <span role="listitem" key={step} data-state={missionProgress > index ? 'done' : missionProgress === index ? 'current' : 'pending'}>
                   <span aria-hidden="true">{missionProgress > index ? '✓' : String(index + 1).padStart(2, '0')}</span>{step}
                 </span>
               ))}
-            </div>
+            </div>}
             {missionPhase === 'debrief' && (
               <div className="mission-return-report" data-testid="mission-return-report" aria-label="Informe de regreso">
                 <div className="mission-return-facts">
@@ -328,7 +378,7 @@ export function App() {
               perimeterResolved={fieldResolution !== null}
               missionTargetId={!game.preferences.hints ? null : missionPhase === 'briefing' ? 'transporter'
                 : missionPhase === 'field' ? 'relief-point'
-                : missionPhase === 'extract' ? 'beam-out' : null}
+                : missionPhase === 'extract' || (missionPhase === 'abandoned' && exploration.area === 'surface') ? 'beam-out' : null}
               onSpatialEvent={onSpatialEvent}
               squad={awayTeam.squad.map((id: string) => {
                 const officer = OFFICERS.find(candidate => candidate.id === id)!;
@@ -349,7 +399,7 @@ export function App() {
             onClick={() => game.setJournalOpen(false)}>← Volver a explorar <span aria-hidden="true">×</span></button>}
           <div className="panel-topline"><span>{openedConsole ? `01 / ${openedConsole.label.toUpperCase()}` : '01 / DIARIO DE MISIÓN'}</span><span className="panel-diamond" aria-hidden="true">◆</span></div>
           <div className="officer"><span className="officer-avatar" aria-hidden="true">C</span><div><div className="officer-role">OFICIAL AL MANDO</div><div className="officer-name">{officerAt(session.crew, 'command').name}</div></div><span className="comms-live" aria-label="Canal activo">ENLACE ABIERTO</span></div>
-          <details className="crew-roster" data-testid="crew-roster">
+          <details ref={crewRoster} className="crew-roster" data-testid="crew-roster">
             <summary><span>TRIPULACIÓN · SEIS OFICIALES</span><span className="crew-roster-action">Gestionar puestos ▾</span></summary>
             <div className="station-grid">
               {STATIONS.map(station => {

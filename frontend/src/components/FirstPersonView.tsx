@@ -7,6 +7,21 @@ import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
 import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
+const stationLabels: Record<string, string> = {
+  helm: 'Navegación', science: 'Ciencia', comms: 'Comunicaciones', tactical: 'Táctica', captain: 'Mando',
+};
+function StationIcon({ station }: { station: string }) {
+  return <svg className="captain-station-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor"
+    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {station === 'helm' ? <><circle cx="16" cy="16" r="12"/><path d="m21 10-3 8-8 4 4-8 7-4Z"/></>
+      : station === 'science' ? <><circle cx="16" cy="16" r="2"/><ellipse cx="16" cy="16" rx="5" ry="13"/><ellipse cx="16" cy="16" rx="5" ry="13" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="5" ry="13" transform="rotate(120 16 16)"/></>
+      : station === 'comms' ? <><path d="M16 17v11m-3 0h6"/><circle cx="16" cy="14" r="2"/><path d="M11 9a7 7 0 0 0 0 10m10-10a7 7 0 0 1 0 10M7 5a13 13 0 0 0 0 18M25 5a13 13 0 0 1 0 18"/></>
+      : station === 'tactical' ? <><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="5"/><path d="M16 1v7m0 16v7M1 16h7m16 0h7"/></>
+      : station === 'captain' ? <><path d="M4 23 8 11l8-5 8 5 4 12-7-3-5 3-5-3-7 3Z"/><path d="M10 16h12M16 11v9"/></>
+      : <><circle cx="11" cy="9" r="2"/><circle cx="21" cy="9" r="2"/><path d="M11 12v13m-4-8 4-4 4 4m-4 3-4 8m4-8 4 8m6-16v13m-4-8 4-4 4 4m-4 3-4 8m4-8 4 8"/></>}
+  </svg>;
+}
+
 export type ViewState = {
   version: number; area: string; x: number; y: number; heading: string;
   pending: null | { id: string; to: string };
@@ -499,19 +514,21 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           {seated ? <div className="captain-controls" aria-label="Puesto del capitán" data-testid="captain-controls">
             {world.scenes.bridge.objects.filter(item => item.type === 'station').map(item =>
               <button key={item.id} type="button" disabled={paused || !!exploration.pending}
-                data-testid={`captain-${item.id}`}
+                aria-label={item.id === 'comms' ? 'Comunicaciones' : undefined} data-testid={`captain-${item.id}`}
                 onPointerEnter={() => setPreviewStation(item.id)}
                 onPointerLeave={() => setPreviewStation(null)}
                 onFocus={() => setPreviewStation(item.id)}
                 onBlur={() => setPreviewStation(null)}
                 onClick={() => { setPreviewStation(null); onCaptainStation?.(item.id); }}>
-                {item.action === 'command' ? 'Mando' : item.label}</button>)}
+                <StationIcon station={item.id} />
+                <span className="captain-station-copy"><strong>{item.id === 'comms' ? <><span className="captain-label-full">Comunicaciones</span><span className="captain-label-short">Comunic.</span></> : stationLabels[item.id] ?? item.label}</strong>
+                  <small>{bridgeCrew[item.id as keyof BridgeCrewRoster]?.name}</small></span></button>)}
             <button type="button" disabled={paused || !!exploration.pending} data-testid="captain-transport"
               onClick={() => {
                 const result = requestCaptainTransport(world, stateRef.current);
                 stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
                 onSpatialEvent?.(result.state, result.event);
-              }}>Desembarcar →</button>
+              }}><StationIcon station="transport" /><span className="captain-station-copy"><strong>Desembarcar</strong><small>Equipo de superficie</small></span><span className="captain-station-arrow" aria-hidden="true">›</span></button>
           </div> : <div className="firstperson-controls" aria-label="Control de exploración">
             <button type="button" disabled={!!exploration.pending || paused} data-testid="explore-left" onClick={() => dispatch('turn-left')}>↶ Girar</button>
             <button type="button" disabled={!!exploration.pending || paused} data-testid="explore-forward" onClick={() => dispatch('forward')}>↑ Avanzar</button>

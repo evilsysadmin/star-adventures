@@ -8,7 +8,7 @@ documented in [BRIDGE-VISUALS.md](BRIDGE-VISUALS.md).
 
 - Raised coffered ceiling, elliptical command-area light well and longitudinal
   light rails give the room a stronger architectural silhouette.
-- Satin metal, restrained brass, dark green upholstery and carpet establish a
+- Satin metal, restrained brass, mauve upholstery and carpet establish a
   consistent palette. Small deterministic canvas-authored bump maps provide
   brushed metal, fabric and deck grain without binary texture downloads.
 - Manufactured console wedges, split pedestals, framed displays and low-backed
@@ -19,6 +19,8 @@ documented in [BRIDGE-VISUALS.md](BRIDGE-VISUALS.md).
   objectives, observations and outcomes still come from actual game state in HTML.
 - Recessed wall vents, deck panel fasteners, window mullions and original Meridian
   signage provide scale. The light well and floor trim introduce no physical step.
+- The bridge materials use warmer mauve upholstery, metal and carpet, with
+  amber trim, to bring the original room closer to the command-screen palette.
 
 ## Responsive rendering
 

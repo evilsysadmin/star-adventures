@@ -30,6 +30,8 @@ for (const width of [390, 1280]) {
     // Close the journal before the pixel comparison: otherwise the overlay
     // itself would make screenshots differ without proving a 3D crew change.
     await page.getByTestId('game-journal-close').click();
+    await expect(page.getByTestId('captain-science')).toContainText('Tao Rhee');
+    await expect(page.getByTestId('captain-helm')).toContainText('Nara Venn');
     const after = await bridge.screenshot();
     expect(after.equals(before)).toBe(false);
     await page.screenshot({ path: `test-results/bridge-real-crew-${width}.png` });

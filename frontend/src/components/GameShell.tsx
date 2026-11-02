@@ -81,9 +81,10 @@ export function GameShell({ presentation: game, children, location, transportPen
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
   };
   return <div ref={root} className="game-shell" data-interface={game.preferences.layout}
+    data-location={location.startsWith('PUENTE') ? 'bridge' : 'surface'}
     data-journal-open={game.journalOpen} data-poc-open={game.pocOpen} data-testid="game-shell">
     {game.immersive && <header className="game-toolbar">
-      <div className="game-identity"><span aria-hidden="true">◇</span><div>MERIDIAN<small>{location}</small></div></div>
+      <div className="game-identity"><div>STAR ADVENTURES<small>EXPLORA · DESCUBRE · CONTACTA</small></div></div>
       <nav aria-label="Controles del juego">
         <button type="button" data-testid="game-journal-toggle" aria-expanded={game.journalOpen}
           disabled={game.pocOpen} onClick={() => game.setJournalOpen(open => !open)}>Diario <span aria-hidden="true">↗</span></button>
