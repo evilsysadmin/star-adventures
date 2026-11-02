@@ -55,8 +55,10 @@ for (const width of [390, 1280]) {
     await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'none');
     const before = await bridge.screenshot();
-    await page.getByTestId('captain-science').hover();
-    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'science');
+    // Helm is physically inside the seated camera's field of view. Science
+    // sits on the far side and could change off-screen without pixel evidence.
+    await page.getByTestId('captain-helm').hover();
+    await expect(bridge).toHaveAttribute('data-bridge-focused-station', 'helm');
     const after = await bridge.screenshot();
     expect(after.equals(before)).toBe(false);
     await page.screenshot({ path: `test-results/bridge-console-focus-${width}.png` });
