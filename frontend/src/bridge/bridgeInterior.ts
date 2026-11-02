@@ -58,10 +58,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     const material = new THREE.MeshBasicMaterial({ color });
     materials.add(material); return material;
   };
-  const hull = mat('#6b767a', .52, .4), dark = mat('#111d24', .48, .38);
-  const panel = mat('#a5ada7', .46, .41), bronze = mat('#ac8861', .72, .32);
-  const instrumentShell = mat('#344c53', .38, .62);
-  const seat = mat('#223d40', .03, .94), seatEdge = mat('#53656a', .55, .42);
+  const hull = mat('#827779', .52, .4), dark = mat('#181a28', .48, .38);
+  const panel = mat('#b1a4a1', .46, .41), bronze = mat('#bd9368', .72, .32);
+  const instrumentShell = mat('#484654', .38, .62);
+  const seat = mat('#593c47', .03, .94), seatEdge = mat('#77616a', .55, .42);
   const cyan = luminous('#80d2d4'), amber = luminous('#f0ba78');
   const soft = luminous('#fff1cd');
   // Small deterministic surface maps provide scale at standing distance.
@@ -217,7 +217,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     const p = point(x, y);
     block(scene, (x + y) % 2 ? floorA : floorB, p.x, .001, p.z, 1.985, .035, 1.985).receiveShadow = true;
   }
-  const carpet = mat('#263f42', .02, 1); carpet.bumpMap = seat.bumpMap; carpet.bumpScale = .02;
+  const carpet = mat('#403541', .02, 1); carpet.bumpMap = seat.bumpMap; carpet.bumpScale = .02;
   block(scene, carpet, 0, .025, 1, 4.3, .016, 7.6).receiveShadow = true;
   for (const x of [-2.25, 2.25]) {
     block(scene, bronze, x, .045, 1, .045, .014, 7.7);

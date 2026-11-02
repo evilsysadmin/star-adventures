@@ -107,7 +107,7 @@ export function DualMandatePanel({ awayTeam, exploration, accessedStationId, man
           {publicLog.incidents.length > 0 &&
             <ul className="mandate-events" data-testid="mandate-public-events">
               {publicLog.incidents.map((incident: { id: string; kind: string }) =>
-                <li key={incident.id}>{label[incident.kind] ?? incident.kind}</li>)}
+                <li key={incident.id}>{incident.id === 'rescue-abandoned' ? 'Rescate abandonado por orden del capitán' : label[incident.kind] ?? incident.kind}</li>)}
             </ul>}
         </section>
 

@@ -498,13 +498,14 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             {world.scenes.bridge.objects.filter(item => item.type === 'station').map(item =>
               <button key={item.id} type="button" disabled={paused || !!exploration.pending}
                 data-testid={`captain-${item.id}`} onClick={() => onCaptainStation?.(item.id)}>
+                <span className="captain-station-icon" aria-hidden="true">{item.action === 'command' ? '✦' : item.action === 'science' ? '⚛' : item.action === 'tactical' ? '◎' : '◇'}</span>
                 {item.action === 'command' ? 'Mando' : item.label}</button>)}
             <button type="button" disabled={paused || !!exploration.pending} data-testid="captain-transport"
               onClick={() => {
                 const result = requestCaptainTransport(world, stateRef.current);
                 stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
                 onSpatialEvent?.(result.state, result.event);
-              }}>Desembarcar →</button>
+              }}><span className="captain-station-icon" aria-hidden="true">↗</span> Desembarcar →</button>
           </div> : <div className="firstperson-controls" aria-label="Control de exploración">
             <button type="button" disabled={!!exploration.pending || paused} data-testid="explore-left" onClick={() => dispatch('turn-left')}>↶ Girar</button>
             <button type="button" disabled={!!exploration.pending || paused} data-testid="explore-forward" onClick={() => dispatch('forward')}>↑ Avanzar</button>
