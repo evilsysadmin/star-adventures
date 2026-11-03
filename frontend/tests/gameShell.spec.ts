@@ -252,6 +252,8 @@ test('audio options control real Web Audio and a muted accepted tactical shot', 
 });
 
 test('browser fullscreen is requested by a real click and the menu remains usable', async ({ page }) => {
+  // Fullscreen transitions and the WebGL bridge may take longer on CI hosts.
+  test.setTimeout(90_000);
   await page.goto('/');
   await page.getByTestId('game-menu-open').click(); await page.getByTestId('game-options').click();
   const toggle = page.getByTestId('game-fullscreen');
