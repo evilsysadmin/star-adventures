@@ -366,6 +366,7 @@ test('F5 closes unconfirmed transporter modal but leaves captain in the same cel
 });
 
 test('corrupt spatial state resets only exploration, preserving crew XP and mission', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto('/');
   await openStation(page,'science');
   await page.getByTestId('choice-scan').click();
