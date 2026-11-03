@@ -42,6 +42,10 @@ async function returnToBridge(page: Page) {
 }
 
 test('authentic away finding opens one officer briefing only at the accessed captain chair and survives F5', async ({ page }) => {
+  // This end-to-end F5 journey captures both mobile and desktop on software WebGL.
+  // GitHub runners can exceed the default 30s during the second screenshot.
+  // Keep every assertion and both captures; allow capture overhead without a retry.
+  test.setTimeout(60_000);
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto('/');
   await arriveAtCaptainChair(page);
