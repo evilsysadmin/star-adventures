@@ -13,6 +13,7 @@ for (const width of [390, 1280]) {
     await page.goto('/');
     const bridge = page.getByTestId('bridge-interior');
     await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
+    await expect(bridge).toHaveAttribute('data-bridge-head', 'loaded', { timeout: 20_000 });
     await expect(bridge).toHaveAttribute('data-bridge-officer-science', 'venn');
     await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'rhee');
     await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'solan');
@@ -81,11 +82,13 @@ for (const width of [390, 1280]) {
 // viewport usability. Real browser screenshots are required for visual review.
 for (const width of [390, 1280]) {
   test(`seated command bridge renders its four original operators at ${width}px`, async ({ page }) => {
+    test.setTimeout(90_000);
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/');
     const bridge = page.getByTestId('bridge-interior');
     await expect(bridge).toHaveAttribute('data-bridge-rendered', 'true', { timeout: 20_000 });
     await expect(bridge).toHaveAttribute('data-bridge-officers', '4');
+    await expect(bridge).toHaveAttribute('data-bridge-head', 'loaded', { timeout: 20_000 });
     await expect(bridge).toHaveAttribute('data-bridge-framing', width === 390 ? 'crew-wide' : 'command-wide');
     await expect(bridge).toHaveAttribute('data-bridge-captain-visible', 'true');
     // Assert the actual WebGL camera receives the command-only composition;

@@ -208,6 +208,12 @@ export function App() {
     setPerimeterWarning(!fieldSaved);
     setExplorationKey(key => key + 1);
   };
+  const openAwayTeamPreparation = () => {
+    if (game.immersive) game.setJournalOpen(true);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLSelectElement>('[data-testid="away-slot-0"]')?.focus();
+    });
+  };
   const returnFromFieldEncounter = () => {
     savePerimeter(fieldHistory, false);
     setFieldEncounterOpen(false);
@@ -329,7 +335,11 @@ export function App() {
             {perimeterWarning && <p
               className="mission-transmission-optional" data-testid="perimeter-save-notice" role="status">{perimeterNotice}</p>}
             <p className="mission-transmission-next" data-testid="mission-next"><strong>SIGUIENTE PASO</strong> {missionBeat.next}</p>
-            {mandate.orders.evacuate === 'active' && <div className="mission-abandon">
+            {missionPhase === 'briefing' && exploration.area === 'bridge' && <button type="button" className="mission-prepare-team" data-testid="mission-prepare-team"
+              disabled={!!exploration.pending || game.paused} onClick={openAwayTeamPreparation}>
+              Preparar equipo <span aria-hidden="true">→</span>
+            </button>}
+            {mandate.orders.evacuate === 'active' && <div className={`mission-abandon ${confirmAbandon ? 'is-confirming' : ''}`}>
               {!confirmAbandon ? <button type="button" data-testid="mission-abandon" onClick={() => setConfirmAbandon(true)}>Abandonar misión de rescate</button> : <div role="group" aria-label="Confirmar abandono del rescate">
                 <p>La evacuación quedará rechazada y los civiles no constarán como rescatados.{exploration.area === 'surface' ? ' El equipo regresará al puente.' : ''}</p>
                 <button type="button" data-testid="mission-abandon-confirm" onClick={confirmRescueAbandonment}>Confirmar abandono</button>
