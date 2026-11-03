@@ -9,7 +9,7 @@ export const STATIONS = Object.freeze(['command', 'science', 'diplomacy', 'tacti
 
 // Original prototype officers. Stable IDs survive rename/localization.
 export const OFFICERS = Object.freeze([
-  { id: 'varela', name: 'Elena Varela', rank: 'Capitana', skills: { command: 4, science: 1, diplomacy: 3, tactical: 2, engineering: 1, medicine: 1 } },
+  { id: 'varela', name: 'Adrián Varela', rank: 'Capitán', skills: { command: 4, science: 1, diplomacy: 3, tactical: 2, engineering: 1, medicine: 1 } },
   { id: 'solan', name: 'Idris Solan', rank: 'Primer oficial', skills: { command: 3, science: 2, diplomacy: 4, tactical: 2, engineering: 1, medicine: 1 } },
   { id: 'venn', name: 'Nara Venn', rank: 'Oficial científica', skills: { command: 1, science: 4, diplomacy: 1, tactical: 1, engineering: 3, medicine: 2 } },
   { id: 'dorn', name: 'Kael Dorn', rank: 'Oficial táctico', skills: { command: 2, science: 1, diplomacy: 1, tactical: 4, engineering: 2, medicine: 1 } },
