@@ -1,5 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
+// Each journey has a fresh browser context and local storage; allow the two
+// existing Playwright workers to run this long file without serializing 39 tests.
+test.describe.configure({ mode: 'parallel' });
+
 // Route to a station from the bridge spawn (3:5 N). No warp/remote cheats.
 async function openStation(page: Page, station: 'science' | 'communications' | 'tactical' | 'helm' | 'command') {
   const act = async (id: string, n = 1) => {
