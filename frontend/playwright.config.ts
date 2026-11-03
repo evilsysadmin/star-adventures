@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  // Browser tests are .spec.ts; .test.mjs files use Node's independent runner.
+  testMatch: '**/*.spec.ts',
   timeout: 30_000,
   retries: process.env.CI ? 1 : 0,
   use: {
