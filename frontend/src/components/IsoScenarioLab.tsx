@@ -377,7 +377,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
  return <section className="scenario-lab" data-testid="scenario-lab" aria-labelledby="scenario-heading">
   <header className="scenario-head">
    <span className="scenario-eyebrow">{fieldEncounter?'SUPERFICIE · CONTACTO HOSTIL':'OPERACIONES TÁCTICAS · LABORATORIO JUGABLE'}</span>
-   <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Tres misiones, un equipo'}</h2>
+   <h2 id="scenario-heading">{fieldEncounter?'Asegura el perímetro del puesto':'Puesto de frontera'}</h2>
    <p>{fieldEncounter?'Dos contactos armados vigilan el perímetro. Acerca a Seguridad para negociar un alto el fuego, o combate. El rescate médico es posible sin enfrentarse a nadie. El progreso del perímetro pertenece a este intento de rescate.':'Elige un objetivo, despliega a la escuadra y resuelve la misión. Toca dos veces un destino libre para avanzar. Si está lejos, sigue tocándolo para recorrer la ruta en tramos de hasta cinco casillas, sin atravesar obstáculos.'}</p>
    {!fieldEncounter&&<button className="scenario-play-combat" type="button"
     data-testid="scenario-play-combat" onClick={startPlayableCombat}>
