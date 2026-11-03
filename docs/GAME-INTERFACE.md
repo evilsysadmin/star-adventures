@@ -102,3 +102,19 @@ permit that briefing. Walking mode retains the physical chair requirement.
 Both modes append the same single `inform` action to the versioned mandate save;
 F5 must preserve officer knowledge without repeating the action. The engine uses
 an explicit `walking`/`seated` command mode and never fabricates spatial movement.
+
+## New build notice
+
+Each Vite build embeds an opaque build ID and emits `version.json` in the same
+artifact. The game checks it when opened, when returning to a visible tab and at
+five-minute intervals. Network errors, invalid responses and offline play are
+silent. A changed ID displays a dismissible notice; the player chooses when to
+reload. This does not create an offline cache or a service worker. Reloading can
+interrupt an in-progress action; only the game's existing saved checkpoints are
+restored.
+
+The hosting handoff must publish the HTML, hashed assets and `version.json` as
+one consistent build, and make HTML and `version.json` revalidate rather than
+serve stale content indefinitely. The client requests the version with no-store
+and a cache-busting query, but cannot override a host that ignores those headers
+or strips query parameters. This change does not configure infrastructure.

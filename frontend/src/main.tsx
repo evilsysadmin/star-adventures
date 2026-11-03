@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { VersionNotice } from './components/VersionNotice';
 import './styles.css';
 import './components/isoScenarioPlay.css';
 import './bridge/bridgePresentation.css';
@@ -16,6 +17,6 @@ createRoot(root).render(
   <React.StrictMode>
     {isCameraProbe
       ? <React.Suspense fallback={<p>Iniciando prueba táctica…</p>}><TacticalCameraProbe /></React.Suspense>
-      : <App />}
+      : <><App /><VersionNotice /></>}
   </React.StrictMode>,
 );
