@@ -16,8 +16,8 @@ test('opt-in v3 combat displays real wounds and defeat, restores F5 and isolates
  await page.setViewportSize({ width: 390, height: 850 });
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
- const oldTraining = await page.evaluate(key => localStorage.getItem(key), SCENARIO_SAVE_KEY);
- const oldHostile = await page.evaluate(key => localStorage.getItem(key), HOSTILE_ENCOUNTER_SAVE_KEY);
+ const oldTraining = await page.evaluate(key => localStorage.getItem(key), 'frontier-poc.'+SCENARIO_SAVE_KEY);
+ const oldHostile = await page.evaluate(key => localStorage.getItem(key), 'frontier-poc.'+HOSTILE_ENCOUNTER_SAVE_KEY);
  await chooseLegacyMode(page,'scenario-combat-toggle');
  await expect(page.getByTestId('scenario-combat-toggle')).toHaveAttribute('aria-pressed', 'true');
  // Compact main screen has one game mode; QA variants open on demand.
@@ -33,19 +33,19 @@ test('opt-in v3 combat displays real wounds and defeat, restores F5 and isolates
 
  await expect(page.getByTestId('scenario-hp-medic')).toHaveText('PV 3 / 3');
  const actions: { type: 'end-turn' }[] = [];
- let expected = replayCombatEncounterCommands('relay', actions).encounter;
+ let expected = replayCombatEncounterCommands('frontier', actions).encounter;
  for (let i = 0; i < 60 && !expected.hits.length; i++) {
   actions.push({ type: 'end-turn' });
-  expected = replayCombatEncounterCommands('relay', actions).encounter;
+  expected = replayCombatEncounterCommands('frontier', actions).encounter;
   await page.getByTestId('scenario-end-turn').click();
  }
  expect(expected.hits.length).toBeGreaterThan(0);
  for (const id of ['science', 'security', 'medic'] as const)
   await expect(page.getByTestId('scenario-hp-' + id)).toHaveText('PV ' + expected.health[id] + ' / 3');
- expect(JSON.parse((await page.evaluate(key => localStorage.getItem(key), COMBAT_ENCOUNTER_SAVE_KEY))!))
-  .toEqual({ version: 3, scenarioId: 'relay', actions });
- expect(await page.evaluate(key => localStorage.getItem(key), SCENARIO_SAVE_KEY)).toBe(oldTraining);
- expect(await page.evaluate(key => localStorage.getItem(key), HOSTILE_ENCOUNTER_SAVE_KEY)).toBe(oldHostile);
+ expect(JSON.parse((await page.evaluate(key => localStorage.getItem(key), 'frontier-poc.'+COMBAT_ENCOUNTER_SAVE_KEY))!))
+  .toEqual({ version: 3, scenarioId: 'frontier', actions });
+ expect(await page.evaluate(key => localStorage.getItem(key), 'frontier-poc.'+SCENARIO_SAVE_KEY)).toBe(oldTraining);
+ expect(await page.evaluate(key => localStorage.getItem(key), 'frontier-poc.'+HOSTILE_ENCOUNTER_SAVE_KEY)).toBe(oldHostile);
  await page.screenshot({ path: 'test-results/combat-v3-wounds-mobile-390.png', fullPage: true });
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
  await page.reload();
@@ -56,7 +56,7 @@ test('opt-in v3 combat displays real wounds and defeat, restores F5 and isolates
   await expect(page.getByTestId('scenario-hp-' + id)).toHaveText('PV ' + expected.health[id] + ' / 3');
  for (let i = 0; i < 60 && !expected.failed; i++) {
   actions.push({ type: 'end-turn' });
-  expected = replayCombatEncounterCommands('relay', actions).encounter;
+  expected = replayCombatEncounterCommands('frontier', actions).encounter;
   await page.getByTestId('scenario-end-turn').click();
  }
  expect(expected.failed).toBe(true);

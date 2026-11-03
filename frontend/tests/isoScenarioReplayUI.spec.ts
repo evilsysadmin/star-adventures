@@ -31,7 +31,7 @@ async function target(page: Page, id: 'aegis'|'veil') {
 }
 async function completeObjectives(page: Page) {
  const state=async()=>{
-  const raw=await page.evaluate(key=>localStorage.getItem(key),COMBAT_REPLAY_SAVE_KEY);
+  const raw=await page.evaluate(key=>localStorage.getItem(key),'frontier-poc.'+COMBAT_REPLAY_SAVE_KEY);
   if(!raw)throw new Error('Expected persisted v4 replay');
   const checkpoint=JSON.parse(raw);
   return replayCombatCommands(checkpoint.scenarioId,checkpoint.actions).combat.encounter.mission;
@@ -55,11 +55,13 @@ async function completeObjectives(page: Page) {
   }
   throw new Error('Objective travel exceeded 30 orders');
  };
- await travel('science','9:1');
+ await travel('science','7:1');
  await order('scenario-scan');
- await travel('security','9:7');
+ await travel('security','9:5');
  await order('scenario-operate');
- await travel('security','9:9');
+ await travel('medic','9:8');
+ await order('scenario-rescue');
+ await travel('security','11:11');
  await order('scenario-extract');
 }
 
@@ -78,9 +80,9 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   await page.getByTestId('scenario-unit-security').click();
-  await choose(page,'3:7');
+  await choose(page,'4:5');
   await page.getByTestId('scenario-move').click();
-  await choose(page,'5:6');
+  await choose(page,'6:5');
   await page.getByTestId('scenario-move').click();
   await target(page,'aegis');
   await expect(page.getByTestId('scenario-fire')).toBeEnabled();
@@ -140,8 +142,8 @@ for(const width of [390,1280]){
   });
   await page.getByTestId('scenario-fire').click();
   await expect(canvas).toHaveAttribute('data-shot-sequence','1');
-  await expect(canvas).toHaveAttribute('data-shot-from','5:6');
-  await expect(canvas).toHaveAttribute('data-shot-to','6:6');
+  await expect(canvas).toHaveAttribute('data-shot-from','6:5');
+  await expect(canvas).toHaveAttribute('data-shot-to','7:6');
   // Both frames must belong to the FIRST accepted shot, not a later phase
   // mislabeled by an asynchronous screenshot.
   await expect.poll(async()=>page.evaluate(()=>(window as Window & {
@@ -205,8 +207,8 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('scenario-combat-result')).toContainText('Amenazas neutralizadas');
   await expect(page.getByTestId('scenario-end-turn')).toBeEnabled();
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
-  const saved=await page.evaluate(key=>localStorage.getItem(key),COMBAT_REPLAY_SAVE_KEY);
-  expect(JSON.parse(saved!)).toMatchObject({version:4,scenarioId:'relay'});
+  const saved=await page.evaluate(key=>localStorage.getItem(key),'frontier-poc.'+COMBAT_REPLAY_SAVE_KEY);
+  expect(JSON.parse(saved!)).toMatchObject({version:4,scenarioId:'frontier'});
   expect(JSON.parse(saved!).actions).toHaveLength(7);
   expect(await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),
    [SCENARIO_SAVE_KEY,HOSTILE_ENCOUNTER_SAVE_KEY,COMBAT_ENCOUNTER_SAVE_KEY])).toEqual(legacy);
@@ -225,10 +227,10 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('scenario-combat-result')).not.toContainText('Amenazas neutralizadas');
   await expect(page.getByTestId('scenario-end-turn')).toBeDisabled();
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
-  const extracted=JSON.parse((await page.evaluate(key=>localStorage.getItem(key),COMBAT_REPLAY_SAVE_KEY))!);
-  const report=combatMissionReport({scenarioId:'relay',actions:extracted.actions});
+  const extracted=JSON.parse((await page.evaluate(key=>localStorage.getItem(key),'frontier-poc.'+COMBAT_REPLAY_SAVE_KEY))!);
+  const report=combatMissionReport({scenarioId:'frontier',actions:extracted.actions});
   expect(report.status).toBe('mission-extracted');
-  expect(report.objectives).toEqual({scanned:true,operated:true,rescued:false,extracted:true});
+  expect(report.objectives).toEqual({scanned:true,operated:true,rescued:true,extracted:true});
   expect(report.enemyTurns).toBe(1);
   expect(await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),
    [SCENARIO_SAVE_KEY,HOSTILE_ENCOUNTER_SAVE_KEY,COMBAT_ENCOUNTER_SAVE_KEY])).toEqual(legacy);
@@ -258,7 +260,7 @@ for (const width of [390, 1280]) {
   await page.getByTestId('scenario-play-combat').click();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   await page.getByTestId('scenario-unit-science').click();
-  const route=missionPath(createMission('relay'),'science','3:3')!;
+  const route=missionPath(createMission('frontier'),'science','3:3')!;
   expect(route.length).toBe(5);
   await choose(page,'3:3');
   await expect(page.getByTestId('scenario-move')).toBeEnabled();
@@ -291,7 +293,7 @@ for (const width of [390, 1280]) {
   const capture=await page.evaluate(()=>(window as Window & {
    officerRouteCapture?:{pairs:string[];png:string|null};
   }).officerRouteCapture!);
-  expect(capture.pairs).toContain('3:1>3:2');
+  expect(capture.pairs).toContain('1:2>2:2');
   const png=Buffer.from(capture.png!.split(',')[1],'base64');
   expect(png.byteLength).toBeGreaterThan(10_000);
   await writeFile('test-results/combat-v4-officer-route-'+width+'.png',png);

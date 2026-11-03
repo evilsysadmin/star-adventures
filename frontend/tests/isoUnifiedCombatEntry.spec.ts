@@ -23,14 +23,14 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('scenario-hostile-toggle')).not.toBeVisible();
   const grid=page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
-  await page.getByRole('button',{name:'Casilla 2:1'}).click();
+  await page.getByRole('button',{name:'Casilla 1:2',exact:true}).click();
   await page.getByTestId('scenario-move').click();
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
   await advanced.locator('summary').click();
   await page.getByTestId('scenario-training-toggle').click();
   await expect(page.getByTestId('scenario-primary-mode')).toContainText('pruebas');
   await page.getByTestId('scenario-replay-toggle').click();
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
   await advanced.locator('summary').click();
   await expect(page.getByTestId('scenario-combat-toggle')).not.toBeVisible();
   await page.screenshot({path:`test-results/unified-tactical-game-${width}.png`,fullPage:true});
@@ -53,7 +53,7 @@ test(`shoot action from the single tactical entry damages and restores a real ta
  await page.getByTestId('scenario-unit-security').click();
  await page.getByTestId('scenario-hostile-aegis').click();
  await expect(fire).toBeDisabled(); // Terrain blocks this initial line of sight.
- for(const cell of ['3:7','5:6']){
+ for(const cell of ['4:5','6:5']){
   await page.getByRole('button',{name:'Casilla '+cell,exact:true}).click();
   await page.getByTestId('scenario-move').click();
  }
@@ -69,7 +69,7 @@ test(`shoot action from the single tactical entry damages and restores a real ta
  await page.getByTestId('tactical-view-missions').click();
  await expect(page.getByTestId('scenario-primary-mode')).toContainText('Combate táctico');
  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 1/2');
- await expect(page.getByTestId('scenario-unit-security')).toContainText('5:6');
+ await expect(page.getByTestId('scenario-unit-security')).toContainText('6:5');
  await expect(page.getByTestId('scenario-ap')).toContainText('0 / 3');
  // Revealing the board must not restart the restored firefight or refill AP.
  await page.getByTestId('scenario-play-combat').click();

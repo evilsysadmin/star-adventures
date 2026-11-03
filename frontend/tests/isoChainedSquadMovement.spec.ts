@@ -26,27 +26,27 @@ for (const width of [390, 1280]) {
 
   const grid = page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
-  await page.getByRole('button', { name: 'Casilla 3:1' }).click();
-  await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 2 casillas');
+  await page.getByRole('button', { name: 'Casilla 3:2', exact: true }).click();
+  await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 3 casillas');
   await page.getByTestId('scenario-move').click();
   await expect(canvas).toHaveAttribute('data-squad-moving', '1');
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('3:1');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('3:2');
 
-  await page.getByRole('button', { name: 'Casilla 3:2' }).click();
+  await page.getByRole('button', { name: 'Casilla 4:2', exact: true }).click();
   await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 1 casilla');
   await page.getByTestId('scenario-move').click();
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('3:2');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('4:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('1 / 3');
-  await expect(canvas).toHaveAttribute('data-squad-route-length', '3');
-  // A broken implementation starts a fresh motion at 3:1, teleporting the
+  await expect(canvas).toHaveAttribute('data-squad-route-length', '4');
+  // A broken implementation starts a fresh motion at 3:2, teleporting the
   // sprite there even though it was still walking from 1:1.
-  await expect(canvas).not.toHaveAttribute('data-squad-route-from', '3:1');
+  await expect(canvas).not.toHaveAttribute('data-squad-route-from', '3:2');
   await page.screenshot({
    path: `test-results/scenario-chained-walk-in-flight-${width}.png`,
    fullPage: true,
   });
   await expect(canvas).toHaveAttribute('data-squad-moving', '0', { timeout: 15_000 });
-  await expect(canvas).toHaveAttribute('data-squad-route-to', '3:2');
+  await expect(canvas).toHaveAttribute('data-squad-route-to', '4:2');
   await page.screenshot({
    path: `test-results/scenario-chained-walk-arrived-${width}.png`,
    fullPage: true,

@@ -15,31 +15,30 @@ async function tapCell(page: Page, id: string) {
 }
 
 for (const width of [390, 1280]) {
-  test(`far derelict destination walks in successive real stages at ${width}px`, async ({page}) => {
+  test(`far frontier destination walks in successive real stages at ${width}px`, async ({page}) => {
     test.setTimeout(90_000);
     await page.setViewportSize({width,height:850});
     await page.goto('/');
     await page.getByTestId('tactical-view-missions').click();
     await page.getByTestId('scenario-play-combat').click();
-    await page.getByTestId('scenario-tab-derelict').click();
     const canvas = page.getByTestId('scenario-render-canvas');
     await expect(canvas).toBeVisible();
     await expect(page.getByTestId('scenario-unit-science')).toContainText('1:1');
 
-    // A real fixture blocks this console tile; selecting it must not move.
-    await tapCell(page,'9:9');
-    await expect(page.getByTestId('scenario-selected')).toHaveText('9:9');
+    // A real cover blocks this tile; selecting it must not move.
+    await tapCell(page,'9:6');
+    await expect(page.getByTestId('scenario-selected')).toHaveText('9:6');
     await expect(page.getByTestId('scenario-move')).toBeDisabled();
     await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
 
     // First tap selects a distant reachable tile, with no hidden movement.
-    await tapCell(page,'10:9');
-    await expect(page.getByTestId('scenario-selected')).toHaveText('10:9');
-    await expect(page.getByTestId('scenario-route')).toContainText('17 casillas · avanza por tramos de 5');
-    await expect(page.getByTestId('scenario-move')).toContainText('Avanzar 5 casillas hacia 10:9');
+    await tapCell(page,'11:11');
+    await expect(page.getByTestId('scenario-selected')).toHaveText('11:11');
+    await expect(page.getByTestId('scenario-route')).toContainText('20 casillas · avanza por tramos de 5');
+    await expect(page.getByTestId('scenario-move')).toContainText('Avanzar 5 casillas hacia 11:11');
     await expect(page.getByTestId('scenario-move')).toBeEnabled();
     await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
-    const beforeMove = await canvas.screenshot({path:`test-results/derelict-far-route-selected-${width}.png`});
+    const beforeMove = await canvas.screenshot({path:`test-results/frontier-far-route-selected-${width}.png`});
 
     // Record the actual DOM route-step transitions before ordering movement.
     // Exact-frame Playwright polling misses short stages on busy CI runners.
@@ -56,32 +55,32 @@ for (const width of [390, 1280]) {
       }).observe(board, {attributes:true, attributeFilter:['data-squad-route-step']});
     });
     // Second tap spends one AP and physically walks five real BFS cells.
-    await tapCell(page,'10:9');
+    await tapCell(page,'11:11');
     await expect(page.getByTestId('scenario-unit-science')).toContainText('4:3');
     await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
     await expect(canvas).toHaveAttribute('data-squad-route-length','5');
     await expect(canvas).toHaveAttribute('data-squad-moving','1',{timeout:3000});
-    await canvas.screenshot({path:`test-results/derelict-first-stage-walking-${width}.png`});
+    await canvas.screenshot({path:`test-results/frontier-first-stage-walking-${width}.png`});
     await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:8000});
     const steps = await page.evaluate(
       () => (window as Window & { __observedRouteSteps?: string[] }).__observedRouteSteps ?? []
     );
     expect(steps).toContain('5');
     expect(steps.filter(step => ['2','3','4'].includes(step)).length).toBeGreaterThanOrEqual(2);
-    await expect(page.getByTestId('scenario-selected')).toHaveText('10:9');
-    await expect(page.getByTestId('scenario-route')).toContainText('12 casillas');
-    const arrived = await canvas.screenshot({path:`test-results/derelict-first-stage-arrived-${width}.png`});
+    await expect(page.getByTestId('scenario-selected')).toHaveText('11:11');
+    await expect(page.getByTestId('scenario-route')).toContainText('15 casillas');
+    const arrived = await canvas.screenshot({path:`test-results/frontier-first-stage-arrived-${width}.png`});
     expect(beforeMove.equals(arrived)).toBe(false, 'The officer must finish at a visibly different board position');
 
     // A further tap on the SAME target continues from the new real cell.
-    await tapCell(page,'10:9');
-    await expect(page.getByTestId('scenario-unit-science')).toContainText('6:6');
+    await tapCell(page,'11:11');
+    await expect(page.getByTestId('scenario-unit-science')).toContainText('7:5');
     await expect(page.getByTestId('scenario-ap')).toContainText('1 / 3');
     await expect(canvas).toHaveAttribute('data-squad-route-length','5');
     await expect(canvas).toHaveAttribute('data-squad-moving','1',{timeout:3000});
     await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:8000});
-    await expect(page.getByTestId('scenario-selected')).toHaveText('10:9');
-    await page.screenshot({path:`test-results/derelict-two-legal-stages-${width}.png`,fullPage:true});
+    await expect(page.getByTestId('scenario-selected')).toHaveText('11:11');
+    await page.screenshot({path:`test-results/frontier-two-legal-stages-${width}.png`,fullPage:true});
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
