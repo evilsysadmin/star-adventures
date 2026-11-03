@@ -563,7 +563,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[2.02,3.04] as const,color:'#e4946f'},
    veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.74,2.68] as const,color:'#b59be8'},
   } as const;
-  type HostileVisual={ground:THREE.Mesh;sprite:THREE.Sprite;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null};
+  type HostileVisual={ground:THREE.Mesh;fallback:THREE.Mesh;sprite:THREE.Sprite;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null};
   const hostileVisuals=new Map<HostileId,HostileVisual>();
   for(const hostile of scenario.hostiles){
    const asset=hostileAssets[hostile.id];
@@ -572,11 +572,14 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     color:asset.color,transparent:true,opacity:.24,depthWrite:false,
    })));
    ground.rotation.x=-Math.PI/2;ground.position.set(p.x,.107,p.z);
+   const fallback=add(new THREE.Mesh(new THREE.ConeGeometry(.30,.95,6),
+    new THREE.MeshStandardMaterial({color:asset.color,roughness:.7})));
+   fallback.position.set(p.x,.62,p.z);
    const sprite=add(new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,alphaTest:.06})));
    sprite.visible=false;
    sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
    const facing=createFacing(asset.color);
-   const visual:HostileVisual={ground,sprite,facing,idle:null,walk:null};
+   const visual:HostileVisual={ground,fallback,sprite,facing,idle:null,walk:null};
    hostileVisuals.set(hostile.id,visual);
    // Both atlases contain six frames. Each hostile owns its own UV offsets:
    // a shared texture would make two independent sprites animate in lockstep.
@@ -595,6 +598,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
       }
       sprite.material.map=texture;sprite.material.needsUpdate=true;
       sprite.visible=ground.visible;
+      fallback.visible=false;
       canvas.dataset[`hostileIdleUv${hostile.id[0].toUpperCase()+hostile.id.slice(1)}`]=String(texture.repeat.x);
      }
      render();
@@ -616,7 +620,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const p=atCell(view.hostilePositions?.[shotMotion.target]??shotMotion.toCell,scenario.size);
     victim.sprite.position.set(p.x,.14,p.z);
     const alive=view.hostileHealth?.[shotMotion.target]!==0;
-    victim.sprite.visible=alive&&!!victim.idle;victim.ground.visible=alive;
+    victim.sprite.visible=alive&&!!victim.idle;victim.fallback.visible=alive&&!victim.idle;victim.ground.visible=alive;
    }
    canvas.dataset.hitPhase='idle';
    delete canvas.dataset.hitTarget;
@@ -714,12 +718,13 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     // Combat HP changes immediately, but a lethal hit should not erase the
     // sprite before the visible projectile has actually reached its target.
     const alive=view.hostileHealth?.[hostile.id]!==0||shotMotion?.target===hostile.id;
-    visual.ground.visible=alive;visual.sprite.visible=alive&&!!visual.idle;
+    visual.ground.visible=alive;visual.sprite.visible=alive&&!!visual.idle;visual.fallback.visible=alive&&!visual.idle;
     visual.facing.visible=alive&&Number.isFinite(visual.facing.userData.heading);
     if(!alive)motions.delete(hostile.id);
     const p=atCell(view.hostilePositions?.[hostile.id]??hostile.cell,scenario.size);
     if(!motions.has(hostile.id)){
      visual.ground.position.set(p.x,.107,p.z);
+     visual.fallback.position.set(p.x,.62,p.z);
      visual.sprite.position.set(p.x,.14,p.z);
      placeFacing(visual.facing,p.x,p.z);
     }
@@ -755,6 +760,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);
+    visual.fallback.position.set(x,.62,z);
     visual.ground.position.set(x,.107,z);
     if(!step.done){
      const side=isoSpriteSideFromCells(step.from,step.to);
