@@ -24,7 +24,6 @@ import { compactCombatFireLabel, describeCombatAim } from '../isoCombatAimFeedba
 import type { HostileId } from '../isoScenarioHostileTurn';
 import './isoScenarioLab.css';
 
-const order: readonly ScenarioId[]=['relay','derelict','evacuation'];
 const officers: readonly {id:SquadId;name:string;role:string}[]=[
  {id:'science',name:'Científica',role:'Reconocimiento'},
  {id:'security',name:'Seguridad',role:'Terminales'},
@@ -33,23 +32,36 @@ const officers: readonly {id:SquadId;name:string;role:string}[]=[
 const pos=(id:string)=>id.split(':').map(Number) as [number,number];
 
 export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,onFieldProgress,onReturnToSurface}:{fieldEncounter?:boolean;fieldHistory?:CombatReplayHistory;fieldNotice?:string;onFieldProgress?:(history:CombatReplayHistory)=>boolean;onReturnToSurface?:()=>void}={}){
- const [startup]=useState(()=>restoreScenarioSession(localStorageOrNull()));
+ // The retired sandbox checkpoints remain untouched. The frontier proof has
+ // its own storage namespace; the physical surface encounter keeps its own save.
+ const tacticalStorage=()=>{
+  const storage=localStorageOrNull();
+  if(!storage||fieldEncounter)return storage;
+  return {
+   getItem:(key:string)=>storage.getItem('frontier-poc.'+key),
+   setItem:(key:string,value:string)=>storage.setItem('frontier-poc.'+key,value),
+  };
+ };
+ const [startup]=useState(()=>{
+  const saved=restoreScenarioSession(tacticalStorage());
+  return saved.history.scenarioId==='frontier'?saved:{...saved,history:newScenarioSession('frontier')};
+ });
  const [history,setHistory]=useState(startup.history);
- const [hostileStartup]=useState(()=>restoreHostileEncounterSession(localStorageOrNull()));
+ const [hostileStartup]=useState(()=>(()=>{const saved=restoreHostileEncounterSession(tacticalStorage());return saved.history.scenarioId==='frontier'?saved:{...saved,history:newHostileEncounterSession('frontier')};})());
  const [hostileHistory,setHostileHistory]=useState(hostileStartup.history);
  const [hostileMode,setHostileMode]=useState(false);
- const [combatStartup]=useState(()=>restoreCombatEncounterSession(localStorageOrNull()));
+ const [combatStartup]=useState(()=>(()=>{const saved=restoreCombatEncounterSession(tacticalStorage());return saved.history.scenarioId==='frontier'?saved:{...saved,history:newCombatEncounterSession('frontier')};})());
  const [combatHistory,setCombatHistory]=useState(combatStartup.history);
  const [combatMode,setCombatMode]=useState(false);
- const [replayStartup]=useState(()=>restoreCombatReplaySession(localStorageOrNull()));
+ const [replayStartup]=useState(()=>(()=>{const saved=restoreCombatReplaySession(tacticalStorage());return saved.history.scenarioId==='frontier'?saved:{...saved,history:newCombatReplaySession('frontier')};})());
  const [replayHistory,setReplayHistory]=useState(()=>fieldEncounter?(fieldHistory??newCombatReplaySession('evacuation')):replayStartup.history);
  // The unified tactical entry is live combat; legacy labs remain opt-in.
  const [replayMode,setReplayMode]=useState(true);
  const [initialRecords]=useState(()=>{
-  const stored=restoreTrainingRecords(localStorageOrNull());
+  const stored=restoreTrainingRecords(tacticalStorage());
   if(!startup.history.state.completed)return stored;
   const archive=addTrainingResult(stored.archive,startup.history);
-  const saved=persistTrainingRecords(archive,localStorageOrNull());
+  const saved=persistTrainingRecords(archive,tacticalStorage());
   return {archive,notice:saved?'':(stored.notice||'Récord no guardado · almacenamiento no disponible')};
  });
  const [records,setRecords]=useState<TrainingArchive>(initialRecords.archive);
@@ -137,7 +149,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
   }
   try{
    const next=replayCombatCommands(scenarioId,[...replayHistory.actions,command]);
-   const saved=fieldEncounter?(onFieldProgress?.(next)??false):persistCombatMissionAttemptProgress(next,localStorageOrNull()).replaySaved;
+   const saved=fieldEncounter?(onFieldProgress?.(next)??false):persistCombatMissionAttemptProgress(next,tacticalStorage()).replaySaved;
    setReplayHistory(next);
    presentHits(command.type==='end-turn'?next.combat.encounter.hits:[]);
    if(command.type==='fire'){
@@ -178,7 +190,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
   try{
    if(combatMode){
     const next=replayCombatEncounterCommands(scenarioId,[...combatHistory.actions,command]);
-    const saved=persistCombatEncounterSession(next,localStorageOrNull());
+    const saved=persistCombatEncounterSession(next,tacticalStorage());
     setCombatHistory(next);
     presentHits(command.type==='end-turn'?next.encounter.hits:[]);
     const hits=next.encounter.hits.map(hit=>
@@ -192,7 +204,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
    }
    if(hostileMode){
     const next=replayHostileEncounterCommands(scenarioId,[...hostileHistory.actions,command]);
-    const saved=persistHostileEncounterSession(next,localStorageOrNull());
+    const saved=persistHostileEncounterSession(next,tacticalStorage());
     setHostileHistory(next);
     const movements=next.encounter.moves.map(move=>`${move.hostile}: ${move.from} → ${move.to}`);
     const threats=next.encounter.threats.map(threat=>`${threat.hostile} amenaza a ${threat.officer}`);
@@ -204,12 +216,12 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
    }
    const state=applyMissionAction(mission,command);
    const next={scenarioId,actions:[...history.actions,command],state};
-   const saved=persistScenarioSession(next,localStorageOrNull());
+   const saved=persistScenarioSession(next,tacticalStorage());
    if(state.completed){
     const updated=addTrainingResult(records,next);
     setRecords(updated);
     if(JSON.stringify(updated)!==JSON.stringify(records)){
-     const recorded=persistTrainingRecords(updated,localStorageOrNull());
+     const recorded=persistTrainingRecords(updated,tacticalStorage());
      setRecordNotice(recorded?'':'Récord no guardado · el historial permanecerá temporal');
     }
    }
@@ -221,7 +233,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
   setShot(null);setOfficerHit(null);
   if(replayMode){
    const next=newCombatReplaySession(id);
-   const storage=localStorageOrNull();
+   const storage=tacticalStorage();
    const instanceId=globalThis.crypto?.randomUUID?.();
    const saved=fieldEncounter?(onFieldProgress?.(next)??false):instanceId
     ?startCombatMissionAttemptSession(instanceId,id,storage).replaySaved
@@ -233,7 +245,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
   }
   if(combatMode){
    const next=newCombatEncounterSession(id);
-   const saved=persistCombatEncounterSession(next,localStorageOrNull());
+   const saved=persistCombatEncounterSession(next,tacticalStorage());
    setCombatHistory(next);
    setOfficer('science');setSelected(next.encounter.mission.locations.science);setFocus(false);
    setNotice(saved?'Nuevo combate experimental · progreso guardado':'Combate temporal · no guardado');
@@ -241,14 +253,14 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
   }
   if(hostileMode){
    const next=newHostileEncounterSession(id);
-   const saved=persistHostileEncounterSession(next,localStorageOrNull());
+   const saved=persistHostileEncounterSession(next,tacticalStorage());
    setHostileHistory(next);
    setOfficer('science');setSelected(next.encounter.mission.locations.science);setFocus(false);
    setNotice(saved?'Nuevo encuentro hostil · progreso guardado':'Encuentro temporal · no guardado');
    return;
   }
   const next=newScenarioSession(id);
-  const saved=persistScenarioSession(next,localStorageOrNull());
+  const saved=persistScenarioSession(next,tacticalStorage());
   setHistory(next);
   setOfficer('science');setSelected(next.state.locations.science);setFocus(false);
   setNotice(saved?'Nuevo escenario · progreso guardado en este navegador':
@@ -339,14 +351,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
  // During live combat, the map and orders precede mission selection.
  // Advanced tools always follow the objectives, preserving their open state
  // when switching between live combat and training. DOM and visual order match.
- const missionSelector = !fieldEncounter && <div className="scenario-selector" role="group" aria-label="Elegir misión táctica">
-   {order.map(id=><button key={id} type="button"
-    data-testid={`scenario-tab-${id}`} aria-pressed={scenarioId===id}
-    onClick={()=>change(id)}>
-    <strong>{SCENARIOS[id].label}</strong>
-    <span>{SCENARIOS[id].size} × {SCENARIOS[id].size} · {id==='relay'?'Comunicaciones':id==='derelict'?'Exploración / rescate':'Evacuación'}</span>
-   </button>)}
-  </div>;
+ const missionSelector = null; // One playable tactical scenario: frontier.
  const viewTools = !fieldEncounter && <div className="scenario-viewtools">
    <strong className="scenario-primary-mode" data-testid="scenario-primary-mode">
     {replayMode?'Combate táctico · disparos, enemigos y negociación':

@@ -2,6 +2,8 @@
 
 Status below is a **plan**, not a claim of implemented features.
 
+For the planned planetary tribute to *Away Team*, see [AWAY-TEAM-TRIBUTE-ROADMAP.md](AWAY-TEAM-TRIBUTE-ROADMAP.md): free movement in the tactical view until enemy contact, followed by turn-based combat. This new direction supersedes the earlier combat-only use of the tactical view; update the product and camera contracts before implementation while retaining their input correctness gates.
+
 ## Product pivot — Section 31, two lives aboard the Meridian (2026-10-22)
 
 **Approved narrative direction, not yet a shipped feature:** the USS Meridian is *publicly* an ordinary Starfleet exploration / relief ship, while the captain secretly receives Section 31 instructions. The ship must carry out legitimate official missions, not merely use them as empty cover; covert assignments create conflicting responsibilities, evidence, risk to civilians, crew suspicion and pressure from a handler. The player can comply, negotiate or refuse. See [DUAL-MANDATE.md](DUAL-MANDATE.md) and the revised [PRODUCT.md](PRODUCT.md).
