@@ -216,9 +216,16 @@ test('audio options control real Web Audio and a muted accepted tactical shot', 
   await page.goto('/');
   await page.getByTestId('game-menu-open').click();
   await page.getByTestId('game-audio').click();
-  await page.getByTestId('game-volume').focus();
-  await page.keyboard.press('Home');
-  for (let step = 0; step < 5; step++) await page.keyboard.press('ArrowRight');
+  const slider = page.getByTestId('game-volume');
+  // Press each key on the range input itself: rerenders can steal keyboard
+  // focus between global page.keyboard events on slower software-WebGL CI.
+  await slider.press('Home');
+  await expect(slider).toHaveValue('0');
+  for (let step = 1; step <= 5; step++) {
+    await slider.press('ArrowRight');
+    await expect(slider).toHaveValue(String(step / 20));
+  }
+  // Verify the same persisted preference, not just a transient input value.
   await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key)!).volume, settingsKey)).toBe(.25);
   await page.getByTestId('game-audio-preview').click();
   const evidence = () => page.evaluate(() => (window as Window & { gameAudioEvidence: { starts: number[]; levels: number[] } }).gameAudioEvidence);
