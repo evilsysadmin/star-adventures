@@ -5,6 +5,54 @@ import { replayCombatCommands, serializeCombatReplay, deserializeCombatReplay,
 import { serializeCombatEncounterCheckpoint, deserializeCombatEncounterCheckpoint } from '../src/isoScenarioCombatCheckpoint.ts';
 import { serializeHostileEncounterCheckpoint } from '../src/isoScenarioHostileCheckpoint.ts';
 import { serializeScenarioCheckpoint, MAX_SCENARIO_COMMANDS, MAX_SCENARIO_CHECKPOINT_BYTES } from '../src/isoScenarioCheckpoint.ts';
+import { SCENARIOS, missionPath } from '../src/isoScenarioCampaign.ts';
+
+test('frontier can reach its objectives and extract after a ceasefire without firing', () => {
+  const commands = [
+    { type: 'move', officer: 'security', cell: '4:5' },
+    { type: 'move', officer: 'security', cell: '6:5' },
+    { type: 'parley', officer: 'security' },
+  ];
+  const current = () => replayCombatCommands('frontier', commands).combat;
+  const issue = command => {
+    if (!current().encounter.mission.ap) commands.push({ type: 'end-turn' });
+    commands.push(command);
+    current(); // Validate each actual replay command as it is added.
+  };
+  const go = (officer, target, reach) => {
+    for (;;) {
+      const encounter = current().encounter;
+      const occupied = Object.values(encounter.positions);
+      const [tx, ty] = target.split(':').map(Number);
+      const candidates = [];
+      for (let col = 0; col < 12; col++) for (let row = 0; row < 12; row++) {
+        if (Math.abs(col - tx) + Math.abs(row - ty) > reach) continue;
+        const path = missionPath(encounter.mission, officer, `${col}:${row}`, occupied);
+        if (path) candidates.push(path);
+      }
+      candidates.sort((a, b) => a.length - b.length);
+      assert.ok(candidates.length, `no route for ${officer} to ${target}`);
+      const path = candidates[0];
+      if (path.length === 1) return;
+      issue({ type: 'move', officer, cell: path[Math.min(5, path.length - 1)] });
+    }
+  };
+  const scenario = SCENARIOS.frontier;
+  go('science', scenario.sensor, 2);
+  issue({ type: 'scan', officer: 'science' });
+  go('security', scenario.console, 1);
+  issue({ type: 'operate', officer: 'security' });
+  go('medic', scenario.survivor, 1);
+  issue({ type: 'rescue', officer: 'medic' });
+  go('science', scenario.extraction, 0);
+  issue({ type: 'extract', officer: 'science' });
+  const combat = current();
+  assert.equal(combat.truce, true);
+  assert.equal(combat.encounter.mission.completed, true);
+  assert.equal(combat.encounter.enemyTurns, 0);
+  assert.equal(combat.shots.length, 0);
+  assert.deepEqual(deserializeCombatReplay(serializeCombatReplay('frontier', commands)).combat, combat);
+});
 
 // Authored route: security crosses the southern opening in two legal 5-tile moves.
 const approach = [
