@@ -62,8 +62,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const panel = mat('#b1a4a1', .46, .41), bronze = mat('#bd9368', .72, .32);
   const instrumentShell = mat('#484654', .38, .62);
   const seat = mat('#593c47', .03, .94), seatEdge = mat('#77616a', .55, .42);
-  const captainLeather = mat('#70464e', .08, .84);
-  const captainStitch = mat('#c9a36a', .45, .62);
+  const captainLeather = mat('#344751', .12, .78);
+  const commandSeatShell = mat('#202f39', .35, .58);
   const cyan = luminous('#80d2d4'), amber = luminous('#f0ba78');
   const soft = luminous('#fff1cd');
   // Small deterministic surface maps provide scale at standing distance.
@@ -337,6 +337,24 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     // Standing eye height must clear the helm headrest when using its console.
     // The command chair retains its taller silhouette.
     frame.scale.y = captain ? 1 : .68;
+    if (captain) {
+      // A low, open-backed command seat keeps the occupant visible. The
+      // armrests carry the controls; there is no panel resembling a desk.
+      mesh(cylinder, dark, parent, x, .14, z, .43, .18, .43);
+      mesh(cylinder, panel, parent, x, .38, z, .12, .45, .12);
+      rounded(parent, seatEdge, x, .62, z, .80, .15, .75);
+      rounded(parent, captainLeather, x, .72, z - .02, .72, .15, .65);
+      rounded(parent, commandSeatShell, x, .98, z + .32, .76, .65, .15);
+      rounded(parent, captainLeather, x, 1.01, z + .40, .62, .49, .08);
+      for (const side of [-1, 1]) {
+        block(parent, dark, x + side * .43, .83, z, .10, .38, .57);
+        rounded(parent, seatEdge, x + side * .43, 1.03, z, .15, .07, .65);
+        block(parent, dark, x + side * .43, 1.08, z - .20, .11, .012, .26);
+        for (let i = 0; i < 3; i++)
+          block(parent, i === 2 ? amber : cyan, x + side * .43, 1.09, z - .28 + i * .08, .065, .008, .04);
+      }
+      return;
+    }
     mesh(cylinder, dark, parent, x, .14, z, .48, .18, .48);
     mesh(cylinder, panel, parent, x, .38, z, .1, .45, .1);
     rounded(parent, seatEdge, x, .62, z, .88, .18, .83);
@@ -350,15 +368,6 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     }
     rounded(parent, seat, x, 1.12, z + .47, .69, .58, .07);
     rounded(parent, seat, x, 1.56, z + .4, .6, .18, .2);
-    if (captain) {
-      // Original upholstered command-chair paneling faces the captain camera.
-      // These decorative meshes do not change the physical seating cell.
-      rounded(parent, captainLeather, x, 1.105, z + .52, .61, .54, .055);
-      rounded(parent, captainLeather, x, 1.565, z + .49, .55, .13, .1);
-      for (const side of [-1, 1])
-        block(parent, captainStitch, x + side * .294, 1.09, z + .557, .009, .43, .008);
-      block(parent, captainStitch, x, 1.375, z + .555, .45, .012, .01);
-    }
     block(parent, bronze, x, 1.35, z + .515, .13, .025, .012);
     for (const side of [-1, 1]) {
       block(parent, seatEdge, x + side * .28, 1.1, z + .51, .012, .43, .012);
@@ -471,9 +480,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   };
   const shoulder = new THREE.Vector3(), hand = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
+  const postOperators = new Map<string, THREE.Group>();
   const addSeatedOfficer = (parent: THREE.Object3D, role: string) => {
     const officer = new THREE.Group();
     officer.name = `bridge-operator-${role}`;
+    officer.userData.commandAvatar = true;
+    postOperators.set(role, officer);
     parent.add(officer);
     const coat = coats[role] ?? coats.helm;
     const skin = skinByPost[role];
@@ -535,6 +547,28 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
   }
 
+  // The first officer has a dedicated seat in the seated command view.
+  // Its occupant is the canonical first officer, never a duplicate operator.
+  const firstOfficerSeat = new THREE.Group();
+  firstOfficerSeat.name = 'first-officer-seat';
+  firstOfficerSeat.position.set(-1.18, 0, -.12);
+  firstOfficerSeat.scale.setScalar(.84);
+  firstOfficerSeat.visible = false;
+  chair(firstOfficerSeat, 0, 0, true);
+  const firstOfficerAvatar = captainAvatar.clone(true);
+  firstOfficerAvatar.visible = true;
+  const firstCoat = mat('#566a84', .14, .72);
+  const firstSkin = mat('#805a46', .03, .9);
+  const firstHair = mat('#1b2630', .04, .9);
+  firstOfficerAvatar.traverse(item => {
+    if (!(item instanceof THREE.Mesh)) return;
+    if (item.material === captainCoat) item.material = firstCoat;
+    else if (item.material === captainSkin) item.material = firstSkin;
+    else if (item.material === captainHair) item.material = firstHair;
+  });
+  firstOfficerSeat.add(firstOfficerAvatar);
+  firstOfficerSeat.traverse(item => { item.userData.commandAvatar = true; });
+
   for (const station of map.objects) {
     const p = point(station.x, station.y);
     const group = new THREE.Group(); group.position.set(p.x, 0, p.z);
@@ -543,6 +577,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     if (station.id === 'captain') {
       chair(group, 0, 0, true);
       group.add(captainAvatar);
+      group.add(firstOfficerSeat);
       // Embedded armrest indicators follow the real command-station focus.
       const commandFocus = makeStationFocus('captain');
       for (const side of [-1, 1])
@@ -661,11 +696,15 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     canvas.dataset.bridgeFocusedStation = selected ?? 'none';
   };
   let rosterKey = '';
+  let firstOfficerPost: string | null = null;
+  let firstOfficerIsCaptain = false;
   const applyRoster = (roster: BridgeCrewRoster) => {
     const nextKey = (['captain', ...deckPosts] as BridgeCrewStation[])
       .map(post => `${post}:${roster[post].id}:${roster[post].name}`).join('|');
     if (nextKey === rosterKey) return;
     rosterKey = nextKey;
+    firstOfficerIsCaptain = roster.captain.id === 'solan';
+    firstOfficerPost = deckPosts.find(post => roster[post].id === 'solan') ?? null;
     const apply = (post: BridgeCrewStation, coat: THREE.MeshStandardMaterial,
       skin: THREE.MeshStandardMaterial, hair: THREE.MeshStandardMaterial) => {
       const officer = roster[post];
@@ -703,6 +742,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       ? Math.max(2.4, THREE.MathUtils.clamp((.85 - aspect) * 11, 0, 4.4)) : 0;
     camera.position.set(p.x, seat ? 1.8 : 1.72, p.z + retreat);
     captainAvatar.visible = !!seat;
+    firstOfficerSeat.visible = !!seat && !firstOfficerIsCaptain;
+    for (const [post, operator] of postOperators)
+      operator.visible = !(firstOfficerSeat.visible && post === firstOfficerPost);
+    canvas.dataset.bridgeFirstOfficerVisible = String(firstOfficerSeat.visible);
     canvas.dataset.bridgeCaptainVisible = String(!!seat);
     canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'command-wide' : 'exploration';
     canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';

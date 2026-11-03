@@ -18,6 +18,8 @@ for (const width of [390, 1280]) {
     await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'rhee');
     await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'solan');
     await expect(bridge).toHaveAttribute('data-bridge-officer-captain', 'varela');
+    await expect(bridge).toHaveAttribute('data-bridge-first-officer-visible', 'true');
+    await bridge.screenshot({ path: `test-results/command-seat-first-officer-${width}.png` });
     const before = await bridge.screenshot();
     await page.getByTestId('game-journal-toggle').click();
     await page.getByTestId('crew-roster').locator('summary').click();
@@ -27,6 +29,7 @@ for (const width of [390, 1280]) {
     await expect(bridge).toHaveAttribute('data-bridge-officer-helm', 'venn');
     await page.getByTestId('station-command').selectOption('solan');
     await expect(bridge).toHaveAttribute('data-bridge-officer-captain', 'solan');
+    await expect(bridge).toHaveAttribute('data-bridge-first-officer-visible', 'false');
     await expect(bridge).toHaveAttribute('data-bridge-officer-comms', 'varela');
     // Close the journal before the pixel comparison: otherwise the overlay
     // itself would make screenshots differ without proving a 3D crew change.
