@@ -42,10 +42,10 @@ jobs:
         run: npm run test:grid --prefix frontend
       - name: Typecheck and bundle
         run: npm run build --prefix frontend
-      # Keep the original web check name for Infra admission. Each of the three
+      # Keep the original web check name for Infra admission. Each of the five
       # browser shards is mandatory; allow time for software WebGL and artifact upload.
-      - name: Browser journey, keyboard and mobile widths (shard 1/3)
-        run: npm run test:e2e --prefix frontend -- --shard=1/3
+      - name: Browser journey, keyboard and mobile widths (shard 1/5)
+        run: npm run test:e2e --prefix frontend -- --shard=1/5
       - name: Upload browser screenshots and lockfile
         if: always()
         uses: actions/upload-artifact@v4
@@ -58,9 +58,14 @@ jobs:
           retention-days: 7
 
   web-browser-rest:
-    name: Remaining Chrome journeys (shard 2/3)
+    name: Remaining Chrome journeys (shard ${{ matrix.shard }}/5)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      # Report failures on every shard; do not cancel unrelated checks.
+      fail-fast: false
+      matrix:
+        shard: [2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -70,44 +75,20 @@ jobs:
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Verify runner-installed Chrome
         run: google-chrome --version
-      - name: Browser journey, keyboard and mobile widths (shard 2/3)
-        run: npm run test:e2e --prefix frontend -- --shard=2/3
-      - name: Upload second-shard screenshots
+      - name: Browser journey, keyboard and mobile widths (shard ${{ matrix.shard }}/5)
+        run: npm run test:e2e --prefix frontend -- --shard=${{ matrix.shard }}/5
+      - name: Upload browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: star-adventures-react-visual-part2-${{ github.sha }}
-          path: frontend/test-results/*.png
-          if-no-files-found: warn
-          retention-days: 7
-
-  web-browser-final:
-    name: Remaining Chrome journeys (shard 3/3)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend --no-audit --no-fund
-      - name: Verify runner-installed Chrome
-        run: google-chrome --version
-      - name: Browser journey, keyboard and mobile widths (shard 3/3)
-        run: npm run test:e2e --prefix frontend -- --shard=3/3
-      - name: Upload third-shard screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: star-adventures-react-visual-part3-${{ github.sha }}
+          name: star-adventures-react-visual-part${{ matrix.shard }}-${{ github.sha }}
           path: frontend/test-results/*.png
           if-no-files-found: warn
           retention-days: 7
 
   infra-staging-notification:
     name: Request Infra-owned staging sync
-    needs: [core, web, web-browser-rest, web-browser-final]
+    needs: [core, web, web-browser-rest]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'evilsysadmin/star-adventures'
     runs-on: ubuntu-latest
     timeout-minutes: 2
