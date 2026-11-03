@@ -14,11 +14,11 @@ for(const width of [360,390,1280]){
   await page.getByTestId('scenario-unit-security').click();
   await page.getByTestId('scenario-hostile-aegis').click();
   await expect(page.getByTestId('scenario-fire-guide')).toContainText('Línea bloqueada por cobertura o muro');
-  await expect(page.getByTestId('scenario-fire')).toHaveText('COBERTURA · 4:5');
+  await expect(page.getByTestId('scenario-fire')).toHaveText('COBERTURA · 2:3');
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
   await page.screenshot({path:'test-results/combat-v4-aim-blocked-'+width+'.png',fullPage:true});
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
-  for(const cell of ['3:7','5:6']){
+  for(const cell of ['4:5','6:5']){
    await page.getByRole('button',{name:'Casilla '+cell,exact:true}).click();
    await expect(page.getByTestId('scenario-move')).toBeEnabled();
    await page.getByTestId('scenario-move').click();

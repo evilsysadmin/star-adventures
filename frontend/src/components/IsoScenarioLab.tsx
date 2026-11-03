@@ -76,6 +76,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
  const [officer,setOfficer]=useState<SquadId>('science');
  const [selected,setSelected]=useState(replayHistory.combat.encounter.mission.locations.science);
  const [focus,setFocus]=useState(false);
+ const [confirmRestart,setConfirmRestart]=useState(false);
  const [notice,setNotice]=useState(fieldEncounter?(fieldNotice??'Contacto hostil detectado · negocia o asegura el perímetro'):replayStartup.notice);
  // Fire feedback is transient presentation only; never enters the replay/save.
  const [shot,setShot]=useState<{id:number;from:string;to:string;officer:SquadId}|null>(null);
@@ -230,6 +231,7 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
   }catch(error){setNotice(error instanceof Error?error.message:'Orden rechazada');}
  };
  const change=(id:ScenarioId)=>{
+  setConfirmRestart(false);
   setShot(null);setOfficerHit(null);
   if(replayMode){
    const next=newCombatReplaySession(id);
@@ -372,6 +374,11 @@ export function IsoScenarioLab({fieldEncounter=false,fieldHistory,fieldNotice,on
    </details>
    <button type="button" data-testid="scenario-focus-toggle" aria-pressed={focus}
     onClick={()=>setFocus(value=>!value)}>{focus?'Ver mapa completo':'Acercar cámara a la casilla'}</button>
+   {confirmRestart ? <div role="group" aria-label="Confirmar reinicio de misión">
+    <span>Se perderá el progreso de esta misión.</span>
+    <button type="button" data-testid="scenario-restart-confirm" onClick={()=>change(scenarioId)}>Confirmar reinicio</button>
+    <button type="button" onClick={()=>setConfirmRestart(false)}>Cancelar</button>
+   </div> : <button type="button" data-testid="scenario-restart" onClick={()=>setConfirmRestart(true)}>Reiniciar misión</button>}
    <span data-testid="scenario-camera-mode">{focus?'Detalle de casilla':'Vista táctica completa'} · {scenario.size} × {scenario.size}</span>
   </div>;
  return <section className="scenario-lab" data-testid="scenario-lab" aria-labelledby="scenario-heading">

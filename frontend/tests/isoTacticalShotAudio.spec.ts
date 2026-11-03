@@ -37,7 +37,7 @@ for (const width of [390, 1280]) {
   await expect(page.getByTestId('scenario-fire')).toBeDisabled();
   expect(await page.evaluate(() => (window as Window & { tacticalAudioStarts?: number[] }).tacticalAudioStarts)).toEqual([]);
   await page.getByTestId('scenario-unit-security').click();
-  for (const cell of ['3:7', '5:6']) {
+  for (const cell of ['4:5', '6:5']) {
    await page.getByRole('button', { name: 'Casilla ' + cell, exact: true }).click();
    await page.getByTestId('scenario-move').click();
   }

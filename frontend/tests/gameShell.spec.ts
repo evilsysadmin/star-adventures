@@ -158,7 +158,7 @@ for (const width of [390, 1280]) {
 }
 
 for (const width of [360, 390, 430, 1280]) {
-  test(`POC canvas picks all 100 cells and returns to the same bridge at ${width}px`, async ({ page }) => {
+  test(`POC canvas picks all 144 cells and returns to the same bridge at ${width}px`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/');
@@ -168,14 +168,14 @@ for (const width of [360, 390, 430, 1280]) {
     const canvas = page.getByTestId('scenario-render-canvas');
     await expect(canvas).toHaveAttribute('data-tactical-ready', 'true', { timeout: 20_000 });
     await canvas.scrollIntoViewIfNeeded();
-    for (let row = 0; row < 10; row++) for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < 12; row++) for (let col = 0; col < 12; col++) {
       const id = `${col}:${row}`;
       // Officer/target selection can reflow the surrounding command rows.
       // Project against the canvas's current rectangle, as the raycaster does.
       const bounds = (await canvas.boundingBox())!;
-      const camera = createIsoCamera(bounds.width / bounds.height, 10, 3.18);
+      const camera = createIsoCamera(bounds.width / bounds.height, 12, 3.18);
       const point = projectCell({ id, col, row }, camera,
-        { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height }, 10);
+        { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height }, 12);
       // A projected coordinate is useful only when the real canvas receives it.
       // This catches overlays and viewport clipping before reporting a picking error.
       expect(await canvas.evaluate((element, point) =>
@@ -237,7 +237,7 @@ test('audio options control real Web Audio and a muted accepted tactical shot', 
   await page.getByTestId('tactical-lab-toggle').click();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   await page.getByTestId('scenario-unit-security').click();
-  for (const cell of ['3:7', '5:6']) {
+  for (const cell of ['4:5', '6:5']) {
     await page.getByRole('button', { name: `Casilla ${cell}`, exact: true }).click();
     await page.getByTestId('scenario-move').click();
   }

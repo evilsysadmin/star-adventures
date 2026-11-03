@@ -19,9 +19,9 @@ test('opt-in hostile encounter advances visible enemies and survives F5 without 
  await page.getByTestId('tactical-view-missions').click();
  await chooseLegacyMode(page,'scenario-training-toggle');
  await expect(page.getByTestId('scenario-training-toggle')).toHaveAttribute('aria-pressed','true');
- const legacy=await page.evaluate(key=>localStorage.getItem(key),SCENARIO_SAVE_KEY);
- const before=replayHostileEncounterCommands('relay',[]).encounter.positions;
- const after=replayHostileEncounterCommands('relay',[{type:'end-turn'}]).encounter.positions;
+ const legacy=await page.evaluate(key=>localStorage.getItem(key),'frontier-poc.'+SCENARIO_SAVE_KEY);
+ const before=replayHostileEncounterCommands('frontier',[]).encounter.positions;
+ const after=replayHostileEncounterCommands('frontier',[{type:'end-turn'}]).encounter.positions;
  expect(after).not.toEqual(before);
  await chooseLegacyMode(page,'scenario-hostile-toggle');
  await expect(page.getByTestId('scenario-hostile-toggle')).toHaveAttribute('aria-pressed','true');
@@ -31,9 +31,9 @@ test('opt-in hostile encounter advances visible enemies and survives F5 without 
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText(after.aegis);
  await expect(page.getByTestId('scenario-hostile-veil')).toContainText(after.veil);
- const saved=await page.evaluate(key=>localStorage.getItem(key),HOSTILE_ENCOUNTER_SAVE_KEY);
- expect(JSON.parse(saved!)).toEqual({version:2,scenarioId:'relay',actions:[{type:'end-turn'}]});
- expect(await page.evaluate(key=>localStorage.getItem(key),SCENARIO_SAVE_KEY)).toBe(legacy);
+ const saved=await page.evaluate(key=>localStorage.getItem(key),'frontier-poc.'+HOSTILE_ENCOUNTER_SAVE_KEY);
+ expect(JSON.parse(saved!)).toEqual({version:2,scenarioId:'frontier',actions:[{type:'end-turn'}]});
+ expect(await page.evaluate(key=>localStorage.getItem(key),'frontier-poc.'+SCENARIO_SAVE_KEY)).toBe(legacy);
  await page.screenshot({path:'test-results/hostile-v2-turn-mobile-390.png',fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.reload();
@@ -98,7 +98,7 @@ test('reduced-motion hostile turns snap to authoritative saved positions',async(
  await page.goto('/');
  await page.getByTestId('tactical-view-missions').click();
  await chooseLegacyMode(page,'scenario-hostile-toggle');
- const positions=replayHostileEncounterCommands('relay',[{type:'end-turn'}]).encounter.positions;
+ const positions=replayHostileEncounterCommands('frontier',[{type:'end-turn'}]).encounter.positions;
  await page.getByTestId('scenario-end-turn').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 2');
  await expect(page.getByTestId('scenario-render-canvas')).not.toHaveAttribute('data-hostile-moving','1');
