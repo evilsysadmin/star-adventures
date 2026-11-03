@@ -417,6 +417,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     geometries.add(geometry);
   };
   shapeHead(headGeometry); shapeHead(scalpGeometry);
+  // The imported head includes flared shoulders; command figures already
+  // have their own torso, so keep a separate, narrowed lower silhouette.
+  const commandHeadGeometry = headGeometry.clone(); geometries.add(commandHeadGeometry);
   const coats: Record<string, THREE.MeshStandardMaterial> = {
     helm: mat('#8f593e', .08, .77),
     science: mat('#287b83', .08, .77),
@@ -532,7 +535,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   mesh(officerOval, captainCoat, captainAvatar, 0, .88, -.015, .25, .13, .19);
   mesh(officerOval, uniformTrim, captainAvatar, 0, 1.465, .10, .17, .018, .07);
   mesh(officerOval, captainSkin, captainAvatar, 0, 1.53, -.01, .085, .10, .085);
-  mesh(headGeometry, captainSkin, captainAvatar, 0, 1.72, -.025, .17, .215, .16);
+  mesh(commandHeadGeometry, captainSkin, captainAvatar, 0, 1.72, -.025, .17, .215, .16);
   mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.72, -.025, .173, .218, .163);
 
   for (const side of [-1, 1]) {
@@ -795,6 +798,17 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       headGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
       headGeometry.setIndex(new THREE.BufferAttribute(faces, 1));
       headGeometry.computeBoundingBox(); headGeometry.computeBoundingSphere();
+      const commandPositions = new Float32Array(positions);
+      for (let i = 0; i < commandPositions.length; i += 3) {
+        const taper = THREE.MathUtils.clamp((-commandPositions[i + 1] - .4) / .5, 0, 1);
+        commandPositions[i] *= 1 - .60 * taper;
+        commandPositions[i + 2] *= 1 - .35 * taper;
+      }
+      commandHeadGeometry.dispose(); commandHeadGeometry.deleteAttribute('uv');
+      commandHeadGeometry.setAttribute('position', new THREE.BufferAttribute(commandPositions, 3));
+      commandHeadGeometry.setIndex(new THREE.BufferAttribute(faces, 1));
+      commandHeadGeometry.computeVertexNormals();
+      commandHeadGeometry.computeBoundingBox(); commandHeadGeometry.computeBoundingSphere();
       scalpGeometry.dispose(); scalpGeometry.deleteAttribute('uv');
       scalpGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       scalpGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
