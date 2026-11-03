@@ -223,7 +223,7 @@ test('audio options control real Web Audio and a muted accepted tactical shot', 
   await expect(slider).toHaveValue('0');
   for (let step = 1; step <= 5; step++) {
     await slider.press('ArrowRight');
-    await expect(slider).toHaveValue(String(step * 0.05));
+    await expect(slider).toHaveValue(String(step / 20));
   }
   // Verify the same persisted preference, not just a transient input value.
   await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key)!).volume, settingsKey)).toBe(.25);
