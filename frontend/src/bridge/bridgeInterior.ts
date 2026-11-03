@@ -379,6 +379,23 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // the saved roster; the pure engine remains authoritative for commands.
   // Shared geometry/materials join the room's existing batching/disposal path.
   const officerOval = new THREE.SphereGeometry(1, 14, 10); geometries.add(officerOval);
+  // A gently tapered head and a close-fitting scalp replace overlapping hair
+  // spheres. The scalp shares the same underlying shape instead of forming a
+  // separate helmet, and its lower edge follows the back of the head.
+  const headGeometry = new THREE.SphereGeometry(1, 28, 20);
+  const scalpGeometry = new THREE.SphereGeometry(1, 28, 20, 0, Math.PI * 2, 0, Math.PI * .69);
+  const shapeHead = (geometry: THREE.SphereGeometry) => {
+    const positions = geometry.getAttribute('position');
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
+      const taper = 1 - .14 * Math.max(0, -y);
+      positions.setXYZ(i, x * taper, y, z * (1 - .08 * Math.max(0, -y)));
+    }
+    positions.needsUpdate = true;
+    geometry.computeVertexNormals();
+    geometries.add(geometry);
+  };
+  shapeHead(headGeometry); shapeHead(scalpGeometry);
   const coats: Record<string, THREE.MeshStandardMaterial> = {
     helm: mat('#8f593e', .08, .77),
     science: mat('#287b83', .08, .77),
@@ -451,10 +468,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     mesh(officerOval, coat, officer, 0, .69, .41, .25, .13, .19);
     mesh(officerOval, uniformTrim, officer, 0, 1.205, .435, .255, .045, .21);
     mesh(officerOval, skin, officer, 0, 1.295, .375, .105, .13, .10);
-    mesh(officerOval, skin, officer, 0, 1.43, .35, .18, .225, .165);
-    mesh(officerOval, hairMaterial, officer, 0, 1.575, .385, .192, .10, .18);
-    // Shaped rear hairline: no false helmet or a face pasted to the back.
-    mesh(officerOval, hairMaterial, officer, 0, 1.445, .475, .153, .105, .085);
+    mesh(headGeometry, skin, officer, 0, 1.43, .35, .17, .215, .16);
+    mesh(scalpGeometry, hairMaterial, officer, 0, 1.43, .35, .173, .218, .163);
+
     // Hands rest in front of the torso at the real decorative instrument.
     for (const side of [-1, 1]) {
       mesh(officerOval, coat, officer, side * .32, 1.15, .385, .135, .14, .17);
@@ -486,9 +502,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   mesh(officerOval, captainCoat, captainAvatar, 0, .87, -.015, .28, .16, .24);
   mesh(officerOval, uniformTrim, captainAvatar, 0, 1.49, .15, .27, .047, .13);
   mesh(officerOval, captainSkin, captainAvatar, 0, 1.57, -.01, .11, .14, .11);
-  mesh(officerOval, captainSkin, captainAvatar, 0, 1.76, -.025, .18, .225, .175);
-  mesh(officerOval, captainHair, captainAvatar, 0, 1.915, .015, .19, .092, .18);
-  mesh(officerOval, captainHair, captainAvatar, 0, 1.80, .135, .173, .15, .083);
+  mesh(headGeometry, captainSkin, captainAvatar, 0, 1.76, -.025, .17, .215, .16);
+  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.76, -.025, .173, .218, .163);
+
   for (const side of [-1, 1]) {
     const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
     sleeve.rotation.z = side * .3;
@@ -671,6 +687,50 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     canvas.dataset.bridgeRendered = 'true';
   };
   const resize = new ResizeObserver(draw); resize.observe(canvas);
+  // The compact CC0 head is optional. Failure keeps the procedural fallback;
+  // a late response never touches a disposed WebGL scene.
+  const headAbort = new AbortController();
+  canvas.dataset.bridgeHead = 'loading';
+  fetch(`${import.meta.env.BASE_URL}art/bridge-head-v1.bin`, { signal: headAbort.signal })
+    .then(response => { if (!response.ok) throw new Error('Head unavailable'); return response.arrayBuffer(); })
+    .then(buffer => {
+      if (disposed) return;
+      if (buffer.byteLength < 8 || buffer.byteLength > 128_000) throw new Error('Invalid head size');
+      const header = new DataView(buffer), vertices = header.getUint32(0, true), indices = header.getUint32(4, true);
+      if (!vertices || vertices > 10_000 || !indices || indices % 3 || 8 + vertices * 24 + indices * 2 !== buffer.byteLength)
+        throw new Error('Invalid head data');
+      const positions = new Float32Array(buffer, 8, vertices * 3);
+      const normals = new Float32Array(buffer, 8 + vertices * 12, vertices * 3);
+      const faces = new Uint16Array(buffer, 8 + vertices * 24, indices);
+      if (!positions.every(value => Number.isFinite(value) && Math.abs(value) <= 4) ||
+          !normals.every(Number.isFinite) || !faces.every(index => index < vertices)) throw new Error('Invalid head geometry');
+      // Follow the actual skull instead of layering a spherical cap over it.
+      // The hairline is lower at the nape (positive Z faces the camera).
+      const hairFaces: number[] = [];
+      const inHair = (index: number) => {
+        const y = positions[index * 3 + 1], z = positions[index * 3 + 2];
+        const nape = THREE.MathUtils.clamp((z + .3) / .8, 0, 1);
+        return y > .12 - nape * .62;
+      };
+      for (let i = 0; i < faces.length; i += 3) {
+        if (inHair(faces[i]) && inHair(faces[i + 1]) && inHair(faces[i + 2]))
+          hairFaces.push(faces[i], faces[i + 1], faces[i + 2]);
+      }
+      if (!hairFaces.length) throw new Error('Invalid scalp geometry');
+      headGeometry.dispose(); headGeometry.deleteAttribute('uv');
+      headGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      headGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      headGeometry.setIndex(new THREE.BufferAttribute(faces, 1));
+      headGeometry.computeBoundingBox(); headGeometry.computeBoundingSphere();
+      scalpGeometry.dispose(); scalpGeometry.deleteAttribute('uv');
+      scalpGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      scalpGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      scalpGeometry.setIndex(hairFaces);
+      scalpGeometry.computeBoundingBox(); scalpGeometry.computeBoundingSphere();
+      batches.forEach(batch => { if (batch.geometry === headGeometry || batch.geometry === scalpGeometry) batch.computeBoundingSphere(); });
+      renderer.shadowMap.needsUpdate = true;
+      canvas.dataset.bridgeHead = 'loaded'; draw();
+    }).catch(() => { if (!disposed) canvas.dataset.bridgeHead = 'fallback'; });
 
   return {
     render(pose: BridgePose, alert: boolean, roster: BridgeCrewRoster) {
@@ -680,6 +740,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     },
     dispose() {
       disposed = true;
+      headAbort.abort();
       resize.disconnect();
       batches.forEach(item => item.dispose());
       geometries.forEach(item => item.dispose()); materials.forEach(item => item.dispose());
