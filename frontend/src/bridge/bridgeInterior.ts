@@ -297,13 +297,25 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     view.material = art; renderer.render(scene, camera);
     canvas.dataset.bridgeArtLoaded = 'true';
   }, undefined, () => { /* The dark viewscreen remains a valid offline fallback. */ });
-  for (const x of [-6.9, 6.9]) block(scene, bronze, x, 2.03, -6, .12, 2.58, .3);
-  for (const x of [-4.7, 0, 4.7]) {
-    const mullion = block(scene, dark, x, 2.03, -6.02, .095, 2.48, .16);
-    mullion.rotation.z = -.11;
-  }
-  block(scene, dark, 0, 3.35, -6, 14, .21, .42);
-  block(scene, soft, 0, 3.25, -5.92, 13.4, .018, .07);
+  // A continuous, softly rounded aperture gives the main screen a single
+  // panoramic silhouette. The frame is decorative and sits in the existing
+  // wall; it does not change the walkable grid or station interactions.
+  const screenFrame = new THREE.Shape();
+  screenFrame.moveTo(-7, .72); screenFrame.lineTo(7, .72);
+  screenFrame.lineTo(7, 3.38); screenFrame.lineTo(-7, 3.38); screenFrame.closePath();
+  const opening = new THREE.Path();
+  opening.moveTo(-6.55, 1.2); opening.quadraticCurveTo(-6.55, .88, -6.15, .88);
+  opening.lineTo(6.15, .88); opening.quadraticCurveTo(6.55, .88, 6.55, 1.2);
+  opening.lineTo(6.55, 2.78); opening.quadraticCurveTo(6.55, 3.17, 6.08, 3.17);
+  opening.lineTo(-6.08, 3.17); opening.quadraticCurveTo(-6.55, 3.17, -6.55, 2.78);
+  opening.closePath(); screenFrame.holes.push(opening);
+  const frameGeometry = new THREE.ExtrudeGeometry(screenFrame, {
+    depth: .18, bevelEnabled: true, bevelThickness: .04, bevelSize: .04,
+    bevelSegments: 2, curveSegments: 12,
+  });
+  geometries.add(frameGeometry);
+  mesh(frameGeometry, instrumentShell, scene, 0, 0, -6.01, 1, 1, 1);
+  block(scene, soft, 0, 3.25, -5.79, 11.9, .018, .035);
   const identitySource = document.createElement('canvas'); identitySource.width = 1024; identitySource.height = 128;
   const identity = identitySource.getContext('2d')!;
   identity.fillStyle = '#1a292e'; identity.fillRect(0, 0, 1024, 128);
