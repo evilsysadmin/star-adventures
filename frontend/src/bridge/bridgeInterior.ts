@@ -525,26 +525,23 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   captainAvatar.name = 'command-chair-captain';
   captainAvatar.userData.commandAvatar = true;
   captainAvatar.visible = false;
-  // Body sits inside the existing command chair. A recognizable head,
-  // shoulders and discreet rank stripes give the foreground a human anchor.
-  mesh(officerOval, captainCoat, captainAvatar, 0, 1.19, .04, .33, .39, .24);
-  mesh(officerOval, captainCoat, captainAvatar, 0, 1.39, .045, .40, .17, .215);
-  mesh(officerOval, captainCoat, captainAvatar, 0, .87, -.015, .28, .16, .24);
-  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.49, .15, .27, .047, .13);
-  mesh(officerOval, captainSkin, captainAvatar, 0, 1.57, -.01, .11, .14, .11);
-  mesh(headGeometry, captainSkin, captainAvatar, 0, 1.76, -.025, .17, .215, .16);
-  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.76, -.025, .173, .218, .163);
+  // A continuous torso and restrained shoulder caps keep the seated figure
+  // human in scale. Arms follow the body down toward the chair armrests.
+  mesh(officerOval, captainCoat, captainAvatar, 0, 1.18, .04, .29, .36, .19);
+  mesh(officerOval, captainCoat, captainAvatar, 0, 1.37, .035, .31, .12, .17);
+  mesh(officerOval, captainCoat, captainAvatar, 0, .88, -.015, .25, .13, .19);
+  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.465, .10, .17, .018, .07);
+  mesh(officerOval, captainSkin, captainAvatar, 0, 1.53, -.01, .085, .10, .085);
+  mesh(headGeometry, captainSkin, captainAvatar, 0, 1.72, -.025, .17, .215, .16);
+  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.72, -.025, .173, .218, .163);
 
   for (const side of [-1, 1]) {
-    const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
-    sleeve.rotation.z = side * .3;
-    mesh(officerOval, captainCoat, captainAvatar, side * .33, 1.44, .055, .175, .12, .19);
-    mesh(officerOval, captainBadge, captainAvatar, side * .34, 1.52, .175, .093, .013, .048);
-    // Wider shoulders remain visibly connected to the captain's torso.
-    // Do not invent free-floating hands: that requires a full articulated rig.
-    mesh(officerOval, captainCoat, captainAvatar, side * .42, 1.40, .065, .145, .11, .18);
+    mesh(officerOval, captainCoat, captainAvatar, side * .28, 1.35, .04, .10, .10, .13);
+    const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .31, 1.12, .02, .075, .38, .085);
+    sleeve.rotation.z = side * .18;
+    mesh(officerOval, captainBadge, captainAvatar, side * .27, 1.435, .12, .045, .008, .026);
     for (let stripe = 0; stripe < 2; stripe++)
-      block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
+      block(captainAvatar, captainBadge, side * .31, .98 + stripe * .04, .105, .07, .012, .01);
   }
 
   // The first officer has a dedicated seat in the seated command view.
