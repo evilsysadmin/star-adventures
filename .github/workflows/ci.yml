@@ -43,9 +43,10 @@ jobs:
       - name: Typecheck and bundle
         run: npm run build --prefix frontend
       # Keep the original web check name for Infra admission. Each of the five
-      # browser shards is mandatory; allow time for software WebGL and artifact upload.
+      # browser shards is mandatory; file assignment uses measured spec durations.
+      # New specs receive a fallback weight and are assigned automatically.
       - name: Browser journey, keyboard and mobile widths (shard 1/5)
-        run: npm run test:e2e --prefix frontend -- --shard=1/5
+        run: node scripts/run-browser-shard.mjs 1/5
       - name: Upload browser screenshots and lockfile
         if: always()
         uses: actions/upload-artifact@v4
@@ -76,7 +77,7 @@ jobs:
       - name: Verify runner-installed Chrome
         run: google-chrome --version
       - name: Browser journey, keyboard and mobile widths (shard ${{ matrix.shard }}/5)
-        run: npm run test:e2e --prefix frontend -- --shard=${{ matrix.shard }}/5
+        run: node scripts/run-browser-shard.mjs ${{ matrix.shard }}/5
       - name: Upload browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
