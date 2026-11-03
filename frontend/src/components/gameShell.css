@@ -84,6 +84,7 @@
 .game-shell[data-interface=game][data-location=bridge] .mission-transmission-kicker{color:#bfcfff;letter-spacing:.1em}
 .game-shell[data-interface=game][data-location=bridge] .mission-transmission-phase{font-size:15px;color:#fff}
 .bridge-status{display:none}
+.bridge-status-toggle{display:none}
 .game-shell[data-interface=game][data-location=bridge] .bridge-status{display:block;position:absolute;z-index:3;right:16px;top:80px;width:300px;padding:14px 16px;border:1px solid #777eae;border-radius:12px;background:linear-gradient(140deg,#11192ef2,#090f20ed);box-shadow:0 6px 28px #0009;color:#eaf0ff;font:12px system-ui,sans-serif}
 .bridge-status-heading{display:flex;justify-content:space-between;gap:6px;align-items:center;border-bottom:1px solid #7d86aa66;padding-bottom:8px;font-size:11px;letter-spacing:.07em;font-weight:800}
 .bridge-status-ok,.bridge-status-alert{font-size:10px;letter-spacing:0;color:#87efcd}.bridge-status-alert{color:#ffb680}
@@ -107,8 +108,42 @@
  .game-shell[data-interface=game][data-location=bridge] .captain-controls button{min-height:47px;padding:6px;font-size:9px;gap:5px;justify-content:center;text-align:center}
  .game-shell[data-interface=game][data-location=bridge] .captain-station-icon{font-size:16px;min-width:16px}
  .game-shell[data-interface=game][data-location=bridge] .mission-transmission{top:118px;left:10px;right:10px;width:auto;max-height:180px}
- .game-shell[data-interface=game][data-location=bridge] .bridge-status{display:none}
+ .game-shell[data-interface=game][data-location=bridge] .bridge-status{display:block;top:74px;right:10px;left:auto;width:min(300px,calc(100% - 20px));padding:0;border:0;background:transparent;box-shadow:none;z-index:5}
+ .bridge-status-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px;margin-left:auto;padding:8px 12px;border:1px solid #777eae;border-radius:8px;background:#10182ef2;color:#eef2ff;font:700 10px system-ui,sans-serif;cursor:pointer}
+ .bridge-status-details{display:none}
+ .bridge-status[data-expanded=true] .bridge-status-details{display:block;max-height:calc(100dvh - 140px);overflow:auto;margin-top:6px;padding:14px 16px;border:1px solid #777eae;border-radius:12px;background:#0d1528f7;box-shadow:0 6px 28px #0009}
+ .bridge-status-manage{min-height:44px}
  .game-shell[data-interface=game][data-location=bridge] .firstperson-top{top:74px;left:10px;right:auto}
  .game-shell[data-interface=game][data-location=bridge] .firstperson-hud{left:10px;right:10px;bottom:125px;padding:8px 10px;font-size:9px}
 }
 @media (min-width:701px) and (max-height:750px){.game-shell[data-interface=game][data-location=bridge] .bridge-status{max-height:calc(50% - 70px);overflow:auto}.game-shell[data-interface=game][data-location=bridge] .mission-transmission{top:52%;max-height:calc(48% - 18px)}}
+
+.mission-return-abandoned{min-height:44px;padding:9px 12px;border:1px solid #dbb572;border-radius:5px;background:#5e4829;color:#fff0d0;font-weight:700;cursor:pointer}
+.mission-return-abandoned:focus-visible{outline:2px solid white;outline-offset:2px}
+
+/* Command stations use the same visual language as the bridge status cards. */
+.game-shell[data-interface=game][data-location=bridge] .captain-controls button{min-height:57px;gap:12px;transition:border-color .15s,background .15s,box-shadow .15s}
+.game-shell[data-interface=game][data-location=bridge] .captain-controls button:hover:not(:disabled),
+.game-shell[data-interface=game][data-location=bridge] .captain-controls button:focus-visible{border-color:#c7c3ff;background:linear-gradient(110deg,#292346f2,#4a477be8);box-shadow:inset 0 0 16px #a8a4ff40,0 0 14px #7774c655}
+.game-shell[data-interface=game][data-location=bridge] .captain-controls button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.game-shell[data-interface=game][data-location=bridge] .captain-station-icon{width:29px;height:29px;flex:0 0 29px;filter:drop-shadow(0 0 4px #819eea88)}
+.captain-station-copy{display:flex;min-width:0;flex-direction:column;gap:3px}.captain-station-copy strong{font-size:12px;line-height:1.15}.captain-station-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none;font-size:10px;font-weight:400;letter-spacing:0;color:#bbc8e8}.captain-station-arrow{font-size:22px;margin-left:auto}
+.game-shell[data-interface=game][data-location=bridge] .captain-controls button:last-child small{color:#ffe0a8}
+@media(max-width:700px){
+ .game-shell[data-interface=game][data-location=bridge] .captain-controls button{min-height:50px;gap:5px}
+ .game-shell[data-interface=game][data-location=bridge] .captain-station-icon{width:21px;height:21px;flex-basis:21px}
+ .captain-station-copy strong{font-size:10px}.captain-station-copy small,.captain-station-arrow{display:none}
+}
+.captain-label-short{display:none}
+@media(max-width:700px){.captain-station-copy strong{font-size:10px}.captain-label-full{display:none}.captain-label-short{display:inline}}
+
+@media(max-width:700px){
+ .game-shell[data-interface=game][data-location=bridge][data-journal-open=true] .bridge-status,
+ .game-shell[data-interface=game][data-location=bridge][data-poc-open=true] .bridge-status{display:none}
+}
+.mission-prepare-team{display:inline-flex;justify-content:space-between;align-items:center;gap:18px;min-height:44px;margin-top:4px;padding:9px 14px;border:1px solid #efbb6d;border-radius:7px;background:linear-gradient(110deg,#70421e,#a8722e);box-shadow:inset 0 0 12px #f7c67436;color:#fff5df;font:700 12px system-ui,sans-serif;cursor:pointer}
+.mission-prepare-team:hover:not(:disabled){background:linear-gradient(110deg,#8e5524,#bd853a)}
+.mission-prepare-team:focus-visible{outline:2px solid white;outline-offset:2px}.mission-prepare-team:disabled{opacity:.5;cursor:default}
+.mission-prepare-team span{font-size:17px;line-height:1}
+.mission-transmission-briefing .mission-abandon:not(.is-confirming){display:inline-block;vertical-align:middle}
+@media(max-width:700px){.mission-transmission-briefing .mission-abandon:not(.is-confirming){margin-left:8px}}

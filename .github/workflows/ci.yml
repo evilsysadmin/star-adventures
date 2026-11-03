@@ -28,7 +28,7 @@ jobs:
   web:
     name: React build and browser smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,7 +43,7 @@ jobs:
       - name: Typecheck and bundle
         run: npm run build --prefix frontend
       # Keep the original web check name for Infra admission. Each of the three
-      # browser shards is mandatory; two shards exceeded the 15-minute job cap.
+      # browser shards is mandatory; allow time for software WebGL and artifact upload.
       - name: Browser journey, keyboard and mobile widths (shard 1/3)
         run: npm run test:e2e --prefix frontend -- --shard=1/3
       - name: Upload browser screenshots and lockfile
