@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 // Presentation only. Every furnishing occupies the cell authored in the world;
 // the existing spatial engine remains the sole authority for navigation/use.
@@ -521,7 +522,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   mesh(officerOval, uniformTrim, captainAvatar, 0, 1.49, .15, .27, .047, .13);
   mesh(officerOval, captainSkin, captainAvatar, 0, 1.57, -.01, .11, .14, .11);
   mesh(headGeometry, captainSkin, captainAvatar, 0, 1.76, -.025, .17, .215, .16);
-  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.76, -.025, .173, .218, .163);
+  const captainScalp = mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.76, -.025, .173, .218, .163);
+  let captainHairDetail: THREE.MeshStandardMaterial | undefined;
 
   for (const side of [-1, 1]) {
     const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
@@ -677,6 +679,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     };
     for (const post of deckPosts) apply(post, coats[post], skinByPost[post], hairByPost[post]);
     apply('captain', captainCoat, captainSkin, captainHair);
+    captainHairDetail?.color.copy(captainHair.color).lerp(new THREE.Color('white'), .5);
   };
   const draw = () => {
     if (disposed || !lastPose) return;
@@ -720,6 +723,50 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     canvas.dataset.bridgeRendered = 'true';
   };
   const resize = new ResizeObserver(draw); resize.observe(canvas);
+  // The detailed hair is optional and only affects the seated captain. The
+  // existing scalp remains visible until both small CC0 assets have loaded.
+  const hairAbort = new AbortController();
+  canvas.dataset.bridgeCaptainHair = 'loading';
+  fetch(`${import.meta.env.BASE_URL}art/captain-hair-v1.obj`, { signal: hairAbort.signal })
+    .then(response => { if (!response.ok) throw new Error('Hair unavailable'); return response.text(); })
+    .then(source => {
+      if (disposed) return;
+      if (source.length > 100_000 || !source.startsWith('# This is a mesh file for MakeHuman')) throw new Error('Invalid hair');
+      const object = new OBJLoader().parse(source);
+      const meshes: THREE.Mesh[] = [];
+      object.traverse(item => { if (item instanceof THREE.Mesh) meshes.push(item); });
+      const discardMeshes = () => meshes.forEach(item => {
+        item.geometry.dispose();
+        if (Array.isArray(item.material)) item.material.forEach(material => material.dispose());
+        else item.material.dispose();
+      });
+      if (!meshes.length || meshes.some(item => !item.geometry.getAttribute('position') || !item.geometry.getAttribute('uv'))) {
+        discardMeshes(); throw new Error('Invalid hair geometry');
+      }
+      const pendingTexture = new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}art/captain-hair-v1.webp`, texture => {
+        if (disposed) { texture.dispose(); discardMeshes(); return; }
+        texture.colorSpace = THREE.SRGBColorSpace; textures.add(texture);
+        captainHairDetail = new THREE.MeshStandardMaterial({
+          map: texture, color: captainHair.color.clone().lerp(new THREE.Color('white'), .5),
+          side: THREE.DoubleSide, alphaTest: .5, roughness: .9,
+        });
+        materials.add(captainHairDetail);
+        for (const item of meshes) {
+          geometries.add(item.geometry);
+          // OBJLoader creates a default material; replace and dispose it.
+          if (Array.isArray(item.material)) item.material.forEach(material => material.dispose());
+          else item.material.dispose();
+          item.material = captainHairDetail;
+        }
+        object.scale.setScalar(.2); object.rotation.y = Math.PI;
+        object.position.set(0, .395, .075); captainAvatar.add(object);
+        captainScalp.visible = false;
+        canvas.dataset.bridgeCaptainHair = 'loaded'; draw();
+      }, undefined, () => {
+        pendingTexture.dispose(); discardMeshes();
+        if (!disposed) canvas.dataset.bridgeCaptainHair = 'fallback';
+      });
+    }).catch(() => { if (!disposed) canvas.dataset.bridgeCaptainHair = 'fallback'; });
   // The compact CC0 head is optional. Failure keeps the procedural fallback;
   // a late response never touches a disposed WebGL scene.
   const headAbort = new AbortController();
@@ -775,6 +822,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     dispose() {
       disposed = true;
       headAbort.abort();
+      hairAbort.abort();
       resize.disconnect();
       batches.forEach(item => item.dispose());
       geometries.forEach(item => item.dispose()); materials.forEach(item => item.dispose());
