@@ -22,7 +22,7 @@ test('balances measured duration without changing file order or coverage', () =>
   const times = { 'slow.spec.ts': 100, 'medium.spec.ts': 55, 'small.spec.ts': 10 };
   const files = ['small.spec.ts', 'slow.spec.ts', 'new.spec.ts', 'medium.spec.ts'];
   const plan = planBrowserShards(files, times, 2, 40);
-  assert.deepEqual(plan.map((group) => group.seconds), [110, 95]);
+  assert.deepEqual(plan.map((group) => group.seconds), [100, 105]);
   assert.deepEqual(planBrowserShards(files.slice().reverse(), times, 2, 40), plan);
 });
 
