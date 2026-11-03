@@ -6,11 +6,13 @@ async function openArchive(page: Page) {
 }
 
 async function captureBriefingViewport(page: Page, width: number, height: number) {
-  // The report is the visual evidence; show it within the actual viewport
-  // rather than rasterizing the entire potentially tall WebGL game page.
+  // Centre the completed survey so both the result and the captain's
+  // delivered report appear in the same real viewport screenshot.
+  const survey = page.getByTestId('mandate-real-survey');
   const report = page.getByTestId('mandate-field-knowledge');
-  await report.scrollIntoViewIfNeeded();
-  await expect(report).toBeInViewport();
+  await survey.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+  await expect(survey).toBeInViewport({ ratio: 1 });
+  await expect(report).toBeInViewport({ ratio: 1 });
   const png = await page.screenshot({
     path: `test-results/science-briefing-${width}.png`,
     fullPage: false,
