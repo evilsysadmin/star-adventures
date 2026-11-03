@@ -528,23 +528,49 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   captainAvatar.name = 'command-chair-captain';
   captainAvatar.userData.commandAvatar = true;
   captainAvatar.visible = false;
-  // A continuous torso and restrained shoulder caps keep the seated figure
-  // human in scale. Arms follow the body down toward the chair armrests.
-  mesh(officerOval, captainCoat, captainAvatar, 0, 1.18, .04, .29, .36, .19);
-  mesh(officerOval, captainCoat, captainAvatar, 0, 1.37, .035, .31, .12, .17);
-  mesh(officerOval, captainCoat, captainAvatar, 0, .88, -.015, .25, .13, .19);
-  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.465, .10, .17, .018, .07);
+  // One continuous tailored torso avoids overlapping spheres at the shoulders.
+  // The profile tapers from the chest into the collar and seated waist.
+  const torsoProfile = [
+    {y:.88, x:.22, z:.15}, {y:1.03, x:.245, z:.17},
+    {y:1.23, x:.275, z:.175}, {y:1.34, x:.30, z:.16},
+    {y:1.40, x:.24, z:.14}, {y:1.465, x:.10, z:.085},
+  ];
+  const torsoPoints:number[] = [], torsoFaces:number[] = [];
+  const torsoSides = 24;
+  for (const ring of torsoProfile) for (let i=0; i<torsoSides; i++) {
+    const angle = 2 * Math.PI * i / torsoSides;
+    torsoPoints.push(Math.cos(angle) * ring.x, ring.y, .035 + Math.sin(angle) * ring.z);
+  }
+  for (let ring=0; ring<torsoProfile.length-1; ring++) for (let i=0; i<torsoSides; i++) {
+    const a=ring*torsoSides+i, b=ring*torsoSides+(i+1)%torsoSides;
+    const c=a+torsoSides, d=b+torsoSides;
+    torsoFaces.push(a,c,b,b,c,d);
+  }
+  const commandTorso = new THREE.BufferGeometry();
+  commandTorso.setAttribute('position',new THREE.Float32BufferAttribute(torsoPoints,3));
+  commandTorso.setIndex(torsoFaces); commandTorso.computeVertexNormals(); geometries.add(commandTorso);
+  mesh(commandTorso, captainCoat, captainAvatar, 0, 0, 0, 1, 1, 1);
   mesh(officerOval, captainSkin, captainAvatar, 0, 1.53, -.01, .085, .10, .085);
   mesh(commandHeadGeometry, captainSkin, captainAvatar, 0, 1.72, -.025, .17, .215, .16);
   mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.72, -.025, .173, .218, .163);
 
   for (const side of [-1, 1]) {
-    mesh(officerOval, captainCoat, captainAvatar, side * .28, 1.35, .04, .10, .10, .13);
-    const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .31, 1.12, .02, .075, .38, .085);
-    sleeve.rotation.z = side * .18;
-    mesh(officerOval, captainBadge, captainAvatar, side * .27, 1.435, .12, .045, .008, .026);
-    for (let stripe = 0; stripe < 2; stripe++)
-      block(captainAvatar, captainBadge, side * .31, .98 + stripe * .04, .105, .07, .012, .01);
+    // A narrow upper sleeve and bent forearm meet on the actual armrest.
+    const start = new THREE.Vector3(side*.275,1.32,.025);
+    const elbow = new THREE.Vector3(side*.36,1.05,.035);
+    const wrist = new THREE.Vector3(side*.42,1.105,-.22);
+    const segment = (from:THREE.Vector3,to:THREE.Vector3,radius:number) => {
+      const direction=to.clone().sub(from);
+      const sleeve=mesh(cylinder,captainCoat,captainAvatar,
+        (from.x+to.x)/2,(from.y+to.y)/2,(from.z+to.z)/2,
+        radius,direction.length(),radius);
+      sleeve.quaternion.setFromUnitVectors(up,direction.normalize());
+    };
+    segment(start,elbow,.067);
+    segment(elbow,wrist,.058);
+    mesh(officerOval,captainSkin,captainAvatar,wrist.x,wrist.y,wrist.z-.035,.055,.035,.08);
+    for (let stripe=0; stripe<2; stripe++)
+      block(captainAvatar,captainBadge,side*.34,1.12+stripe*.035,.09,.065,.01,.01);
   }
 
   // The first officer has a dedicated seat in the seated command view.
