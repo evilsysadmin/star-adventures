@@ -62,6 +62,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const panel = mat('#b1a4a1', .46, .41), bronze = mat('#bd9368', .72, .32);
   const instrumentShell = mat('#484654', .38, .62);
   const seat = mat('#593c47', .03, .94), seatEdge = mat('#77616a', .55, .42);
+  const captainLeather = mat('#70464e', .08, .84);
+  const captainStitch = mat('#c9a36a', .45, .62);
   const cyan = luminous('#80d2d4'), amber = luminous('#f0ba78');
   const soft = luminous('#fff1cd');
   // Small deterministic surface maps provide scale at standing distance.
@@ -336,6 +338,15 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     }
     rounded(parent, seat, x, 1.12, z + .47, .69, .58, .07);
     rounded(parent, seat, x, 1.56, z + .4, .6, .18, .2);
+    if (captain) {
+      // Original upholstered command-chair paneling faces the captain camera.
+      // These decorative meshes do not change the physical seating cell.
+      rounded(parent, captainLeather, x, 1.105, z + .52, .61, .54, .055);
+      rounded(parent, captainLeather, x, 1.565, z + .49, .55, .13, .1);
+      for (const side of [-1, 1])
+        block(parent, captainStitch, x + side * .294, 1.09, z + .557, .009, .43, .008);
+      block(parent, captainStitch, x, 1.375, z + .555, .45, .012, .01);
+    }
     block(parent, bronze, x, 1.35, z + .515, .13, .025, .012);
     for (const side of [-1, 1]) {
       block(parent, seatEdge, x + side * .28, 1.1, z + .51, .012, .43, .012);
@@ -483,6 +494,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     sleeve.rotation.z = side * .3;
     mesh(officerOval, captainCoat, captainAvatar, side * .33, 1.44, .055, .175, .12, .19);
     mesh(officerOval, captainBadge, captainAvatar, side * .34, 1.52, .175, .093, .013, .048);
+    // Wider shoulders remain visibly connected to the captain's torso.
+    // Do not invent free-floating hands: that requires a full articulated rig.
+    mesh(officerOval, captainCoat, captainAvatar, side * .42, 1.40, .065, .145, .11, .18);
     for (let stripe = 0; stripe < 2; stripe++)
       block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
   }
