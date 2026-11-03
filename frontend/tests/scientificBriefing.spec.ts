@@ -5,6 +5,23 @@ async function openArchive(page: Page) {
   await expect(page.getByTestId('mandate-public-log')).toBeVisible();
 }
 
+async function captureBriefingViewport(page: Page, width: number, height: number) {
+  // Centre the completed survey so both the result and the captain's
+  // delivered report appear in the same real viewport screenshot.
+  const survey = page.getByTestId('mandate-real-survey');
+  const report = page.getByTestId('mandate-field-knowledge');
+  await survey.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+  await expect(survey).toBeInViewport({ ratio: 1 });
+  await expect(report).toBeInViewport({ ratio: 1 });
+  const png = await page.screenshot({
+    path: `test-results/science-briefing-${width}.png`,
+    fullPage: false,
+    animations: 'disabled',
+  });
+  // PNG IHDR dimensions: prevent accidental return to full-page captures.
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([width, height]);
+}
+
 async function arriveAtCaptainChair(page: Page) {
   // Bridge spawn at (3,5,N): chair at (4,4); approach from (4,5,N).
   await page.getByTestId('explore-right').click();
@@ -44,7 +61,7 @@ async function returnToBridge(page: Page) {
 test('authentic away finding opens one officer briefing only at the accessed captain chair and survives F5', async ({ page }) => {
   // This end-to-end F5 journey captures both mobile and desktop on software WebGL.
   // GitHub runners can exceed the default 30s during the second screenshot.
-  // Keep every assertion and both captures; allow capture overhead without a retry.
+  // Keep every assertion and both viewport captures; allow capture overhead without a retry.
   test.setTimeout(60_000);
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto('/');
@@ -82,9 +99,9 @@ test('authentic away finding opens one officer briefing only at the accessed cap
   await expect(page.getByTestId('mandate-brief-science')).toHaveCount(0);
   await expect(page.getByTestId('science-score')).toHaveText('00');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: 'test-results/science-briefing-390.png', fullPage: true });
+  await captureBriefingViewport(page, 390, 850);
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByTestId('mandate-field-knowledge')).toContainText('ha recibido el informe');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: 'test-results/science-briefing-1280.png', fullPage: true });
+  await captureBriefingViewport(page, 1280, 900);
 });

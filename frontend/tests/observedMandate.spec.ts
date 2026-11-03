@@ -63,7 +63,12 @@ test('an underqualified expedition does not receive public science credit', asyn
 test('a broken story-lab checkpoint recovers the authentic discovery on reload', async ({ page }) => {
   await page.goto('/');
   await visitProbe(page);
-  await page.evaluate(() => localStorage.setItem('shadowops.star-adventures.outpost-orders.v1', '{invalid'));
+  // Corrupt storage on the next document *before* React bootstraps.
+  // Mutating the live page races with its pending persistence effects,
+  // which can rewrite a healthy checkpoint before reload.
+  await page.addInitScript(() => {
+    localStorage.setItem('shadowops.star-adventures.outpost-orders.v1', '{invalid');
+  });
   await page.reload();
   await openOrders(page);
   await expect(page.getByTestId('mandate-survey-status')).toHaveText('Completada');
