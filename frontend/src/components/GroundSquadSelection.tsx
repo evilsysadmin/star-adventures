@@ -1,12 +1,12 @@
 
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
 
 type Officer = { id: string; name: string };
 type Point = { x: number; y: number };
-type Gesture = { pointerId: number; start: Point; target: string | null; additive: boolean };
+type Gesture = { pointerId: number; start: Point; target: string | null; tile: string | null; additive: boolean };
 const scene = world.scenes.surface;
 const tile = (col: number, row: number): Point => ({ x: 440 + (col - row) * 40, y: 52 + (col + row) * 20 });
 const tileShape = (col: number, row: number) => {
@@ -18,10 +18,11 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, disabled = false,
+  squad, position, onMove, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
+  onMove: (target: Point) => boolean;
   disabled?: boolean;
 }) {
   // The current campaign has ONE authoritative ground position. These display
@@ -33,6 +34,9 @@ export function GroundSquadSelection({
     y: squadCenter.y + (index % 2 === 0 ? 13 : -13),
   }));
   const [selected, setSelected] = useState<string[]>(() => squad[0] ? [squad[0].id] : []);
+  const [moveMode, setMoveMode] = useState(false);
+  const [moveNotice, setMoveNotice] = useState('Selecciona todo el equipo para dar una orden de marcha.');
+  const [keyboardCell, setKeyboardCell] = useState<Point>(() => ({x:position.x,y:position.y}));
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const svg = useRef<SVGSVGElement>(null);
@@ -50,13 +54,51 @@ export function GroundSquadSelection({
     });
   };
 
+  const requestMove = (tileId: string | null) => {
+    if (!tileId || disabled) return;
+    setMoveMode(false);
+    if (selected.length !== squad.length || squad.length === 0) {
+      setMoveNotice('Selecciona todo el equipo. El movimiento individual llegará en otra iteración.');
+      return;
+    }
+    const [x,y] = tileId.split(',').map(Number);
+    if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || blocked.has(tileId) ||
+        scene.objects.some(object => object.x === x && object.y === y)) {
+      setMoveNotice('Casilla bloqueada u ocupada; el equipo no se mueve.');
+      return;
+    }
+    if (x === position.x && y === position.y) {
+      setMoveNotice('El equipo ya está aquí.');
+      return;
+    }
+    const success = onMove({x,y});
+    setMoveNotice(success ? 'Equipo en ' + x + ':' + y : 'No hay ruta segura hasta esa casilla.');
+  };
+  const onBoardKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
+    if (disabled || !moveMode || event.altKey || event.ctrlKey || event.metaKey) return;
+    const offsets: Record<string, [number,number]> = {
+      ArrowUp:[0,-1], ArrowRight:[1,0], ArrowDown:[0,1], ArrowLeft:[-1,0],
+    };
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      requestMove(keyboardCell.x + ',' + keyboardCell.y);
+    } else if (offsets[event.key]) {
+      event.preventDefault();
+      setKeyboardCell(cell => ({
+        x: Math.max(0,Math.min(scene.width-1,cell.x+offsets[event.key][0])),
+        y: Math.max(0,Math.min(scene.height-1,cell.y+offsets[event.key][1])),
+      }));
+    }
+  };
   const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (disabled || event.button !== 0 || !event.isPrimary) return;
     const target = (event.target as Element).closest('[data-officer-id]')?.getAttribute('data-officer-id') ?? null;
+    const tileTarget = (event.target as Element).closest('[data-cell-id]')?.getAttribute('data-cell-id') ?? null;
     gesture.current = {
       pointerId: event.pointerId,
       start: { x: event.clientX, y: event.clientY },
       target,
+      tile: tileTarget,
       additive: event.shiftKey,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -76,6 +118,10 @@ export function GroundSquadSelection({
     const roster = screenRoster();
     if (!roster || disabled) return;
     const end = { x: event.clientX, y: event.clientY };
+    if (!isSelectionDrag(start.start, end) && moveMode && start.tile) {
+      requestMove(start.tile);
+      return;
+    }
     if (isSelectionDrag(start.start, end))
       setSelected(previous => selectOfficerRectangle(roster, previous, start.start, end, start.additive));
     else
@@ -92,12 +138,15 @@ export function GroundSquadSelection({
 
   return <div className="ground-squad" data-testid="ground-squad-selection">
     <div className="ground-squad-viewport">
-      <svg ref={svg} data-testid="ground-squad-board" viewBox="0 0 900 430"
-        preserveAspectRatio="xMidYMid meet" role="img"
+      <svg ref={svg} data-testid="ground-squad-board" viewBox="0 0 900 430" tabIndex={0}
+        preserveAspectRatio="xMidYMid meet" role="img" onKeyDown={onBoardKeyDown}
         aria-label="Vista elevada del puesto planetario, con los tres oficiales desplegados"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={cancelGesture}
-        onLostPointerCapture={cancelGesture} onContextMenu={event => event.preventDefault()}>
+        onLostPointerCapture={cancelGesture} onContextMenu={event => {
+          event.preventDefault();
+          requestMove((event.target as Element).closest('[data-cell-id]')?.getAttribute('data-cell-id') ?? null);
+        }}>
         <defs>
           <linearGradient id="ground-terrain" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#45646a" /><stop offset="1" stopColor="#243b43" />
@@ -108,7 +157,7 @@ export function GroundSquadSelection({
         </defs>
         <rect width="900" height="430" fill="url(#ground-sky)" />
         <ellipse cx="450" cy="324" rx="345" ry="66" fill="#081219" opacity=".55" />
-        {sceneTiles.map(cell => <polygon key={cell.key} points={tileShape(cell.x, cell.y)}
+        {sceneTiles.map(cell => <polygon key={cell.key} data-cell-id={cell.key} points={tileShape(cell.x, cell.y)}
           fill={blocked.has(cell.key) ? '#142936' : (cell.x + cell.y) % 2 ? '#45605e' : 'url(#ground-terrain)'}
           stroke="#6d8c86" strokeOpacity=".28" strokeWidth="1" />)}
         {scene.walls.filter(cell => cell.x > 0 && cell.y > 0 &&
@@ -131,6 +180,9 @@ export function GroundSquadSelection({
             <text y="-43" textAnchor="middle" className="ground-object-label">{index + 1}</text>
           </g>;
         })}
+        {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
+          fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
+          pointerEvents="none" />}
         {units.map((unit, index) => {
           const active = selected.includes(unit.id);
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
@@ -163,14 +215,21 @@ export function GroundSquadSelection({
         </button>)}
       <button type="button" data-testid="ground-select-all" disabled={disabled}
         onClick={() => setSelected(squad.map(officer => officer.id))}>Todo el equipo</button>
+      <button type="button" data-testid="ground-move-mode" aria-pressed={moveMode} disabled={disabled}
+        onClick={() => { setMoveMode(value => !value); setKeyboardCell({x:position.x,y:position.y}); }}>
+        {moveMode ? 'Cancelar movimiento' : 'Mover equipo · tocar destino'}
+      </button>
     </div>
     <p className="ground-squad-status" data-testid="ground-selection-status" role="status">
       {selected.length === 0 ? 'Ningún oficial seleccionado' :
         selected.length === squad.length ? 'Todo el equipo seleccionado' :
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
-    <p className="ground-squad-help">Clic para seleccionar · Shift+clic para combinar · arrastra para encuadrar.
-      En móvil, toca un oficial o usa los botones. Esta vista aún no da órdenes de movimiento:
-      vuelve a la exploración para continuar la misión.</p>
+    <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
+    <p className="ground-squad-help">Clic, Shift+clic y arrastre seleccionan oficiales.
+      Con todo el equipo seleccionado, clic derecho en el suelo ordena marchar.
+      En móvil, activa «Mover equipo» y toca destino. Con teclado, activa mover,
+      enfoca el mapa, usa flechas y Enter. Los oficiales aún comparten una sola posición;
+      vuelve a explorar para interactuar con las estaciones.</p>
   </div>;
 }

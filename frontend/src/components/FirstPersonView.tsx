@@ -6,6 +6,7 @@ import { startExploration, applyExploration, faceTile } from '../../../src/spati
 import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
 import { GroundSquadSelection } from './GroundSquadSelection';
+import { planGroundSquadRoute } from '../../../src/groundSquadRoute.mjs';
 import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
 const stationLabels: Record<string, string> = {
@@ -454,6 +455,24 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     setEvent(result.event);
     onSpatialEvent?.(result.state, result.event);
   }, [onSpatialEvent]);
+  const moveWholeSquad = useCallback((destination: { x:number; y:number }) => {
+    if (paused || !showSquad || stateRef.current.area !== 'surface' || stateRef.current.pending) return false;
+    const commands = planGroundSquadRoute(world, stateRef.current, destination);
+    if (!commands || commands.length === 0) return false;
+    // Only the final canonical pose is committed; the same movement/obstacle
+    // rules validate every intermediate step and existing F5 saves stay valid.
+    let next = stateRef.current;
+    for (const type of commands as Command[]) {
+      const result = applyExploration(world, next, { type });
+      if (!result || result.event.type === 'blocked') return false;
+      next = result.state;
+    }
+    stateRef.current = next;
+    setExploration(next);
+    setEvent({type:'moved'});
+    onSpatialEvent?.(next, {type:'moved'});
+    return true;
+  }, [paused, showSquad, onSpatialEvent]);
   const requestTransport = useCallback(() => {
     const result = requestCaptainTransport(world, stateRef.current);
     stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
@@ -507,7 +526,8 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
         <>
           <div className="firstperson-render-stage">
           {exploration.area === 'surface' && showSquad
-            ? <GroundSquadSelection squad={squad} position={exploration} disabled={paused || !!exploration.pending} />
+            ? <GroundSquadSelection squad={squad} position={exploration} onMove={moveWholeSquad}
+                disabled={paused || !!exploration.pending} />
             : exploration.area === 'bridge' && !bridgeFallback
             ? <BridgeInteriorView pose={{ ...bridgePose, seated }} alert={alert} roster={bridgeCrew}
                 focusedStation={seated ? (previewStation ?? focusedStation) : null} onUnavailable={useCompatibleBridge} />
