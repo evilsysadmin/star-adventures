@@ -30,8 +30,14 @@ for(const width of [360,390,430,1280]){
     const dorn=page.getByTestId('ground-unit-dorn');
     const mira=page.getByTestId('ground-unit-mira');
 
-    // Shift-selection controls exactly two officers; Isa is not commanded.
-    await dorn.click({modifiers:['Shift']});
+    // Shift on desktop; additive roster mode is the same operation on touch.
+    if(width<520) {
+      await page.getByTestId('ground-selection-additive').click();
+      await page.getByTestId('ground-select-dorn').click();
+      await expect(page.getByTestId('ground-selection-additive')).toHaveAttribute('aria-pressed','true');
+    } else {
+      await dorn.click({modifiers:['Shift']});
+    }
     await expect(page.getByTestId('ground-selection-status')).toContainText('2 de 3');
     await clickCell(page,3,5,'right');
     await expect(page.getByTestId('ground-move-status')).toContainText('Formación de 2');
