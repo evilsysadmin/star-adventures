@@ -29,3 +29,9 @@ test('drag threshold and invalid coordinates cannot silently select',()=>{
  assert.throws(()=>selectOfficerRectangle(roster,['unknown'],{x:0,y:0},{x:1,y:1}));
  assert.throws(()=>selectOfficerRectangle([...roster,roster[0]],[],{x:0,y:0},{x:1,y:1}));
 });
+
+test('additive selection drops officers that are no longer visible',()=>{
+ assert.deepEqual(selectOfficer(roster,['medic','security'],null,true),['security']);
+ assert.deepEqual(selectOfficer(roster,['medic'],'science',true),['science']);
+ assert.deepEqual(selectOfficerRectangle(roster,['medic','security'],{x:15,y:25},{x:25,y:35},true),['science','security']);
+});

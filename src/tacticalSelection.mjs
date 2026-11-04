@@ -16,7 +16,7 @@ const validateSelection = (selected, ids) => {
   if (!Array.isArray(selected) || new Set(selected).size !== selected.length || selected.some(id => !ids.has(id)))
     throw new TypeError('Invalid selection');
 };
-const ordered = (roster, ids) => roster.filter(unit => ids.has(unit.id)).map(unit => unit.id);
+const ordered = (roster, ids) => roster.filter(unit => unit.visible && ids.has(unit.id)).map(unit => unit.id);
 
 /** Distinguish a selection drag from a click using CSS-pixel displacement. */
 export function isSelectionDrag(start, end, threshold = 8) {
