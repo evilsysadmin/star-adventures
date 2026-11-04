@@ -7,6 +7,11 @@ import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
 import { GroundSquadSelection } from './GroundSquadSelection';
 import { planGroundSquadRoute } from '../../../src/groundSquadRoute.mjs';
+import { localStorageOrNull } from '../session';
+import {
+  restoreGroundSnapshot, matchesGroundAnchor, groundOfficers, moveGroundOfficer,
+  persistGroundSnapshot, clearGroundSnapshot, type GroundSnapshot,
+} from '../groundSquadSession';
 import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
 const stationLabels: Record<string, string> = {
@@ -435,6 +440,12 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [showSquad, setShowSquad] = useState(false);
+  const [groundSnapshot, setGroundSnapshot] = useState<GroundSnapshot | null>(() =>
+    restoreGroundSnapshot(world, initialState ?? startExploration(world),
+      squad.map(officer => officer.id), localStorageOrNull()));
+  const groundRef = useRef(groundSnapshot);
+  const squadKey = squad.map(officer => officer.id).join(',');
+  const squadIds = squad.map(officer => officer.id);
   const [bridgeFallback, setBridgeFallback] = useState(false);
   const [previewStation, setPreviewStation] = useState<string | null>(null);
   const useCompatibleBridge = useCallback(() => setBridgeFallback(true), []);
@@ -455,6 +466,22 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     setEvent(result.event);
     onSpatialEvent?.(result.state, result.event);
   }, [onSpatialEvent]);
+  // The ground sidecar is invalidated only after the classic group anchor
+  // actually moves, or when the team changes/returns to the ship.
+  useEffect(() => {
+    if (exploration.area !== 'surface') {
+      groundRef.current = null;
+      setGroundSnapshot(null);
+      clearGroundSnapshot(localStorageOrNull());
+      return;
+    }
+    if (exploration.pending) return;
+    if (groundRef.current && matchesGroundAnchor(groundRef.current, exploration, squadIds)) return;
+    const restored = restoreGroundSnapshot(world, exploration, squadIds, localStorageOrNull());
+    groundRef.current = restored;
+    setGroundSnapshot(restored);
+  }, [exploration.area, exploration.x, exploration.y, exploration.pending, squadKey]);
+
   const moveWholeSquad = useCallback((destination: { x:number; y:number }) => {
     if (paused || !showSquad || stateRef.current.area !== 'surface' || stateRef.current.pending) return false;
     const commands = planGroundSquadRoute(world, stateRef.current, destination);
@@ -471,8 +498,36 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     setExploration(next);
     setEvent({type:'moved'});
     onSpatialEvent?.(next, {type:'moved'});
+    // Deliberate regroup: a whole-team order makes one new canonical anchor.
+    // Its independent preview begins with fresh, non-overlapping positions.
+    const relocated = restoreGroundSnapshot(world, next, squadIds, null);
+    groundRef.current = relocated;
+    setGroundSnapshot(relocated);
+    if (relocated) persistGroundSnapshot(world, squadIds, relocated, localStorageOrNull());
     return true;
-  }, [paused, showSquad, onSpatialEvent]);
+  }, [paused, showSquad, onSpatialEvent, squadKey]);
+
+  const moveSelected = useCallback((destination: {x:number;y:number}, selection: string[]) => {
+    if (paused || !showSquad || stateRef.current.area !== 'surface' || stateRef.current.pending) return false;
+    // Do not teleport dispersed officers when issuing a legacy group order.
+    // Group formation movement must be implemented as actual per-unit routes.
+    if (selection.length === squadIds.length && squadIds.length > 0)
+      return groundRef.current?.commands.length === 0 && moveWholeSquad(destination);
+    if (selection.length !== 1) return false;
+    const current = groundRef.current;
+    if (!current || !matchesGroundAnchor(current, stateRef.current, squadIds)) return false;
+    try {
+      const moved = moveGroundOfficer(world, squadIds, current, selection[0], destination);
+      if (!moved.moved) return false;
+      groundRef.current = moved.snapshot;
+      setGroundSnapshot(moved.snapshot);
+      persistGroundSnapshot(world, squadIds, moved.snapshot, localStorageOrNull());
+      return true;
+    } catch {
+      // Occupancy, wall, blocked route or corrupt state: no movement event.
+      return false;
+    }
+  }, [paused, showSquad, moveWholeSquad, squadKey]);
   const requestTransport = useCallback(() => {
     const result = requestCaptainTransport(world, stateRef.current);
     stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
@@ -525,8 +580,10 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
       {showMap ? <BridgeScene alert={alert} terminal={terminal} /> : (
         <>
           <div className="firstperson-render-stage">
-          {exploration.area === 'surface' && showSquad
-            ? <GroundSquadSelection squad={squad} position={exploration} onMove={moveWholeSquad}
+          {exploration.area === 'surface' && showSquad && groundSnapshot
+            ? <GroundSquadSelection squad={squad} position={exploration}
+                officers={groundOfficers(world, squadIds, groundSnapshot)} onMove={moveSelected}
+                allowWholeMove={groundSnapshot.commands.length === 0}
                 disabled={paused || !!exploration.pending} />
             : exploration.area === 'bridge' && !bridgeFallback
             ? <BridgeInteriorView pose={{ ...bridgePose, seated }} alert={alert} roster={bridgeCrew}
@@ -580,7 +637,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             </div>
           </div>}
           <p className="firstperson-feedback" data-testid="explore-feedback" aria-live="polite">
-            {showSquad ? 'Selección de equipo de prueba. Vuelve a explorar para moverte e interactuar.' : seated ? 'Tu tripulación espera órdenes. Ciencia y diplomacia pueden resolver el conflicto sin combatir.' : event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
+            {showSquad ? 'Movimiento táctico: cada oficial tiene su casilla; las órdenes de misión continúan en la exploración clásica.' : seated ? 'Tu tripulación espera órdenes. Ciencia y diplomacia pueden resolver el conflicto sin combatir.' : event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
               event.action === 'assist-evacuees' ? 'Puesto de socorro: consulta el resultado del equipo médico en el diario.' :
               event.action === 'extract-sensor-core' ? 'Archivo de sensores: consulta el resultado de la extracción en el canal reservado.' :
                event.action === 'secure-perimeter' ? perimeterResolved

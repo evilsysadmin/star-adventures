@@ -18,16 +18,25 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, onMove, disabled = false,
+  squad, position, officers, onMove, allowWholeMove, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
-  onMove: (target: Point) => boolean;
+  officers: Array<{id: string; x: number; y: number; heading: string}>;
+  onMove: (target: Point, selection: string[]) => boolean;
+  allowWholeMove: boolean;
   disabled?: boolean;
 }) {
-  // The current campaign has ONE authoritative ground position. These display
-  // offsets are visual-only and never become fabricated individual coordinates.
-  const squadCenter = tile(position.x, position.y);
+  // Every sprite has a validated, replayed cell; the classic FPS position is separate.
+  const units = squad.map(officer => {
+    const location = officers.find(unit => unit.id === officer.id);
+    const gridX = location?.x ?? position.x;
+    const gridY = location?.y ?? position.y;
+    return {...officer, gridX, gridY, heading: location?.heading ?? 'N', ...tile(gridX, gridY)};
+  });
+  const [selected, setSelected] = useState<string[]>(() => squad[0] ? [squad[0].id] : []);
+  const selectedUnit = selected.length === 1 ? units.find(unit => unit.id === selected[0]) : null;
+  const cameraCenter = selectedUnit ? {x:selectedUnit.x,y:selectedUnit.y} : tile(position.x,position.y);
   const [compact, setCompact] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches);
   const [followSquad, setFollowSquad] = useState(true);
@@ -38,21 +47,13 @@ export function GroundSquadSelection({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, []);
-  // At narrow widths the 900-unit full map made officers unreadably small.
-  // Follow the real shared squad position, but keep a full-map toggle so the
-  // player can inspect and target even distant tiles without losing access.
+  // Follow the selected officer on phones; the complete map stays one tap away.
   const focused = compact && followSquad;
-  const focusX = Math.max(0, Math.min(900 - 440, Math.round(squadCenter.x - 220)));
-  const focusY = Math.max(0, Math.min(430 - 300, Math.round(squadCenter.y - 150)));
+  const focusX = Math.max(0, Math.min(900 - 440, Math.round(cameraCenter.x - 220)));
+  const focusY = Math.max(0, Math.min(430 - 300, Math.round(cameraCenter.y - 150)));
   const cameraView = focused ? focusX + ' ' + focusY + ' 440 300' : '0 0 900 430';
-  const units = squad.map((officer, index) => ({
-    ...officer,
-    x: squadCenter.x + (index - (squad.length - 1) / 2) * 48,
-    y: squadCenter.y + (index % 2 === 0 ? 13 : -13),
-  }));
-  const [selected, setSelected] = useState<string[]>(() => squad[0] ? [squad[0].id] : []);
   const [moveMode, setMoveMode] = useState(false);
-  const [moveNotice, setMoveNotice] = useState('Selecciona todo el equipo para dar una orden de marcha.');
+  const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [keyboardCell, setKeyboardCell] = useState<Point>(() => ({x:position.x,y:position.y}));
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -93,8 +94,12 @@ export function GroundSquadSelection({
   const requestMove = (tileId: string | null) => {
     if (!tileId || disabled) return;
     setMoveMode(false);
-    if (selected.length !== squad.length || squad.length === 0) {
-      setMoveNotice('Selecciona todo el equipo. El movimiento individual llegará en otra iteración.');
+    if (!selected.length || (selected.length !== 1 && selected.length !== squad.length)) {
+      setMoveNotice('Selecciona un oficial o los tres. Las formaciones parciales llegarán después.');
+      return;
+    }
+    if (selected.length === squad.length && !allowWholeMove) {
+      setMoveNotice('Equipo disperso: mueve oficiales individualmente. La formación en grupo llegará después.');
       return;
     }
     const [x,y] = tileId.split(',').map(Number);
@@ -103,12 +108,14 @@ export function GroundSquadSelection({
       setMoveNotice('Casilla bloqueada u ocupada; el equipo no se mueve.');
       return;
     }
-    if (x === position.x && y === position.y) {
-      setMoveNotice('El equipo ya está aquí.');
+    if ((selected.length === squad.length && x === position.x && y === position.y) ||
+        (selected.length === 1 && selectedUnit?.gridX === x && selectedUnit?.gridY === y)) {
+      setMoveNotice('La selección ya está en esa casilla.');
       return;
     }
-    const success = onMove({x,y});
-    setMoveNotice(success ? 'Equipo en ' + x + ':' + y : 'No hay ruta segura hasta esa casilla.');
+    const success = onMove({x,y}, [...selected]);
+    const name = selected.length === 1 ? squad.find(officer => officer.id === selected[0])?.name : 'Equipo';
+    setMoveNotice(success ? name + ' en ' + x + ':' + y : 'No hay ruta segura o la casilla está ocupada.');
   };
   const onBoardKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
     if (disabled || !moveMode || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -233,6 +240,7 @@ export function GroundSquadSelection({
           const active = selected.includes(unit.id);
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
             data-officer-id={unit.id} data-proj-x={unit.x} data-proj-y={unit.y}
+            data-grid-x={unit.gridX} data-grid-y={unit.gridY} data-heading={unit.heading}
             transform={'translate(' + unit.x + ' ' + unit.y + ')'}
             className={active ? 'ground-unit is-selected' : 'ground-unit'}>
             <circle r="27" cy="-7" fill="transparent" />
@@ -262,8 +270,11 @@ export function GroundSquadSelection({
       <button type="button" data-testid="ground-select-all" disabled={disabled}
         onClick={() => setSelected(squad.map(officer => officer.id))}>Todo el equipo</button>
       <button type="button" data-testid="ground-move-mode" aria-pressed={moveMode} disabled={disabled}
-        onClick={() => { setMoveMode(value => !value); setKeyboardCell({x:position.x,y:position.y}); }}>
-        {moveMode ? 'Cancelar movimiento' : 'Mover equipo · tocar destino'}
+        onClick={() => {
+          setMoveMode(value => !value);
+          setKeyboardCell(selectedUnit ? {x:selectedUnit.gridX,y:selectedUnit.gridY} : {x:position.x,y:position.y});
+        }}>
+        {moveMode ? 'Cancelar movimiento' : 'Mover selección · tocar destino'}
       </button>
     </div>
     <p className="ground-squad-status" data-testid="ground-selection-status" role="status">
@@ -272,10 +283,11 @@ export function GroundSquadSelection({
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
     <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
-    <p className="ground-squad-help">Clic, Shift+clic y arrastre seleccionan oficiales.
-      Con todo el equipo seleccionado, clic derecho en el suelo ordena marchar.
-      En móvil, activa «Mover equipo» y toca destino. Con teclado, activa mover,
-      enfoca el mapa, usa flechas y Enter. Los oficiales aún comparten una sola posición;
-      vuelve a explorar para interactuar con las estaciones.</p>
+    <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
+      Clic derecho en suelo para mover a un oficial o a los tres.
+      En móvil, activa «Mover selección» y toca destino; con teclado, flechas y Enter.
+      Las formaciones parciales y reagrupar un equipo disperso llegarán después.
+      Los movimientos individuales se guardan, pero no ejecutan acciones de misión:
+      vuelve a la exploración clásica para utilizar estaciones.</p>
   </div>;
 }
