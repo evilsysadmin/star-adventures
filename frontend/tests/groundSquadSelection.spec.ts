@@ -16,6 +16,13 @@ for (const width of [390, 1280]) {
 
     await page.getByTestId('ground-squad-toggle').click();
     await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    if (width <= 520) {
+      await expect(page.getByTestId('ground-squad-board')).toHaveAttribute('viewBox', / 440 300$/);
+      await page.getByTestId('ground-camera-toggle').click();
+      await expect(page.getByTestId('ground-squad-board')).toHaveAttribute('viewBox', '0 0 900 430');
+      await page.getByTestId('ground-camera-toggle').click();
+      await expect(page.getByTestId('ground-squad-board')).toHaveAttribute('viewBox', / 440 300$/);
+    }
     await expect(page.getByTestId('ground-unit-venn')).toBeVisible();
     await expect(page.getByTestId('ground-unit-dorn')).toBeVisible();
     await expect(page.getByTestId('ground-unit-mira')).toBeVisible();

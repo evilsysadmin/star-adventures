@@ -13,3 +13,15 @@
 .ground-squad-status{margin:0;padding:9px 12px 0;color:#dfc992;font:700 11px 'DM Sans',sans-serif}
 .ground-squad-help{font:11px/1.5 'DM Sans',sans-serif;color:#abc5c7;margin:0;padding:5px 12px 12px}
 @media(max-width:520px){.ground-unit-name{font-size:14px}.ground-squad-toolbar{padding:7px}.ground-squad-toolbar button{font-size:11px;flex-basis:100px}}
+
+/* Readable away-team framing at phone widths; full map stays one tap away. */
+.ground-squad-viewbar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:7px 10px;background:#182e3b;border-bottom:1px solid #4a6872;
+  font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.04em;color:#bed5ce}
+.ground-squad-viewbar button{min-height:44px;flex:none;padding:8px 12px;
+  border:1px solid #72999a;background:#294957;color:#f6e8bd;
+  font:700 11px 'DM Sans',sans-serif;cursor:pointer}
+.ground-squad-viewbar button:focus-visible{outline:2px solid #f0d49a;outline-offset:2px}
+@media(max-width:520px){
+  .ground-squad svg.ground-squad-board-focused{aspect-ratio:440/300}
+}

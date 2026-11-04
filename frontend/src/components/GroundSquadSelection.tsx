@@ -1,5 +1,5 @@
 
-import { useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
@@ -28,6 +28,23 @@ export function GroundSquadSelection({
   // The current campaign has ONE authoritative ground position. These display
   // offsets are visual-only and never become fabricated individual coordinates.
   const squadCenter = tile(position.x, position.y);
+  const [compact, setCompact] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches);
+  const [followSquad, setFollowSquad] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 520px)');
+    const sync = () => setCompact(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+  // At narrow widths the 900-unit full map made officers unreadably small.
+  // Follow the real shared squad position, but keep a full-map toggle so the
+  // player can inspect and target even distant tiles without losing access.
+  const focused = compact && followSquad;
+  const focusX = Math.max(0, Math.min(900 - 440, Math.round(squadCenter.x - 220)));
+  const focusY = Math.max(0, Math.min(430 - 300, Math.round(squadCenter.y - 150)));
+  const cameraView = focused ? focusX + ' ' + focusY + ' 440 300' : '0 0 900 430';
   const units = squad.map((officer, index) => ({
     ...officer,
     x: squadCenter.x + (index - (squad.length - 1) / 2) * 48,
@@ -156,8 +173,16 @@ export function GroundSquadSelection({
   } : undefined;
 
   return <div className="ground-squad" data-testid="ground-squad-selection">
+    {compact && <div className="ground-squad-viewbar">
+      <span>VISTA PLANETARIA · {focused ? 'SEGUIMIENTO' : 'MAPA COMPLETO'}</span>
+      <button type="button" data-testid="ground-camera-toggle" aria-pressed={focused}
+        onClick={() => setFollowSquad(value => !value)}>
+        {focused ? 'Mapa completo' : 'Seguir equipo'}
+      </button>
+    </div>}
     <div className="ground-squad-viewport">
-      <svg ref={svg} data-testid="ground-squad-board" viewBox="0 0 900 430" tabIndex={0}
+      <svg ref={svg} data-testid="ground-squad-board" viewBox={cameraView}
+        className={focused ? 'ground-squad-board-focused' : undefined} tabIndex={0}
         preserveAspectRatio="xMidYMid meet" role="img" onKeyDown={onBoardKeyDown}
         aria-label="Vista elevada del puesto planetario, con los tres oficiales desplegados"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
