@@ -1,7 +1,7 @@
 # Tactical battle camera: proof before production
 
 ## Decision
-Exploration (bridge and away team) remains first person, Chronicles/MM3-style. Ground combat pauses exploration and changes to an **elevated, fixed-angle tactical board**, with a separate rules domain. An authentic isometric projection is a possibility, **not** a requirement to adopt a new isometric engine or ChessCom renderer.
+**Updated product decision, 2026-11-04:** bridge exploration remains first person, but planetary exploration uses an **elevated, fixed-angle/isometric board** with three selectable officers and click-to-move squad orders (issue #202). On hostile contact, exploration pauses and the view enters turn-based combat with a separate authoritative rules domain; the same camera can be reused. Do **not** equate a visual camera swap with actual selectable/movable away-team gameplay. An authentic isometric projection need not require a new engine or imported Chess Studio renderer.
 
 We explicitly avoid another failed isometric attempt: no new art or game-size maps until exact picking works.
 
@@ -14,7 +14,7 @@ We explicitly avoid another failed isometric attempt: no new art or game-size ma
 5. Test canvas offset within the surrounding React page, and one resize after initial render; clicking the same logical cell must still work.
 6. Test a visual unit floating over a cell, walls and occlusion via a dedicated picking plane/layer. The cell below must remain selectable as designed. Test non-walkable cells remain selected for information but commands cannot move there.
 7. Verify pointer, touch, keyboard and Playwright; dispose event listeners/geometry/materials on remount. For accessibility provide HTML equivalent cell controls when 3D input isn't available.
-8. After this proof passes, add *real* ground-turn order, initiative, path, LOS and cover as pure mechanics. Transition back to the same first-person position only when combat ends. Preserve save schema and rollback.
+8. After this proof passes, add *real* ground-turn order, initiative, path, LOS and cover as pure mechanics. After combat, restore each officer to the correct **elevated surface exploration state** and authoritative position, not to a first-person ground avatar. Preserve save schema and rollback.
 
 ## Hard gates
 - **0 mismatches** in center-of-cell picking across all tested viewports.
