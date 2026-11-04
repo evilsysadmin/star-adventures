@@ -420,6 +420,21 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // The imported head includes a neck/shoulder base. Command figures use
   // their own smooth neck, so keep a separate head geometry.
   const commandHeadGeometry = headGeometry.clone(); geometries.add(commandHeadGeometry);
+  // Fine, deterministic variation on the actual scalp mesh breaks up the
+  // single glossy helmet shape without importing a hair texture or asset.
+  const commandScalpGeometry = scalpGeometry.clone(); geometries.add(commandScalpGeometry);
+  const shadeCommandScalp = (geometry:THREE.BufferGeometry) => {
+    const position = geometry.getAttribute('position');
+    const shades = new Float32Array(position.count * 3);
+    for (let i=0; i<position.count; i++) {
+      const x=position.getX(i), y=position.getY(i), z=position.getZ(i);
+      const wave=Math.sin(x*47 + Math.sin(y*19)*1.6 + z*13);
+      const value=.80 + .20*(wave*.5+.5);
+      shades[i*3]=value; shades[i*3+1]=value; shades[i*3+2]=value;
+    }
+    geometry.setAttribute('color',new THREE.BufferAttribute(shades,3));
+  };
+  shadeCommandScalp(commandScalpGeometry);
   const coats: Record<string, THREE.MeshStandardMaterial> = {
     helm: mat('#8f593e', .08, .77),
     science: mat('#287b83', .08, .77),
@@ -438,7 +453,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     comms: mat('#60452e', .04, .9), tactical: mat('#322f40', .04, .9),
   };
   const captainSkin = mat('#d4a47d', .03, .9);
-  const captainHair = mat('#1b2630', .04, .9);
+  const captainHair = mat('#1b2630', .02, .98);
+  captainHair.vertexColors = true;
   // Original illustrative palettes keyed by the game's six canonical IDs.
   // They follow the officer between posts, but do not claim to be portraits.
   const appearances: Record<string, readonly [string, string, string]> = {
@@ -525,6 +541,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const captainCoat = mat('#355967', .14, .72);
   captainCoat.bumpMap = seat.bumpMap; captainCoat.bumpScale = .008;
   const captainBadge = mat('#d9b77b', .58, .39);
+  const commandCollar = mat('#26343b', .05, .86);
   const captainAvatar = new THREE.Group();
   captainAvatar.name = 'command-chair-captain';
   captainAvatar.userData.commandAvatar = true;
@@ -551,9 +568,11 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   commandTorso.setAttribute('position',new THREE.Float32BufferAttribute(torsoPoints,3));
   commandTorso.setIndex(torsoFaces); commandTorso.computeVertexNormals(); geometries.add(commandTorso);
   mesh(commandTorso, captainCoat, captainAvatar, 0, 0, 0, 1, 1, 1);
+  mesh(cylinder, commandCollar, captainAvatar, 0, 1.465, -.015, .085, .045, .09);
   mesh(cylinder, captainSkin, captainAvatar, 0, 1.49, -.015, .065, .12, .075);
   mesh(commandHeadGeometry, captainSkin, captainAvatar, 0, 1.64, -.025, .17, .215, .16);
-  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.64, -.025, .173, .218, .163);
+  const commandHair = mesh(commandScalpGeometry, captainHair, captainAvatar, 0, 1.64, -.025, .173, .218, .163);
+  commandHair.name = 'command-hair';
 
   for (const side of [-1, 1]) {
     // A narrow upper sleeve and bent forearm meet on the actual armrest.
@@ -584,10 +603,13 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   chair(firstOfficerSeat, 0, 0, true);
   const firstOfficerAvatar = captainAvatar.clone(true);
   firstOfficerAvatar.visible = true;
+  // Slightly turned toward the captain, rather than an identical rigid pose.
+  firstOfficerAvatar.rotation.y = .065;
   const firstCoat = mat('#566a84', .14, .72);
   firstCoat.bumpMap = seat.bumpMap; firstCoat.bumpScale = .008;
   const firstSkin = mat('#805a46', .03, .9);
-  const firstHair = mat('#1b2630', .04, .9);
+  const firstHair = mat('#282c30', .02, .98);
+  firstHair.vertexColors = true;
   firstOfficerAvatar.traverse(item => {
     if (!(item instanceof THREE.Mesh)) return;
     if (item.material === captainCoat) item.material = firstCoat;
@@ -845,6 +867,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       scalpGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
       scalpGeometry.setIndex(hairFaces);
       scalpGeometry.computeBoundingBox(); scalpGeometry.computeBoundingSphere();
+      commandScalpGeometry.dispose(); commandScalpGeometry.deleteAttribute('uv');
+      commandScalpGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      commandScalpGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      commandScalpGeometry.setIndex(hairFaces);
+      shadeCommandScalp(commandScalpGeometry);
+      commandScalpGeometry.computeBoundingBox(); commandScalpGeometry.computeBoundingSphere();
       batches.forEach(batch => { if (batch.geometry === headGeometry || batch.geometry === scalpGeometry) batch.computeBoundingSphere(); });
       renderer.shadowMap.needsUpdate = true;
       canvas.dataset.bridgeHead = 'loaded'; draw();
