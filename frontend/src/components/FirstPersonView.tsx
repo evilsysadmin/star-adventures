@@ -429,7 +429,7 @@ const WAYPOINT_ORDERS: Record<WaypointCommand, string> = {
   'turn-right': 'GIRA A LA DERECHA ↷', use: 'E · INTERACTÚA',
 };
 
-export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [], missionTargetId = null, perimeterResolved = false, paused = false, captainMode = false, onCaptainStation, bridgeCrew, focusedStation = null }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[]; missionTargetId?: string | null; perimeterResolved?: boolean; paused?: boolean; captainMode?: boolean; onCaptainStation?: (id: string) => void; bridgeCrew: BridgeCrewRoster; focusedStation?: string | null }) {
+export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [], missionTargetId = null, perimeterResolved = false, paused = false, captainMode = false, onCaptainStation, bridgeCrew, focusedStation = null, transportRequestRef, medicalReadiness }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[]; missionTargetId?: string | null; perimeterResolved?: boolean; paused?: boolean; captainMode?: boolean; onCaptainStation?: (id: string) => void; bridgeCrew: BridgeCrewRoster; focusedStation?: string | null; transportRequestRef?: { current: (() => void) | null }; medicalReadiness?: { name: string; skill: number; required: number } }) {
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -454,6 +454,16 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     setEvent(result.event);
     onSpatialEvent?.(result.state, result.event);
   }, [onSpatialEvent]);
+  const requestTransport = useCallback(() => {
+    const result = requestCaptainTransport(world, stateRef.current);
+    stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
+    onSpatialEvent?.(result.state, result.event);
+  }, [onSpatialEvent]);
+  useEffect(() => {
+    if (!transportRequestRef) return;
+    transportRequestRef.current = seated ? requestTransport : null;
+    return () => { transportRequestRef.current = null; };
+  }, [seated, requestTransport, transportRequestRef]);
   useEffect(() => {
     if (canvas.current && (exploration.area !== 'bridge' || bridgeFallback))
       drawScene(canvas.current, exploration, alert, event?.type === 'station' ? (event.stationId ?? null) : null);
@@ -532,11 +542,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
                 <span className="captain-station-copy"><strong>{item.id === 'comms' ? <><span className="captain-label-full">Comunicaciones</span><span className="captain-label-short">Comunic.</span></> : stationLabels[item.id] ?? item.label}</strong>
                   <small>{bridgeCrew[item.id as keyof BridgeCrewRoster]?.name}</small></span></button>)}
             <button type="button" disabled={paused || !!exploration.pending} data-testid="captain-transport"
-              onClick={() => {
-                const result = requestCaptainTransport(world, stateRef.current);
-                stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
-                onSpatialEvent?.(result.state, result.event);
-              }}><StationIcon station="transport" /><span className="captain-station-copy"><strong>Desembarcar</strong><small>Equipo de superficie</small></span><span className="captain-station-arrow" aria-hidden="true">›</span></button>
+              onClick={requestTransport}><StationIcon station="transport" /><span className="captain-station-copy"><strong>Desembarcar</strong><small>Equipo de superficie</small></span><span className="captain-station-arrow" aria-hidden="true">›</span></button>
           </div> : <div className="firstperson-controls" aria-label="Control de exploración">
             <button type="button" disabled={!!exploration.pending || paused} data-testid="explore-left" onClick={() => dispatch('turn-left')}>↶ Girar</button>
             <button type="button" disabled={!!exploration.pending || paused} data-testid="explore-forward" onClick={() => dispatch('forward')}>↑ Avanzar</button>
@@ -570,11 +576,15 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           {exploration.pending && (
             <div className="firstperson-dialog-backdrop">
               <div role="dialog" aria-modal="true" aria-labelledby="transport-title" className="firstperson-dialog">
-                <h3 id="transport-title">Confirmar cambio de área</h3>
-                <p>¿Quieres entrar en { (world.scenes as Record<string,Scene>)[exploration.pending.to].title }?</p>
+                <h3 id="transport-title">{exploration.pending.to === 'surface' ? 'Confirmar desembarco' : 'Confirmar regreso al puente'}</h3>
+                {exploration.pending.to === 'surface'
+                  ? <p>El equipo de {squad.map(officer => officer.name).join(', ')} se desplegará en la superficie.</p>
+                  : <p>El equipo regresará al puente de la Meridian.</p>}
+                {exploration.pending.to === 'surface' && medicalReadiness && medicalReadiness.skill < medicalReadiness.required &&
+                  <p className="transport-medical-warning" data-testid="transport-medical-warning">Medicina insuficiente para el rescate: {medicalReadiness.name} tiene {medicalReadiness.skill}/5 y se necesita {medicalReadiness.required}/5. Puedes partir igualmente.</p>}
                 <div className="firstperson-dialog-actions">
-                  <button type="button" autoFocus data-testid="transport-decline" onClick={() => dispatch('decline')}>No, permanecer</button>
-                  <button type="button" data-testid="transport-confirm" onClick={() => dispatch('confirm')}>Sí, continuar</button>
+                  <button type="button" autoFocus data-testid="transport-decline" onClick={() => dispatch('decline')}>Cancelar</button>
+                  <button type="button" data-testid="transport-confirm" onClick={() => dispatch('confirm')}>{exploration.pending.to === 'surface' ? 'Desembarcar equipo' : 'Volver al puente'}</button>
                 </div>
               </div>
             </div>

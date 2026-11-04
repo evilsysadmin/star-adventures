@@ -5,7 +5,7 @@
 
 Command the USS Meridian, publicly an ordinary Starfleet exploration and relief vessel but secretly operating under a compartmentalized Section 31 directive. Fulfill *real, meaningful* official missions while investigating deniable objectives for a clandestine handler. The captain can question or refuse orders; alliances, evidence, civilian lives, secrecy and trust can matter more than winning a firefight.
 
-Explore the bridge and planetary surface in first person, assign persistent crew members, investigate, negotiate and fight only when necessary. Public reports and classified debriefs must reflect the same actual campaign history. See [Dual Mandate](DUAL-MANDATE.md) for campaign design; this is a planned pivot, not a shipped feature.
+Explore the ship's bridge in first person; on planetary surfaces command a visible three-officer away team from a fixed elevated/isometric view, selecting individuals or groups and issuing point-and-click movement and interaction orders. Investigate, negotiate and fight only when necessary. Public reports and classified debriefs must reflect the same actual campaign history. See [Dual Mandate](DUAL-MANDATE.md) for campaign design; this is a planned pivot, not a shipped feature.
 
 Inspired by the ethical exploration and crew dynamics of Star Trek: The Next Generation. This **public** repo's initial sample is entirely original; any private fan adaptation should remain separate until repository visibility and licensing are reviewed.
 

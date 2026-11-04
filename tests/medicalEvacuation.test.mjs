@@ -9,7 +9,7 @@ import {
   serializeMandateCheckpoint, deserializeMandateCheckpoint,
 } from '../src/dualMandate.mjs';
 import {
-  performMedicalEvacuation, EVACUATION_STATION_ACTION, EVACUATION_INCIDENT,
+  performMedicalEvacuation, bestAwayMedic, MEDICAL_THRESHOLD, EVACUATION_STATION_ACTION, EVACUATION_INCIDENT,
 } from '../src/medicalEvacuation.mjs';
 
 const definition = JSON.parse(readFileSync(new URL('../content/mandates/outpost-orders.json', import.meta.url)));
@@ -22,6 +22,22 @@ noReliefStation.scenes.surface.objects = noReliefStation.scenes.surface.objects.
 const front = { version: 1, area: 'surface', x: 5, y: 4, heading: 'E', pending: null };
 const onBridge = { ...front, area: 'bridge' };
 const fromOtherSide = { ...front, heading: 'W' };
+
+test('medical preview matches the rescue expert, including crew experience', () => {
+  const crew = startCrew();
+  const away = startAwayTeam();
+  assert.deepEqual(bestAwayMedic(crew, away), { officerId: 'mira', skill: 4 });
+  assert.ok(bestAwayMedic(crew, away).skill >= MEDICAL_THRESHOLD);
+  const bridge = { version: 1, area: 'bridge', x: 3, y: 5, heading: 'N', pending: null };
+  let weaker = selectAwayOfficer(away, 0, 'varela', bridge);
+  weaker = selectAwayOfficer(weaker, 2, 'solan', bridge);
+  assert.deepEqual(bestAwayMedic(crew, weaker), { officerId: 'varela', skill: 1 });
+  assert.ok(bestAwayMedic(crew, weaker).skill < MEDICAL_THRESHOLD);
+  crew.progression.solan = { xp: 400, level: 5 };
+  assert.deepEqual(bestAwayMedic(crew, weaker), { officerId: 'solan', skill: 3 });
+  const result = performMedicalEvacuation(definition, startMandate(definition), world, front, crew, weaker);
+  assert.deepEqual(result.report, { result: 'evacuated', officerId: 'solan', skill: 3 });
+});
 
 test('one real medical intervention rescues civilians and persists official + classified truth', () => {
   assert.equal(validateWorld(world), true);
