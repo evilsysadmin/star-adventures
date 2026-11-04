@@ -44,10 +44,10 @@ for (const width of [390, 1280]) {
     await expect(dorn).toHaveAttribute('data-grid-y','4');
     await expect(mira).toHaveAttribute('data-grid-x','5');
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
-    // A legacy whole-team order cannot teleport a dispersed officer.
+    // Impossible terrain rejects the whole formation, with no partial moves.
     await page.getByTestId('ground-select-all').click();
-    await clickGround(page,4,4);
-    await expect(page.getByTestId('ground-move-status')).toContainText('Equipo disperso');
+    await clickGround(page,6,4); // station: impassable
+    await expect(page.getByTestId('ground-move-status')).toContainText('bloqueada');
     await expect(venn).toHaveAttribute('data-grid-x','3');
     await page.reload();
     await page.getByTestId('ground-squad-toggle').click();

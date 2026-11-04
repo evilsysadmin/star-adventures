@@ -1,4 +1,5 @@
 import { startAwayTeam } from '../../src/awayTeam.mjs';
+import { orderGroundFormation } from '../../src/groundSquadFormation.mjs';
 import {
   startGroundSquadPositions, deserializeGroundSquadPositions,
   serializeGroundSquadPositions, replayGroundSquadPositions, orderGroundOfficerMove,
@@ -55,6 +56,12 @@ export function moveGroundOfficer(world: unknown, ids: string[], snapshot: Groun
   officerId: string, target: {x: number; y: number}): {snapshot: GroundSnapshot; moved: boolean} {
   const move = orderGroundOfficerMove(world, deployed(ids), snapshot, officerId, target);
   return {snapshot: move.snapshot as GroundSnapshot, moved: move.route.length !== 0};
+}
+
+export function moveGroundFormation(world: unknown, ids: string[], snapshot: GroundSnapshot,
+  selectedIds: string[], target: {x:number;y:number}): {snapshot: GroundSnapshot; moved: boolean} {
+  const result = orderGroundFormation(world, deployed(ids), snapshot, selectedIds, target);
+  return { snapshot: result.snapshot as GroundSnapshot, moved: result.moves.length > 0 };
 }
 
 export function persistGroundSnapshot(world: unknown, ids: string[], snapshot: GroundSnapshot,

@@ -10,7 +10,7 @@ import { planGroundSquadRoute } from '../../../src/groundSquadRoute.mjs';
 import { localStorageOrNull } from '../session';
 import {
   restoreGroundSnapshot, matchesGroundAnchor, groundOfficers, moveGroundOfficer,
-  persistGroundSnapshot, clearGroundSnapshot, type GroundSnapshot,
+  moveGroundFormation, persistGroundSnapshot, clearGroundSnapshot, type GroundSnapshot,
 } from '../groundSquadSession';
 import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
@@ -509,15 +509,17 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
 
   const moveSelected = useCallback((destination: {x:number;y:number}, selection: string[]) => {
     if (paused || !showSquad || stateRef.current.area !== 'surface' || stateRef.current.pending) return false;
-    // Do not teleport dispersed officers when issuing a legacy group order.
-    // Group formation movement must be implemented as actual per-unit routes.
-    if (selection.length === squadIds.length && squadIds.length > 0)
-      return groundRef.current?.commands.length === 0 && moveWholeSquad(destination);
-    if (selection.length !== 1) return false;
     const current = groundRef.current;
     if (!current || !matchesGroundAnchor(current, stateRef.current, squadIds)) return false;
+    if (selection.length === squadIds.length && squadIds.length > 0 &&
+        current.commands.length === 0) return moveWholeSquad(destination);
+    if (!selection.length || selection.length > squadIds.length) return false;
     try {
-      const moved = moveGroundOfficer(world, squadIds, current, selection[0], destination);
+      // The legacy group anchor remains untouched by dispersed/partial moves.
+      // Formations are committed only after every per-officer route succeeds.
+      const moved = selection.length === 1
+        ? moveGroundOfficer(world, squadIds, current, selection[0], destination)
+        : moveGroundFormation(world, squadIds, current, selection, destination);
       if (!moved.moved) return false;
       groundRef.current = moved.snapshot;
       setGroundSnapshot(moved.snapshot);
