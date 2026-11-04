@@ -417,8 +417,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     geometries.add(geometry);
   };
   shapeHead(headGeometry); shapeHead(scalpGeometry);
-  // The imported head includes flared shoulders; command figures already
-  // have their own torso, so keep a separate, narrowed lower silhouette.
+  // The imported head includes a neck/shoulder base. Command figures use
+  // their own smooth neck, so keep a separate head geometry.
   const commandHeadGeometry = headGeometry.clone(); geometries.add(commandHeadGeometry);
   const coats: Record<string, THREE.MeshStandardMaterial> = {
     helm: mat('#8f593e', .08, .77),
@@ -523,6 +523,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // Separate, non-batched avatar: the captain appears only in the seated
   // command camera and disappears in first-person walking exploration.
   const captainCoat = mat('#355967', .14, .72);
+  captainCoat.bumpMap = seat.bumpMap; captainCoat.bumpScale = .008;
   const captainBadge = mat('#d9b77b', .58, .39);
   const captainAvatar = new THREE.Group();
   captainAvatar.name = 'command-chair-captain';
@@ -550,9 +551,9 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   commandTorso.setAttribute('position',new THREE.Float32BufferAttribute(torsoPoints,3));
   commandTorso.setIndex(torsoFaces); commandTorso.computeVertexNormals(); geometries.add(commandTorso);
   mesh(commandTorso, captainCoat, captainAvatar, 0, 0, 0, 1, 1, 1);
-  mesh(officerOval, captainSkin, captainAvatar, 0, 1.53, -.01, .085, .10, .085);
-  mesh(commandHeadGeometry, captainSkin, captainAvatar, 0, 1.72, -.025, .17, .215, .16);
-  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.72, -.025, .173, .218, .163);
+  mesh(cylinder, captainSkin, captainAvatar, 0, 1.49, -.015, .065, .12, .075);
+  mesh(commandHeadGeometry, captainSkin, captainAvatar, 0, 1.64, -.025, .17, .215, .16);
+  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.64, -.025, .173, .218, .163);
 
   for (const side of [-1, 1]) {
     // A narrow upper sleeve and bent forearm meet on the actual armrest.
@@ -577,13 +578,14 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // Its occupant is the canonical first officer, never a duplicate operator.
   const firstOfficerSeat = new THREE.Group();
   firstOfficerSeat.name = 'first-officer-seat';
-  firstOfficerSeat.position.set(-1.18, 0, -.12);
-  firstOfficerSeat.scale.setScalar(.84);
+  firstOfficerSeat.position.set(-1.08, 0, -.12);
+  firstOfficerSeat.scale.setScalar(.92);
   firstOfficerSeat.visible = false;
   chair(firstOfficerSeat, 0, 0, true);
   const firstOfficerAvatar = captainAvatar.clone(true);
   firstOfficerAvatar.visible = true;
   const firstCoat = mat('#566a84', .14, .72);
+  firstCoat.bumpMap = seat.bumpMap; firstCoat.bumpScale = .008;
   const firstSkin = mat('#805a46', .03, .9);
   const firstHair = mat('#1b2630', .04, .9);
   firstOfficerAvatar.traverse(item => {
@@ -819,21 +821,24 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
           hairFaces.push(faces[i], faces[i + 1], faces[i + 2]);
       }
       if (!hairFaces.length) throw new Error('Invalid scalp geometry');
+      // Omit the imported flared base instead of deforming it into angular
+      // folds. The separate neck overlaps the trimmed rear of the head.
+      const commandFaces:number[] = [];
+      for (let i=0; i<faces.length; i+=3) {
+        if (positions[faces[i]*3+1] > -.55 && positions[faces[i+1]*3+1] > -.55 &&
+            positions[faces[i+2]*3+1] > -.55)
+          commandFaces.push(faces[i],faces[i+1],faces[i+2]);
+      }
+      if (!commandFaces.length) throw new Error('Invalid command head geometry');
       headGeometry.dispose(); headGeometry.deleteAttribute('uv');
       headGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       headGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
       headGeometry.setIndex(new THREE.BufferAttribute(faces, 1));
       headGeometry.computeBoundingBox(); headGeometry.computeBoundingSphere();
-      const commandPositions = new Float32Array(positions);
-      for (let i = 0; i < commandPositions.length; i += 3) {
-        const taper = THREE.MathUtils.clamp((-commandPositions[i + 1] - .4) / .5, 0, 1);
-        commandPositions[i] *= 1 - .60 * taper;
-        commandPositions[i + 2] *= 1 - .35 * taper;
-      }
       commandHeadGeometry.dispose(); commandHeadGeometry.deleteAttribute('uv');
-      commandHeadGeometry.setAttribute('position', new THREE.BufferAttribute(commandPositions, 3));
-      commandHeadGeometry.setIndex(new THREE.BufferAttribute(faces, 1));
-      commandHeadGeometry.computeVertexNormals();
+      commandHeadGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      commandHeadGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      commandHeadGeometry.setIndex(commandFaces);
       commandHeadGeometry.computeBoundingBox(); commandHeadGeometry.computeBoundingSphere();
       scalpGeometry.dispose(); scalpGeometry.deleteAttribute('uv');
       scalpGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
