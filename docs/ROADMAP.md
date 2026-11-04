@@ -2,7 +2,13 @@
 
 Status below is a **plan**, not a claim of implemented features.
 
-For the planned planetary tribute to *Away Team*, see [AWAY-TEAM-TRIBUTE-ROADMAP.md](AWAY-TEAM-TRIBUTE-ROADMAP.md): free movement in the tactical view until enemy contact, followed by turn-based combat. This new direction supersedes the earlier combat-only use of the tactical view; update the product and camera contracts before implementation while retaining their input correctness gates.
+## Latest surface-exploration direction — selectable isometric away team (2026-11-04)
+
+The user wants the *planetary desembarco* to behave as an elevated/isometric squad exploration game in the spirit of *Star Trek: Away Team* and Baldur's Gate-style selection: three visible crew, click/Shift-click/drag group selection, right-click path orders, accessible touch/keyboard equivalents, role-specific interactions and a transition to turn-based combat upon contact. The **ship bridge stays first-person**. This decision supersedes earlier text below specifying first-person away-team exploration; historical milestone descriptions remain as implementation history, not the future product target. See [issue #202](https://github.com/evilsysadmin/star-adventures/issues/202), selection PR #199, contact PR #198 and planetary tactical scenario PR #196.
+
+Ship incremental vertical slices: selection on the real view → individual/group routing with formation → role interactions and campaign saves → contact/turn-based transition and extraction → full mobile/desktop and F5 validation. Do not replace the currently playable first-person surface until those are proven. Existing tactical picking/orthographic camera safety gates remain mandatory.
+
+For the planetary tactical scenario and subsequent iterations, see [AWAY-TEAM-TRIBUTE-ROADMAP.md](AWAY-TEAM-TRIBUTE-ROADMAP.md).
 
 ## Product pivot — Section 31, two lives aboard the Meridian (2026-10-22)
 

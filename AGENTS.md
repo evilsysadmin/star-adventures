@@ -39,6 +39,6 @@ Read docs/PRODUCT.md, docs/ARCHITECTURE.md, docs/ROADMAP.md and docs/CONTENT-AND
 
 ## Tactical combat camera — mandatory skill
 - For elevated combat, orthographic projection, picking, camera controls or 3D combat QA, read `.agents/skills/tactical-camera/SKILL.md` and `docs/TACTICAL-CAMERA-GATE.md` first.
-- Ground exploration remains first-person; tactical elevated view is only for turn-based combat.
+- Bridge exploration remains first-person. **Planetary away-team exploration targets a fixed elevated/isometric view with visible, individually selectable officers and point-and-click squad orders**; turn-based combat takes over on hostile contact. See issue #202. Preserve current first-person ground gameplay and saves as a rollback until the replacement passes browser, persistence and visual gates.
 - Prove grid-cell ID selection by browser tests on mobile and desktop *before* introducing 3D combat art or a free-rotating camera.
 - External community skills are references, not silently installed code or authority to expand task scope.
