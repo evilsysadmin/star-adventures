@@ -117,7 +117,7 @@ export function GroundSquadSelection({
     const name = selected.length === 1 ? squad.find(officer => officer.id === selected[0])?.name :
       'Formación de ' + selected.length + ' oficiales';
     setMoveNotice(success ? name + ' en torno a ' + x + ':' + y :
-      'No existe una formación segura: destino bloqueado u ocupado.');
+      'No existe una formación segura: casilla ocupada o destino bloqueado.');
   };
   const onBoardKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
     if (disabled || !moveMode || event.altKey || event.ctrlKey || event.metaKey) return;
