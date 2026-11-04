@@ -540,7 +540,6 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // command camera and disappears in first-person walking exploration.
   const captainCoat = mat('#355967', .14, .72);
   captainCoat.bumpMap = seat.bumpMap; captainCoat.bumpScale = .008;
-  const captainBadge = mat('#d9b77b', .58, .39);
   const commandCollar = mat('#26343b', .05, .86);
   const captainAvatar = new THREE.Group();
   captainAvatar.name = 'command-chair-captain';
@@ -575,22 +574,40 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   commandHair.name = 'command-hair';
 
   for (const side of [-1, 1]) {
-    // A narrow upper sleeve and bent forearm meet on the actual armrest.
-    const start = new THREE.Vector3(side*.275,1.32,.025);
-    const elbow = new THREE.Vector3(side*.36,1.05,.035);
-    const wrist = new THREE.Vector3(side*.42,1.105,-.22);
-    const segment = (from:THREE.Vector3,to:THREE.Vector3,radius:number) => {
-      const direction=to.clone().sub(from);
-      const sleeve=mesh(cylinder,captainCoat,captainAvatar,
-        (from.x+to.x)/2,(from.y+to.y)/2,(from.z+to.z)/2,
-        radius,direction.length(),radius);
-      sleeve.quaternion.setFromUnitVectors(up,direction.normalize());
-    };
-    segment(start,elbow,.067);
-    segment(elbow,wrist,.058);
-    mesh(officerOval,captainSkin,captainAvatar,wrist.x,wrist.y,wrist.z-.035,.055,.035,.08);
-    for (let stripe=0; stripe<2; stripe++)
-      block(captainAvatar,captainBadge,side*.34,1.12+stripe*.035,.09,.065,.01,.01);
+    // A single tapered sleeve follows shoulder, elbow and wrist. Its rings
+    // share normals, so a bend reads as one arm rather than stacked tubes.
+    const armPath = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side*.245,1.30,.025),
+      new THREE.Vector3(side*.30,1.21,.04),
+      new THREE.Vector3(side*.36,1.065,.025),
+      new THREE.Vector3(side*.40,1.08,-.10),
+      new THREE.Vector3(side*.42,1.105,-.22),
+    ]);
+    const armPoints:number[] = [], armFaces:number[] = [];
+    const rings=16, sides=12;
+    const radial = new THREE.Vector3(), rotation = new THREE.Quaternion();
+    for (let ring=0; ring<=rings; ring++) {
+      const t=ring/rings, center=armPath.getPoint(t);
+      const tangent=armPath.getTangent(t).normalize();
+      rotation.setFromUnitVectors(up,tangent);
+      const radius=.075 - .025*t;
+      for (let i=0; i<sides; i++) {
+        const angle=2*Math.PI*i/sides;
+        radial.set(Math.cos(angle)*radius,0,Math.sin(angle)*radius*.88).applyQuaternion(rotation);
+        armPoints.push(center.x+radial.x,center.y+radial.y,center.z+radial.z);
+      }
+    }
+    for (let ring=0; ring<rings; ring++) for (let i=0; i<sides; i++) {
+      const a=ring*sides+i,b=ring*sides+(i+1)%sides,c=a+sides,d=b+sides;
+      armFaces.push(a,c,b,b,c,d);
+    }
+    const armGeometry=new THREE.BufferGeometry();
+    armGeometry.setAttribute('position',new THREE.Float32BufferAttribute(armPoints,3));
+    armGeometry.setIndex(armFaces); armGeometry.computeVertexNormals(); geometries.add(armGeometry);
+    mesh(armGeometry,captainCoat,captainAvatar,0,0,0,1,1,1);
+    // A flattened palm and separate thumb rest on the physical armrest.
+    mesh(officerOval,captainSkin,captainAvatar,side*.42,1.105,-.265,.046,.023,.07);
+    mesh(officerOval,captainSkin,captainAvatar,side*.375,1.103,-.25,.021,.019,.045);
   }
 
   // The first officer has a dedicated seat in the seated command view.
