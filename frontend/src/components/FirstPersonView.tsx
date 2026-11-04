@@ -5,6 +5,7 @@ import world from '../../../content/scenes/meridian.json';
 import { startExploration, applyExploration, faceTile } from '../../../src/spatial.mjs';
 import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
+import { GroundSquadSelection } from './GroundSquadSelection';
 import { missionWaypoint, type WaypointCommand } from '../missionWaypoint';
 
 const stationLabels: Record<string, string> = {
@@ -432,6 +433,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [showSquad, setShowSquad] = useState(false);
   const [bridgeFallback, setBridgeFallback] = useState(false);
   const [previewStation, setPreviewStation] = useState<string | null>(null);
   const useCompatibleBridge = useCallback(() => setBridgeFallback(true), []);
@@ -455,11 +457,11 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   useEffect(() => {
     if (canvas.current && (exploration.area !== 'bridge' || bridgeFallback))
       drawScene(canvas.current, exploration, alert, event?.type === 'station' ? (event.stationId ?? null) : null);
-  }, [exploration, alert, showMap, event, bridgeFallback]);
+  }, [exploration, alert, showMap, showSquad, event, bridgeFallback]);
   useEffect(() => {
     const onKey = (key: KeyboardEvent) => {
       if (paused || (seated && !exploration.pending)) return;
-      if (showMap || key.repeat || key.defaultPrevented || key.altKey || key.ctrlKey || key.metaKey) return;
+      if (showMap || showSquad || key.repeat || key.defaultPrevented || key.altKey || key.ctrlKey || key.metaKey) return;
       if (key.target instanceof HTMLElement &&
           (key.target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(key.target.tagName))) return;
       const lookup: Record<string, Command> = {
@@ -478,19 +480,25 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [dispatch, exploration.pending, showMap, paused, seated]);
+  }, [dispatch, exploration.pending, showMap, showSquad, paused, seated]);
   return (
     <section id="exploration" className={`firstperson firstperson-${exploration.area}`} aria-label="Exploración del puente y del equipo de desembarco">
       <div className="firstperson-top">
         <span className="firstperson-name" data-testid="explore-area">{area.title}</span>
-        <button type="button" className="firstperson-map-toggle" onClick={() => setShowMap(m => !m)}>
+        {exploration.area === 'surface' && !showMap && <button type="button" className="firstperson-map-toggle" data-testid="ground-squad-toggle"
+          disabled={paused || !!exploration.pending} onClick={() => setShowSquad(value => !value)}>
+          {showSquad ? 'Volver a explorar' : 'Vista de equipo · prueba'}
+        </button>}
+        <button type="button" className="firstperson-map-toggle" onClick={() => { setShowSquad(false); setShowMap(m => !m); }}>
           {showMap ? 'Volver al puente' : 'Mapa táctico'}
         </button>
       </div>
       {showMap ? <BridgeScene alert={alert} terminal={terminal} /> : (
         <>
           <div className="firstperson-render-stage">
-          {exploration.area === 'bridge' && !bridgeFallback
+          {exploration.area === 'surface' && showSquad
+            ? <GroundSquadSelection squad={squad} position={exploration} disabled={paused || !!exploration.pending} />
+            : exploration.area === 'bridge' && !bridgeFallback
             ? <BridgeInteriorView pose={{ ...bridgePose, seated }} alert={alert} roster={bridgeCrew}
                 focusedStation={seated ? (previewStation ?? focusedStation) : null} onUnavailable={useCompatibleBridge} />
             : <canvas key={exploration.area} ref={canvas} className="firstperson-canvas" data-testid="compatible-firstperson-canvas" width={WIDTH} height={HEIGHT} role="img"
@@ -505,13 +513,13 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             <span data-testid="explore-heading">{seated ? 'CAPITÁN · MANDO DE LA NAVE' : `RUMBO ${exploration.heading} · ${exploration.x}:${exploration.y}`} </span>
             <span data-testid="explore-target">{seated ? `Mando: ${bridgeCrew.captain.name} · selecciona una estación` : facing ? `OBJETIVO: ${facing.label}` : 'Observando la estancia'}</span>
           </div>
-          {waypoint && <div className="firstperson-waypoint" data-testid="mission-waypoint"
+          {waypoint && !showSquad && <div className="firstperson-waypoint" data-testid="mission-waypoint"
             data-action={waypoint.action} role="status" aria-live="polite">
             <span className="firstperson-waypoint-label">RUTA DE MISIÓN · {waypoint.label}</span>
             <strong data-testid="mission-waypoint-command">{WAYPOINT_ORDERS[waypoint.action]}</strong>
             <span className="firstperson-waypoint-steps">{waypoint.steps === 0 ? 'Objetivo al alcance' : `${waypoint.steps} ${waypoint.steps === 1 ? 'casilla' : 'casillas'} por recorrer`}</span>
           </div>}
-          {seated ? <div className="captain-controls" aria-label="Puesto del capitán" data-testid="captain-controls">
+          {showSquad ? null : seated ? <div className="captain-controls" aria-label="Puesto del capitán" data-testid="captain-controls">
             {world.scenes.bridge.objects.filter(item => item.type === 'station').map(item =>
               <button key={item.id} type="button" disabled={paused || !!exploration.pending}
                 aria-label={item.id === 'comms' ? 'Comunicaciones' : undefined} data-testid={`captain-${item.id}`}
@@ -546,7 +554,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             </div>
           </div>}
           <p className="firstperson-feedback" data-testid="explore-feedback" aria-live="polite">
-            {seated ? 'Tu tripulación espera órdenes. Ciencia y diplomacia pueden resolver el conflicto sin combatir.' : event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
+            {showSquad ? 'Selección de equipo de prueba. Vuelve a explorar para moverte e interactuar.' : seated ? 'Tu tripulación espera órdenes. Ciencia y diplomacia pueden resolver el conflicto sin combatir.' : event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
               event.action === 'assist-evacuees' ? 'Puesto de socorro: consulta el resultado del equipo médico en el diario.' :
               event.action === 'extract-sensor-core' ? 'Archivo de sensores: consulta el resultado de la extracción en el canal reservado.' :
                event.action === 'secure-perimeter' ? perimeterResolved

@@ -1,0 +1,15 @@
+.ground-squad{background:#101b28;color:#d9e8e7;min-width:0}
+.ground-squad-viewport{position:relative;overflow:hidden;background:#172a32}
+.ground-squad svg{display:block;width:100%;height:auto;aspect-ratio:900/430;touch-action:none;user-select:none;cursor:crosshair}
+.ground-object-label{font:700 14px sans-serif;fill:#e7d4ac;paint-order:stroke;stroke:#182e35;stroke-width:3px}
+.ground-unit{cursor:pointer}
+.ground-unit.is-selected{filter:drop-shadow(0 0 6px #c4dfab88)}
+.ground-unit-name{font:700 13px sans-serif;fill:#f1e9d7;paint-order:stroke;stroke:#142832;stroke-width:4px;pointer-events:none}
+.ground-selection-marquee{position:absolute;pointer-events:none;border:1px solid #e8ca82;background:#b6d6bd30;box-shadow:0 0 14px #b6d6bd22}
+.ground-squad-toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#132a35;border-top:1px solid #40616a}
+.ground-squad-toolbar button{min-height:44px;padding:7px 12px;flex:1 1 105px;min-width:0;border:1px solid #52717a;background:#203e4a;color:#e0eae6;cursor:pointer;font:600 11px/1.3 'DM Sans',sans-serif}
+.ground-squad-toolbar button[aria-pressed=true]{background:#476252;border-color:#d8c38f;color:#fff4dc}
+.ground-squad-toolbar button:disabled{opacity:.5;cursor:not-allowed}
+.ground-squad-status{margin:0;padding:9px 12px 0;color:#dfc992;font:700 11px 'DM Sans',sans-serif}
+.ground-squad-help{font:11px/1.5 'DM Sans',sans-serif;color:#abc5c7;margin:0;padding:5px 12px 12px}
+@media(max-width:520px){.ground-unit-name{font-size:14px}.ground-squad-toolbar{padding:7px}.ground-squad-toolbar button{font-size:11px;flex-basis:100px}}
