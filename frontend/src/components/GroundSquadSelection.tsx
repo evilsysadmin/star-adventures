@@ -54,6 +54,25 @@ export function GroundSquadSelection({
     });
   };
 
+  // Pick the canonical ground grid through overlapping officer art, not from
+  // the clicked decorative SVG element's identity.
+  const pickGroundCell = (clientX: number, clientY: number): string | null => {
+    const root = svg.current;
+    const matrix = root?.getScreenCTM();
+    if (!root || !matrix) return null;
+    const pointer = root.createSVGPoint();
+    pointer.x = clientX;
+    pointer.y = clientY;
+    const local = pointer.matrixTransform(matrix.inverse());
+    const u = (local.x - 440) / 40;
+    const v = (local.y - 52) / 20;
+    const x = Math.round((u + v) / 2);
+    const y = Math.round((v - u) / 2);
+    if (x < 0 || y < 0 || x >= scene.width || y >= scene.height) return null;
+    const center = tile(x, y);
+    if (Math.abs(local.x - center.x) / 40 + Math.abs(local.y - center.y) / 20 > 1) return null;
+    return x + ',' + y;
+  };
   const requestMove = (tileId: string | null) => {
     if (!tileId || disabled) return;
     setMoveMode(false);
@@ -93,7 +112,7 @@ export function GroundSquadSelection({
   const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (disabled || event.button !== 0 || !event.isPrimary) return;
     const target = (event.target as Element).closest('[data-officer-id]')?.getAttribute('data-officer-id') ?? null;
-    const tileTarget = (event.target as Element).closest('[data-cell-id]')?.getAttribute('data-cell-id') ?? null;
+    const tileTarget = pickGroundCell(event.clientX, event.clientY);
     gesture.current = {
       pointerId: event.pointerId,
       start: { x: event.clientX, y: event.clientY },
@@ -145,7 +164,7 @@ export function GroundSquadSelection({
         onPointerUp={onPointerUp} onPointerCancel={cancelGesture}
         onLostPointerCapture={cancelGesture} onContextMenu={event => {
           event.preventDefault();
-          requestMove((event.target as Element).closest('[data-cell-id]')?.getAttribute('data-cell-id') ?? null);
+          requestMove(pickGroundCell(event.clientX, event.clientY));
         }}>
         <defs>
           <linearGradient id="ground-terrain" x1="0" y1="0" x2="1" y2="1">

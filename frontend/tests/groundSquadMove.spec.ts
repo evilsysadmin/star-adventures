@@ -1,5 +1,24 @@
 import { expect, test } from '@playwright/test';
 
+// Exercise pointer projection at the actual cell center, even when officer
+// artwork covers the ground polygon. The SVG's own event delegation must
+// resolve the underlying canonical cell.
+async function boardCellClick(page: import('@playwright/test').Page, x: number, y: number, button: 'left' | 'right' = 'left') {
+  const board = page.getByTestId('ground-squad-board');
+  const position = await board.evaluate((element, cell) => {
+    const svg = element as SVGSVGElement;
+    const point = svg.createSVGPoint();
+    point.x = 440 + (cell.x - cell.y) * 40;
+    point.y = 52 + (cell.x + cell.y) * 20;
+    const matrix = svg.getScreenCTM();
+    if (!matrix) throw new Error('No board projection');
+    const projected = point.matrixTransform(matrix);
+    const rect = svg.getBoundingClientRect();
+    return { x: projected.x - rect.left, y: projected.y - rect.top };
+  }, {x, y});
+  await board.click({position, button});
+}
+
 for (const width of [390, 1280]) {
   test('isometric whole-squad marching respects the canonical ground map at ' + width + 'px', async ({ page }) => {
     test.setTimeout(70_000);
@@ -16,16 +35,16 @@ for (const width of [390, 1280]) {
 
     // The canonical campaign has one squad position, so there can be no
     // fabricated individual move before a dedicated per-officer save contract.
-    await page.locator('[data-cell-id="4,4"]').click({button:'right'});
+    await boardCellClick(page,4,4,'right');
     await expect(page.getByTestId('ground-move-status')).toContainText('Selecciona todo');
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
 
     await page.getByTestId('ground-select-all').click();
-    await page.locator('[data-cell-id="3,2"]').click({button:'right'});
+    await boardCellClick(page,3,2,'right');
     await expect(page.getByTestId('ground-move-status')).toContainText('bloqueada');
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
 
-    await page.locator('[data-cell-id="4,4"]').click({button:'right'});
+    await boardCellClick(page,4,4,'right');
     await expect(page.getByTestId('explore-heading')).toContainText('4:4');
     await expect(page.getByTestId('ground-move-status')).toContainText('4:4');
     await page.getByTestId('ground-squad-board').screenshot({path:'test-results/ground-squad-moved-'+width+'.png'});
@@ -38,7 +57,7 @@ for (const width of [390, 1280]) {
 
     // Touch/keyboard alternative requires no right-click.
     await page.getByTestId('ground-move-mode').click();
-    await page.locator('[data-cell-id="4,5"]').click();
+    await boardCellClick(page,4,5);
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
 
     await page.getByTestId('ground-move-mode').click();
