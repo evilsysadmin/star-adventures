@@ -6,7 +6,7 @@ import './groundSquadSelection.css';
 
 type Officer = { id: string; name: string };
 type Point = { x: number; y: number };
-type Gesture = { pointerId: number; start: Point; target: string | null; tile: string | null; additive: boolean };
+type Gesture = { pointerId: number; start: Point; target: string | null; tile: string | null; additive: boolean; dragged: boolean };
 const scene = world.scenes.surface;
 const tile = (col: number, row: number): Point => ({ x: 440 + (col - row) * 40, y: 52 + (col + row) * 20 });
 const tileShape = (col: number, row: number) => {
@@ -136,6 +136,7 @@ export function GroundSquadSelection({
       target,
       tile: tileTarget,
       additive: event.shiftKey,
+      dragged: false,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
     event.preventDefault();
@@ -143,7 +144,8 @@ export function GroundSquadSelection({
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
     if (!gesture.current || gesture.current.pointerId !== event.pointerId) return;
     const end = { x: event.clientX, y: event.clientY };
-    setMarquee(isSelectionDrag(gesture.current.start, end)
+    gesture.current.dragged ||= isSelectionDrag(gesture.current.start, end);
+    setMarquee(gesture.current.dragged
       ? { start: gesture.current.start, end } : null);
   };
   const onPointerUp = (event: PointerEvent<SVGSVGElement>) => {
@@ -154,11 +156,11 @@ export function GroundSquadSelection({
     const roster = screenRoster();
     if (!roster || disabled) return;
     const end = { x: event.clientX, y: event.clientY };
-    if (!isSelectionDrag(start.start, end) && moveMode && start.tile) {
+    if (!start.dragged && !isSelectionDrag(start.start, end) && moveMode && start.tile) {
       requestMove(start.tile);
       return;
     }
-    if (isSelectionDrag(start.start, end))
+    if (start.dragged || isSelectionDrag(start.start, end))
       setSelected(previous => selectOfficerRectangle(roster, previous, start.start, end, start.additive));
     else
       setSelected(previous => selectOfficer(roster, previous, start.target, start.additive));

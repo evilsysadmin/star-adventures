@@ -58,6 +58,17 @@ for (const width of [390, 1280]) {
     await page.mouse.up();
     await expect(page.getByTestId('ground-selection-status')).toContainText('Todo el equipo');
 
+    // Returning to the starting point after dragging must never become a click.
+    const unit = points[0];
+    await page.keyboard.down('Shift');
+    await page.mouse.move(unit.x, unit.y);
+    await page.mouse.down();
+    await page.mouse.move(unit.x + 40, unit.y + 40, { steps: 4 });
+    await page.mouse.move(unit.x, unit.y, { steps: 4 });
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+    await expect(page.getByTestId('ground-selection-status')).toContainText('Todo el equipo');
+
     // Accessible button alternatives also work. No selection operation
     // generates a mission order or changes the authoritative spatial pose.
     await page.getByTestId('ground-select-venn').click();
