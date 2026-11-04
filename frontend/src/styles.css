@@ -219,3 +219,15 @@ button:focus-visible,a:focus-visible{outline:2px solid #8ce2ce;outline-offset:3p
     background:#132836;
   }
 }
+
+/* Away-team preparation: the medical assessment follows the real rescue rule. */
+.away-readiness{display:grid;gap:4px;margin-top:12px;padding:10px 11px;border-left:3px solid #79cbb0;background:#183832;color:#c3e7d7;font-size:12px;line-height:1.45}
+.away-readiness strong{color:#e4f6eb;font-size:12px}
+.away-readiness.needs-medic{border-color:#e6ac65;background:#3d3025;color:#f0d1a9}
+.away-readiness.needs-medic strong{color:#ffe3b9}
+.away-next-step{display:grid;gap:8px;margin-top:10px;color:#c2d2d3;font-size:12px;line-height:1.45}
+.away-next-step button{min-height:44px;padding:10px 13px;border:1px solid #d2af79;background:#6e4a24;color:#fff1d7;text-align:left;font-weight:700;cursor:pointer}
+.away-next-step button:hover{background:#865d30}
+.away-next-step button:focus-visible{outline:3px solid #fff0c6;outline-offset:2px}
+
+.transport-medical-warning{border-left:3px solid #e6ac65;padding:8px 10px;background:#3d3025;color:#ffe1b5!important;font-size:12px;line-height:1.5}
