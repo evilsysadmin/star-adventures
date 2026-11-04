@@ -33,10 +33,10 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
     await page.getByTestId('ground-squad-toggle').click();
 
-    // The canonical campaign has one squad position, so there can be no
-    // fabricated individual move before a dedicated per-officer save contract.
+    // Individual moves use the real officer footprint. Kael already occupies
+    // 4:4, so Nara cannot enter it; selection never teleports or stacks units.
     await boardCellClick(page,4,4,'right');
-    await expect(page.getByTestId('ground-move-status')).toContainText('Selecciona todo');
+    await expect(page.getByTestId('ground-move-status')).toContainText('ocupada');
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
 
     await page.getByTestId('ground-select-all').click();
