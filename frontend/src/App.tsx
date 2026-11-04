@@ -15,7 +15,7 @@ import { availableConsoleOrders, issueConsoleOrder } from '../../src/consoleOrde
 import { startAwayTeam, selectAwayOfficer, investigateProbe, PROBE_FINDING } from '../../src/awayTeam.mjs';
 import { reconcileObservedProbe } from '../../src/observedMandate.mjs';
 import { startMandate } from '../../src/dualMandate.mjs';
-import { performMedicalEvacuation, EVACUATION_INCIDENT } from '../../src/medicalEvacuation.mjs';
+import { performMedicalEvacuation, EVACUATION_INCIDENT, bestAwayMedic, MEDICAL_THRESHOLD } from '../../src/medicalEvacuation.mjs';
 import { abandonRescue, returnAfterAbandonedRescue } from '../../src/abandonRescue.mjs';
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
@@ -83,6 +83,7 @@ export function App() {
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const crewRoster = useRef<HTMLDetailsElement>(null);
+  const transportRequest = useRef<(() => void) | null>(null);
   useEffect(() => { if (game.paused) setStatusOpen(false); }, [game.paused]);
   const [explorationKey, setExplorationKey] = useState(0);
   const state = session.episodeState;
@@ -214,6 +215,18 @@ export function App() {
       document.querySelector<HTMLSelectElement>('[data-testid="away-slot-0"]')?.focus();
     });
   };
+  const returnToDeployment = () => {
+    if (game.immersive) game.setJournalOpen(false);
+    requestAnimationFrame(() => {
+      if (seated) {
+        transportRequest.current?.();
+        return;
+      }
+      const target = document.querySelector<HTMLButtonElement>('[data-testid="explore-forward"]');
+      target?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      target?.focus({ preventScroll: true });
+    });
+  };
   const returnFromFieldEncounter = () => {
     savePerimeter(fieldHistory, false);
     setFieldEncounterOpen(false);
@@ -285,6 +298,9 @@ export function App() {
       next: 'Consulta el archivo de órdenes. Puedes continuar la investigación o volver a desembarcar.',
     },
   }[missionPhase];
+  const medic = bestAwayMedic(session.crew, awayTeam);
+  const medicName = OFFICERS.find(officer => officer.id === medic.officerId)!.name;
+  const medicalReady = medic.skill >= MEDICAL_THRESHOLD;
   const missionProgress = { briefing: 0, field: 1, extract: 2, debrief: 3, abandoned: -1 }[missionPhase];
 
   return (
@@ -383,6 +399,8 @@ export function App() {
           ) : (
             <FirstPersonView key={explorationKey} alert={showDamage} terminal={terminal} initialState={exploration}
               paused={game.paused} captainMode={game.immersive} bridgeCrew={bridgeCrew}
+              transportRequestRef={transportRequest}
+              medicalReadiness={{ name: medicName, skill: medic.skill, required: MEDICAL_THRESHOLD }}
               focusedStation={game.journalOpen ? activeStation : null}
               onCaptainStation={id => { setActiveStation(id); game.setJournalOpen(true); }}
               perimeterResolved={fieldResolution !== null}
@@ -444,6 +462,15 @@ export function App() {
                 </label>
               ))}
             </div>
+            {missionPhase === 'briefing' && <div className={`away-readiness ${medicalReady ? 'is-ready' : 'needs-medic'}`} data-testid="away-medical-readiness" role="status">
+              <strong>{medicalReady ? 'Equipo preparado para el rescate' : 'El equipo necesita más capacidad médica'}</strong>
+              <span>{medicName} · Medicina {medic.skill}/5 {medicalReady ? '· suficiente para atender a los civiles' : `· se necesita ${MEDICAL_THRESHOLD}/5 para atender a los civiles`}</span>
+              {!medicalReady && <span>Puedes cambiar un oficial por alguien con Medicina antes de partir, o desplegar este equipo y regresar después.</span>}
+            </div>}
+            {missionPhase === 'briefing' && !exploration.pending && <div className="away-next-step">
+              <span>{seated ? 'Revisa el equipo y confirma el transporte a la superficie.' : 'Después, sigue la ruta hasta el transporte en el puente.'}</span>
+              <button type="button" data-testid="away-continue-transport" onClick={returnToDeployment}>{seated ? 'Continuar al desembarco' : 'Volver al puente'} <span aria-hidden="true">→</span></button>
+            </div>}
             <p className="away-finding" data-testid="away-finding">
               {awayTeam.findings.includes(PROBE_FINDING)
                 ? 'Sonda investigada: firma mineral registrada en la bitácora.'
