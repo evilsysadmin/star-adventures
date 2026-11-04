@@ -332,26 +332,51 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   block(scene, bronze, 0, .81, -5.99, 13.8, .055, .22);
   block(scene, cyan, 0, .75, -5.87, 13.7, .023, .04);
 
+  // An original curved shell gives the command seats a recognizable back
+  // from the camera, without a rectangular panel or desk-like side walls.
+  const commandBackProfile = new THREE.Shape();
+  commandBackProfile.moveTo(-.25,-.27);
+  commandBackProfile.quadraticCurveTo(-.40,-.26,-.41,-.11);
+  commandBackProfile.lineTo(-.39,.14);
+  commandBackProfile.quadraticCurveTo(-.37,.29,-.24,.30);
+  commandBackProfile.quadraticCurveTo(0,.26,.24,.30);
+  commandBackProfile.quadraticCurveTo(.37,.29,.39,.14);
+  commandBackProfile.lineTo(.41,-.11);
+  commandBackProfile.quadraticCurveTo(.40,-.26,.25,-.27);
+  commandBackProfile.quadraticCurveTo(0,-.30,-.25,-.27);
+  const commandBackShell = new THREE.ExtrudeGeometry(commandBackProfile, {
+    depth:.10, bevelEnabled:true, bevelSize:.025, bevelThickness:.025,
+    bevelSegments:3, curveSegments:12,
+  });
+  commandBackShell.translate(0,0,-.05); geometries.add(commandBackShell);
+  const commandCushion = new THREE.SphereGeometry(1,24,16); geometries.add(commandCushion);
+
   function chair(parent: THREE.Object3D, x = 0, z = .35, captain = false) {
     const frame = new THREE.Group(); parent.add(frame); parent = frame;
     // Standing eye height must clear the helm headrest when using its console.
     // The command chair retains its taller silhouette.
     frame.scale.y = captain ? 1 : .68;
     if (captain) {
-      // A low, open-backed command seat keeps the occupant visible. The
-      // armrests carry the controls; there is no panel resembling a desk.
-      mesh(cylinder, dark, parent, x, .14, z, .43, .18, .43);
-      mesh(cylinder, panel, parent, x, .38, z, .12, .45, .12);
-      rounded(parent, seatEdge, x, .62, z, .80, .15, .75);
-      rounded(parent, captainLeather, x, .72, z - .02, .72, .15, .65);
-      rounded(parent, commandSeatShell, x, .98, z + .32, .76, .65, .15);
-      rounded(parent, captainLeather, x, 1.01, z + .40, .62, .49, .08);
+      // A pedestal, upholstered shell and open rails replace solid desk-like
+      // side panels. Controls remain on the real armrests.
+      mesh(cylinder, dark, parent, x, .11, z, .33, .12, .33);
+      mesh(cylinder, commandSeatShell, parent, x, .37, z, .095, .45, .095);
+      mesh(commandCushion, commandSeatShell, parent, x, .62, z, .40, .10, .37);
+      mesh(commandCushion, captainLeather, parent, x, .70, z-.025, .36, .09, .32);
+      const back=mesh(commandBackShell,captainLeather,parent,x,1.01,z+.31,1,1,1);
+      back.rotation.x=-.08;
       for (const side of [-1, 1]) {
-        block(parent, dark, x + side * .43, .83, z, .10, .38, .57);
-        rounded(parent, seatEdge, x + side * .43, 1.03, z, .15, .07, .65);
-        block(parent, dark, x + side * .43, 1.08, z - .20, .11, .012, .26);
-        for (let i = 0; i < 3; i++)
-          block(parent, i === 2 ? amber : cyan, x + side * .43, 1.09, z - .28 + i * .08, .065, .008, .04);
+        const railPath=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(x+side*.31,.65,z+.19),
+          new THREE.Vector3(x+side*.40,.78,z+.13),
+          new THREE.Vector3(x+side*.42,1.01,z+.06),
+          new THREE.Vector3(x+side*.42,1.03,z-.20),
+        ]);
+        const rail=new THREE.TubeGeometry(railPath,16,.035,8,false); geometries.add(rail);
+        mesh(rail,commandSeatShell,parent,0,0,0,1,1,1);
+        mesh(commandCushion,commandSeatShell,parent,x+side*.42,1.04,z-.12,.075,.035,.22);
+        for (let i=0; i<3; i++)
+          block(parent,i===2?amber:cyan,x+side*.42,1.079,z-.22+i*.07,.045,.008,.035);
       }
       return;
     }
@@ -649,9 +674,7 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       const commandFocus = makeStationFocus('captain');
       for (const side of [-1, 1])
         block(group, commandFocus, side * .57, 1.145, -.09, .022, .02, .39);
-      block(group, bronze, 0, .03, 0, 1.75, .025, 1.75);
-      block(group, dark, 0, .05, 0, 1.65, .025, 1.65);
-      // Re-add chair's pedestal above the flat decorative base.
+      mesh(cylinder, commandSeatShell, group, 0, .035, 0, .65, .025, .65);
       continue;
     }
     if (station.type === 'transition') {
