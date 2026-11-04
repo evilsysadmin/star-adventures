@@ -208,7 +208,7 @@ test('walk the first-person bridge, operate a console, and cancel/confirm transp
   await page.getByTestId('explore-right').click();
   await expect(page.getByTestId('explore-target')).toContainText('sala de transporte');
   await page.getByTestId('explore-use').click();
-  await expect(page.getByRole('dialog')).toContainText('Confirmar cambio de área');
+  await expect(page.getByRole('dialog')).toContainText('Confirmar desembarco');
   await page.screenshot({ path: 'test-results/transport-confirm-390.png', fullPage: true });
   await page.getByTestId('transport-decline').click();
   await expect(page.getByTestId('explore-heading')).toContainText('4:5');

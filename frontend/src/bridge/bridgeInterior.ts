@@ -62,8 +62,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   const panel = mat('#b1a4a1', .46, .41), bronze = mat('#bd9368', .72, .32);
   const instrumentShell = mat('#484654', .38, .62);
   const seat = mat('#593c47', .03, .94), seatEdge = mat('#77616a', .55, .42);
-  const captainLeather = mat('#70464e', .08, .84);
-  const captainStitch = mat('#c9a36a', .45, .62);
+  const captainLeather = mat('#344751', .12, .78);
+  const commandSeatShell = mat('#202f39', .35, .58);
   const cyan = luminous('#80d2d4'), amber = luminous('#f0ba78');
   const soft = luminous('#fff1cd');
   // Small deterministic surface maps provide scale at standing distance.
@@ -332,11 +332,54 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   block(scene, bronze, 0, .81, -5.99, 13.8, .055, .22);
   block(scene, cyan, 0, .75, -5.87, 13.7, .023, .04);
 
+  // An original curved shell gives the command seats a recognizable back
+  // from the camera, without a rectangular panel or desk-like side walls.
+  const commandBackProfile = new THREE.Shape();
+  commandBackProfile.moveTo(-.25,-.27);
+  commandBackProfile.quadraticCurveTo(-.40,-.26,-.41,-.11);
+  commandBackProfile.lineTo(-.39,.14);
+  commandBackProfile.quadraticCurveTo(-.37,.29,-.24,.30);
+  commandBackProfile.quadraticCurveTo(0,.26,.24,.30);
+  commandBackProfile.quadraticCurveTo(.37,.29,.39,.14);
+  commandBackProfile.lineTo(.41,-.11);
+  commandBackProfile.quadraticCurveTo(.40,-.26,.25,-.27);
+  commandBackProfile.quadraticCurveTo(0,-.30,-.25,-.27);
+  const commandBackShell = new THREE.ExtrudeGeometry(commandBackProfile, {
+    depth:.10, bevelEnabled:true, bevelSize:.025, bevelThickness:.025,
+    bevelSegments:3, curveSegments:12,
+  });
+  commandBackShell.translate(0,0,-.05); geometries.add(commandBackShell);
+  const commandCushion = new THREE.SphereGeometry(1,24,16); geometries.add(commandCushion);
+
   function chair(parent: THREE.Object3D, x = 0, z = .35, captain = false) {
     const frame = new THREE.Group(); parent.add(frame); parent = frame;
     // Standing eye height must clear the helm headrest when using its console.
     // The command chair retains its taller silhouette.
     frame.scale.y = captain ? 1 : .68;
+    if (captain) {
+      // A pedestal, upholstered shell and open rails replace solid desk-like
+      // side panels. Controls remain on the real armrests.
+      mesh(cylinder, dark, parent, x, .11, z, .33, .12, .33);
+      mesh(cylinder, commandSeatShell, parent, x, .37, z, .095, .45, .095);
+      mesh(commandCushion, commandSeatShell, parent, x, .62, z, .40, .10, .37);
+      mesh(commandCushion, captainLeather, parent, x, .70, z-.025, .36, .09, .32);
+      const back=mesh(commandBackShell,captainLeather,parent,x,1.01,z+.31,1,1,1);
+      back.rotation.x=-.08;
+      for (const side of [-1, 1]) {
+        const railPath=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(x+side*.31,.65,z+.19),
+          new THREE.Vector3(x+side*.40,.78,z+.13),
+          new THREE.Vector3(x+side*.42,1.01,z+.06),
+          new THREE.Vector3(x+side*.42,1.03,z-.20),
+        ]);
+        const rail=new THREE.TubeGeometry(railPath,16,.035,8,false); geometries.add(rail);
+        mesh(rail,commandSeatShell,parent,0,0,0,1,1,1);
+        mesh(commandCushion,commandSeatShell,parent,x+side*.42,1.04,z-.12,.075,.035,.22);
+        for (let i=0; i<3; i++)
+          block(parent,i===2?amber:cyan,x+side*.42,1.079,z-.22+i*.07,.045,.008,.035);
+      }
+      return;
+    }
     mesh(cylinder, dark, parent, x, .14, z, .48, .18, .48);
     mesh(cylinder, panel, parent, x, .38, z, .1, .45, .1);
     rounded(parent, seatEdge, x, .62, z, .88, .18, .83);
@@ -350,15 +393,6 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     }
     rounded(parent, seat, x, 1.12, z + .47, .69, .58, .07);
     rounded(parent, seat, x, 1.56, z + .4, .6, .18, .2);
-    if (captain) {
-      // Original upholstered command-chair paneling faces the captain camera.
-      // These decorative meshes do not change the physical seating cell.
-      rounded(parent, captainLeather, x, 1.105, z + .52, .61, .54, .055);
-      rounded(parent, captainLeather, x, 1.565, z + .49, .55, .13, .1);
-      for (const side of [-1, 1])
-        block(parent, captainStitch, x + side * .294, 1.09, z + .557, .009, .43, .008);
-      block(parent, captainStitch, x, 1.375, z + .555, .45, .012, .01);
-    }
     block(parent, bronze, x, 1.35, z + .515, .13, .025, .012);
     for (const side of [-1, 1]) {
       block(parent, seatEdge, x + side * .28, 1.1, z + .51, .012, .43, .012);
@@ -408,6 +442,24 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     geometries.add(geometry);
   };
   shapeHead(headGeometry); shapeHead(scalpGeometry);
+  // The imported head includes a neck/shoulder base. Command figures use
+  // their own smooth neck, so keep a separate head geometry.
+  const commandHeadGeometry = headGeometry.clone(); geometries.add(commandHeadGeometry);
+  // Fine, deterministic variation on the actual scalp mesh breaks up the
+  // single glossy helmet shape without importing a hair texture or asset.
+  const commandScalpGeometry = scalpGeometry.clone(); geometries.add(commandScalpGeometry);
+  const shadeCommandScalp = (geometry:THREE.BufferGeometry) => {
+    const position = geometry.getAttribute('position');
+    const shades = new Float32Array(position.count * 3);
+    for (let i=0; i<position.count; i++) {
+      const x=position.getX(i), y=position.getY(i), z=position.getZ(i);
+      const wave=Math.sin(x*47 + Math.sin(y*19)*1.6 + z*13);
+      const value=.80 + .20*(wave*.5+.5);
+      shades[i*3]=value; shades[i*3+1]=value; shades[i*3+2]=value;
+    }
+    geometry.setAttribute('color',new THREE.BufferAttribute(shades,3));
+  };
+  shadeCommandScalp(commandScalpGeometry);
   const coats: Record<string, THREE.MeshStandardMaterial> = {
     helm: mat('#8f593e', .08, .77),
     science: mat('#287b83', .08, .77),
@@ -426,7 +478,8 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     comms: mat('#60452e', .04, .9), tactical: mat('#322f40', .04, .9),
   };
   const captainSkin = mat('#d4a47d', .03, .9);
-  const captainHair = mat('#1b2630', .04, .9);
+  const captainHair = mat('#1b2630', .02, .98);
+  captainHair.vertexColors = true;
   // Original illustrative palettes keyed by the game's six canonical IDs.
   // They follow the officer between posts, but do not claim to be portraits.
   const appearances: Record<string, readonly [string, string, string]> = {
@@ -471,9 +524,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   };
   const shoulder = new THREE.Vector3(), hand = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
+  const postOperators = new Map<string, THREE.Group>();
   const addSeatedOfficer = (parent: THREE.Object3D, role: string) => {
     const officer = new THREE.Group();
     officer.name = `bridge-operator-${role}`;
+    officer.userData.commandAvatar = true;
+    postOperators.set(role, officer);
     parent.add(officer);
     const coat = coats[role] ?? coats.helm;
     const skin = skinByPost[role];
@@ -508,32 +564,102 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
   // Separate, non-batched avatar: the captain appears only in the seated
   // command camera and disappears in first-person walking exploration.
   const captainCoat = mat('#355967', .14, .72);
-  const captainBadge = mat('#d9b77b', .58, .39);
+  captainCoat.bumpMap = seat.bumpMap; captainCoat.bumpScale = .008;
+  const commandCollar = mat('#26343b', .05, .86);
   const captainAvatar = new THREE.Group();
   captainAvatar.name = 'command-chair-captain';
   captainAvatar.userData.commandAvatar = true;
   captainAvatar.visible = false;
-  // Body sits inside the existing command chair. A recognizable head,
-  // shoulders and discreet rank stripes give the foreground a human anchor.
-  mesh(officerOval, captainCoat, captainAvatar, 0, 1.19, .04, .33, .39, .24);
-  mesh(officerOval, captainCoat, captainAvatar, 0, 1.39, .045, .40, .17, .215);
-  mesh(officerOval, captainCoat, captainAvatar, 0, .87, -.015, .28, .16, .24);
-  mesh(officerOval, uniformTrim, captainAvatar, 0, 1.49, .15, .27, .047, .13);
-  mesh(officerOval, captainSkin, captainAvatar, 0, 1.57, -.01, .11, .14, .11);
-  mesh(headGeometry, captainSkin, captainAvatar, 0, 1.76, -.025, .17, .215, .16);
-  mesh(scalpGeometry, captainHair, captainAvatar, 0, 1.76, -.025, .173, .218, .163);
+  // One continuous tailored torso avoids overlapping spheres at the shoulders.
+  // The profile tapers from the chest into the collar and seated waist.
+  const torsoProfile = [
+    {y:.88, x:.22, z:.15}, {y:1.03, x:.245, z:.17},
+    {y:1.23, x:.275, z:.175}, {y:1.34, x:.30, z:.16},
+    {y:1.40, x:.24, z:.14}, {y:1.465, x:.10, z:.085},
+  ];
+  const torsoPoints:number[] = [], torsoFaces:number[] = [];
+  const torsoSides = 24;
+  for (const ring of torsoProfile) for (let i=0; i<torsoSides; i++) {
+    const angle = 2 * Math.PI * i / torsoSides;
+    torsoPoints.push(Math.cos(angle) * ring.x, ring.y, .035 + Math.sin(angle) * ring.z);
+  }
+  for (let ring=0; ring<torsoProfile.length-1; ring++) for (let i=0; i<torsoSides; i++) {
+    const a=ring*torsoSides+i, b=ring*torsoSides+(i+1)%torsoSides;
+    const c=a+torsoSides, d=b+torsoSides;
+    torsoFaces.push(a,c,b,b,c,d);
+  }
+  const commandTorso = new THREE.BufferGeometry();
+  commandTorso.setAttribute('position',new THREE.Float32BufferAttribute(torsoPoints,3));
+  commandTorso.setIndex(torsoFaces); commandTorso.computeVertexNormals(); geometries.add(commandTorso);
+  mesh(commandTorso, captainCoat, captainAvatar, 0, 0, 0, 1, 1, 1);
+  mesh(cylinder, commandCollar, captainAvatar, 0, 1.465, -.015, .085, .045, .09);
+  mesh(cylinder, captainSkin, captainAvatar, 0, 1.49, -.015, .065, .12, .075);
+  mesh(commandHeadGeometry, captainSkin, captainAvatar, 0, 1.64, -.025, .17, .215, .16);
+  const commandHair = mesh(commandScalpGeometry, captainHair, captainAvatar, 0, 1.64, -.025, .173, .218, .163);
+  commandHair.name = 'command-hair';
 
   for (const side of [-1, 1]) {
-    const sleeve = mesh(cylinder, captainCoat, captainAvatar, side * .34, 1.13, .015, .12, .39, .135);
-    sleeve.rotation.z = side * .3;
-    mesh(officerOval, captainCoat, captainAvatar, side * .33, 1.44, .055, .175, .12, .19);
-    mesh(officerOval, captainBadge, captainAvatar, side * .34, 1.52, .175, .093, .013, .048);
-    // Wider shoulders remain visibly connected to the captain's torso.
-    // Do not invent free-floating hands: that requires a full articulated rig.
-    mesh(officerOval, captainCoat, captainAvatar, side * .42, 1.40, .065, .145, .11, .18);
-    for (let stripe = 0; stripe < 2; stripe++)
-      block(captainAvatar, captainBadge, side * .36, .99 + stripe * .055, .22, .11, .017, .014);
+    // A single tapered sleeve follows shoulder, elbow and wrist. Its rings
+    // share normals, so a bend reads as one arm rather than stacked tubes.
+    const armPath = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side*.245,1.30,.025),
+      new THREE.Vector3(side*.30,1.21,.04),
+      new THREE.Vector3(side*.36,1.065,.025),
+      new THREE.Vector3(side*.40,1.08,-.10),
+      new THREE.Vector3(side*.42,1.105,-.22),
+    ]);
+    const armPoints:number[] = [], armFaces:number[] = [];
+    const rings=16, sides=12;
+    const radial = new THREE.Vector3(), rotation = new THREE.Quaternion();
+    for (let ring=0; ring<=rings; ring++) {
+      const t=ring/rings, center=armPath.getPoint(t);
+      const tangent=armPath.getTangent(t).normalize();
+      rotation.setFromUnitVectors(up,tangent);
+      const radius=.075 - .025*t;
+      for (let i=0; i<sides; i++) {
+        const angle=2*Math.PI*i/sides;
+        radial.set(Math.cos(angle)*radius,0,Math.sin(angle)*radius*.88).applyQuaternion(rotation);
+        armPoints.push(center.x+radial.x,center.y+radial.y,center.z+radial.z);
+      }
+    }
+    for (let ring=0; ring<rings; ring++) for (let i=0; i<sides; i++) {
+      const a=ring*sides+i,b=ring*sides+(i+1)%sides,c=a+sides,d=b+sides;
+      armFaces.push(a,c,b,b,c,d);
+    }
+    const armGeometry=new THREE.BufferGeometry();
+    armGeometry.setAttribute('position',new THREE.Float32BufferAttribute(armPoints,3));
+    armGeometry.setIndex(armFaces); armGeometry.computeVertexNormals(); geometries.add(armGeometry);
+    mesh(armGeometry,captainCoat,captainAvatar,0,0,0,1,1,1);
+    // A flattened palm and separate thumb rest on the physical armrest.
+    mesh(officerOval,captainSkin,captainAvatar,side*.42,1.105,-.265,.046,.023,.07);
+    mesh(officerOval,captainSkin,captainAvatar,side*.375,1.103,-.25,.021,.019,.045);
   }
+
+  // The first officer has a dedicated seat in the seated command view.
+  // Its occupant is the canonical first officer, never a duplicate operator.
+  const firstOfficerSeat = new THREE.Group();
+  firstOfficerSeat.name = 'first-officer-seat';
+  firstOfficerSeat.position.set(-1.08, 0, -.12);
+  firstOfficerSeat.scale.setScalar(.92);
+  firstOfficerSeat.visible = false;
+  chair(firstOfficerSeat, 0, 0, true);
+  const firstOfficerAvatar = captainAvatar.clone(true);
+  firstOfficerAvatar.visible = true;
+  // Slightly turned toward the captain, rather than an identical rigid pose.
+  firstOfficerAvatar.rotation.y = .065;
+  const firstCoat = mat('#566a84', .14, .72);
+  firstCoat.bumpMap = seat.bumpMap; firstCoat.bumpScale = .008;
+  const firstSkin = mat('#805a46', .03, .9);
+  const firstHair = mat('#282c30', .02, .98);
+  firstHair.vertexColors = true;
+  firstOfficerAvatar.traverse(item => {
+    if (!(item instanceof THREE.Mesh)) return;
+    if (item.material === captainCoat) item.material = firstCoat;
+    else if (item.material === captainSkin) item.material = firstSkin;
+    else if (item.material === captainHair) item.material = firstHair;
+  });
+  firstOfficerSeat.add(firstOfficerAvatar);
+  firstOfficerSeat.traverse(item => { item.userData.commandAvatar = true; });
 
   for (const station of map.objects) {
     const p = point(station.x, station.y);
@@ -543,13 +669,12 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     if (station.id === 'captain') {
       chair(group, 0, 0, true);
       group.add(captainAvatar);
+      group.add(firstOfficerSeat);
       // Embedded armrest indicators follow the real command-station focus.
       const commandFocus = makeStationFocus('captain');
       for (const side of [-1, 1])
         block(group, commandFocus, side * .57, 1.145, -.09, .022, .02, .39);
-      block(group, bronze, 0, .03, 0, 1.75, .025, 1.75);
-      block(group, dark, 0, .05, 0, 1.65, .025, 1.65);
-      // Re-add chair's pedestal above the flat decorative base.
+      mesh(cylinder, commandSeatShell, group, 0, .035, 0, .65, .025, .65);
       continue;
     }
     if (station.type === 'transition') {
@@ -661,11 +786,15 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
     canvas.dataset.bridgeFocusedStation = selected ?? 'none';
   };
   let rosterKey = '';
+  let firstOfficerPost: string | null = null;
+  let firstOfficerIsCaptain = false;
   const applyRoster = (roster: BridgeCrewRoster) => {
     const nextKey = (['captain', ...deckPosts] as BridgeCrewStation[])
       .map(post => `${post}:${roster[post].id}:${roster[post].name}`).join('|');
     if (nextKey === rosterKey) return;
     rosterKey = nextKey;
+    firstOfficerIsCaptain = roster.captain.id === 'solan';
+    firstOfficerPost = deckPosts.find(post => roster[post].id === 'solan') ?? null;
     const apply = (post: BridgeCrewStation, coat: THREE.MeshStandardMaterial,
       skin: THREE.MeshStandardMaterial, hair: THREE.MeshStandardMaterial) => {
       const officer = roster[post];
@@ -703,6 +832,10 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
       ? Math.max(2.4, THREE.MathUtils.clamp((.85 - aspect) * 11, 0, 4.4)) : 0;
     camera.position.set(p.x, seat ? 1.8 : 1.72, p.z + retreat);
     captainAvatar.visible = !!seat;
+    firstOfficerSeat.visible = !!seat && !firstOfficerIsCaptain;
+    for (const [post, operator] of postOperators)
+      operator.visible = !(firstOfficerSeat.visible && post === firstOfficerPost);
+    canvas.dataset.bridgeFirstOfficerVisible = String(firstOfficerSeat.visible);
     canvas.dataset.bridgeCaptainVisible = String(!!seat);
     canvas.dataset.bridgeFraming = crewWide ? 'crew-wide' : seat ? 'command-wide' : 'exploration';
     canvas.dataset.bridgeMode = seat ? 'captain' : 'exploration';
@@ -750,16 +883,36 @@ export function createBridgeInterior(canvas: HTMLCanvasElement, map: BridgeMap) 
           hairFaces.push(faces[i], faces[i + 1], faces[i + 2]);
       }
       if (!hairFaces.length) throw new Error('Invalid scalp geometry');
+      // Omit the imported flared base instead of deforming it into angular
+      // folds. The separate neck overlaps the trimmed rear of the head.
+      const commandFaces:number[] = [];
+      for (let i=0; i<faces.length; i+=3) {
+        if (positions[faces[i]*3+1] > -.55 && positions[faces[i+1]*3+1] > -.55 &&
+            positions[faces[i+2]*3+1] > -.55)
+          commandFaces.push(faces[i],faces[i+1],faces[i+2]);
+      }
+      if (!commandFaces.length) throw new Error('Invalid command head geometry');
       headGeometry.dispose(); headGeometry.deleteAttribute('uv');
       headGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       headGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
       headGeometry.setIndex(new THREE.BufferAttribute(faces, 1));
       headGeometry.computeBoundingBox(); headGeometry.computeBoundingSphere();
+      commandHeadGeometry.dispose(); commandHeadGeometry.deleteAttribute('uv');
+      commandHeadGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      commandHeadGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      commandHeadGeometry.setIndex(commandFaces);
+      commandHeadGeometry.computeBoundingBox(); commandHeadGeometry.computeBoundingSphere();
       scalpGeometry.dispose(); scalpGeometry.deleteAttribute('uv');
       scalpGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       scalpGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
       scalpGeometry.setIndex(hairFaces);
       scalpGeometry.computeBoundingBox(); scalpGeometry.computeBoundingSphere();
+      commandScalpGeometry.dispose(); commandScalpGeometry.deleteAttribute('uv');
+      commandScalpGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      commandScalpGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      commandScalpGeometry.setIndex(hairFaces);
+      shadeCommandScalp(commandScalpGeometry);
+      commandScalpGeometry.computeBoundingBox(); commandScalpGeometry.computeBoundingSphere();
       batches.forEach(batch => { if (batch.geometry === headGeometry || batch.geometry === scalpGeometry) batch.computeBoundingSphere(); });
       renderer.shadowMap.needsUpdate = true;
       canvas.dataset.bridgeHead = 'loaded'; draw();

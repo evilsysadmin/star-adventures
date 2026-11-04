@@ -3,10 +3,24 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { currentNode } from '../src/episode.mjs';
 import { replayCommands, serializeSave } from '../src/save.mjs';
+import { officerAt } from '../src/crew.mjs';
 import { applyCrewAction, startCrewSession, replayCrewActions, serializeCrewCheckpoint, deserializeCrewCheckpoint, migrateLegacyCheckpoint, CrewSaveError } from '../src/crewSession.mjs';
 
 const episode = JSON.parse(readFileSync(new URL('../content/episodes/border-signal.json', import.meta.url), 'utf8'));
 const order = choiceId => ({ type: 'order', choiceId });
+
+test('an existing Varela checkpoint retains assignments and XP under the new captain name', () => {
+  const raw = JSON.stringify({ saveVersion: 2, episodeId: episode.id, actions: [
+    { type: 'assign', station: 'science', officerId: 'varela' }, order('scan'),
+    { type: 'assign', station: 'command', officerId: 'varela' },
+  ] });
+  const restored = deserializeCrewCheckpoint(episode, raw);
+  assert.equal(restored.crew.assignments.command, 'varela');
+  assert.equal(restored.crew.progression.varela.xp, 25);
+  assert.equal(officerAt(restored.crew, 'command').name, 'Adrián Varela');
+  assert.equal(officerAt(restored.crew, 'command').rank, 'Capitán');
+  assert.deepEqual(deserializeCrewCheckpoint(episode, serializeCrewCheckpoint(episode, restored)), restored);
+});
 
 test('crew staffing, XP and mission outcome round-trip through a command-only v2 checkpoint', () => {
   const commands = [{ type: 'assign', station: 'science', officerId: 'dorn' }, order('scan'), order('broadcast')];
