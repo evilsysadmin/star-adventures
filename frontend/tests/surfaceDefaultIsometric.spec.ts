@@ -12,7 +12,10 @@ for(const width of [360,390,430,1280,1757]){
     page.setDefaultTimeout(10_000);
     await page.setViewportSize({width,height:width===1757?800:850});
     await page.goto('/');
-    await page.getByTestId('captain-transport').click();
+    // Desktop WebGL can initialize under heavy parallel CI load: allow the
+    // native bridge control to stabilize without allowing unbounded hangs.
+    await expect(page.getByTestId('captain-controls')).toBeVisible({timeout:20_000});
+    await page.getByTestId('captain-transport').click({timeout:25_000});
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie');
     // The *first* rendered surface view must already be the real squad board.
