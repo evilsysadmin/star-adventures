@@ -24,11 +24,16 @@ export function GroundPlanetBackdrop(){
  </g>;
 }
 
-export function GroundOutpostLandmarks(){
+export function GroundOutpostLandmarks({explored,visible}:{explored:ReadonlySet<string>;visible:ReadonlySet<string>}){
  return <g data-testid="ground-outpost-landmarks" pointerEvents="none">
   {scene.objects.map(object=>{
    const {x,y}=project(object.x,object.y);
-   return <g key={object.id} data-testid={'ground-landmark-'+object.id} transform={`translate(${x} ${y})`}>
+   const tileId=object.x+','+object.y;
+   const known=explored.has(tileId),inSight=visible.has(tileId);
+   return <g key={object.id} data-testid={'ground-landmark-'+object.id}
+     data-fog={inSight?'visible':known?'remembered':'unknown'}
+     visibility={known?'visible':'hidden'} opacity={inSight?1:.36}
+     transform={`translate(${x} ${y})`}>
     <title>{object.label}</title>
     <ellipse cy="6" rx="30" ry="12" fill="#091a20" opacity=".7"/>
     {object.id==='beam-out'?<>
@@ -67,12 +72,16 @@ export function GroundOutpostLandmarks(){
 // Secondary surface ecology is authored as decorative terrain, not fake
 // stations. It never participates in picking; large boulders are separately
 // present in the authoritative scene.walls collision list.
-export function GroundWildSectorScenery(){
+export function GroundWildSectorScenery({explored,visible}:{explored:ReadonlySet<string>;visible:ReadonlySet<string>}){
  return <g pointerEvents="none" data-testid="ground-wild-sector-scenery">
   {scene.scenery.map((feature,index)=>{
    const {x,y}=project(feature.x,feature.y);
+   const tileId=feature.x+','+feature.y;
+   const known=explored.has(tileId),inSight=visible.has(tileId);
    return <g key={index} transform={`translate(${x} ${y})`}
-     data-testid={'ground-scenery-'+feature.type+'-'+index}>
+     data-testid={'ground-scenery-'+feature.type+'-'+index}
+     data-fog={inSight?'visible':known?'remembered':'unknown'}
+     visibility={known?'visible':'hidden'} opacity={inSight?1:.33}>
     {feature.type==='crater'?<>
       <ellipse rx="32" ry="15" fill="#263d3c" stroke="#a6a286" strokeWidth="4"/>
       <ellipse rx="23" ry="9" fill="#152e33" />
