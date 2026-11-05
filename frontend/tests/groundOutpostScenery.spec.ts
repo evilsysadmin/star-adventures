@@ -36,6 +36,16 @@ for(const width of [390,1280]){
     expect(label.left,label.id).toBeGreaterThanOrEqual(0);
     expect(label.right,label.id).toBeGreaterThanOrEqual(0);
    }
+   const collides=await page.evaluate(()=>{
+     const box=(id:string)=>document.querySelector(
+       '[data-testid="ground-landmark-'+id+'"] text')!.getBoundingClientRect();
+     return [['probe','sensor-vault'],['relief-point','perimeter-uplink']]
+      .map(([a,b])=>{
+       const x=box(a),y=box(b);
+       return x.left<y.right&&x.right>y.left&&x.top<y.bottom&&x.bottom>y.top;
+      });
+   });
+   expect(collides).toEqual([false,false]);
   }
   // Artwork is non-interactive: pointer-driven officer selection is unchanged.
   await page.getByTestId('ground-unit-dorn').click();
