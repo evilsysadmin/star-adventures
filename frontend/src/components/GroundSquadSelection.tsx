@@ -18,12 +18,13 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, onMove, allowWholeMove, disabled = false,
+  squad, position, officers, onMove, onInspectProbe, allowWholeMove, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
   officers: Array<{id: string; x: number; y: number; heading: string}>;
   onMove: (target: Point, selection: string[]) => boolean;
+  onInspectProbe: (officerId: string) => string;
   allowWholeMove: boolean;
   disabled?: boolean;
 }) {
@@ -58,6 +59,10 @@ export function GroundSquadSelection({
   const cameraView = focused ? focusX + ' ' + focusY + ' 440 300' : '0 0 900 430';
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
+  const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
+  const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
+  const probeAtHand = !!probe && !!selectedUnit &&
+    Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
   const [keyboardCell, setKeyboardCell] = useState<Point>(() => ({x:position.x,y:position.y}));
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -282,6 +287,14 @@ export function GroundSquadSelection({
         }}>
         {moveMode ? 'Cancelar movimiento' : 'Mover selección · tocar destino'}
       </button>
+      <button type="button" data-testid="ground-inspect-probe"
+        disabled={disabled || !probeAtHand}
+        onClick={() => {
+          if (!probeAtHand || !selectedUnit) return;
+          setScienceNotice(onInspectProbe(selectedUnit.id));
+        }}>
+        Investigar sonda {probeAtHand ? '· ' + selectedUnit.name.split(' ')[0] : '· requiere proximidad'}
+      </button>
     </div>
     <p className="ground-squad-status" data-testid="ground-selection-status" role="status">
       {selected.length === 0 ? 'Ningún oficial seleccionado' :
@@ -289,12 +302,13 @@ export function GroundSquadSelection({
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
     <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
+    <p className="ground-squad-status" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
     <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Añadir selección» y toca los nombres para crear un grupo.
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
       En móvil, «Mover selección» y tocar destino; con teclado, flechas y Enter.
-      El guardado táctico conserva cada posición, pero las acciones de misión
-      todavía requieren la exploración clásica.</p>
+      La sonda científica se puede investigar junto a ella con un solo oficial.
+      Las demás acciones de misión todavía requieren la exploración clásica.</p>
   </div>;
 }

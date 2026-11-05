@@ -48,7 +48,7 @@ export function selectAwayOfficer(state, slot, officerId, exploration) {
 
 // The probe exists as an authored, faced location. This is a distinct scientific
 // away-team discovery, not a remote call to the ship's `scan` mission command.
-export function investigateProbe(world, exploration, crew, state) {
+export function investigateProbe(world, exploration, crew, state, operatorId = null) {
   validateAwayTeam(state);
   validateCrew(crew);
   validateExploration(world, exploration);
@@ -59,6 +59,8 @@ export function investigateProbe(world, exploration, crew, state) {
     object.type === 'station' && object.action === 'inspect-probe' &&
     object.x === front.x && object.y === front.y);
   if (!target) fail('Must face the probe at an adjacent square');
+  if (operatorId !== null && !state.squad.includes(operatorId))
+    fail('Selected operator is not deployed');
   if (state.findings.includes(PROBE_FINDING)) fail('Probe already investigated');
   if (state.attempts >= 100) fail('Too many unsuccessful inspections');
   const ranked = state.squad.map(id => {
@@ -66,7 +68,9 @@ export function investigateProbe(world, exploration, crew, state) {
     const level = crew.progression[id].level;
     return { id, skill: Math.min(5, officer.skills.science + Math.floor((level - 1) / 2)) };
   }).sort((a,b) => b.skill - a.skill);
-  const expert = ranked[0];
+  // The classic first-person order retains the best available scientist.
+  // In isometric exploration the actual selected adjacent officer acts.
+  const expert = operatorId === null ? ranked[0] : ranked.find(officer => officer.id === operatorId);
   const success = expert.skill >= 3;
   const report = { officerId: expert.id, skill: expert.skill, result: success ? 'success' : 'insufficient-science' };
   const next = {
