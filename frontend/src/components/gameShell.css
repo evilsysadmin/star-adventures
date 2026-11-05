@@ -23,7 +23,7 @@
 .game-shell[data-interface=game] .firstperson-feedback{position:absolute;bottom:26px;left:32px;right:32px;min-height:0;padding:0;background:transparent;font-size:11px;text-shadow:0 2px 6px #000;color:#a9c0c5}
 .game-shell[data-interface=game] .firstperson-waypoint{position:absolute;z-index:2;left:32px;top:153px;max-width:min(460px,calc(100% - 420px));display:flex;flex-wrap:wrap;background:#0a1b24a8;border:1px solid #b9d0ce25;border-left:2px solid #c6ad7d;backdrop-filter:blur(12px);padding:12px 14px;border-radius:2px}
 .game-shell[data-interface=game] .firstperson-waypoint-label{width:100%;font-size:10px}.game-shell[data-interface=game] .firstperson-waypoint strong{font-size:11px}
-.game-shell[data-interface=game] .mission-transmission{position:absolute;right:32px;top:98px;z-index:3;width:320px;max-height:calc(100% - 310px);overflow:auto;margin:0;background:#0a1b24bd;backdrop-filter:blur(14px);padding:14px 16px;box-shadow:0 10px 35px #0002}
+.game-shell[data-interface=game] .mission-transmission{position:absolute;right:32px;top:98px;z-index:3;width:320px;max-width:calc(100% - 64px);max-height:calc(100% - 310px);overflow-y:auto;overflow-x:hidden;margin:0;background:#0a1b24bd;backdrop-filter:blur(14px);padding:14px 16px;box-shadow:0 10px 35px #0002}
 .game-shell[data-interface=game] .mission-transmission-top{align-items:flex-start;flex-direction:column;gap:7px}.game-shell[data-interface=game] .mission-transmission-kicker{font-size:8px}.game-shell[data-interface=game] .mission-transmission-phase{font-size:10px}.game-shell[data-interface=game] .mission-transmission-story{font-size:12px;line-height:1.6}.game-shell[data-interface=game] .mission-transmission-next{font-size:11px;line-height:1.65}.game-shell[data-interface=game] .mission-transmission-route{gap:12px}
 .game-shell[data-interface=game] .orders-panel{display:none;position:absolute;z-index:12;top:89px;right:24px;bottom:25px;width:min(400px,calc(100% - 48px));margin:0;overflow:auto;background:#101e27f5;box-shadow:-15px 0 70px #0007;backdrop-filter:blur(18px);border:1px solid #98b8b845;padding-top:58px}
 .game-shell[data-interface=game][data-journal-open=true] .orders-panel{display:block}
@@ -121,6 +121,15 @@
 
 .mission-return-abandoned{min-height:44px;padding:9px 12px;border:1px solid #dbb572;border-radius:5px;background:#5e4829;color:#fff0d0;font-weight:700;cursor:pointer}
 .mission-return-abandoned:focus-visible{outline:2px solid white;outline-offset:2px}
+/* Never allow long mission actions or status copy to widen the pinned
+   transmission beyond the viewport (especially on restored/abandoned saves). */
+.game-shell[data-interface=game] .mission-transmission>*{max-width:100%;min-width:0}
+.game-shell[data-interface=game] .mission-transmission-story,
+.game-shell[data-interface=game] .mission-transmission-next{overflow-wrap:anywhere}
+.game-shell[data-interface=game] .mission-return-abandoned{
+  display:block;width:100%;max-width:100%;white-space:normal;overflow-wrap:anywhere;
+}
+
 
 /* Command stations use the same visual language as the bridge status cards. */
 .game-shell[data-interface=game][data-location=bridge] .captain-controls button{min-height:57px;gap:12px;transition:border-color .15s,background .15s,box-shadow .15s}

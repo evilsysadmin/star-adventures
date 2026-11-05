@@ -288,7 +288,7 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('captain-controls')).toBeVisible();
     await page.getByTestId('captain-transport').click();
     await page.getByTestId('transport-confirm').click();
-    await expect(page.getByTestId('explore-forward')).toBeVisible();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(page.getByTestId('captain-controls')).toHaveCount(0);
   });
 }
@@ -300,6 +300,8 @@ for (const width of [390, 1280]) {
     await page.goto('/');
     await page.getByTestId('captain-transport').click();
     await page.getByTestId('transport-confirm').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
     for (const target of ['Puesto de socorro', 'Solicitar teletransporte de regreso']) {
       let reached = false;
       for (let step = 0; step < 40; step++) {

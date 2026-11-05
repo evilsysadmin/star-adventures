@@ -31,7 +31,7 @@ for (const width of [390, 1280]) {
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
 
     // Individual moves use the real officer footprint. Kael already occupies
     // 4:4, so Nara cannot enter it; selection never teleports or stacks units.
@@ -52,7 +52,7 @@ for (const width of [390, 1280]) {
     // Real spatial save still owns the canonical pose after refresh.
     await page.reload();
     await expect(page.getByTestId('explore-heading')).toContainText('4:4');
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await page.getByTestId('ground-select-all').click();
 
     // Touch/keyboard alternative requires no right-click.

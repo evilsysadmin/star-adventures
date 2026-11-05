@@ -214,6 +214,8 @@ test('walk the first-person bridge, operate a console, and cancel/confirm transp
   await expect(page.getByTestId('explore-heading')).toContainText('4:5');
   await page.getByTestId('explore-use').click();
   await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N');
   await page.screenshot({ path: 'test-results/away-surface-390.png', fullPage: true });
@@ -335,6 +337,8 @@ test('away team area, heading and location survive F5; return remains possible',
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-use').click();
   await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-forward').click();
   await expect(page.getByTestId('explore-heading')).toContainText('4:3');
@@ -343,6 +347,8 @@ test('away team area, heading and location survive F5; return remains possible',
   await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 4:3');
   await expect(page.getByTestId('console-locked')).toContainText('Las operaciones de la nave');
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-forward').click();

@@ -8,6 +8,9 @@ async function reachSurface(page: Page) {
   await page.getByTestId('explore-use').click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByTestId('transport-confirm').click();
+    // Classic camera remains explicit for this legacy physical-route test.
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
 }
 
 for (const width of [390, 1280]) {

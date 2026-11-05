@@ -27,3 +27,14 @@ The **Puesto de socorro** at `6:4` can be used by a single selected officer stan
 An underqualified operator may attempt treatment but cannot write a successful evacuation or public incident. A qualified operator causes precisely the existing `EVACUATION_INCIDENT` record and `evacuate` official-order completion, which survive F5 in the mandate checkpoint; repeating a resolved rescue is rejected. No tactical command changes `spatial.v1`, moves the bridge camera or creates duplicate civilians.
 
 Browser gates: Kael near `5:4` fails with Medicine 1/5; Isa near `6:5` succeeds with Medicine 4/5 and real public evidence, while other officers remain put. Verify duplicate rejection and both tactical/missions checkpoints after F5 at 390/1280. Sensor archive, perimeter combat contact and extraction remain future slices.
+
+## Default planetary camera and classical fallback (2026-11-05)
+
+The canonical planetary landing **opens the elevated, selectable squad board immediately**, rather than the legacy first-person canvas. A saved game reloaded on the surface also starts in the squad view. Bridge navigation stays first person.
+
+The surface header's explicit **«Exploración clásica»** action switches to the legacy first-person camera, including the real movement/use and extraction controls that have not yet been implemented for individual officers. **«Volver al equipo»** returns to the elevated view without relocating or overwriting anyone. This is presentation state, not a new mission action or saved-game migration; normal saved spatial and independent squad journals continue to govern their respective rules. Re-entering the surface from the bridge starts in the elevated view even after a previous classical-camera visit.
+
+The pinned mission transmission must remain **vertical-scroll only** in immersive mode. Its buttons and text wrap within the transmission bounds, including an old abandoned-rescue checkpoint; no horizontal scrollbars on 390/1280 px. Playwright covers arrival, F5, explicit rollback and restored abandonment at 360/390/430/1280 px; existing first-person campaign routes remain tested after deliberately selecting the fallback.
+
+**Not yet complete:** sensor archive, hostile perimeter initiation and extraction still use classical controls. This default-camera change does not claim a fully isometric mission.
+

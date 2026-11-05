@@ -27,7 +27,7 @@ for (const width of [390,1280]) {
     await page.getByTestId('explore-use').click();
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie');
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
 
     const inspect = page.getByTestId('ground-inspect-probe');
     await expect(inspect).toBeDisabled();
@@ -58,7 +58,7 @@ for (const width of [390,1280]) {
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','5');
     await expect(page.getByTestId('ground-unit-dorn')).toHaveAttribute('data-grid-y','3');
     await expect(page.getByTestId('away-finding')).toContainText('Sonda investigada: firma mineral registrada');

@@ -14,7 +14,7 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
     const originalHeading = await page.getByTestId('explore-heading').textContent();
 
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     if (width <= 520) {
       await expect(page.getByTestId('ground-squad-board')).toHaveAttribute('viewBox', / 440 300$/);

@@ -16,6 +16,8 @@ async function performCoreFromBridge(page: Page) {
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-use').click();
   await page.getByTestId('transport-confirm').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-left').click();
@@ -43,6 +45,8 @@ async function performPhysicalRescue(page: Page) {
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-use').click();
   await page.getByTestId('transport-confirm').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-forward').click();

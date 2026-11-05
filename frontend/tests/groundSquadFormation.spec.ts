@@ -25,7 +25,7 @@ for(const width of [360,390,430,1280]){
     await page.getByTestId('explore-right').click();
     await page.getByTestId('explore-use').click();
     await page.getByTestId('transport-confirm').click();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     const venn=page.getByTestId('ground-unit-venn');
     const dorn=page.getByTestId('ground-unit-dorn');
     const mira=page.getByTestId('ground-unit-mira');
@@ -50,7 +50,7 @@ for(const width of [360,390,430,1280]){
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
 
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(venn).toHaveAttribute('data-grid-x','3');
     await expect(dorn).toHaveAttribute('data-grid-x','3');
     await expect(mira).toHaveAttribute('data-grid-x','5');
@@ -76,7 +76,7 @@ for(const width of [360,390,430,1280]){
       await page.getByTestId('ground-squad-board').screenshot({path:'test-results/ground-formation-'+width+'.png'});
 
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(venn).toHaveAttribute('data-grid-x','4');
     await expect(dorn).toHaveAttribute('data-grid-y','4');
     await expect(mira).toHaveAttribute('data-grid-x','5');
