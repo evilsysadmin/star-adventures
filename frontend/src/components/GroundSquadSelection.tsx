@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
+import { GroundPlanetBackdrop, GroundOutpostLandmarks } from './GroundOutpostScenery';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
 
@@ -23,6 +24,9 @@ const officerIdleArt: Record<string, string> = {
   varela: maleIdle, solan: maleIdle, dorn: maleIdle, rhee: maleIdle,
 };
 const blocked = new Set(scene.walls.map(cell => cell.x + ',' + cell.y));
+// Paths between authored facilities are only painted terrain, never a
+// movement shortcut or a substitute for the canonical walkability grid.
+const wornPath = new Set(['4,5','4,4','4,3','3,3','2,3','5,4','5,5','6,5']);
 const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
@@ -225,19 +229,11 @@ export function GroundSquadSelection({
           event.preventDefault();
           requestMove(pickGroundCell(event.clientX, event.clientY));
         }}>
-        <defs>
-          <linearGradient id="ground-terrain" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#45646a" /><stop offset="1" stopColor="#243b43" />
-          </linearGradient>
-          <radialGradient id="ground-sky">
-            <stop offset="0" stopColor="#45636b" /><stop offset="1" stopColor="#101b29" />
-          </radialGradient>
-        </defs>
-        <rect width="900" height="430" fill="url(#ground-sky)" />
-        <ellipse cx="450" cy="324" rx="345" ry="66" fill="#081219" opacity=".55" />
+        <GroundPlanetBackdrop />
         {sceneTiles.map(cell => <polygon key={cell.key} data-cell-id={cell.key} points={tileShape(cell.x, cell.y)}
-          fill={blocked.has(cell.key) ? '#142936' : (cell.x + cell.y) % 2 ? '#45605e' : 'url(#ground-terrain)'}
-          stroke="#6d8c86" strokeOpacity=".28" strokeWidth="1" />)}
+          fill={blocked.has(cell.key) ? '#1b3138' : wornPath.has(cell.key) ? '#5a6b5d' :
+            (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
+          stroke="#a8b6a1" strokeOpacity=".13" strokeWidth="1" />)}
         {scene.walls.filter(cell => cell.x > 0 && cell.y > 0 &&
           cell.x < scene.width - 1 && cell.y < scene.height - 1).map(cell => {
             const p = tile(cell.x, cell.y);
@@ -247,17 +243,7 @@ export function GroundSquadSelection({
               <path d="M0 15 L31 0 V-27 L0 -15Z" fill="#1a2b34" />
             </g>;
           })}
-        {scene.objects.map((object, index) => {
-          const p = tile(object.x, object.y);
-          return <g key={object.id} transform={'translate(' + p.x + ' ' + p.y + ')'} pointerEvents="none">
-            <ellipse rx="22" ry="10" cy="4" fill="#060f18" opacity=".72" />
-            <path d="M-16 -4 L0 -13 16 -4 0 5Z" fill={object.type === 'transition' ? '#b49d70' : '#76b5ad'} />
-            <path d="M-16 -4 V-30 L0 -38 V-13Z" fill="#375768" stroke="#9acbc3" strokeWidth=".8" />
-            <path d="M0 -13 V-38 L16 -30 V-4Z" fill="#1e3645" stroke="#8aafa7" strokeWidth=".8" />
-            <path d="M-9 -23 L0 -28 9 -23" fill="none" stroke="#88e6d1" strokeWidth="2" />
-            <text y="-43" textAnchor="middle" className="ground-object-label">{index + 1}</text>
-          </g>;
-        })}
+        <GroundOutpostLandmarks />
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
