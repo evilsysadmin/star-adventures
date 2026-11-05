@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
-import { GroundPlanetBackdrop, GroundOutpostLandmarks, GroundWildSectorScenery } from './GroundOutpostScenery';
+import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
+import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
@@ -348,19 +349,10 @@ export function GroundSquadSelection({
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
           stroke="#a8b6a1" strokeOpacity=".13" strokeWidth="1" />)}
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
-        {scene.walls.filter(cell => displayedFog.explored.has(cell.x+','+cell.y) &&
-          cell.x > 0 && cell.y > 0 &&
-          cell.x < scene.width - 1 && cell.y < scene.height - 1).map(cell => {
-            const p = tile(cell.x, cell.y);
-            return <g key={cell.x + ',' + cell.y} transform={'translate(' + p.x + ' ' + p.y + ')'} pointerEvents="none">
-              <path d="M-31 0 L0 -15 31 0 0 15Z" fill="#52615c" />
-              <path d="M-31 0 L0 15 V-15 L-31 -27Z" fill="#293c42" />
-              <path d="M0 15 L31 0 V-27 L0 -15Z" fill="#1a2b34" />
-            </g>;
-          })}
+        <GroundColonyWalls explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
-        <GroundOutpostLandmarks explored={displayedFog.explored} visible={displayedFog.visible} />
+        <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
         <g data-testid="ground-fog-layer" pointerEvents="none">
           {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>
             <polygon key={cell.key} data-fog-cell={cell.key}
