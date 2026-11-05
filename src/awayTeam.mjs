@@ -48,6 +48,7 @@ export function selectAwayOfficer(state, slot, officerId, exploration) {
 
 // The probe exists as an authored, faced location. This is a distinct scientific
 // away-team discovery, not a remote call to the ship's `scan` mission command.
+/** @param {string | null} [operatorId] The acting officer in elevated ground mode. */
 export function investigateProbe(world, exploration, crew, state, operatorId = null) {
   validateAwayTeam(state);
   validateCrew(crew);
