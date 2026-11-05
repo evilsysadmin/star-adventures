@@ -11,6 +11,29 @@
 .game-shell[data-interface=game] .firstperson{position:absolute;inset:0;border:0;box-shadow:none;overflow:hidden}
 .game-shell[data-interface=game] .firstperson-render-stage{position:absolute;inset:0;border:0}
 .game-shell[data-interface=game] .firstperson-canvas{width:100%;height:100%;max-height:none;aspect-ratio:auto;object-fit:cover}
+/* Elevated landing is now the primary surface screen. Fit the real grid and
+   movement/actions inside the viewport instead of growing SVG height with the
+   desktop width (which pushed the action toolbar below the visible screen). */
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad{
+  height:100%;min-height:0;display:flex;flex-direction:column;
+  padding-top:85px;overflow-x:hidden;overflow-y:auto;
+}
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad-viewport{
+  flex:1 1 auto;min-height:145px;
+}
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad svg{
+  width:100%;height:100%;aspect-ratio:auto;
+}
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad-viewbar,
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad-toolbar,
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad-status,
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad-help{flex-shrink:0}
+.game-shell[data-interface=game] .firstperson-is-squad .away-party,
+.game-shell[data-interface=game] .firstperson-is-squad .firstperson-hud,
+.game-shell[data-interface=game] .firstperson-is-squad .firstperson-feedback{
+  display:none;
+}
+
 .game-shell[data-interface=game] .bridge-interior-canvas{object-fit:fill}
 .game-shell[data-interface=game] .bridge-lens{background:linear-gradient(#06101950,transparent 25%,transparent 55%,#041019cc);inset:0}
 .game-shell[data-interface=game] .bridge-lens-deck{left:32px;bottom:196px}.game-shell[data-interface=game] .bridge-lens-mode{right:32px;bottom:196px}

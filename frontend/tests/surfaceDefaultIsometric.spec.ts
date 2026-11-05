@@ -1,9 +1,9 @@
 import {expect, test} from '@playwright/test';
 
-for(const width of [360,390,430,1280]){
+for(const width of [360,390,430,1280,1757]){
   test('desembarco abre equipo isométrico y mantiene cámara clásica como alternativa '+width+'px',async({page})=>{
     test.setTimeout(85_000);
-    await page.setViewportSize({width,height:850});
+    await page.setViewportSize({width,height:width===1757?800:850});
     await page.goto('/');
     await page.getByTestId('captain-transport').click();
     await page.getByTestId('transport-confirm').click();
@@ -17,7 +17,12 @@ for(const width of [360,390,430,1280]){
     await expect(page.getByTestId('explore-forward')).toHaveCount(0);
     await expect(page.getByTestId('ground-inspect-probe')).toBeVisible();
     await expect(page.getByTestId('ground-assist-civilians')).toBeVisible();
-    if(width===390||width===1280)
+    // At 1757x800 the map must not grow vertically and hide the command bar.
+    if(width>=1280){
+      await expect(page.getByTestId('ground-move-mode')).toBeInViewport();
+      await expect(page.getByTestId('ground-inspect-probe')).toBeInViewport();
+    }
+    if(width===390||width===1280||width===1757)
       await page.screenshot({path:'test-results/surface-default-squad-'+width+'.png'});
 
     // Explicit rollback remains a usable playable surface camera, not a fake

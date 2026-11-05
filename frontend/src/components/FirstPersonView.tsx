@@ -601,7 +601,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     return () => window.removeEventListener('keydown', onKey);
   }, [dispatch, exploration.pending, showMap, showSquad, paused, seated]);
   return (
-    <section id="exploration" className={`firstperson firstperson-${exploration.area}`} aria-label="Exploración del puente y del equipo de desembarco">
+    <section id="exploration" className={`firstperson firstperson-${exploration.area}${exploration.area === 'surface' && showSquad ? ' firstperson-is-squad' : ''}`} aria-label="Exploración del puente y del equipo de desembarco">
       <div className="firstperson-top">
         <span className="firstperson-name" data-testid="explore-area">{area.title}</span>
         {exploration.area === 'surface' && !showMap && <button type="button" className="firstperson-map-toggle" data-testid="ground-squad-toggle"
