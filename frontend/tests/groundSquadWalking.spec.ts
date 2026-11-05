@@ -40,7 +40,9 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-walk-phase','moving');
   const walkArt=page.getByTestId('ground-officer-walk-venn');
   await expect(walkArt).toBeVisible();
-  // Nested sprite sheet must keep the intended unit size, not inherit the
+  await expect(walkArt.locator('div')).toHaveCSS('background-size','300% 200%');
+  await expect(walkArt.locator('div')).toHaveCSS('background-image',/officer-female-walk-v1-/);
+  // Cropped sprite frame must keep the intended unit size, not inherit the
   // map-root 100% SVG styling.
   const bounds=await walkArt.boundingBox();
   expect(bounds?.width).toBeGreaterThan(10);
@@ -48,7 +50,7 @@ for(const width of [390,1280]){
   expect(bounds?.height).toBeLessThan(160);
   await expect.poll(async()=>Number(await venn.getAttribute('data-walk-frame')),{timeout:3_000})
     .toBeGreaterThan(0);
-  // Capture the actual SVG atlas renderer, not a separately composed mock.
+  // Capture the actual cropped atlas renderer, not a separately composed mock.
   await page.getByTestId('ground-squad-board').screenshot({
     path:'test-results/ground-walk-'+width+'.png',
   });
