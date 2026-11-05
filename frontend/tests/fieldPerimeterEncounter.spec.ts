@@ -12,6 +12,8 @@ async function enterSurface(page: Page) {
     await page.getByTestId('explore-' + command).click();
   }
   await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
 }
 
@@ -57,10 +59,15 @@ for (const width of [390, 1280]) {
     // halfway down the mobile journal, with exploration offscreen.
     await expect(page.getByTestId('mission-transmission')).toBeInViewport();
     await expect(page.getByTestId('explore-area')).toBeInViewport();
-    await expect(page.getByTestId('explore-forward')).toBeFocused();
+    await expect(page.getByTestId('ground-squad-board')).toBeFocused();
     await expect(page.getByTestId('explore-heading')).toContainText('6:5');
     await expect(page.getByTestId('explore-target')).toContainText('Baliza de seguridad');
     await expect(page.getByTestId('field-resolution')).toHaveCount(0);
+
+    // Returning now restores the elevated squad, not the classic controls.
+    // These legacy route assertions explicitly opt back into first person.
+    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('explore-forward')).toBeVisible();
 
     // Tactical contact is optional. A player who declines it can still save
     // civilians using the existing physical medicine route and real skill check.
@@ -114,11 +121,13 @@ test(`a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('field-resolution')).toContainText('Alto el fuego negociado');
   await expect(page.getByTestId('field-resolution')).toBeInViewport();
   await expect(page.getByTestId('explore-area')).toBeInViewport();
-  await expect(page.getByTestId('explore-forward')).toBeFocused();
+  await expect(page.getByTestId('ground-squad-board')).toBeFocused();
   await page.reload();
   await expect(page.getByTestId('field-encounter-scene')).toHaveCount(0);
   await expect(page.getByTestId('explore-heading')).toContainText('6:5');
   await expect(page.getByTestId('field-resolution')).toContainText('Alto el fuego negociado');
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-use').click();
   await expect(page.getByTestId('field-encounter-scene')).toHaveCount(0);
   await expect(page.getByTestId('explore-feedback')).toContainText('perímetro ya está resuelto');
@@ -179,6 +188,8 @@ test('a wounded physical squad resumes after F5 and after deliberately pausing t
   await page.reload();
   await expect(page.getByTestId('field-encounter-scene')).toHaveCount(0);
   await expect(page.getByTestId('explore-heading')).toContainText('6:5');
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-use').click();
   await expect(page.getByTestId('scenario-unit-security')).toContainText('7:8');
   await expect(page.getByTestId('scenario-unit-security')).toContainText('PV 2 / 3');
@@ -260,7 +271,9 @@ for (const broken of ['perimeter', 'crew'] as const) {
       await page.reload();
       await expect(page.getByTestId('field-resolution')).toHaveCount(0);
     }
-    await page.getByTestId('explore-use').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
+  await page.getByTestId('explore-use').click();
     await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 1');
     await expect(page.getByTestId('scenario-truce')).toHaveCount(0);
     await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('PV 2/2');

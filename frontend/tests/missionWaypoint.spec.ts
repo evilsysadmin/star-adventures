@@ -43,6 +43,9 @@ for (const width of [390, 1280]) {
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByTestId('mission-waypoint')).toHaveCount(0);
     await page.getByTestId('transport-confirm').click();
+    // Explicit rollback for this first-person regression journey.
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
     await expect(page.getByTestId('mission-phase')).toHaveText('MISIÓN EN SUPERFICIE');
     await expect(page.getByTestId('mission-waypoint')).toContainText('Puesto de socorro');
     await page.screenshot({ path: `test-results/mission-compass-field-${width}.png`, fullPage: true });

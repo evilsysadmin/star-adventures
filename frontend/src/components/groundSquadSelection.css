@@ -25,3 +25,12 @@
 @media(max-width:520px){
   .ground-squad svg.ground-squad-board-focused{aspect-ratio:440/300}
 }
+
+
+/* Keep advanced controls discoverable but off the default golden path:
+   expanded help remains keyboard/screen-reader accessible. */
+.ground-squad-instructions{flex-shrink:0;border-top:1px solid #40616a;background:#101b28}
+.ground-squad-instructions summary{display:list-item;min-height:34px;cursor:pointer;
+  padding:8px 12px;color:#abc5c7;font:700 11px/1.5 'DM Sans',sans-serif}
+.ground-squad-instructions summary:focus-visible{outline:2px solid #f0d49a;outline-offset:-2px}
+.ground-squad-instructions .ground-squad-help{padding:0 12px 12px}

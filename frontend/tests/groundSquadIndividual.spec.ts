@@ -27,7 +27,7 @@ for (const width of [390, 1280]) {
     await page.getByTestId('explore-use').click();
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie');
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     const venn=page.getByTestId('ground-unit-venn');
     const dorn=page.getByTestId('ground-unit-dorn');
     const mira=page.getByTestId('ground-unit-mira');
@@ -50,7 +50,7 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('ground-move-status')).toContainText('bloqueada');
     await expect(venn).toHaveAttribute('data-grid-x','3');
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(venn).toHaveAttribute('data-grid-x','3');
     await expect(dorn).toHaveAttribute('data-grid-x','4');
 
@@ -73,7 +73,7 @@ for (const width of [390, 1280]) {
     await expect(venn).toHaveAttribute('data-grid-x','3');
     await expect(dorn).toHaveAttribute('data-grid-x','3');
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(dorn).toHaveAttribute('data-grid-y','4');
     await expect(venn).toHaveAttribute('data-grid-x','3');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -82,7 +82,7 @@ for (const width of [390, 1280]) {
     // Corrupted sidecar resets safely without touching spatial.v1.
     await page.evaluate(() => localStorage.setItem('shadowops.star-adventures.ground-squad.v1','{broken'));
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','4');
     await expect(page.getByTestId('explore-heading')).toContainText('4:5');
   });

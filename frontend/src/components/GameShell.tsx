@@ -129,7 +129,7 @@ export function GameShell({ presentation: game, children, location, transportPen
           {fullscreen ? 'Salir de pantalla completa del navegador' : 'Ampliar al navegador completo'}
         </button>
         {fullscreenNotice && <p role="status">{fullscreenNotice}</p>}
-        <p className="game-control-legend">Puente · selecciona un oficial<br />Superficie · flechas o WASD<br />E · usar estación &nbsp; Esc · menú</p>
+        <p className="game-control-legend">Puente · selecciona una estación<br />Superficie · selecciona oficiales y usa clic derecho para mover (en móvil, «Mover selección»)<br />«Exploración clásica» · flechas/WASD y E para estaciones pendientes &nbsp; Esc · menú</p>
       </> : game.menu === 'audio' ? <>
         <button type="button" className="game-menu-back" onClick={back}>← Volver</button>
         <label className="game-check-setting"><input type="checkbox" data-testid="game-mute" checked={game.preferences.muted}

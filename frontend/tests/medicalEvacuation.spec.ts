@@ -7,6 +7,9 @@ async function reachReliefStation(page: Page) {
   await page.getByTestId('explore-right').click();
   await page.getByTestId('explore-use').click();
   await page.getByTestId('transport-confirm').click();
+    // Explicit rollback for this first-person regression journey.
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
   await expect(page.getByTestId('explore-area')).toContainText('Superficie planetaria');
   // Surface spawn 4:5 N -> 4:4 E -> 5:4 E faces relief point at 6:4.
   await page.getByTestId('explore-forward').click();

@@ -12,6 +12,8 @@ for (const width of [390, 1280]) {
     await page.keyboard.press('Escape');
     await page.getByTestId('captain-transport').click();
     await page.getByTestId('transport-confirm').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    await page.getByTestId('ground-squad-toggle').click();
     await page.getByTestId('explore-forward').click();
     await page.getByTestId('explore-forward').click();
     await expect(page.getByTestId('explore-target')).toContainText('Sonda científica');

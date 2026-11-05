@@ -441,7 +441,11 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
-  const [showSquad, setShowSquad] = useState(false);
+  // Planetary exploration starts with visible, selectable officers. F5 on a
+  // surface checkpoint returns straight to this view; the classic camera
+  // stays reachable explicitly for interactions not yet migrated.
+  const [showSquad, setShowSquad] = useState(() =>
+    (initialState ?? startExploration(world)).area === 'surface');
   const [groundSnapshot, setGroundSnapshot] = useState<GroundSnapshot | null>(() =>
     restoreGroundSnapshot(world, initialState ?? startExploration(world),
       squad.map(officer => officer.id), localStorageOrNull()));
@@ -461,8 +465,15 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const waypoint = seated ? null : missionWaypoint(world, exploration, missionTargetId);
   const dispatch = useCallback((type: Command) => {
     // Sync ref prevents dropped turns when two keyboard events arrive before React rerenders.
+    const previousArea = stateRef.current.area;
     const result = applyExploration(world, stateRef.current, { type });
     if (!result) return;
+    if (result.state.area !== previousArea) {
+      // Enter surface in squad mode, return to bridge in its native view.
+      // This runs only on actual area transitions, never when the player
+      // deliberately switches to the classic camera in the same area.
+      setShowSquad(result.state.area === 'surface');
+    }
     stateRef.current = result.state;
     setExploration(result.state);
     setEvent(result.event);
@@ -590,12 +601,12 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     return () => window.removeEventListener('keydown', onKey);
   }, [dispatch, exploration.pending, showMap, showSquad, paused, seated]);
   return (
-    <section id="exploration" className={`firstperson firstperson-${exploration.area}`} aria-label="Exploración del puente y del equipo de desembarco">
+    <section id="exploration" className={`firstperson firstperson-${exploration.area}${exploration.area === 'surface' && showSquad ? ' firstperson-is-squad' : ''}`} aria-label="Exploración del puente y del equipo de desembarco">
       <div className="firstperson-top">
         <span className="firstperson-name" data-testid="explore-area">{area.title}</span>
         {exploration.area === 'surface' && !showMap && <button type="button" className="firstperson-map-toggle" data-testid="ground-squad-toggle"
           disabled={paused || !!exploration.pending} onClick={() => setShowSquad(value => !value)}>
-          {showSquad ? 'Volver a explorar' : 'Vista de equipo · prueba'}
+          {showSquad ? 'Exploración clásica' : 'Volver al equipo'}
         </button>}
         <button type="button" className="firstperson-map-toggle" onClick={() => { setShowSquad(false); setShowMap(m => !m); }}>
           {showMap ? 'Volver al puente' : 'Mapa táctico'}

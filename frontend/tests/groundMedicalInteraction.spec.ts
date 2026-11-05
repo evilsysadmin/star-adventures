@@ -26,7 +26,7 @@ for(const width of [390,1280]){
     await page.getByTestId('explore-use').click();
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie');
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     const assist=page.getByTestId('ground-assist-civilians');
     await expect(assist).toBeDisabled();
     await expect(page.getByTestId('mission-phase')).toContainText('MISIÓN EN SUPERFICIE');
@@ -58,7 +58,7 @@ for(const width of [390,1280]){
     await page.getByTestId('ground-squad-board').screenshot({path:'test-results/ground-medical-'+width+'.png'});
 
     await page.reload();
-    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
     await expect(page.getByTestId('ground-unit-dorn')).toHaveAttribute('data-grid-x','5');
     await expect(page.getByTestId('ground-unit-mira')).toHaveAttribute('data-grid-x','6');
     await expect(page.getByTestId('mission-phase')).toContainText('RESCATE CONFIRMADO');
