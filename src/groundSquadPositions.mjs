@@ -96,7 +96,7 @@ function shortestRoute(scene,officers,id,target){
   return route.reverse();
 }
 
-function advanceOfficers(world,snapshot) {
+function advanceOfficers(world,snapshot,onVisitedCell=null) {
   const scene=world.scenes.surface;
   const initial=freeCells(scene,snapshot.origin);
   if(initial.length<snapshot.squad.length) fail('No room for deployed squad');
@@ -113,6 +113,7 @@ function advanceOfficers(world,snapshot) {
     for(const step of route){
       const dx=step.x-previous.x,dy=step.y-previous.y;
       unit.heading=HEADINGS[OFFSETS.findIndex(([x,y])=>x===dx&&y===dy)];
+      onVisitedCell?.(step);
       previous=step;
     }
     unit.x=command.x;
@@ -126,6 +127,20 @@ export function replayGroundSquadPositions(world,away,snapshot){
   validateSnapshot(world,away,snapshot);
   const {officers,events}=advanceOfficers(world,snapshot);
   return {version:1,officers,events};
+}
+
+// All physically visited cells, including intermediate route steps. Deriving
+// this from the validated command history avoids a second, desynchronizable
+// fog-of-war save. It never mutates the existing v1 snapshot.
+export function groundSquadVisitedCells(world,away,snapshot) {
+  validateSnapshot(world,away,snapshot);
+  const scene=world.scenes.surface;
+  const starting=freeCells(scene,snapshot.origin).slice(0,snapshot.squad.length);
+  const seen=new Map();
+  const record=cell=>seen.set(coord(cell.x,cell.y),{x:cell.x,y:cell.y});
+  starting.forEach(record);
+  advanceOfficers(world,snapshot,record);
+  return [...seen.values()];
 }
 
 export function orderGroundOfficerMove(world,away,snapshot,officerId,destination){

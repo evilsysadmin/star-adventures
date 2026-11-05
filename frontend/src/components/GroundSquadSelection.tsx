@@ -1,10 +1,13 @@
 
-import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundOutpostLandmarks, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
+import { startAwayTeam } from '../../../src/awayTeam.mjs';
+import { groundFogOfWar, groundVisionCells } from '../../../src/groundFogOfWar.mjs';
+import type { GroundSnapshot } from '../groundSquadSession';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
 
@@ -12,7 +15,7 @@ type Officer = { id: string; name: string };
 type Point = { x: number; y: number };
 type GroundMoveResult = boolean | { moved: boolean; officerId: string; path: Point[] };
 type WalkSession = {officerId:string; path:Point[]; started:number};
-type WalkPose = {officerId:string; x:number; y:number; frame:number};
+type WalkPose = {officerId:string; x:number; y:number; gridX:number; gridY:number; frame:number};
 type Gesture = { pointerId: number; start: Point; target: string | null; tile: string | null; additive: boolean; dragged: boolean };
 const scene = world.scenes.surface;
 const tile = (col: number, row: number): Point => ({ x: 440 + (col - row) * 40, y: 52 + (col + row) * 20 });
@@ -42,11 +45,12 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, onMove, onInspectProbe, onAssistCivilians, allowWholeMove, disabled = false,
+  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, allowWholeMove, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
   officers: Array<{id: string; x: number; y: number; heading: string}>;
+  snapshot: GroundSnapshot;
   onMove: (target: Point, selection: string[]) => GroundMoveResult;
   onInspectProbe: (officerId: string) => string;
   onAssistCivilians: (officerId: string) => string;
@@ -66,6 +70,11 @@ export function GroundSquadSelection({
   const [readyArt, setReadyArt] = useState<Set<string>>(() => new Set());
   const [readyWalk, setReadyWalk] = useState<Set<string>>(() => new Set());
   const rosterKey = squad.map(officer=>officer.id).join('|');
+  // Terrain memory comes from the accepted command replay, not a second
+  // browser storage key that could diverge from the saved squad history.
+  const fog = useMemo(() => groundFogOfWar(world,
+    {...startAwayTeam(),squad:squad.map(officer=>officer.id)},snapshot),
+    [snapshot,rosterKey]);
   useEffect(()=>{
     // Browser-side preload avoids adding invisible SVG geometry that would
     // enlarge clickable officer bounds or make Playwright select the wrong tile.
@@ -90,6 +99,9 @@ export function GroundSquadSelection({
   },[rosterKey]);
   const [walking, setWalking] = useState<WalkSession | null>(null);
   const [walkPose, setWalkPose] = useState<WalkPose | null>(null);
+  const [fogBeforeWalk, setFogBeforeWalk] = useState<{
+    explored:Set<string>;visible:Set<string>;
+  } | null>(null);
   useEffect(() => {
     if(!walking) return;
     if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
@@ -108,12 +120,25 @@ export function GroundSquadSelection({
       const from=tile(a[0],a[1]),to=tile(b[0],b[1]);
       setWalkPose({officerId:walking.officerId,
         x:from.x+(to.x-from.x)*step.progress,
-        y:from.y+(to.y-from.y)*step.progress,frame:step.frame});
+        y:from.y+(to.y-from.y)*step.progress,
+        gridX:a[0],gridY:a[1],frame:step.frame});
       raf=window.requestAnimationFrame(tick);
     };
     raf=window.requestAnimationFrame(tick);
     return ()=>window.cancelAnimationFrame(raf);
   },[walking]);
+  // Rule state persists the destination immediately. During animation, do
+  // not reveal the destination ahead of the actually displayed officer.
+  const renderedVision = walking && walkPose && fogBeforeWalk
+    ? groundVisionCells(scene,units.map(unit =>
+        walkPose.officerId===unit.id
+          ? {x:walkPose.gridX,y:walkPose.gridY}
+          : {x:unit.gridX,y:unit.gridY}))
+    : fog.visible;
+  const displayedFog = walking && walkPose && fogBeforeWalk
+    ? {visible:renderedVision,
+       explored:new Set([...fogBeforeWalk.explored,...renderedVision])}
+    : fog;
   const [additiveRoster, setAdditiveRoster] = useState(false);
   const selectedUnit = selected.length === 1 ? units.find(unit => unit.id === selected[0]) : null;
   const leaderUnit = units.find(unit => unit.id === selected[0]);
@@ -213,13 +238,15 @@ export function GroundSquadSelection({
     const outcome = onMove({x,y}, [...selected]);
     const success = typeof outcome==='boolean' ? outcome : outcome.moved;
     if(success && typeof outcome!=='boolean' && outcome.path.length>1){
+      setFogBeforeWalk(displayedFog);
       const path=outcome.path, first=path[0], last=walking?.path.at(-1);
       // Consecutive accepted commands for one officer append to the same
       // animation timeline. Never jump through a wall to the next command.
       if(walking?.officerId===outcome.officerId && last?.x===first.x && last.y===first.y){
         setWalking({...walking,path:[...walking.path,...path.slice(1)]});
       }else{
-        setWalkPose({officerId:outcome.officerId,...tile(first.x,first.y),frame:0});
+        setWalkPose({officerId:outcome.officerId,...tile(first.x,first.y),
+          gridX:first.x,gridY:first.y,frame:0});
         setWalking({officerId:outcome.officerId,path,started:performance.now()});
       }
     }else if(success){
@@ -319,7 +346,8 @@ export function GroundSquadSelection({
             cell.x>=9 || cell.y>=8 ? ((cell.x+cell.y)%3 ? '#536953' : '#626c52') :
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
           stroke="#a8b6a1" strokeOpacity=".13" strokeWidth="1" />)}
-        {scene.walls.filter(cell => cell.x > 0 && cell.y > 0 &&
+        {scene.walls.filter(cell => displayedFog.explored.has(cell.x+','+cell.y) &&
+          cell.x > 0 && cell.y > 0 &&
           cell.x < scene.width - 1 && cell.y < scene.height - 1).map(cell => {
             const p = tile(cell.x, cell.y);
             return <g key={cell.x + ',' + cell.y} transform={'translate(' + p.x + ' ' + p.y + ')'} pointerEvents="none">
@@ -328,8 +356,17 @@ export function GroundSquadSelection({
               <path d="M0 15 L31 0 V-27 L0 -15Z" fill="#1a2b34" />
             </g>;
           })}
-        <GroundWildSectorScenery />
-        <GroundOutpostLandmarks />
+        <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
+        <GroundOutpostLandmarks explored={displayedFog.explored} visible={displayedFog.visible} />
+        <g data-testid="ground-fog-layer" pointerEvents="none">
+          {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>
+            <polygon key={cell.key} data-fog-cell={cell.key}
+              data-fog-state={displayedFog.explored.has(cell.key)?'remembered':'unknown'}
+              points={tileShape(cell.x,cell.y)}
+              fill={displayedFog.explored.has(cell.key)?'#0a1d24':'#020710'}
+              fillOpacity={displayedFog.explored.has(cell.key)?.73:.97}
+              stroke="#7f9896" strokeOpacity=".05" strokeWidth="1" />)}
+        </g>
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
@@ -442,6 +479,8 @@ export function GroundSquadSelection({
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
       En móvil, «Mover selección» y tocar destino; con teclado, flechas y Enter.
+      La niebla negra indica terreno desconocido; el terreno gris oscuro es un recuerdo
+      y solo las casillas iluminadas están a la vista del equipo.
       La sonda científica y el puesto de socorro admiten acciones del oficial adyacente,
       usando su habilidad real. El archivo de sensores, el perímetro y el transporte
       todavía requieren la exploración clásica.</p>
