@@ -318,7 +318,9 @@ export function GroundSquadSelection({
     <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
     <p className="ground-squad-status" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
     <p className="ground-squad-status" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
-    <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
+    <details className="ground-squad-instructions">
+      <summary>Controles y ayuda</summary>
+      <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Añadir selección» y toca los nombres para crear un grupo.
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
@@ -326,5 +328,6 @@ export function GroundSquadSelection({
       La sonda científica y el puesto de socorro admiten acciones del oficial adyacente,
       usando su habilidad real. El archivo de sensores, el perímetro y el transporte
       todavía requieren la exploración clásica.</p>
+    </details>
   </div>;
 }
