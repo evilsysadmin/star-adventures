@@ -53,9 +53,10 @@ export function groundOfficers(world: unknown, ids: string[], snapshot: GroundSn
 }
 
 export function moveGroundOfficer(world: unknown, ids: string[], snapshot: GroundSnapshot,
-  officerId: string, target: {x: number; y: number}): {snapshot: GroundSnapshot; moved: boolean} {
+  officerId: string, target: {x: number; y: number}): {snapshot: GroundSnapshot; moved: boolean; route: Array<{x:number;y:number}>} {
   const move = orderGroundOfficerMove(world, deployed(ids), snapshot, officerId, target);
-  return {snapshot: move.snapshot as GroundSnapshot, moved: move.route.length !== 0};
+  return {snapshot: move.snapshot as GroundSnapshot, moved: move.route.length !== 0,
+    route: move.route as Array<{x:number;y:number}>};
 }
 
 export function moveGroundFormation(world: unknown, ids: string[], snapshot: GroundSnapshot,

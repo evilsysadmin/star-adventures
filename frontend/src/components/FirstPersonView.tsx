@@ -537,6 +537,18 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
       groundRef.current = moved.snapshot;
       setGroundSnapshot(moved.snapshot);
       persistGroundSnapshot(world, squadIds, moved.snapshot, localStorageOrNull());
+      // Only an accepted canonical BFS route can drive sprite animation.
+      // Game state and F5 restoration remain immediately authoritative.
+      const route = 'route' in moved && Array.isArray(moved.route)
+        ? moved.route as Array<{x:number;y:number}> : null;
+      if (selection.length === 1 && route?.length) {
+        const start = groundOfficers(world, squadIds, current)
+          .find(officer => officer.id === selection[0]);
+        if (start) return {
+          moved: true, officerId: selection[0],
+          path: [{x:start.x,y:start.y},...route],
+        };
+      }
       return true;
     } catch {
       // Occupancy, wall, blocked route or corrupt state: no movement event.
