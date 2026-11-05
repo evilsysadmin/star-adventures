@@ -3,6 +3,10 @@ import {expect,test} from '@playwright/test';
 // The visual animation consumes the already accepted ground-position route.
 // It never writes a second game move or changes the persisted coordinates.
 test.use({storageState:{cookies:[],origins:[]}});
+const tinyPng=Buffer.from(
+ 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLytAAAAABJRU5ErkJggg==',
+ 'base64',
+);
 
 async function land(page: import('@playwright/test').Page){
   await page.goto('/');
@@ -16,8 +20,14 @@ for(const width of [390,1280]){
   test.setTimeout(90_000);
   page.setDefaultTimeout(15_000);
   await page.setViewportSize({width,height:850});
+  // Independent, decodable fixture proves that the six-frame walk sheet is
+  // actually loaded, not merely an idle character translated across the map.
+  await page.route(/\/star-adventures\/tactical\/officer-(female|male)-walk-v1-[^/]+\.webp$/,route=>
+    route.fulfill({status:200,contentType:'image/png',
+      headers:{'access-control-allow-origin':'*'},body:tinyPng}));
   await land(page);
   const venn=page.getByTestId('ground-unit-venn');
+  await expect(venn).toHaveAttribute('data-walk-atlas-ready','true');
   const dorn=page.getByTestId('ground-unit-dorn');
   await expect(venn).toHaveAttribute('data-grid-x','4');
   await expect(venn).toHaveAttribute('data-grid-y','5');
@@ -28,6 +38,7 @@ for(const width of [390,1280]){
   // An actual accepted path is >1 tile and must show a nonzero atlas frame
   // before ending on the authoritative final cell.
   await expect(venn).toHaveAttribute('data-walk-phase','moving');
+  await expect(page.getByTestId('ground-officer-walk-venn')).toBeVisible();
   await expect.poll(async()=>Number(await venn.getAttribute('data-walk-frame')),{timeout:3_000})
     .toBeGreaterThan(0);
   // Capture the actual SVG atlas renderer, not a separately composed mock.
