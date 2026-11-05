@@ -73,7 +73,8 @@ export function GroundSquadSelection({
   const focused = compact && followSquad;
   const focusX = Math.max(0, Math.min(900 - 440, Math.round(cameraCenter.x - 220)));
   const focusY = Math.max(0, Math.min(430 - 300, Math.round(cameraCenter.y - 150)));
-  const cameraView = focused ? focusX + ' ' + focusY + ' 440 300' : '0 0 900 430';
+  const cameraView = focused ? focusX + ' ' + focusY + ' 440 300' :
+    compact ? '0 0 900 430' : '80 48 740 350';
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
