@@ -372,7 +372,7 @@ export function GroundSquadSelection({
               })} />}
             {showWalk && <svg data-testid={'ground-officer-walk-'+unit.id}
               x="-25" y="-65" width="50" height="73" pointerEvents="none"
-              preserveAspectRatio="none"
+              preserveAspectRatio="none" style={{overflow:'hidden'}}
               viewBox={((frame%WALK_ATLAS.columns)*100)+' '+(Math.floor(frame/WALK_ATLAS.columns)*100)+' 100 100'}>
               <image href={walkUrl} x="0" y="0"
                 width={WALK_ATLAS.columns*100} height={WALK_ATLAS.rows*100}
