@@ -347,7 +347,7 @@ export function GroundSquadSelection({
           fill={blocked.has(cell.key) ? '#1b3138' : wornPath.has(cell.key) ? '#5a6b5d' :
             cell.x>=9 || cell.y>=8 ? ((cell.x+cell.y)%3 ? '#536953' : '#626c52') :
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
-          stroke="#a8b6a1" strokeOpacity=".13" strokeWidth="1" />)}
+          stroke="#a8b6a1" strokeOpacity=".045" strokeWidth="1" />)}
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyWalls explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
@@ -359,8 +359,8 @@ export function GroundSquadSelection({
               data-fog-state={displayedFog.explored.has(cell.key)?'remembered':'unknown'}
               points={tileShape(cell.x,cell.y)}
               fill={displayedFog.explored.has(cell.key)?'#0a1d24':'#020710'}
-              fillOpacity={displayedFog.explored.has(cell.key)?.73:.97}
-              stroke="#7f9896" strokeOpacity=".05" strokeWidth="1" />)}
+              fillOpacity={displayedFog.explored.has(cell.key)?.83:1}
+              stroke="#7f9896" strokeOpacity={displayedFog.explored.has(cell.key)?'.012':'0'} strokeWidth="1" />)}
         </g>
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
