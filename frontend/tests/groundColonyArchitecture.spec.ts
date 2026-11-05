@@ -33,7 +33,18 @@ for(const width of [390,1280]) {
   // Two visible contiguous wall cells share an actual roof. The distant
   // eastern wall must not disclose an unseen connection through the fog.
   await expect(page.getByTestId('ground-colony-roof-5,7-to-6,7')).toHaveCount(1);
-  await expect(page.getByTestId('ground-colony-roof-8,1-to-8,2')).toHaveCount(0);
+  const deck=page.getByTestId('ground-colony-roof-deck-5,7-to-6,7');
+  await expect(deck).toHaveCount(1);
+  const dimensions=await deck.evaluate(node=>{
+    const bounds=(node as SVGGraphicsElement).getBBox();
+    return {width:bounds.width,height:bounds.height};
+  });
+  expect(dimensions.width).toBeGreaterThan(35);
+  expect(dimensions.height).toBeGreaterThan(20);
+  // The only eastern entry (8,4) stays physically open. No visual canopy
+  // may bridge an open tile or reveal an unobserved pair of blocked tiles.
+  await expect(page.getByTestId('ground-colony-roof-8,3-to-8,4')).toHaveCount(0);
+  await expect(page.getByTestId('ground-colony-roof-deck-8,1-to-8,2')).toHaveCount(0);
   await expect(page.getByTestId('ground-outpost-landmarks')).toHaveCount(1);
   await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(1);
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveCount(0);
