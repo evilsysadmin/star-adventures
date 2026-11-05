@@ -74,6 +74,8 @@ test.describe('puesto del capitán: tres finales reales', () => {
 });
 
 test('keyboard choices and skip-navigation work', async ({ page }) => {
+  // Full keyboard mission, restart and reload run alongside heavy Chrome shards.
+  test.setTimeout(75_000);
   await page.goto('/');
   await page.keyboard.press('1');
   await expect(page.getByTestId('diplomacy-score')).toHaveText('00');
@@ -134,6 +136,8 @@ test('station swaps change narrative outcomes and survive reload', async ({ page
 });
 
 test('crew XP survives a new mission and F5', async ({ page }) => {
+  // Includes science, ending, new mission, reload and expanding the roster.
+  test.setTimeout(75_000);
   await page.goto('/');
   await openStation(page, 'science');
   await page.getByTestId('choice-scan').click();
