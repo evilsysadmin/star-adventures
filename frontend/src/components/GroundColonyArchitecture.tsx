@@ -11,12 +11,19 @@ const labels:Record<string,string>={
  'perimeter-uplink':'BALIZA', 'beam-out':'EXTRACCIÓN',
 };
 
+// Existing adjacent wall tiles form contiguous built structures, not isolated
+// crates. The bridges are only between *two* real blocked building cells.
+const cargoKeys=new Set(['10,2','10,6','4,8']);
+const builtCells=scene.walls.filter(p=>p.x>0&&p.y>0&&
+  p.x<scene.width-1&&p.y<scene.height-1&&!cargoKeys.has(key(p.x,p.y)));
+const builtKeys=new Set(builtCells.map(p=>key(p.x,p.y)));
+const roofJoins=builtCells.flatMap(p=>([[1,0],[0,1]] as const).flatMap(
+ ([dx,dy])=>builtKeys.has(key(p.x+dx,p.y+dy))
+  ? [{from:p,to:{x:p.x+dx,y:p.y+dy}}] : []));
+
 export function GroundColonyWalls({explored,visible}:Vision){
  return <g data-testid="ground-colony-walls" pointerEvents="none">
-  {scene.walls.filter(p=>p.x>0&&p.y>0&&
-    p.x<scene.width-1&&p.y<scene.height-1&&
-    !['10,2','10,6','4,8'].includes(key(p.x,p.y))&&
-    explored.has(key(p.x,p.y)))
+  {builtCells.filter(p=>explored.has(key(p.x,p.y)))
     .map(p=>{
      const xy=key(p.x,p.y),pos=at(p.x,p.y);
      const annex=p.x===8,service=p.x===3&&p.y===2;
@@ -52,6 +59,29 @@ export function GroundColonyWalls({explored,visible}:Vision){
        <circle cx="27" cy="-41" r="3.5" fill={warm?'#ffb96f':'#8fe3d2'} />
      </g>;
     })}
+  <g data-testid="ground-colony-connected-roofs">
+   {roofJoins.filter(({from,to})=>
+     explored.has(key(from.x,from.y))&&explored.has(key(to.x,to.y)))
+    .map(({from,to})=>{
+     const start=at(from.x,from.y),end=at(to.x,to.y);
+     const bothVisible=visible.has(key(from.x,from.y))&&visible.has(key(to.x,to.y));
+     const id=key(from.x,from.y)+'-to-'+key(to.x,to.y);
+     const sx=start.x,sy=start.y-44,ex=end.x,ey=end.y-44;
+     return <g key={id} data-testid={'ground-colony-roof-'+id}
+       data-fog={bothVisible?'visible':'remembered'}
+       opacity={bothVisible?0.94:0.3}>
+       <path d={`M${sx} ${sy} L${ex} ${ey}`}
+         fill="none" stroke="#253943" strokeWidth="18"
+         strokeLinecap="square"/>
+       <path d={`M${sx} ${sy-5} L${ex} ${ey-5}`}
+         fill="none" stroke="#859186" strokeWidth="2.5"/>
+       <path d={`M${sx} ${sy+5} L${ex} ${ey+5}`}
+         fill="none" stroke="#516c69" strokeWidth="1.8"/>
+       <circle cx={(sx+ex)/2} cy={(sy+ey)/2} r="2.1"
+         fill="#dfc796"/>
+     </g>;
+    })}
+  </g>
  </g>;
 }
 
