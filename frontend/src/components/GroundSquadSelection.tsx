@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
+import r2Assets from '../assets/r2-assets-manifest.json';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
 
@@ -12,6 +13,14 @@ const tile = (col: number, row: number): Point => ({ x: 440 + (col - row) * 40, 
 const tileShape = (col: number, row: number) => {
   const { x, y } = tile(col, row);
   return [x + ',' + (y - 20), (x + 40) + ',' + y, x + ',' + (y + 20), (x - 40) + ',' + y].join(' ');
+};
+// Reuse the authored single-pose WebPs already loaded by the tactical renderer.
+// Keep identity/selection on the SVG group and never let CDN status own a move.
+const femaleIdle = r2Assets.assets['starAdventures.tactical.officerFemaleMvsV1'].url;
+const maleIdle = r2Assets.assets['starAdventures.tactical.officerMaleMvsV1'].url;
+const officerIdleArt: Record<string, string> = {
+  venn: femaleIdle, mira: femaleIdle,
+  varela: maleIdle, solan: maleIdle, dorn: maleIdle, rhee: maleIdle,
 };
 const blocked = new Set(scene.walls.map(cell => cell.x + ',' + cell.y));
 const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
@@ -37,6 +46,9 @@ export function GroundSquadSelection({
     return {...officer, gridX, gridY, heading: location?.heading ?? 'N', ...tile(gridX, gridY)};
   });
   const [selected, setSelected] = useState<string[]>(() => squad[0] ? [squad[0].id] : []);
+  // Draw vector proxies until each CDN image is actually decoded. An R2
+  // outage must not make an officer invisible or change picking/positions.
+  const [readyArt, setReadyArt] = useState<Set<string>>(() => new Set());
   const [additiveRoster, setAdditiveRoster] = useState(false);
   const selectedUnit = selected.length === 1 ? units.find(unit => unit.id === selected[0]) : null;
   const leaderUnit = units.find(unit => unit.id === selected[0]);
@@ -251,6 +263,8 @@ export function GroundSquadSelection({
           pointerEvents="none" />}
         {units.map((unit, index) => {
           const active = selected.includes(unit.id);
+          const artReady = readyArt.has(unit.id);
+          const artUrl = officerIdleArt[unit.id];
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
             data-officer-id={unit.id} data-proj-x={unit.x} data-proj-y={unit.y}
             data-grid-x={unit.gridX} data-grid-y={unit.gridY} data-heading={unit.heading}
@@ -260,12 +274,24 @@ export function GroundSquadSelection({
             <ellipse rx="18" ry="8" cy="10" fill="#081821" opacity=".85" />
             <ellipse rx="22" ry="10" cy="9" fill="none" stroke={active ? '#e8ca82' : '#69949b'}
               strokeWidth={active ? 3 : 1.5} />
+            <g data-testid={'ground-officer-proxy-' + unit.id} opacity={artReady ? 0 : 1}>
             <path d="M-12 3 L-10 -12 Q0 -20 10 -12 L12 3 Q0 10 -12 3Z"
               fill={['#9c6c4e','#607a87','#517c76'][index % 3]} stroke="#bbd0ca" strokeWidth="1.3" />
             <path d="M-7 -10 L0 -5 7 -10" fill="none" stroke="#ead7ab" strokeWidth="2" />
             <circle cx="0" cy="-18" r="8" fill="#d4ae8c" stroke="#e4c4a0" strokeWidth="1.2" />
             <path d="M-8 -18 Q-7 -30 2 -27 Q9 -25 8 -18 Q1 -23 -8 -18Z" fill="#28373b" />
-            <text y="-37" textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
+            </g>
+            {artUrl && <image data-testid={'ground-officer-sprite-' + unit.id}
+              data-asset-state={artReady ? 'loaded' : 'fallback'}
+              href={artUrl} x="-25" y="-65" width="50" height="73"
+              preserveAspectRatio="xMidYMax meet" pointerEvents="none"
+              opacity={artReady ? 1 : 0}
+              onLoad={() => setReadyArt(previous => new Set(previous).add(unit.id))}
+              onError={() => setReadyArt(previous => {
+                if (!previous.has(unit.id)) return previous;
+                const next = new Set(previous); next.delete(unit.id); return next;
+              })} />}
+            <text y={artReady ? '-65' : '-37'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
       </svg>
