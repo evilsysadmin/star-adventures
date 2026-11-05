@@ -161,7 +161,7 @@ export function GroundColonyStations({explored,visible}:Vision){
      <StationGeometry id={object.id}/>
      <text x={object.id==='sensor-vault'?43:object.id==='probe'?18:0}
        y={object.id==='sensor-vault'?-38:object.id==='probe'?-47:
-         object.id==='relief-point'?-59:object.id==='perimeter-uplink'?-76:37}
+         object.id==='relief-point'?-59:object.id==='perimeter-uplink'?39:37}
        textAnchor={object.id==='sensor-vault'?'start':'middle'}
        className="ground-landmark-name">{labels[object.id]??object.label}</text>
    </g>;
