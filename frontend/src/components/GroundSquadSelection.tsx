@@ -3,11 +3,16 @@ import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } fr
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundOutpostLandmarks } from './GroundOutpostScenery';
+import { officerRouteStepAt } from '../isoOfficerAnimation';
+import { WALK_ATLAS } from '../tacticalAnimation';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
 
 type Officer = { id: string; name: string };
 type Point = { x: number; y: number };
+type GroundMoveResult = boolean | { moved: boolean; officerId: string; path: Point[] };
+type WalkSession = {officerId:string; path:Point[]; started:number};
+type WalkPose = {officerId:string; x:number; y:number; frame:number};
 type Gesture = { pointerId: number; start: Point; target: string | null; tile: string | null; additive: boolean; dragged: boolean };
 const scene = world.scenes.surface;
 const tile = (col: number, row: number): Point => ({ x: 440 + (col - row) * 40, y: 52 + (col + row) * 20 });
@@ -23,6 +28,12 @@ const officerIdleArt: Record<string, string> = {
   venn: femaleIdle, mira: femaleIdle,
   varela: maleIdle, solan: maleIdle, dorn: maleIdle, rhee: maleIdle,
 };
+const femaleWalk = r2Assets.assets['starAdventures.tactical.officerFemaleWalkV1'].url;
+const maleWalk = r2Assets.assets['starAdventures.tactical.officerMaleWalkV1'].url;
+const officerWalkArt: Record<string,string> = {
+  venn: femaleWalk, mira: femaleWalk,
+  varela: maleWalk, solan: maleWalk, dorn: maleWalk, rhee: maleWalk,
+};
 const blocked = new Set(scene.walls.map(cell => cell.x + ',' + cell.y));
 // Paths between authored facilities are only painted terrain, never a
 // movement shortcut or a substitute for the canonical walkability grid.
@@ -36,7 +47,7 @@ export function GroundSquadSelection({
   squad: Officer[];
   position: { x: number; y: number };
   officers: Array<{id: string; x: number; y: number; heading: string}>;
-  onMove: (target: Point, selection: string[]) => boolean;
+  onMove: (target: Point, selection: string[]) => GroundMoveResult;
   onInspectProbe: (officerId: string) => string;
   onAssistCivilians: (officerId: string) => string;
   allowWholeMove: boolean;
@@ -53,12 +64,42 @@ export function GroundSquadSelection({
   // Draw vector proxies until each CDN image is actually decoded. An R2
   // outage must not make an officer invisible or change picking/positions.
   const [readyArt, setReadyArt] = useState<Set<string>>(() => new Set());
+  const [readyWalk, setReadyWalk] = useState<Set<string>>(() => new Set());
+  const [walking, setWalking] = useState<WalkSession | null>(null);
+  const [walkPose, setWalkPose] = useState<WalkPose | null>(null);
+  useEffect(() => {
+    if(!walking) return;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      setWalkPose(null);setWalking(null);return;
+    }
+    const path=walking.path.map(cell=>cell.x+':'+cell.y);
+    let raf=0;
+    const tick=(now:number)=>{
+      const step=officerRouteStepAt(path,now-walking.started);
+      if(step.done){
+        setWalkPose(null);
+        setWalking(current=>current===walking?null:current);
+        return;
+      }
+      const [a,b]=[step.from,step.to].map(value=>value.split(':').map(Number));
+      const from=tile(a[0],a[1]),to=tile(b[0],b[1]);
+      setWalkPose({officerId:walking.officerId,
+        x:from.x+(to.x-from.x)*step.progress,
+        y:from.y+(to.y-from.y)*step.progress,frame:step.frame});
+      raf=window.requestAnimationFrame(tick);
+    };
+    raf=window.requestAnimationFrame(tick);
+    return ()=>window.cancelAnimationFrame(raf);
+  },[walking]);
   const [additiveRoster, setAdditiveRoster] = useState(false);
   const selectedUnit = selected.length === 1 ? units.find(unit => unit.id === selected[0]) : null;
   const leaderUnit = units.find(unit => unit.id === selected[0]);
   // Follow the leading selected officer even when a dispersed group has moved
   // away from the separate first-person campaign anchor.
-  const cameraCenter = leaderUnit ? {x:leaderUnit.x,y:leaderUnit.y} : tile(position.x,position.y);
+  const cameraCenter = leaderUnit
+    ? walkPose?.officerId===leaderUnit.id ? {x:walkPose.x,y:walkPose.y}
+      : {x:leaderUnit.x,y:leaderUnit.y}
+    : tile(position.x,position.y);
   const [compact, setCompact] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches);
   const [followSquad, setFollowSquad] = useState(true);
@@ -97,8 +138,8 @@ export function GroundSquadSelection({
     if (!root || !matrix) return null;
     return units.map(unit => {
       const point = root.createSVGPoint();
-      point.x = unit.x;
-      point.y = unit.y;
+      point.x = walkPose?.officerId===unit.id ? walkPose.x : unit.x;
+      point.y = walkPose?.officerId===unit.id ? walkPose.y : unit.y;
       const center = point.matrixTransform(matrix);
       return { id: unit.id, x: center.x, y: center.y, visible: true };
     });
@@ -141,7 +182,21 @@ export function GroundSquadSelection({
       setMoveNotice('La selección ya está en esa casilla.');
       return;
     }
-    const success = onMove({x,y}, [...selected]);
+    const outcome = onMove({x,y}, [...selected]);
+    const success = typeof outcome==='boolean' ? outcome : outcome.moved;
+    if(success && typeof outcome!=='boolean' && outcome.path.length>1){
+      const path=outcome.path, first=path[0], last=walking?.path.at(-1);
+      // Consecutive accepted commands for one officer append to the same
+      // animation timeline. Never jump through a wall to the next command.
+      if(walking?.officerId===outcome.officerId && last?.x===first.x && last.y===first.y){
+        setWalking({...walking,path:[...walking.path,...path.slice(1)]});
+      }else{
+        setWalkPose({officerId:outcome.officerId,...tile(first.x,first.y),frame:0});
+        setWalking({officerId:outcome.officerId,path,started:performance.now()});
+      }
+    }else if(success){
+      setWalking(null);setWalkPose(null);
+    }
     const name = selected.length === 1 ? squad.find(officer => officer.id === selected[0])?.name :
       'Formación de ' + selected.length + ' oficiales';
     setMoveNotice(success ? name + ' en torno a ' + x + ':' + y :
@@ -252,16 +307,22 @@ export function GroundSquadSelection({
           const active = selected.includes(unit.id);
           const artReady = readyArt.has(unit.id);
           const artUrl = officerIdleArt[unit.id];
+          const walkUrl = officerWalkArt[unit.id];
+          const moving = walking?.officerId===unit.id && walkPose?.officerId===unit.id;
+          const showWalk = moving && readyWalk.has(unit.id);
+          const point = moving ? {x:walkPose.x,y:walkPose.y} : unit;
+          const frame = moving ? walkPose.frame : 0;
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
-            data-officer-id={unit.id} data-proj-x={unit.x} data-proj-y={unit.y}
+            data-officer-id={unit.id} data-proj-x={point.x} data-proj-y={point.y}
             data-grid-x={unit.gridX} data-grid-y={unit.gridY} data-heading={unit.heading}
-            transform={'translate(' + unit.x + ' ' + unit.y + ')'}
+            data-walk-phase={moving?'moving':'idle'} data-walk-frame={frame}
+            transform={'translate(' + point.x + ' ' + point.y + ')'}
             className={active ? 'ground-unit is-selected' : 'ground-unit'}>
             <circle r="27" cy="-7" fill="transparent" />
             <ellipse rx="18" ry="8" cy="10" fill="#081821" opacity=".85" />
             <ellipse rx="22" ry="10" cy="9" fill="none" stroke={active ? '#e8ca82' : '#69949b'}
               strokeWidth={active ? 3 : 1.5} />
-            <g data-testid={'ground-officer-proxy-' + unit.id} opacity={artReady ? 0 : 1}>
+            <g data-testid={'ground-officer-proxy-' + unit.id} opacity={artReady || showWalk ? 0 : 1}>
             <path d="M-12 3 L-10 -12 Q0 -20 10 -12 L12 3 Q0 10 -12 3Z"
               fill={['#9c6c4e','#607a87','#517c76'][index % 3]} stroke="#bbd0ca" strokeWidth="1.3" />
             <path d="M-7 -10 L0 -5 7 -10" fill="none" stroke="#ead7ab" strokeWidth="2" />
@@ -272,13 +333,28 @@ export function GroundSquadSelection({
               data-asset-state={artReady ? 'loaded' : 'fallback'}
               href={artUrl} x="-25" y="-65" width="50" height="73"
               preserveAspectRatio="xMidYMax meet" pointerEvents="none"
-              opacity={artReady ? 1 : 0}
+              opacity={artReady && !showWalk ? 1 : 0}
               onLoad={() => setReadyArt(previous => new Set(previous).add(unit.id))}
               onError={() => setReadyArt(previous => {
                 if (!previous.has(unit.id)) return previous;
                 const next = new Set(previous); next.delete(unit.id); return next;
               })} />}
-            <text y={artReady ? '-65' : '-37'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
+            {walkUrl && <image href={walkUrl} x="-95" y="-95" width="1" height="1"
+              opacity="0" pointerEvents="none"
+              onLoad={() => setReadyWalk(previous => new Set(previous).add(unit.id))}
+              onError={() => setReadyWalk(previous => {
+                if(!previous.has(unit.id)) return previous;
+                const next=new Set(previous);next.delete(unit.id);return next;
+              })} />}
+            {showWalk && <svg data-testid={'ground-officer-walk-'+unit.id}
+              x="-25" y="-65" width="50" height="73" pointerEvents="none"
+              preserveAspectRatio="none"
+              viewBox={((frame%WALK_ATLAS.columns)*100)+' '+(Math.floor(frame/WALK_ATLAS.columns)*100)+' 100 100'}>
+              <image href={walkUrl} x="0" y="0"
+                width={WALK_ATLAS.columns*100} height={WALK_ATLAS.rows*100}
+                preserveAspectRatio="none" pointerEvents="none" />
+            </svg>}
+            <text y={artReady || showWalk ? '-65' : '-37'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
       </svg>
