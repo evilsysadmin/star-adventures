@@ -65,6 +65,29 @@ export function GroundSquadSelection({
   // outage must not make an officer invisible or change picking/positions.
   const [readyArt, setReadyArt] = useState<Set<string>>(() => new Set());
   const [readyWalk, setReadyWalk] = useState<Set<string>>(() => new Set());
+  const rosterKey = squad.map(officer=>officer.id).join('|');
+  useEffect(()=>{
+    // Browser-side preload avoids adding invisible SVG geometry that would
+    // enlarge clickable officer bounds or make Playwright select the wrong tile.
+    let active=true;
+    const images=squad.map(officer=>{
+      const url=officerWalkArt[officer.id];
+      if(!url)return null;
+      const img=new Image();
+      img.onload=()=>{if(active)setReadyWalk(prev=>new Set(prev).add(officer.id));};
+      img.onerror=()=>{if(active)setReadyWalk(prev=>{
+        if(!prev.has(officer.id))return prev;
+        const next=new Set(prev);next.delete(officer.id);return next;
+      });};
+      img.src=url;
+      return img;
+    });
+    return ()=>{active=false;images.forEach(img=>{
+      if(img){img.onload=null;img.onerror=null;}
+    });};
+  // Only a change of deployed officer IDs requires fresh atlas preloads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[rosterKey]);
   const [walking, setWalking] = useState<WalkSession | null>(null);
   const [walkPose, setWalkPose] = useState<WalkPose | null>(null);
   useEffect(() => {
@@ -338,13 +361,6 @@ export function GroundSquadSelection({
               onError={() => setReadyArt(previous => {
                 if (!previous.has(unit.id)) return previous;
                 const next = new Set(previous); next.delete(unit.id); return next;
-              })} />}
-            {walkUrl && <image href={walkUrl} x="-95" y="-95" width="1" height="1"
-              opacity="0" pointerEvents="none"
-              onLoad={() => setReadyWalk(previous => new Set(previous).add(unit.id))}
-              onError={() => setReadyWalk(previous => {
-                if(!previous.has(unit.id)) return previous;
-                const next=new Set(previous);next.delete(unit.id);return next;
               })} />}
             {showWalk && <svg data-testid={'ground-officer-walk-'+unit.id}
               x="-25" y="-65" width="50" height="73" pointerEvents="none"
