@@ -133,12 +133,17 @@ export function GroundSquadSelection({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, []);
-  // Follow the selected officer on phones; the complete map stays one tap away.
+  // Map dimensions are the whole authored 13×10 surface; all screen hit
+  // testing still uses the SVG's actual CTM and canonical grid coordinates.
+  const fullWidth=1120, fullHeight=550;
   const focused = compact && followSquad;
-  const focusX = Math.max(0, Math.min(900 - 440, Math.round(cameraCenter.x - 220)));
-  const focusY = Math.max(0, Math.min(430 - 300, Math.round(cameraCenter.y - 150)));
-  const cameraView = focused ? focusX + ' ' + focusY + ' 440 300' :
-    compact ? '0 0 900 430' : '80 48 740 350';
+  const focusX = Math.max(0,Math.min(fullWidth-440,Math.round(cameraCenter.x-220)));
+  const focusY = Math.max(0,Math.min(fullHeight-300,Math.round(cameraCenter.y-150)));
+  const desktopX = Math.max(0,Math.min(fullWidth-740,Math.round(cameraCenter.x-320)));
+  const desktopY = Math.max(0,Math.min(fullHeight-350,Math.round(cameraCenter.y-184)));
+  const cameraView = !followSquad ? '0 0 1120 550'
+    : focused ? focusX+' '+focusY+' 440 300'
+    : desktopX+' '+desktopY+' 740 350';
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
@@ -290,11 +295,11 @@ export function GroundSquadSelection({
   } : undefined;
 
   return <div className="ground-squad" data-testid="ground-squad-selection">
-    {compact && <div className="ground-squad-viewbar">
-      <span>VISTA PLANETARIA · {focused ? 'SEGUIMIENTO' : 'MAPA COMPLETO'}</span>
-      <button type="button" data-testid="ground-camera-toggle" aria-pressed={focused}
+    {<div className="ground-squad-viewbar">
+      <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO' : 'MAPA COMPLETO'}</span>
+      <button type="button" data-testid="ground-camera-toggle" aria-pressed={followSquad}
         onClick={() => setFollowSquad(value => !value)}>
-        {focused ? 'Mapa completo' : 'Seguir equipo'}
+        {followSquad ? 'Mapa completo' : 'Seguir equipo'}
       </button>
     </div>}
     <div className="ground-squad-viewport">
@@ -311,6 +316,7 @@ export function GroundSquadSelection({
         <GroundPlanetBackdrop />
         {sceneTiles.map(cell => <polygon key={cell.key} data-cell-id={cell.key} points={tileShape(cell.x, cell.y)}
           fill={blocked.has(cell.key) ? '#1b3138' : wornPath.has(cell.key) ? '#5a6b5d' :
+            cell.x>=9 || cell.y>=8 ? ((cell.x+cell.y)%3 ? '#536953' : '#626c52') :
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
           stroke="#a8b6a1" strokeOpacity=".13" strokeWidth="1" />)}
         {scene.walls.filter(cell => cell.x > 0 && cell.y > 0 &&
