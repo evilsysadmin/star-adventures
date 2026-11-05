@@ -38,3 +38,33 @@ The pinned mission transmission must remain **vertical-scroll only** in immersiv
 
 **Not yet complete:** sensor archive, hostile perimeter initiation and extraction still use classical controls. This default-camera change does not claim a fully isometric mission.
 
+
+## Outpost scenery and walking sprites — incremental visual layer
+
+The default 9×8 planetary landing now draws distinct, authored-location
+silhouettes for the science probe, sensor archive, medical relief point,
+perimeter uplink and extraction marker. These shapes and the planetary backdrop
+are non-pickable SVG decoration. The camera frames the terrain more closely on
+desktop; the phone follow/full-map switch and the canonical grid cells remain
+unchanged. **This is not yet a larger playable map or a seamless 3D world.**
+The independent 12×12 tactical sandbox in PR #196 must not be mistaken for a
+replacement for the persistent surface campaign.
+
+Single-officer **accepted** movement orders use the exact path returned by the
+existing deterministic ground-position rules to animate the officer's rendered
+position tile by tile. The 3×2 six-frame male/female walking WebPs come from
+the same content-addressed R2 manifest as the tactical encounter renderer;
+the image preload is independent of SVG hit geometry. The crew's saved
+coordinates and mission events commit immediately and remain authoritative.
+Reloading mid-animation restores the final saved position, never a transient
+fractional tile. Reduced-motion users skip the animation. Failed CDN loads
+keep the existing idle/vector fallback visible; all selection and movement
+controls continue to work.
+
+**Explicit limitations:** individual officer walking is the first slice;
+formation and full-squad orders still snap to their canonical result. V1 atlas
+art depicts only one authored view (mirroring is not genuine four-direction
+art). Genuine directional walking needs vetted four-view sheets; bigger
+playable surface maps require a separate save/route/mission migration and
+browser gate. Do not claim those features shipped merely because animated
+sprites or decorative scenery are visible.
