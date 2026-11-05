@@ -64,6 +64,11 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('explore-target')).toContainText('Baliza de seguridad');
     await expect(page.getByTestId('field-resolution')).toHaveCount(0);
 
+    // Returning now restores the elevated squad, not the classic controls.
+    // These legacy route assertions explicitly opt back into first person.
+    await page.getByTestId('ground-squad-toggle').click();
+    await expect(page.getByTestId('explore-forward')).toBeVisible();
+
     // Tactical contact is optional. A player who declines it can still save
     // civilians using the existing physical medicine route and real skill check.
     for (const command of ['left', 'left', 'forward', 'right', 'forward', 'right', 'use']) {
