@@ -183,3 +183,35 @@
 .mission-prepare-team span{font-size:17px;line-height:1}
 .mission-transmission-briefing .mission-abandon:not(.is-confirming){display:inline-block;vertical-align:middle}
 @media(max-width:700px){.mission-transmission-briefing .mission-abandon:not(.is-confirming){margin-left:8px}}
+
+
+/* On phones, the away-team map owns the screen. Keep the mission briefing
+   above the map, never over the selectable officers or the map camera bar.
+   The mission actions remain available inside their vertically scrollable
+   compact panel, including abandonment/return from historical saves. */
+@media(max-width:700px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-top{
+    justify-content:flex-end;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-name{
+    display:none;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission{
+    top:129px;left:12px;right:12px;width:auto;max-height:100px;
+    padding:8px 10px;overflow-x:hidden;overflow-y:auto;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-kicker,
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-story,
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-route{
+    display:none;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-next{
+    margin:4px 0;font-size:10px;line-height:1.35;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-abandon{
+    margin-top:4px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad{
+    padding-top:234px;
+  }
+}
