@@ -339,6 +339,7 @@ export function GroundSquadSelection({
             data-officer-id={unit.id} data-proj-x={point.x} data-proj-y={point.y}
             data-grid-x={unit.gridX} data-grid-y={unit.gridY} data-heading={unit.heading}
             data-walk-phase={moving?'moving':'idle'} data-walk-frame={frame}
+            data-walk-atlas-ready={readyWalk.has(unit.id)}
             transform={'translate(' + point.x + ' ' + point.y + ')'}
             className={active ? 'ground-unit is-selected' : 'ground-unit'}>
             <circle r="27" cy="-7" fill="transparent" />
