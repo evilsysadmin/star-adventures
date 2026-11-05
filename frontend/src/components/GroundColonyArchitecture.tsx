@@ -66,19 +66,34 @@ export function GroundColonyWalls({explored,visible}:Vision){
      const start=at(from.x,from.y),end=at(to.x,to.y);
      const bothVisible=visible.has(key(from.x,from.y))&&visible.has(key(to.x,to.y));
      const id=key(from.x,from.y)+'-to-'+key(to.x,to.y);
-     const sx=start.x,sy=start.y-44,ex=end.x,ey=end.y-44;
+     // A single roof deck spans two *existing* blocked cells. Its transverse
+     // vector follows the actual isometric edge, so x- and y-facing wings
+     // receive the same perspective without inventing walkable tiles.
+     const sx=start.x,sy=start.y-47,ex=end.x,ey=end.y-47;
+     const length=Math.hypot(ex-sx,ey-sy);
+     const px=-(ey-sy)*17/length,py=(ex-sx)*17/length;
+     const point=(x:number,y:number)=>x.toFixed(2)+' '+y.toFixed(2);
+     const roof='M'+point(sx+px,sy+py)+' L'+point(ex+px,ey+py)+
+       ' L'+point(ex-px,ey-py)+' L'+point(sx-px,sy-py)+'Z';
+     const fascia='M'+point(sx+px,sy+py)+' L'+point(ex+px,ey+py)+
+       ' L'+point(ex+px,ey+py+9)+' L'+point(sx+px,sy+py+9)+'Z';
+     const mx=(sx+ex)/2,my=(sy+ey)/2;
      return <g key={id} data-testid={'ground-colony-roof-'+id}
        data-fog={bothVisible?'visible':'remembered'}
        opacity={bothVisible?0.94:0.3}>
-       <path d={`M${sx} ${sy} L${ex} ${ey}`}
-         fill="none" stroke="#253943" strokeWidth="18"
-         strokeLinecap="square"/>
-       <path d={`M${sx} ${sy-5} L${ex} ${ey-5}`}
-         fill="none" stroke="#859186" strokeWidth="2.5"/>
-       <path d={`M${sx} ${sy+5} L${ex} ${ey+5}`}
-         fill="none" stroke="#516c69" strokeWidth="1.8"/>
-       <circle cx={(sx+ex)/2} cy={(sy+ey)/2} r="2.1"
-         fill="#dfc796"/>
+       <path d={fascia} fill="#23383e" stroke="#0e252f" strokeWidth="1.5"/>
+       <path data-testid={'ground-colony-roof-deck-'+id}
+         d={roof} fill="#63756e" stroke="#abb9a3" strokeWidth="1.5"/>
+       <path d={`M${point(sx-px*.6,sy-py*.6)} L${point(ex-px*.6,ey-py*.6)}`}
+         stroke="#304b50" strokeWidth="3" fill="none"/>
+       <path d={`M${point(sx+px*.7,sy+py*.7)} L${point(ex+px*.7,ey+py*.7)}`}
+         stroke="#d0b88b" strokeWidth="2" strokeDasharray="10 6" fill="none"/>
+       <path d={`M${point(mx+px*.45,my+py*.45)} L${point(mx-px*.45,my-py*.45)}`}
+         stroke="#283d43" strokeWidth="6" fill="none"/>
+       <path d={`M${point(mx+px*.45,my+py*.45-2)} L${point(mx-px*.45,my-py*.45-2)}`}
+         stroke="#9bc9b9" strokeWidth="1.4" fill="none"/>
+       <circle cx={mx} cy={my} r="3.5" fill="#253f45" stroke="#b8bfa8" strokeWidth="1.5"/>
+       <circle cx={mx} cy={my} r="1.3" fill="#e0c58d"/>
      </g>;
     })}
   </g>
