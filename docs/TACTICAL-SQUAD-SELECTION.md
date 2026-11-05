@@ -19,3 +19,11 @@ The elevated surface view may **investigate the authored probe** without returni
 - `investigateProbe` accepts an optional **explicit acting officer**. Classic first-person use continues choosing the best deployed scientist as before; the elevated view uses the skill of the selected adjacent officer (including genuine undertrained failures). The exact same away-team checkpoint, findings, attempt counter and classified observed-evidence reconciliation persist after F5.
 - Mission actions remain tied to the real authored probe and role. The medical station, sensor archive, combat contact and teleporter have not been migrated to elevated interaction in this increment.
 - Tests validate stale/invalid officer or station, wrong distance, replay after save, an undertrained tactical officer, successful scientific officer, duplicate prevention and browser F5 at 390/1280.
+
+## Second authored station: medical rescue (elevated view)
+
+The **Puesto de socorro** at `6:4` can be used by a single selected officer standing in a cardinally adjacent walkable cell. The dedicated **Atender civiles** action is gated by the saved operator position, then `groundStationUse` verifies the same canonical `applyExploration(use)` station event used by the classic camera. The selected officer's real medical skill, including level progression, is the sole medical competence checked; the traditional first-person action continues using `bestAwayMedic` unchanged.
+
+An underqualified operator may attempt treatment but cannot write a successful evacuation or public incident. A qualified operator causes precisely the existing `EVACUATION_INCIDENT` record and `evacuate` official-order completion, which survive F5 in the mandate checkpoint; repeating a resolved rescue is rejected. No tactical command changes `spatial.v1`, moves the bridge camera or creates duplicate civilians.
+
+Browser gates: Kael near `5:4` fails with Medicine 1/5; Isa near `6:5` succeeds with Medicine 4/5 and real public evidence, while other officers remain put. Verify duplicate rejection and both tactical/missions checkpoints after F5 at 390/1280. Sensor archive, perimeter combat contact and extraction remain future slices.

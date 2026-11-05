@@ -11,7 +11,7 @@ export const EVACUATION_INCIDENT = 'field-medical-evacuation';
 export const MEDICAL_THRESHOLD = 3;
 const fail = message => { throw new MandateError(message); };
 
-function medicalEncounter(world, exploration, crew, away) {
+function medicalEncounter(world, exploration, crew, away, operatorId = null) {
   validateWorld(world);
   validateExploration(world, exploration);
   validateCrew(crew);
@@ -23,7 +23,13 @@ function medicalEncounter(world, exploration, crew, away) {
     item.type === 'station' && item.action === EVACUATION_STATION_ACTION &&
     item.x === ahead.x && item.y === ahead.y);
   if (!station) fail('Medical response requires a faced, authored evacuation station');
-  return bestAwayMedic(crew, away);
+  if (operatorId === null) return bestAwayMedic(crew, away);
+  if (typeof operatorId !== 'string' || !away.squad.includes(operatorId))
+    fail('Medical operator must be a deployed officer');
+  const officer = OFFICERS.find(candidate => candidate.id === operatorId);
+  const level = crew.progression[operatorId].level;
+  return { officerId: operatorId,
+    skill: Math.min(5, officer.skills.medicine + Math.floor((level - 1) / 2)) };
 }
 
 /** The same expert and effective skill used by the actual rescue. */
@@ -42,8 +48,9 @@ export function bestAwayMedic(crew, away) {
  * An insufficient medical squad cannot report rescued civilians or close the order.
  * Every accepted rescue generates replayable public evidence, not inferred UI state.
  */
-export function performMedicalEvacuation(definition, mandate, world, exploration, crew, away) {
-  const medic = medicalEncounter(world, exploration, crew, away);
+/** @param {string | null} [operatorId] Acting officer; null preserves classic best-medic selection. */
+export function performMedicalEvacuation(definition, mandate, world, exploration, crew, away, operatorId = null) {
+  const medic = medicalEncounter(world, exploration, crew, away, operatorId);
   const canonical = replayMandateActions(definition, mandate?.actions);
   if (JSON.stringify(canonical) !== JSON.stringify(mandate))
     fail('Untrusted evacuation history');

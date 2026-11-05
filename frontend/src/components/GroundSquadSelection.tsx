@@ -18,13 +18,14 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, onMove, onInspectProbe, allowWholeMove, disabled = false,
+  squad, position, officers, onMove, onInspectProbe, onAssistCivilians, allowWholeMove, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
   officers: Array<{id: string; x: number; y: number; heading: string}>;
   onMove: (target: Point, selection: string[]) => boolean;
   onInspectProbe: (officerId: string) => string;
+  onAssistCivilians: (officerId: string) => string;
   allowWholeMove: boolean;
   disabled?: boolean;
 }) {
@@ -60,9 +61,14 @@ export function GroundSquadSelection({
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
+  const [medicalNotice, setMedicalNotice] = useState('Acerca un oficial al puesto de socorro para atender a los civiles.');
   const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
   const probeAtHand = !!probe && !!selectedUnit &&
     Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
+  const reliefPoint = scene.objects.find(object =>
+    object.id === 'relief-point' && object.type === 'station');
+  const reliefAtHand = !!reliefPoint && !!selectedUnit &&
+    Math.abs(selectedUnit.gridX - reliefPoint.x) + Math.abs(selectedUnit.gridY - reliefPoint.y) === 1;
   const [keyboardCell, setKeyboardCell] = useState<Point>(() => ({x:position.x,y:position.y}));
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -295,6 +301,14 @@ export function GroundSquadSelection({
         }}>
         Investigar sonda {probeAtHand ? '· ' + selectedUnit.name.split(' ')[0] : '· requiere proximidad'}
       </button>
+      <button type="button" data-testid="ground-assist-civilians"
+        disabled={disabled || !reliefAtHand}
+        onClick={() => {
+          if (!reliefAtHand || !selectedUnit) return;
+          setMedicalNotice(onAssistCivilians(selectedUnit.id));
+        }}>
+        Atender civiles {reliefAtHand ? '· ' + selectedUnit.name.split(' ')[0] : '· requiere proximidad'}
+      </button>
     </div>
     <p className="ground-squad-status" data-testid="ground-selection-status" role="status">
       {selected.length === 0 ? 'Ningún oficial seleccionado' :
@@ -303,12 +317,14 @@ export function GroundSquadSelection({
     </p>
     <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
     <p className="ground-squad-status" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
+    <p className="ground-squad-status" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
     <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Añadir selección» y toca los nombres para crear un grupo.
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
       En móvil, «Mover selección» y tocar destino; con teclado, flechas y Enter.
-      La sonda científica se puede investigar junto a ella con un solo oficial.
-      Las demás acciones de misión todavía requieren la exploración clásica.</p>
+      La sonda científica y el puesto de socorro admiten acciones del oficial adyacente,
+      usando su habilidad real. El archivo de sensores, el perímetro y el transporte
+      todavía requieren la exploración clásica.</p>
   </div>;
 }
