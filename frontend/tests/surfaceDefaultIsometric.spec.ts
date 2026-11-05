@@ -1,5 +1,9 @@
 import {expect, test} from '@playwright/test';
 
+// Exercise the real immersive landing path, not the legacy journal layout
+// injected by the shared Playwright tactical-view fixture.
+test.use({storageState: {cookies: [], origins: []}});
+
 for(const width of [360,390,430,1280,1757]){
   test('desembarco abre equipo isométrico y mantiene cámara clásica como alternativa '+width+'px',async({page})=>{
     test.setTimeout(85_000);
