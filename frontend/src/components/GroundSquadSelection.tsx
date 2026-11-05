@@ -310,8 +310,8 @@ export function GroundSquadSelection({
           const walkUrl = officerWalkArt[unit.id];
           const moving = walking?.officerId===unit.id && walkPose?.officerId===unit.id;
           const showWalk = moving && readyWalk.has(unit.id);
-          const point = moving ? {x:walkPose.x,y:walkPose.y} : unit;
-          const frame = moving ? walkPose.frame : 0;
+          const point = walkPose?.officerId===unit.id ? {x:walkPose.x,y:walkPose.y} : unit;
+          const frame = walkPose?.officerId===unit.id ? walkPose.frame : 0;
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
             data-officer-id={unit.id} data-proj-x={point.x} data-proj-y={point.y}
             data-grid-x={unit.gridX} data-grid-y={unit.gridY} data-heading={unit.heading}
