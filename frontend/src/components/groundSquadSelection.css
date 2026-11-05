@@ -1,6 +1,6 @@
 .ground-squad{background:#101b28;color:#d9e8e7;min-width:0}
 .ground-squad-viewport{position:relative;overflow:hidden;background:#172a32}
-.ground-squad svg{display:block;width:100%;height:auto;aspect-ratio:1120/550;touch-action:none;user-select:none;cursor:crosshair}
+.ground-squad-viewport > svg{display:block;width:100%;height:auto;aspect-ratio:1120/550;touch-action:none;user-select:none;cursor:crosshair}
 .ground-object-label{font:700 14px sans-serif;fill:#e7d4ac;paint-order:stroke;stroke:#182e35;stroke-width:3px}
 .ground-unit{cursor:pointer}
 .ground-unit.is-selected{filter:drop-shadow(0 0 6px #c4dfab88)}
