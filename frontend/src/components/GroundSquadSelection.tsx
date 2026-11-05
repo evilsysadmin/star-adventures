@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
-import { GroundPlanetBackdrop, GroundOutpostLandmarks } from './GroundOutpostScenery';
+import { GroundPlanetBackdrop, GroundOutpostLandmarks, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
@@ -328,6 +328,7 @@ export function GroundSquadSelection({
               <path d="M0 15 L31 0 V-27 L0 -15Z" fill="#1a2b34" />
             </g>;
           })}
+        <GroundWildSectorScenery />
         <GroundOutpostLandmarks />
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
