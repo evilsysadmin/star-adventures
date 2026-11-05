@@ -629,7 +629,8 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           <div className="firstperson-render-stage">
           {exploration.area === 'surface' && showSquad && groundSnapshot
             ? <GroundSquadSelection squad={squad} position={exploration}
-                officers={groundOfficers(world, squadIds, groundSnapshot)} onMove={moveSelected}
+                officers={groundOfficers(world, squadIds, groundSnapshot)}
+                snapshot={groundSnapshot} onMove={moveSelected}
                 onInspectProbe={id => useGroundStation(id, 'probe')}
                 onAssistCivilians={id => useGroundStation(id, 'relief-point')}
                 allowWholeMove={groundSnapshot.commands.length === 0}
