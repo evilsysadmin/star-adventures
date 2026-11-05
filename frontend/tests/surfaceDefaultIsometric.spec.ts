@@ -27,6 +27,21 @@ for(const width of [360,390,430,1280,1757]){
     await expect(page.getByTestId('explore-forward')).toHaveCount(0);
     await expect(page.getByTestId('ground-inspect-probe')).toBeVisible();
     await expect(page.getByTestId('ground-assist-civilians')).toBeVisible();
+    // The mobile mission briefing and camera header must never obscure the
+    // actual pickable board; this guards the visual regression from the first
+    // real 390px screenshot, not merely document horizontal overflow.
+    if(width<=430){
+      const geometry=await page.evaluate(()=>{
+        const briefing=document.querySelector('.mission-transmission')!.getBoundingClientRect();
+        const camera=document.querySelector('.ground-squad-viewbar')!.getBoundingClientRect();
+        const board=document.querySelector('[data-testid="ground-squad-board"]')!.getBoundingClientRect();
+        return {briefingGap:camera.top-briefing.bottom,
+          visibleBoard:Math.min(innerHeight,board.bottom)-Math.max(0,board.top)};
+      });
+      expect(geometry.briefingGap).toBeGreaterThanOrEqual(0);
+      expect(geometry.visibleBoard).toBeGreaterThan(170);
+      await expect(page.getByText('Controles y ayuda')).toBeVisible();
+    }
     // At 1757x800 the map must not grow vertically and hide the command bar.
     if(width>=1280){
       await expect(page.getByTestId('ground-move-mode')).toBeInViewport();
