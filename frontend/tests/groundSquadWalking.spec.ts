@@ -30,6 +30,10 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-walk-phase','moving');
   await expect.poll(async()=>Number(await venn.getAttribute('data-walk-frame')),{timeout:3_000})
     .toBeGreaterThan(0);
+  // Capture the actual SVG atlas renderer, not a separately composed mock.
+  await page.getByTestId('ground-squad-board').screenshot({
+    path:'test-results/ground-walk-'+width+'.png',
+  });
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:10_000});
   await expect(dorn).toHaveAttribute('transform',dornPose??'');
   await page.reload();
