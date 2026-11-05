@@ -158,6 +158,30 @@ export function App() {
     }
   }, [session.crew, awayTeam]);
 
+  // In the elevated view the physically adjacent selected officer performs
+  // the medical action. The classic camera stays at its original position;
+  // the canonical mandate journal remains the only source of rescue truth.
+  const onGroundMedical = useCallback((pose: ViewState, officerId: string): string => {
+    try {
+      const outcome = performMedicalEvacuation(
+        MANDATE_DEFINITION, mandate, world, pose, session.crew, awayTeam, officerId
+      );
+      setMandate(outcome.state);
+      const name = OFFICERS.find(officer => officer.id === officerId)?.name ?? officerId;
+      const message = outcome.report.result === 'evacuated'
+        ? `Evacuación completada por ${name}. Los civiles están a salvo y constan en el diario.`
+        : `Asistencia insuficiente: ${name}, medicina ${outcome.report.skill}/5. Prueba con otro especialista.`;
+      setMedicalNotice(message);
+      return message;
+    } catch {
+      const message = mandate.orders.evacuate !== 'active'
+        ? 'El rescate ya consta en el registro oficial o fue cerrado.'
+        : 'La intervención médica no está disponible desde esta posición.';
+      setMedicalNotice(message);
+      return message;
+    }
+  }, [mandate, session.crew, awayTeam]);
+
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
@@ -425,7 +449,7 @@ export function App() {
               missionTargetId={!game.preferences.hints ? null : missionPhase === 'briefing' ? 'transporter'
                 : missionPhase === 'field' ? 'relief-point'
                 : missionPhase === 'extract' || (missionPhase === 'abandoned' && exploration.area === 'surface') ? 'beam-out' : null}
-              onSpatialEvent={onSpatialEvent} onGroundProbe={onGroundProbe}
+              onSpatialEvent={onSpatialEvent} onGroundProbe={onGroundProbe} onGroundMedical={onGroundMedical}
               squad={awayTeam.squad.map((id: string) => {
                 const officer = OFFICERS.find(candidate => candidate.id === id)!;
                 return { id: officer.id, name: officer.name };
