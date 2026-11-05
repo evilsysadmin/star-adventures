@@ -14,7 +14,9 @@ const labels:Record<string,string>={
 export function GroundColonyWalls({explored,visible}:Vision){
  return <g data-testid="ground-colony-walls" pointerEvents="none">
   {scene.walls.filter(p=>p.x>0&&p.y>0&&
-    p.x<scene.width-1&&p.y<scene.height-1&&explored.has(key(p.x,p.y)))
+    p.x<scene.width-1&&p.y<scene.height-1&&
+    !['10,2','10,6','4,8'].includes(key(p.x,p.y))&&
+    explored.has(key(p.x,p.y)))
     .map(p=>{
      const xy=key(p.x,p.y),pos=at(p.x,p.y);
      const annex=p.x===8,service=p.x===3&&p.y===2;
