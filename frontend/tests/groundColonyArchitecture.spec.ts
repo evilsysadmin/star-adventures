@@ -42,6 +42,9 @@ for(const width of [390,1280]) {
   await expect(venn).toHaveAttribute('data-grid-x','9');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-architecture-wall-10,2')).toHaveCount(0);
+  await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(1);
+  await expect(page.getByTestId('ground-cargo-3,2')).toHaveCount(0);
   await board.screenshot({path:'test-results/away-architecture-revealed-'+width+'.png'});
   await orderCell(page,4,5);
   await expect(venn).toHaveAttribute('data-grid-x','4');
