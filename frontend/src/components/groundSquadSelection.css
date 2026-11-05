@@ -1,6 +1,6 @@
 .ground-squad{background:#101b28;color:#d9e8e7;min-width:0}
 .ground-squad-viewport{position:relative;overflow:hidden;background:#172a32}
-.ground-squad svg{display:block;width:100%;height:auto;aspect-ratio:900/430;touch-action:none;user-select:none;cursor:crosshair}
+.ground-squad-viewport > svg{display:block;width:100%;height:auto;aspect-ratio:1120/550;touch-action:none;user-select:none;cursor:crosshair}
 .ground-object-label{font:700 14px sans-serif;fill:#e7d4ac;paint-order:stroke;stroke:#182e35;stroke-width:3px}
 .ground-unit{cursor:pointer}
 .ground-unit.is-selected{filter:drop-shadow(0 0 6px #c4dfab88)}
@@ -47,4 +47,12 @@
 }
 @media(max-width:520px){
   .ground-landmark-name{font-size:12px;letter-spacing:1px}
+}
+
+/* At desktop widths the mission transmission floats over the top-right
+   corner. Put full-map controls next to their label, not underneath the
+   actionable mission panel. Never disable pointer events to hide collisions. */
+@media(min-width:701px){
+  .ground-squad-viewbar{justify-content:flex-start;gap:22px}
+  .ground-squad-viewbar button{margin-left:0}
 }

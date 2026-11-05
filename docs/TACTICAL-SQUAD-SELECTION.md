@@ -41,7 +41,7 @@ The pinned mission transmission must remain **vertical-scroll only** in immersiv
 
 ## Outpost scenery and walking sprites — incremental visual layer
 
-The default 9×8 planetary landing now draws distinct, authored-location
+The original 9×8 planetary landing draws distinct, authored-location
 silhouettes for the science probe, sensor archive, medical relief point,
 perimeter uplink and extraction marker. These shapes and the planetary backdrop
 are non-pickable SVG decoration. The camera frames the terrain more closely on
@@ -68,3 +68,26 @@ art). Genuine directional walking needs vetted four-view sheets; bigger
 playable surface maps require a separate save/route/mission migration and
 browser gate. Do not claim those features shipped merely because animated
 sprites or decorative scenery are visible.
+
+## Eastern sector: first real surface-map expansion
+
+The canonical persistent `surface` scene grows from **9×8 to 13×10**.
+The historical 9×8 stations, landing coordinates and most original blocking
+cells keep exactly their saved IDs. One door at (8,4) connects the old
+scientific compound to a larger eastern valley. Additional collision walls
+represent new rocks; low vegetation, crystals and a crater are decorative,
+**not fake actionable mission buttons**.
+
+The map is now **traversable** through the same engine BFS/formation rules,
+not merely a painted background. The camera follows the selected officer on
+mobile **and desktop**; the full-map toggle is accessible on both. Picking
+still uses screen-to-SVG projection and canonical grid cells. An explicit
+migration/compatibility test reconstructs the historical 9×8 wall contract
+and compares v1 saved command replay, coordinates and headings between
+old and expanded worlds. F5 and cross-sector movement are exercised in
+Chrome at 390 and 1280 px.
+
+This is a first area expansion, not a 3D planetary biome or a promise of a
+new handcrafted mission. The new terrain has no additional objectives yet;
+the existing rescue/science campaign remains authoritative. The old first-
+person rollback path and its saved state remain intact.

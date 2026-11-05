@@ -16,11 +16,11 @@ export function GroundPlanetBackdrop(){
     <stop stopColor="#101b2d"/><stop offset="1" stopColor="#294247"/>
    </linearGradient>
   </defs>
-  <rect width="900" height="430" fill="url(#planet-sky)"/>
+  <rect width="1120" height="550" fill="url(#planet-sky)"/>
   <circle cx="738" cy="93" r="23" fill="#d3c6a1" opacity=".68"/>
-  <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 900 192V430H0Z" fill="#253e46"/>
-  <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246V430H0Z" fill="#1b353b"/>
-  <ellipse cx="449" cy="330" rx="353" ry="85" fill="#071b23" opacity=".5"/>
+  <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175V550H0Z" fill="#253e46"/>
+  <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239V550H0Z" fill="#1b353b"/>
+  <ellipse cx="449" cy="330" rx="455" ry="110" fill="#071b23" opacity=".5"/>
  </g>;
 }
 
@@ -59,6 +59,37 @@ export function GroundOutpostLandmarks(){
          object.id==='probe'?-40:object.id==='relief-point'?-54:35}
       textAnchor={object.id==='sensor-vault'?'start':'middle'}
       className="ground-landmark-name">{labels[object.id]}</text>
+   </g>;
+  })}
+ </g>;
+}
+
+// Secondary surface ecology is authored as decorative terrain, not fake
+// stations. It never participates in picking; large boulders are separately
+// present in the authoritative scene.walls collision list.
+export function GroundWildSectorScenery(){
+ return <g pointerEvents="none" data-testid="ground-wild-sector-scenery">
+  {scene.scenery.map((feature,index)=>{
+   const {x,y}=project(feature.x,feature.y);
+   return <g key={index} transform={`translate(${x} ${y})`}
+     data-testid={'ground-scenery-'+feature.type+'-'+index}>
+    {feature.type==='crater'?<>
+      <ellipse rx="32" ry="15" fill="#263d3c" stroke="#a6a286" strokeWidth="4"/>
+      <ellipse rx="23" ry="9" fill="#152e33" />
+      <path d="M-32 0 -25 11M30 -4 20 -13" stroke="#c1b89a" strokeWidth="3"/>
+    </>:feature.type==='crystal'?<>
+      <ellipse cy="6" rx="14" ry="7" fill="#1f3434"/>
+      <path d="M-14 3 -7 -20 3 -31 13 -8 11 4 0 9Z" fill="#80a79b" stroke="#aed9bd" strokeWidth="2"/>
+      <path d="M3 -31V9M-7 -20 3 -10 13 -8" stroke="#c4f0d4" fill="none"/>
+    </>:feature.type==='stone'?<>
+      <ellipse cy="7" rx="17" ry="7" fill="#243e3c" />
+      <path d="M-16 2 -9 -13 4 -21 16 -9 18 4 0 10Z" fill="#5c776a" stroke="#9ba693" strokeWidth="1.5"/>
+      <path d="M4 -21V-2L18 4" stroke="#334d4a" strokeWidth="3"/>
+    </>:<>
+      <path d="M-10 5Q-7 -11 -3 -18M0 6Q4 -19 6 -22M9 5Q11 -8 15 -13"
+        stroke="#91b28b" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      <ellipse cy="6" rx="13" ry="4" fill="#334e42"/>
+    </>}
    </g>;
   })}
  </g>;

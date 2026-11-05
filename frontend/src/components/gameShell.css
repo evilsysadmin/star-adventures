@@ -21,7 +21,14 @@
 .game-shell[data-interface=game] .firstperson-is-squad .ground-squad-viewport{
   flex:1 1 auto;min-height:145px;
 }
-.game-shell[data-interface=game] .firstperson-is-squad .ground-squad svg{
+/* Keep the desktop camera control below the separate top HUD. Its 44px
+   button must not be hidden behind the mission or the current-area title. */
+@media(min-width:701px){
+  .game-shell[data-interface=game] .firstperson-is-squad .ground-squad{
+    padding-top:150px;
+  }
+}
+.game-shell[data-interface=game] .firstperson-is-squad .ground-squad-viewport > svg{
   width:100%;height:100%;aspect-ratio:auto;
 }
 .game-shell[data-interface=game] .firstperson-is-squad .ground-squad-viewbar,
