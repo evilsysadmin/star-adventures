@@ -34,3 +34,17 @@
   padding:8px 12px;color:#abc5c7;font:700 11px/1.5 'DM Sans',sans-serif}
 .ground-squad-instructions summary:focus-visible{outline:2px solid #f0d49a;outline-offset:-2px}
 .ground-squad-instructions .ground-squad-help{padding:0 12px 12px}
+
+/* Landscape labels belong to the original authored objectives, not fake
+   numbered terminals. The SVG scene remains the same interactive grid. */
+.ground-landmark-name{
+  font:700 11px 'Space Grotesk',sans-serif;letter-spacing:1.4px;
+  fill:#f2dfb9;stroke:#142a30;stroke-width:3px;paint-order:stroke;
+  pointer-events:none;
+}
+.ground-squad-board [data-cell-id]:hover{
+  stroke:#d6deb6;stroke-opacity:.62;stroke-width:2;
+}
+@media(max-width:520px){
+  .ground-landmark-name{font-size:12px;letter-spacing:1px}
+}
