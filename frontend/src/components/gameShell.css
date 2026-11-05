@@ -123,6 +123,9 @@
 .mission-return-abandoned:focus-visible{outline:2px solid white;outline-offset:2px}
 /* Never allow long mission actions or status copy to widen the pinned
    transmission beyond the viewport (especially on restored/abandoned saves). */
+/* The radial ornament used right:-50px, enlarging scrollWidth even after
+   overflow-x:hidden. Keep its actual box inside the pinned transmission. */
+.game-shell[data-interface=game] .mission-transmission::after{right:0;width:min(240px,100%)}
 .game-shell[data-interface=game] .mission-transmission>*{max-width:100%;min-width:0}
 .game-shell[data-interface=game] .mission-transmission-story,
 .game-shell[data-interface=game] .mission-transmission-next{overflow-wrap:anywhere}
