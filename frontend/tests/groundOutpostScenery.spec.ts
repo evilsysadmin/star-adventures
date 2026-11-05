@@ -22,6 +22,21 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-relief-point').locator('text.ground-landmark-name')).toHaveText('SOCORRO');
   await expect(page.getByTestId('ground-landmark-perimeter-uplink').locator('text.ground-landmark-name')).toHaveText('BALIZA');
   await expect(page.getByTestId('ground-landmark-beam-out').locator('text.ground-landmark-name')).toHaveText('EXTRACCIÓN');
+  if(width===1280) await expect(board).toHaveAttribute('viewBox','80 48 740 350');
+  if(width===390){
+   // Both right-edge facilities remain legible in the mobile follow view.
+   const clipping=await page.evaluate(()=>{
+    const board=document.querySelector('[data-testid="ground-squad-board"]')!.getBoundingClientRect();
+    return ['relief-point','perimeter-uplink'].map(id=>{
+     const sign=document.querySelector('[data-testid="ground-landmark-'+id+'"] text')!.getBoundingClientRect();
+     return {id,left:sign.left-board.left,right:board.right-sign.right};
+    });
+   });
+   for(const label of clipping){
+    expect(label.left,label.id).toBeGreaterThanOrEqual(0);
+    expect(label.right,label.id).toBeGreaterThanOrEqual(0);
+   }
+  }
   // Artwork is non-interactive: pointer-driven officer selection is unchanged.
   await page.getByTestId('ground-unit-dorn').click();
   await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed','true');
