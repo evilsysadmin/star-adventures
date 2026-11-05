@@ -54,10 +54,10 @@ export function GroundOutpostLandmarks(){
       : <path d="M-15 -17 -3 -23V-7L-15 -1Z" fill="#8de4db"/>}
     </>}
     <text
-      x={object.id==='sensor-vault'?43:object.id==='probe'?-40:0}
+      x={object.id==='sensor-vault'?43:object.id==='probe'?16:0}
       y={object.id==='beam-out'?35:object.id==='sensor-vault'?-30:
-         object.id==='probe'?-40:object.id==='relief-point'?36:35}
-      textAnchor={object.id==='beam-out'||object.id==='relief-point'||object.id==='perimeter-uplink'?'middle':object.id==='probe'?'end':'start'}
+         object.id==='probe'?-40:object.id==='relief-point'?-54:35}
+      textAnchor={object.id==='sensor-vault'?'start':'middle'}
       className="ground-landmark-name">{labels[object.id]}</text>
    </g>;
   })}
