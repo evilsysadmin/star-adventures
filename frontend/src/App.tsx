@@ -140,6 +140,24 @@ export function App() {
     setMandate(resolved);
     setConfirmAbandon(false);
   };
+  // Tactical science uses the actual selected officer. The legacy camera
+  // position remains unchanged; findings still flow through the same away-team
+  // checkpoint and observed-evidence reconciliation as the classic view.
+  const onGroundProbe = useCallback((pose: ViewState, officerId: string): string => {
+    try {
+      const outcome = investigateProbe(world, pose, session.crew, awayTeam, officerId);
+      setAwayTeam(outcome.state);
+      const name = OFFICERS.find(officer => officer.id === officerId)?.name ?? officerId;
+      return outcome.report.result === 'success'
+        ? `${name}: firma mineral registrada en la bitácora.`
+        : `${name}: ciencia ${outcome.report.skill}/5, análisis insuficiente. Prueba con un especialista.`;
+    } catch {
+      return awayTeam.findings.includes(PROBE_FINDING)
+        ? 'La sonda ya fue investigada; el hallazgo está guardado.'
+        : 'No se puede investigar esta sonda desde la posición actual.';
+    }
+  }, [session.crew, awayTeam]);
+
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
     setActiveStation(event.type === 'station' && position.area === 'bridge' ? (event.stationId ?? null) : null);
@@ -407,7 +425,7 @@ export function App() {
               missionTargetId={!game.preferences.hints ? null : missionPhase === 'briefing' ? 'transporter'
                 : missionPhase === 'field' ? 'relief-point'
                 : missionPhase === 'extract' || (missionPhase === 'abandoned' && exploration.area === 'surface') ? 'beam-out' : null}
-              onSpatialEvent={onSpatialEvent}
+              onSpatialEvent={onSpatialEvent} onGroundProbe={onGroundProbe}
               squad={awayTeam.squad.map((id: string) => {
                 const officer = OFFICERS.find(candidate => candidate.id === id)!;
                 return { id: officer.id, name: officer.name };

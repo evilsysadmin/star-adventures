@@ -7,6 +7,8 @@ import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
 import { GroundSquadSelection } from './GroundSquadSelection';
 import { planGroundSquadRoute } from '../../../src/groundSquadRoute.mjs';
+import { groundStationUse } from '../../../src/groundSquadInteractions.mjs';
+import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { localStorageOrNull } from '../session';
 import {
   restoreGroundSnapshot, matchesGroundAnchor, groundOfficers, moveGroundOfficer,
@@ -435,7 +437,7 @@ const WAYPOINT_ORDERS: Record<WaypointCommand, string> = {
   'turn-right': 'GIRA A LA DERECHA ↷', use: 'E · INTERACTÚA',
 };
 
-export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, squad = [], missionTargetId = null, perimeterResolved = false, paused = false, captainMode = false, onCaptainStation, bridgeCrew, focusedStation = null, transportRequestRef, medicalReadiness }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; squad?: { id: string; name: string }[]; missionTargetId?: string | null; perimeterResolved?: boolean; paused?: boolean; captainMode?: boolean; onCaptainStation?: (id: string) => void; bridgeCrew: BridgeCrewRoster; focusedStation?: string | null; transportRequestRef?: { current: (() => void) | null }; medicalReadiness?: { name: string; skill: number; required: number } }) {
+export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent, onGroundProbe, squad = [], missionTargetId = null, perimeterResolved = false, paused = false, captainMode = false, onCaptainStation, bridgeCrew, focusedStation = null, transportRequestRef, medicalReadiness }: { alert: boolean; terminal: boolean; initialState?: ViewState; onSpatialEvent?: (state: ViewState, event: ExplorationEvent) => void; onGroundProbe?: (pose: ViewState, officerId: string) => string; squad?: { id: string; name: string }[]; missionTargetId?: string | null; perimeterResolved?: boolean; paused?: boolean; captainMode?: boolean; onCaptainStation?: (id: string) => void; bridgeCrew: BridgeCrewRoster; focusedStation?: string | null; transportRequestRef?: { current: (() => void) | null }; medicalReadiness?: { name: string; skill: number; required: number } }) {
   const [exploration, setExploration] = useState<ViewState>(() => initialState ?? startExploration(world));
   const [event, setEvent] = useState<ExplorationEvent | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -530,6 +532,21 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
       return false;
     }
   }, [paused, showSquad, moveWholeSquad, squadKey]);
+  const inspectGroundProbe = useCallback((officerId: string): string => {
+    if (paused || !showSquad || stateRef.current.area !== 'surface' || stateRef.current.pending)
+      return 'Investigación no disponible durante esta operación.';
+    const current = groundRef.current;
+    if (!current || !matchesGroundAnchor(current, stateRef.current, squadIds))
+      return 'No hay un equipo táctico validado para investigar.';
+    try {
+      const action = groundStationUse(world, {...startAwayTeam(), squad: squadIds}, current, officerId, 'probe');
+      if (action.event.action !== 'inspect-probe') return 'Objetivo científico incorrecto.';
+      return onGroundProbe?.(action.pose as ViewState, officerId) ?? 'Investigación no disponible.';
+    } catch {
+      return 'Selecciona un oficial junto a la sonda para investigarla.';
+    }
+  }, [paused, showSquad, onGroundProbe, squadKey]);
+
   const requestTransport = useCallback(() => {
     const result = requestCaptainTransport(world, stateRef.current);
     stateRef.current = result.state; setExploration(result.state); setEvent(result.event);
@@ -585,6 +602,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           {exploration.area === 'surface' && showSquad && groundSnapshot
             ? <GroundSquadSelection squad={squad} position={exploration}
                 officers={groundOfficers(world, squadIds, groundSnapshot)} onMove={moveSelected}
+                onInspectProbe={inspectGroundProbe}
                 allowWholeMove={groundSnapshot.commands.length === 0}
                 disabled={paused || !!exploration.pending} />
             : exploration.area === 'bridge' && !bridgeFallback
@@ -639,7 +657,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
             </div>
           </div>}
           <p className="firstperson-feedback" data-testid="explore-feedback" aria-live="polite">
-            {showSquad ? 'Movimiento táctico: cada oficial tiene su casilla; las órdenes de misión continúan en la exploración clásica.' : seated ? 'Tu tripulación espera órdenes. Ciencia y diplomacia pueden resolver el conflicto sin combatir.' : event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
+            {showSquad ? 'Movimiento táctico: investiga la sonda desde el mapa con un oficial adyacente; las demás acciones aún usan la exploración clásica.' : seated ? 'Tu tripulación espera órdenes. Ciencia y diplomacia pueden resolver el conflicto sin combatir.' : event?.type === 'station' ? event.action === 'inspect-probe' ? 'Sonda investigada. Consulta el informe del equipo.' :
               event.action === 'assist-evacuees' ? 'Puesto de socorro: consulta el resultado del equipo médico en el diario.' :
               event.action === 'extract-sensor-core' ? 'Archivo de sensores: consulta el resultado de la extracción en el canal reservado.' :
                event.action === 'secure-perimeter' ? perimeterResolved
