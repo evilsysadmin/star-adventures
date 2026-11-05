@@ -264,7 +264,9 @@ export function App() {
         transportRequest.current?.();
         return;
       }
-      const target = document.querySelector<HTMLButtonElement>('[data-testid="explore-forward"]');
+      const target = document.querySelector<HTMLElement>(
+        exploration.area === 'surface' ? '[data-testid="ground-squad-board"]' : '[data-testid="explore-forward"]'
+      ) ?? document.querySelector<HTMLElement>('[data-testid="explore-forward"]');
       target?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
       target?.focus({ preventScroll: true });
     });
@@ -276,7 +278,7 @@ export function App() {
     requestAnimationFrame(() => {
       document.querySelector('[data-testid="mission-transmission"]')
         ?.scrollIntoView({ block: 'start', behavior: 'auto' });
-      document.querySelector<HTMLButtonElement>('[data-testid="explore-forward"]')
+      document.querySelector<HTMLElement>('[data-testid="ground-squad-board"]')
         ?.focus({ preventScroll: true });
     });
   };

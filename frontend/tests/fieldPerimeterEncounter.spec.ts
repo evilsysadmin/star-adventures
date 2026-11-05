@@ -59,7 +59,7 @@ for (const width of [390, 1280]) {
     // halfway down the mobile journal, with exploration offscreen.
     await expect(page.getByTestId('mission-transmission')).toBeInViewport();
     await expect(page.getByTestId('explore-area')).toBeInViewport();
-    await expect(page.getByTestId('explore-forward')).toBeFocused();
+    await expect(page.getByTestId('ground-squad-board')).toBeFocused();
     await expect(page.getByTestId('explore-heading')).toContainText('6:5');
     await expect(page.getByTestId('explore-target')).toContainText('Baliza de seguridad');
     await expect(page.getByTestId('field-resolution')).toHaveCount(0);
@@ -116,7 +116,7 @@ test(`a real tactical ceasefire updates the optional field objective without fab
   await expect(page.getByTestId('field-resolution')).toContainText('Alto el fuego negociado');
   await expect(page.getByTestId('field-resolution')).toBeInViewport();
   await expect(page.getByTestId('explore-area')).toBeInViewport();
-  await expect(page.getByTestId('explore-forward')).toBeFocused();
+  await expect(page.getByTestId('ground-squad-board')).toBeFocused();
   await page.reload();
   await expect(page.getByTestId('field-encounter-scene')).toHaveCount(0);
   await expect(page.getByTestId('explore-heading')).toContainText('6:5');
