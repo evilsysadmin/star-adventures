@@ -32,6 +32,12 @@ for(const width of [390,1280]) {
   await expect(page.getByTestId('ground-outpost-landmarks')).toHaveCount(1);
   await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(1);
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveCount(0);
+  // Unknown ground is genuinely opaque: no misleading checkerboard contours
+  // or hints of unrevealed obstacles remain in the dark part of the scene.
+  const unseen=board.locator('[data-fog-cell="11,7"]');
+  await expect(unseen).toHaveAttribute('data-fog-state','unknown');
+  await expect(unseen).toHaveAttribute('fill-opacity','1');
+  await expect(unseen).toHaveAttribute('stroke-opacity','0');
   for(const id of ['probe','sensor-vault','relief-point','perimeter-uplink','beam-out'])
    await expect(page.getByTestId('ground-landmark-'+id)).toHaveCount(1);
   await board.screenshot({path:'test-results/away-architecture-initial-'+width+'.png'});
