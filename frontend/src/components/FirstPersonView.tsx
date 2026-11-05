@@ -539,12 +539,14 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
       persistGroundSnapshot(world, squadIds, moved.snapshot, localStorageOrNull());
       // Only an accepted canonical BFS route can drive sprite animation.
       // Game state and F5 restoration remain immediately authoritative.
-      if (selection.length === 1 && 'route' in moved && moved.route.length) {
+      const route = 'route' in moved && Array.isArray(moved.route)
+        ? moved.route as Array<{x:number;y:number}> : null;
+      if (selection.length === 1 && route?.length) {
         const start = groundOfficers(world, squadIds, current)
           .find(officer => officer.id === selection[0]);
         if (start) return {
           moved: true, officerId: selection[0],
-          path: [{x:start.x,y:start.y},...moved.route],
+          path: [{x:start.x,y:start.y},...route],
         };
       }
       return true;
