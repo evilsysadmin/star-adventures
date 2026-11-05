@@ -17,11 +17,11 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-planet-backdrop')).toHaveCount(1);
   for(const id of ['probe','sensor-vault','relief-point','perimeter-uplink','beam-out'])
    await expect(page.getByTestId('ground-landmark-'+id)).toHaveCount(1);
-  await expect(board.getByText('ARCHIVO')).toBeVisible();
-  await expect(board.getByText('SONDA')).toBeVisible();
-  await expect(board.getByText('SOCORRO')).toBeVisible();
-  await expect(board.getByText('BALIZA')).toBeVisible();
-  await expect(board.getByText('EXTRACCIÓN')).toBeVisible();
+  await expect(page.getByTestId('ground-landmark-sensor-vault').locator('text.ground-landmark-name')).toHaveText('ARCHIVO');
+  await expect(page.getByTestId('ground-landmark-probe').locator('text.ground-landmark-name')).toHaveText('SONDA');
+  await expect(page.getByTestId('ground-landmark-relief-point').locator('text.ground-landmark-name')).toHaveText('SOCORRO');
+  await expect(page.getByTestId('ground-landmark-perimeter-uplink').locator('text.ground-landmark-name')).toHaveText('BALIZA');
+  await expect(page.getByTestId('ground-landmark-beam-out').locator('text.ground-landmark-name')).toHaveText('EXTRACCIÓN');
   // Artwork is non-interactive: pointer-driven officer selection is unchanged.
   await page.getByTestId('ground-unit-dorn').click();
   await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed','true');
