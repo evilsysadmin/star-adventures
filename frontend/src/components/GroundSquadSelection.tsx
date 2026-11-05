@@ -479,6 +479,8 @@ export function GroundSquadSelection({
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
       En móvil, «Mover selección» y tocar destino; con teclado, flechas y Enter.
+      La niebla negra indica terreno desconocido; el terreno gris oscuro es un recuerdo
+      y solo las casillas iluminadas están a la vista del equipo.
       La sonda científica y el puesto de socorro admiten acciones del oficial adyacente,
       usando su habilidad real. El archivo de sensores, el perímetro y el transporte
       todavía requieren la exploración clásica.</p>
