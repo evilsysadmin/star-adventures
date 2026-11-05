@@ -57,7 +57,7 @@ export function GroundColonyFloor({explored,visible}:Vision){
       explored.has(key(b[0],b[1]))).map(([a,b],i)=>{
     const from=project(a[0],a[1]),to=project(b[0],b[1]);
     const isVisible=visible.has(key(a[0],a[1]))&&visible.has(key(b[0],b[1]));
-    return <g key={i} opacity={isVisible?.75:.25}>
+    return <g key={i} opacity={isVisible ? 0.75 : 0.25}>
       <path d={`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`}
         stroke="#17252b" strokeWidth="5" fill="none" />
       <path d={`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`}
