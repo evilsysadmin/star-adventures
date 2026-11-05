@@ -405,6 +405,10 @@ async function beamDown(page: Page) {
 }
 
 async function inspectProbe(page: Page) {
+  // This legacy route tests the classic spatial station contract explicitly;
+  // landing now defaults to the selectable isometric squad.
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.getByTestId('ground-squad-toggle').click();
   await page.getByTestId('explore-forward').click();
   await page.getByTestId('explore-forward').click();
   await expect(page.getByTestId('explore-target')).toContainText('Sonda científica');
