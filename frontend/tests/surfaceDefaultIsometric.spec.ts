@@ -3,6 +3,9 @@ import {expect, test} from '@playwright/test';
 for(const width of [360,390,430,1280,1757]){
   test('desembarco abre equipo isométrico y mantiene cámara clásica como alternativa '+width+'px',async({page})=>{
     test.setTimeout(85_000);
+    // A missing/covered control must fail with its locator, not silently
+    // consume the entire shard until CI cancels the run.
+    page.setDefaultTimeout(10_000);
     await page.setViewportSize({width,height:width===1757?800:850});
     await page.goto('/');
     await page.getByTestId('captain-transport').click();
@@ -43,6 +46,7 @@ for(const width of [360,390,430,1280,1757]){
 for(const width of [390,1280]){
   test('transmisión de rescate abandonado no muestra scrollbar horizontal '+width+'px',async({page})=>{
     test.setTimeout(75_000);
+    page.setDefaultTimeout(10_000);
     await page.setViewportSize({width,height:850});
     await page.goto('/');
     await page.getByTestId('captain-transport').click();
