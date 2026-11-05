@@ -370,14 +370,18 @@ export function GroundSquadSelection({
                 if (!previous.has(unit.id)) return previous;
                 const next = new Set(previous); next.delete(unit.id); return next;
               })} />}
-            {showWalk && <svg data-testid={'ground-officer-walk-'+unit.id}
-              x="-25" y="-65" width="50" height="73" pointerEvents="none"
-              preserveAspectRatio="none" style={{overflow:'hidden'}}
-              viewBox={((frame%WALK_ATLAS.columns)*100)+' '+(Math.floor(frame/WALK_ATLAS.columns)*100)+' 100 100'}>
-              <image href={walkUrl} x="0" y="0"
-                width={WALK_ATLAS.columns*100} height={WALK_ATLAS.rows*100}
-                preserveAspectRatio="none" pointerEvents="none" />
-            </svg>}
+            {showWalk && <foreignObject
+              data-testid={'ground-officer-walk-'+unit.id}
+              x="-25" y="-65" width="50" height="73" pointerEvents="none">
+              <div aria-hidden="true" style={{
+                width:'100%',height:'100%',
+                backgroundImage:'url("'+walkUrl+'")',
+                backgroundRepeat:'no-repeat',
+                backgroundSize:(WALK_ATLAS.columns*100)+'% '+(WALK_ATLAS.rows*100)+'%',
+                backgroundPosition:(frame%WALK_ATLAS.columns)*50+'% '+
+                  Math.floor(frame/WALK_ATLAS.columns)*100+'%',
+              }} />
+            </foreignObject>}
             <text y={artReady || showWalk ? '-65' : '-37'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
