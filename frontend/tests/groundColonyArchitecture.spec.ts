@@ -32,7 +32,7 @@ for(const width of [390,1280]) {
   await expect(page.getByTestId('ground-colony-connected-roofs')).toHaveCount(1);
   // Two visible contiguous wall cells share an actual roof. The distant
   // eastern wall must not disclose an unseen connection through the fog.
-  await expect(page.getByTestId('ground-colony-roof-3,7-to-4,7')).toHaveCount(1);
+  await expect(page.getByTestId('ground-colony-roof-5,7-to-6,7')).toHaveCount(1);
   await expect(page.getByTestId('ground-colony-roof-8,1-to-8,2')).toHaveCount(0);
   await expect(page.getByTestId('ground-outpost-landmarks')).toHaveCount(1);
   await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(1);
