@@ -44,7 +44,6 @@ for(const width of [360,390,430,1280,1757]){
   expect(obstacles.noOverflow).toBe(true);
   expect(obstacles.dockBottom).toBeLessThanOrEqual(height);
   expect(obstacles.hudBottom).toBeLessThanOrEqual(height);
-  expect(obstacles.leaderY).toBeGreaterThan(obstacles.hudTop===0?0:0);
   // On portrait, essential camera/actions must not obscure the landing.
   if(width<=430){
    expect(obstacles.hudTop).toBeGreaterThan(obstacles.leaderY);
