@@ -7,6 +7,10 @@ import {
 import { MAX_SCENARIO_CHECKPOINT_BYTES } from './isoScenarioCheckpoint.ts';
 import { MAX_CREW_ACTIONS } from '../../src/crewSession.mjs';
 import { validateExploration, faceTile } from '../../src/spatial.mjs';
+import { startAwayTeam } from '../../src/awayTeam.mjs';
+import { groundStationUse } from '../../src/groundSquadInteractions.mjs';
+import { deserializeGroundSquadPositions, replayGroundSquadPositions } from '../../src/groundSquadPositions.mjs';
+import { GROUND_SQUAD_KEY, matchesGroundAnchor, type GroundSnapshot } from './groundSquadSession';
 
 export const PERIMETER_SAVE_KEY = 'shadowops.star-adventures.physical-perimeter.v1';
 export const PERIMETER_SAVE_VERSION = 1;
@@ -40,6 +44,34 @@ export function atPerimeterStation(
     return world.scenes.surface.objects.some((item: { type: string; action?: string; x: number; y: number }) =>
       item.type === 'station' && item.action === 'secure-perimeter' &&
       item.x === ahead.x && item.y === ahead.y);
+  } catch { return false; }
+}
+
+/** Resume a physical encounter from a validated deployed officer's position.
+ * No legacy first-person camera teleport and no trust in stored selected IDs.
+ * Missing, incompatible or inaccessible squad saves cannot authorize reopen.
+ */
+export function atSquadPerimeterStation(
+  world: Parameters<typeof validateExploration>[0],
+  position: Parameters<typeof validateExploration>[1],
+  squadIds: string[],
+  storage: Reader | null,
+): boolean {
+  try {
+    validateExploration(world, position);
+    if (position.area !== 'surface' || position.pending !== null ||
+        !storage || !Array.isArray(squadIds) || squadIds.length === 0) return false;
+    const raw = storage.getItem(GROUND_SQUAD_KEY);
+    if (!raw) return false;
+    const away = { ...startAwayTeam(), squad: [...squadIds] };
+    const snapshot = deserializeGroundSquadPositions(world, away, raw) as GroundSnapshot;
+    if (!matchesGroundAnchor(snapshot, position, squadIds)) return false;
+    return replayGroundSquadPositions(world, away, snapshot).officers.some(officer => {
+      try {
+        return groundStationUse(world, away, snapshot, officer.id, 'perimeter-uplink')
+          .event.action === 'secure-perimeter';
+      } catch { return false; }
+    });
   } catch { return false; }
 }
 
