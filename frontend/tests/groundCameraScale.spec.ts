@@ -31,6 +31,14 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await land(page);
  const board=page.getByTestId('ground-squad-board'),venn=page.getByTestId('ground-unit-venn');
  await expect.poll(async()=>(await cameraMetrics(page)).height).toBe(280);
+ // A full sprite atlas is not necessarily painted at its geometric center.
+ // Clicking the officer <g> must still select the actual officer, not floor.
+ await page.getByTestId('ground-unit-dorn').click();
+ await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed','true');
+ await page.getByTestId('ground-unit-mira').click();
+ await expect(page.getByTestId('ground-select-mira')).toHaveAttribute('aria-pressed','true');
+ await page.getByTestId('ground-unit-venn').click();
+ await expect(page.getByTestId('ground-select-venn')).toHaveAttribute('aria-pressed','true');
  const before=await cameraMetrics(page);
  expect(before.aspectError).toBeLessThan(.08);
  expect(before.screenHeight).toBeGreaterThan(320);
@@ -66,6 +74,10 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  const art=page.getByTestId('ground-officer-sprite-venn');
  await expect(art).toHaveAttribute('width','54');
  await expect(art).toHaveAttribute('height','80');
+ await page.getByTestId('ground-unit-dorn').click();
+ await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed','true');
+ await page.getByTestId('ground-unit-mira').click();
+ await expect(page.getByTestId('ground-select-mira')).toHaveAttribute('aria-pressed','true');
  await page.getByTestId('ground-squad-board').screenshot({
   path:'test-results/away-mobile-legible-squad.png',
  });
