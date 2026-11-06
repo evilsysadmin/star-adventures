@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {validateWorld} from '../src/spatial.mjs';
 import {startAwayTeam} from '../src/awayTeam.mjs';
+import {planGroundSquadRoute} from '../src/groundSquadRoute.mjs';
 import {
   startGroundSquadPositions,orderGroundOfficerMove,replayGroundSquadPositions,
   serializeGroundSquadPositions,deserializeGroundSquadPositions,
@@ -20,17 +21,19 @@ oldWorld.scenes.surface.height=8;
 oldWorld.scenes.surface.walls=[
   ...oldWorld.scenes.surface.walls.filter(p=>p.x<9&&p.y<8),
   {x:8,y:4},
+  {x:8,y:6},
 ];
 delete oldWorld.scenes.surface.scenery;
 
-test('new eastern sector is 13×10 and only one original perimeter door is opened',()=>{
+test('13×10 eastern sector has two real safe service passages through the old perimeter',()=>{
   assert.equal(validateWorld(world),true);
   assert.equal(validateWorld(oldWorld),true);
   const scene=world.scenes.surface;
   assert.equal(scene.width,13);assert.equal(scene.height,10);
   const walls=new Set(scene.walls.map(point));
   assert.equal(walls.has('8,4'),false);
-  for(const p of ['8,3','8,5','12,4','10,2','10,6','4,8','0,8','11,9'])
+  assert.equal(walls.has('8,6'),false);
+  for(const p of ['8,3','8,5','8,7','12,4','10,2','10,6','4,8','0,8','11,9'])
     assert.ok(walls.has(p),'collision wall '+p);
   assert.equal(scene.objects.length,oldWorld.scenes.surface.objects.length);
   assert.deepEqual(scene.objects,oldWorld.scenes.surface.objects);
@@ -62,4 +65,30 @@ test('east passage permits real multi-tile travel with walls and occupancy enfor
   assert.throws(()=>orderGroundOfficerMove(world,away,result.snapshot,'venn',{x:10,y:6}),/blocked/);
   assert.deepEqual(deserializeGroundSquadPositions(world,away,
     serializeGroundSquadPositions(world,away,result.snapshot)),result.snapshot);
+});
+
+test('southern gate is a shorter real route, respects neighboring walls and saves replay',()=>{
+  const southern={version:1,area:'surface',x:7,y:6,heading:'E',pending:null};
+  const instructions=planGroundSquadRoute(world,southern,{x:9,y:6});
+  assert.deepEqual(instructions,['forward','forward']);
+  const oldPerimeter=structuredClone(world);
+  oldPerimeter.scenes.surface.walls.push({x:8,y:6});
+  const oldInstructions=planGroundSquadRoute(oldPerimeter,southern,{x:9,y:6});
+  assert.ok(oldInstructions?.length>instructions.length,
+    'service gate must offer a genuine shortcut, not a decorative stripe');
+  assert.equal(planGroundSquadRoute(world,southern,{x:8,y:5}),null);
+  assert.equal(planGroundSquadRoute(world,southern,{x:8,y:7}),null);
+  assert.equal(planGroundSquadRoute(world,southern,{x:10,y:6}),null);
+  const initial=startGroundSquadPositions(world,spawn,away);
+  const first=orderGroundOfficerMove(world,away,initial,'mira',{x:7,y:6});
+  assert.ok(first.route.length>0,'existing walkable corridor leads to new service gate');
+  const second=orderGroundOfficerMove(world,away,first.snapshot,'mira',{x:9,y:6});
+  assert.deepEqual(second.route,[{x:8,y:6},{x:9,y:6}]);
+  const saved=serializeGroundSquadPositions(world,away,second.snapshot);
+  const restored=deserializeGroundSquadPositions(world,away,saved);
+  assert.deepEqual(restored,second.snapshot);
+  assert.deepEqual(
+    replayGroundSquadPositions(world,away,restored).officers.find(u=>u.id==='mira'),
+    {id:'mira',x:9,y:6,heading:'E'});
+  assert.equal(world.scenes.surface.objects.length,5,'no fabricated service actions');
 });
