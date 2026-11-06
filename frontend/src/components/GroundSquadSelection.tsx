@@ -8,6 +8,7 @@ import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing'
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
+import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
 import { groundFogOfWar, groundVisionCells } from '../../../src/groundFogOfWar.mjs';
 import type { GroundSnapshot } from '../groundSquadSession';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
@@ -394,7 +395,9 @@ export function GroundSquadSelection({
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
-        {units.map((unit, index) => {
+        {orderGroundOfficersByDepth(units, walkPose).map(unit => {
+           // Keep fallback-uniform colours tied to identity, not painter order.
+           const index = squad.findIndex(officer => officer.id === unit.id);
           const active = selected.includes(unit.id);
           const artReady = readyArt.has(unit.id);
           const artUrl = officerIdleArt[unit.id];
