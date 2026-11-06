@@ -36,10 +36,12 @@ for(const width of [360,390,430,1280,1757]){
       const rail=rect('[data-testid="ground-crew-rail"]');
       const dock=rect('.ground-squad-toolbar');
       const status=rect('.ground-squad-event-strip');
+      const help=rect('.ground-squad-instructions');
       const scene=rect('[data-testid="ground-squad-board"]');
       return {rail:{left:rail.left,top:rail.top,bottom:rail.bottom,width:rail.width,height:rail.height},
         dock:{top:dock.top,bottom:dock.bottom,width:dock.width,height:dock.height},
         status:{top:status.top,bottom:status.bottom,height:status.height},
+        help:{top:help.top,bottom:help.bottom,width:help.width},
         sceneWidth:scene.width,sceneHeight:scene.height,
         overflow:document.documentElement.scrollWidth>innerWidth};
     });
@@ -54,12 +56,14 @@ for(const width of [360,390,430,1280,1757]){
       expect(layout.dock.height).toBeLessThan(58);
       expect(layout.dock.width).toBeLessThan(500);
       expect(layout.status.bottom).toBeLessThan(layout.dock.top);
+      expect(layout.help.top).toBeGreaterThanOrEqual(layout.rail.bottom);
     }else{
       expect(layout.rail.height).toBeLessThan(68);
       expect(layout.dock.height).toBeLessThan(61);
       expect(layout.status.height).toBeLessThan(38);
       expect(layout.status.bottom).toBeLessThanOrEqual(layout.rail.top+3);
       expect(layout.rail.bottom).toBeLessThanOrEqual(layout.dock.top+5);
+      expect(layout.help.bottom).toBeLessThanOrEqual(layout.status.top+4);
     }
 
     await page.getByTestId('ground-select-dorn').click();
