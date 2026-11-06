@@ -8,6 +8,7 @@ import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing'
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
+import { OFFICERS } from '../../../src/crew.mjs';
 import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
 import { groundFogOfWar, groundVisionCells } from '../../../src/groundFogOfWar.mjs';
 import type { GroundSnapshot } from '../groundSquadSession';
@@ -462,15 +463,41 @@ export function GroundSquadSelection({
       </svg>
       {marqueeStyle && <div data-testid="ground-selection-marquee" className="ground-selection-marquee" style={marqueeStyle} />}
     </div>
-    <div className="ground-squad-toolbar" aria-label="Selección de equipo">
-      {squad.map(officer =>
-        <button key={officer.id} type="button" data-testid={'ground-select-' + officer.id}
-          aria-pressed={selected.includes(officer.id)} disabled={disabled}
-          onClick={() => setSelected(previous => selectOfficer(
-            squad.map(item => ({ id: item.id, x: 0, y: 0, visible: true })),
-            previous, officer.id, additiveRoster))}>
-          {officer.name}
-        </button>)}
+    {/* One canonical set of selection buttons. A desktop crew rail and a
+        compact mobile row present the SAME state and IDs; never clone buttons
+        (duplicated test IDs/focus targets would break keyboard and touch). */}
+    <div className="ground-squad-crew-rail" data-testid="ground-crew-rail"
+      role="group" aria-label="Oficiales desplegados">
+      <div className="ground-squad-crew-heading" aria-hidden="true">
+        <span>EQUIPO DE SUPERFICIE</span>
+        <span>{selected.length}/{squad.length}</span>
+      </div>
+      <div className="ground-squad-crew-list">
+        {squad.map(officer => {
+          const unit = units.find(item => item.id === officer.id);
+          const rank = OFFICERS.find(item => item.id === officer.id)?.rank;
+          const isActive = selected.includes(officer.id);
+          return <button key={officer.id} type="button"
+            className="ground-squad-crew-entry" data-testid={'ground-select-' + officer.id}
+            aria-pressed={isActive} disabled={disabled}
+            onClick={() => setSelected(previous => selectOfficer(
+              squad.map(item => ({ id: item.id, x: 0, y: 0, visible: true })),
+              previous, officer.id, additiveRoster))}>
+            <span className="ground-squad-crew-portrait" aria-hidden="true">
+              {officer.name.split(' ').map(part => part[0]).slice(0,2).join('')}
+            </span>
+            <span className="ground-squad-crew-copy">
+              <strong>{officer.name}</strong>
+              <small>{rank ?? 'Oficial'}{unit ? ' · ' + unit.gridX + ':' + unit.gridY : ''}</small>
+            </span>
+            <span className="ground-squad-crew-indicator" aria-hidden="true">
+              {isActive ? '◆' : '◇'}
+            </span>
+          </button>;
+        })}
+      </div>
+    </div>
+    <div className="ground-squad-toolbar" aria-label="Órdenes del equipo">
       <button type="button" data-testid="ground-select-all" disabled={disabled}
         onClick={() => setSelected(squad.map(officer => officer.id))}>Todo el equipo</button>
       <button type="button" data-testid="ground-selection-additive" disabled={disabled}
