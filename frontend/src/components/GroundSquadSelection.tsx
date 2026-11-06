@@ -190,7 +190,9 @@ export function GroundSquadSelection({
   const aspect = viewportSize.width / viewportSize.height;
   const cameraHeight = focused
     ? Math.max(300, Math.min(fullHeight, Math.round(440 / aspect)))
-    : 280;
+    // Match the old legible on-screen tile scale (~1.8px/world unit)
+    // while showing *more* terrain when the stage grows vertically.
+    : Math.max(280, Math.min(fullHeight, Math.round(viewportSize.height / 1.8)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
     ? Math.round((fullWidth-cameraWidth)/2)
