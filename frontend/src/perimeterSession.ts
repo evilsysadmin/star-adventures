@@ -10,7 +10,7 @@ import { validateExploration, faceTile } from '../../src/spatial.mjs';
 import { startAwayTeam } from '../../src/awayTeam.mjs';
 import { groundStationUse } from '../../src/groundSquadInteractions.mjs';
 import { deserializeGroundSquadPositions, replayGroundSquadPositions } from '../../src/groundSquadPositions.mjs';
-import { GROUND_SQUAD_KEY, matchesGroundAnchor, type GroundSnapshot } from './groundSquadSession';
+import { GROUND_SQUAD_KEY, matchesGroundAnchor, type GroundSnapshot } from './groundSquadSession.ts';
 
 export const PERIMETER_SAVE_KEY = 'shadowops.star-adventures.physical-perimeter.v1';
 export const PERIMETER_SAVE_VERSION = 1;
