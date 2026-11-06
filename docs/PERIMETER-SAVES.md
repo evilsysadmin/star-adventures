@@ -14,8 +14,12 @@ not establish its outcome.
   damage, ceasefire and victory. No stored health, outcome flags or extra keys
   are accepted. The v4 command/byte caps also bound the physical checkpoint.
 - `active` restores panel visibility only. It cannot award any achievement.
-  The panel reopens only if the validated spatial save is on the surface,
-  facing the actual authored security uplink, without a pending transition.
+  The panel reopens if the validated spatial save is on the surface without
+  a pending transition **and either** (a) the classic camera faces the real
+  authored security uplink, **or** (b) a compatible saved `ground-squad.v1`
+  replay proves that a deployed officer is physically adjacent to the same
+  uplink. Missing, corrupt, stale-origin or differently rostered squad saves
+  cannot open an encounter; selection state itself is never trusted.
 
 The same replay drives the live board, the surface perimeter message and the
 bridge return report. Refresh never creates a new enemy turn, replays hit/shot
@@ -54,7 +58,12 @@ protects normal restart/reload journeys, not arbitrary edits to browser storage.
 
 - `perimeterSession.test.mjs`: actual command replay, injuries, truce vs victory,
   rejected forged/future payloads, run changes, laboratory isolation, storage
-  failures and physical station gating.
+  failures and physical station gating **through the classic camera and a
+  replay-validated nearby squad officer**.
+- `groundPerimeterContact.spec.ts`: actual selected-officer interaction at
+  360/390/1280px, context-only Baliza command, single-row mobile orders, F5
+  while in contact, return to the independent ground positions and reuse of
+  the existing optional combat session.
 - `fieldPerimeterEncounter.spec.ts`: real bridge travel, live orders, refresh
   during contact, pause/resume, negotiated rescue and bridge debrief after F5,
   fresh replay, plus a real firefight whose damage/victory survives refresh.
