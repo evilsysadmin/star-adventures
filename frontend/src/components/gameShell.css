@@ -280,11 +280,14 @@
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission{
     top:129px;left:12px;right:12px;max-height:100px;padding:8px 10px;
   }
+  /* Keep the reachable central tiles free: these controls dock above
+     the squad commands, not across the officers or click-to-move corridor. */
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar{
-    top:236px;left:8px;max-width:calc(100% - 16px);gap:7px;padding:5px 8px;
+    top:auto;bottom:201px;left:8px;max-width:calc(100% - 16px);
+    gap:7px;padding:5px 8px;
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions{
-    top:auto;bottom:201px;left:auto;right:8px;
+    top:auto;bottom:254px;left:auto;right:8px;
     width:min(300px,calc(100% - 16px));
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions[open]{
