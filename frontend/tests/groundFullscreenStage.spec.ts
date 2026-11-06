@@ -41,9 +41,11 @@ for(const width of [360,390,430,1280,1757]){
    const dock=document.querySelector('.ground-squad-toolbar')!.getBoundingClientRect();
    const hud=document.querySelector('.ground-squad-viewbar')!.getBoundingClientRect();
    const leader=document.querySelector('[data-testid="ground-unit-venn"]')!.getBoundingClientRect();
+   const hudCoversLeader=hud.left<leader.right&&hud.right>leader.left&&
+     hud.top<leader.bottom&&hud.bottom>leader.top;
    return {mapBottom:map.bottom,dockBottom:dock.bottom,hudBottom:hud.bottom,
      leaderY:leader.y+leader.height/2,leaderX:leader.x+leader.width/2,
-     hudTop:hud.top,dockTop:dock.top,
+     hudTop:hud.top,hudCoversLeader,dockTop:dock.top,
      noOverflow:document.documentElement.scrollWidth<=innerWidth};
   });
   expect(obstacles.noOverflow).toBe(true);
@@ -51,7 +53,9 @@ for(const width of [360,390,430,1280,1757]){
   expect(obstacles.hudBottom).toBeLessThanOrEqual(height);
   // On portrait, essential camera/actions must not obscure the landing.
   if(width<=430){
-   expect(obstacles.hudTop).toBeGreaterThan(obstacles.leaderY);
+   // A compact camera toggle may sit above the squad so long as its
+   // interactive rectangle never covers the officer's actual hit target.
+   expect(obstacles.hudCoversLeader).toBe(false);
    expect(obstacles.dockTop).toBeGreaterThan(obstacles.leaderY);
   }
 
