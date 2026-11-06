@@ -69,8 +69,12 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  await page.setViewportSize({width:390,height:850});
  await land(page);
  const camera=await cameraMetrics(page);
- expect(camera.height).toBe(300);
- expect(camera.width).toBe(440);
+ // Follow camera matches the full portrait stage, rather than preserving
+ // the old 440×300 letterboxed viewport.
+ expect(camera.height).toBeGreaterThan(300);
+ expect(camera.width).toBeLessThan(440);
+ expect(camera.aspectError).toBeLessThan(.08);
+ expect(camera.screenHeight).toBeGreaterThan(700);
  const art=page.getByTestId('ground-officer-sprite-venn');
  await expect(art).toHaveAttribute('width','54');
  await expect(art).toHaveAttribute('height','80');
