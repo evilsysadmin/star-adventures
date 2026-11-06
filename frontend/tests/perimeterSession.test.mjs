@@ -2,12 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  PERIMETER_SAVE_KEY, atPerimeterStation, newPerimeterHistory,
+  PERIMETER_SAVE_KEY, atPerimeterStation, atSquadPerimeterStation, newPerimeterHistory,
   perimeterResolution, persistPerimeterSession, restorePerimeterSession,
 } from '../src/perimeterSession.ts';
 import { COMBAT_REPLAY_SAVE_KEY, replayCombatCommands, serializeCombatReplay } from '../src/isoScenarioCombatReplay.ts';
 import { CHECKPOINT_KEY, restoreSession } from '../src/session.ts';
 import { startCrewSession, serializeCrewCheckpoint } from '../../src/crewSession.mjs';
+import { startAwayTeam } from '../../src/awayTeam.mjs';
+import {
+  startGroundSquadPositions, orderGroundOfficerMove, serializeGroundSquadPositions,
+} from '../../src/groundSquadPositions.mjs';
+import { GROUND_SQUAD_KEY } from '../src/groundSquadSession.ts';
 
 const world = JSON.parse(readFileSync(new URL('../../content/scenes/meridian.json', import.meta.url)));
 const episode = JSON.parse(readFileSync(new URL('../../content/episodes/border-signal.json', import.meta.url)));
@@ -140,4 +145,32 @@ test('only a valid v2 crew history authorizes resuming a saved physical run', ()
   assert.equal(restoreSession(episode, store([[CHECKPOINT_KEY, '{']])).restored, false);
   const raw = serializeCrewCheckpoint(episode, startCrewSession(episode));
   assert.equal(restoreSession(episode, store([[CHECKPOINT_KEY, raw]])).restored, true);
+});
+
+
+test('active field contact resumes from saved adjacent squad without moving the classic camera',()=>{
+  const spatial={version:1,area:'surface',x:4,y:5,heading:'N',pending:null};
+  const away=startAwayTeam();
+  const original=startGroundSquadPositions(world,spatial,away);
+  const near=orderGroundOfficerMove(world,away,original,'mira',{x:7,y:6}).snapshot;
+  const storage=store([[GROUND_SQUAD_KEY,serializeGroundSquadPositions(world,away,near)]]);
+  assert.equal(atPerimeterStation(world,spatial),false,'legacy anchor is not facing the uplink');
+  assert.equal(atSquadPerimeterStation(world,spatial,away.squad,storage),true);
+  assert.equal(atSquadPerimeterStation(world,spatial,away.squad,store()),false);
+  assert.equal(atSquadPerimeterStation(world,spatial,away.squad,
+    store([[GROUND_SQUAD_KEY,'{']])) ,false);
+  assert.equal(atSquadPerimeterStation(world,spatial,away.squad,
+    store([[GROUND_SQUAD_KEY,serializeGroundSquadPositions(world,away,original)]])),false);
+  assert.equal(atSquadPerimeterStation(world,spatial,[...away.squad].reverse(),storage),false,
+    'different deployment roster cannot inherit an unrelated officer');
+  assert.equal(atSquadPerimeterStation(world,{...spatial,x:4,y:4},away.squad,storage),false,
+    'stale squad origin cannot authorize reopening');
+  assert.equal(atSquadPerimeterStation(world,{...spatial,area:'bridge'},away.squad,storage),false);
+  assert.equal(atSquadPerimeterStation(world,{...spatial,pending:{id:'beam-out',to:'bridge'}},
+    away.squad,storage),false);
+  assert.equal(atSquadPerimeterStation(world,spatial,away.squad,{
+    getItem(){throw Error('blocked storage');},
+  }),false);
+  assert.deepEqual(JSON.parse(storage.getItem(GROUND_SQUAD_KEY)),near,
+    'admission is read-only; the record survives F5 untouched');
 });

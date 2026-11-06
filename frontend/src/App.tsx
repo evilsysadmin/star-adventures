@@ -20,7 +20,7 @@ import { abandonRescue, returnAfterAbandonedRescue } from '../../src/abandonResc
 import { recoverSensorCore } from '../../src/sensorCoreRecovery.mjs';
 import { MANDATE_DEFINITION, restoreMandateSession, persistMandateSession, type MandateState } from './mandateSession';
 import { restoreSession, persistSession, restoreSpatialSession, persistSpatialSession, restoreAwaySession, persistAwaySession, localStorageOrNull, type SessionState } from './session';
-import { atPerimeterStation, newPerimeterHistory, perimeterResolution, persistPerimeterSession, restorePerimeterSession } from './perimeterSession';
+import { atPerimeterStation, atSquadPerimeterStation, newPerimeterHistory, perimeterResolution, persistPerimeterSession, restorePerimeterSession } from './perimeterSession';
 import type { CombatReplayHistory } from './isoScenarioCombatReplay';
 
 const FieldEncounter = lazy(() => import('./components/IsoScenarioLab').then(module => ({ default: module.IsoScenarioLab })));
@@ -78,7 +78,9 @@ export function App() {
   const [perimeterNotice, setPerimeterNotice] = useState(initialPerimeter.notice);
   const [perimeterWarning, setPerimeterWarning] = useState(initialPerimeter.status === 'incompatible' || initialPerimeter.status === 'unavailable');
   const [fieldEncounterOpen, setFieldEncounterOpen] = useState(() =>
-    initialPerimeter.active && atPerimeterStation(world, initialSpatial.state));
+    initialPerimeter.active && (atPerimeterStation(world, initialSpatial.state) ||
+      atSquadPerimeterStation(world, initialSpatial.state, initialAway.state.squad,
+        localStorageOrNull())));
   const fieldResolution = useMemo(() => perimeterResolution(fieldHistory), [fieldHistory]);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -181,6 +183,19 @@ export function App() {
       return message;
     }
   }, [mandate, session.crew, awayTeam]);
+
+  // A selected deployed officer can contact the real optional perimeter
+  // encounter without moving the independent legacy camera/group anchor.
+  // FirstPersonView validates the officer's saved adjacent pose via
+  // groundStationUse before calling this handler.
+  const onGroundPerimeter = useCallback((_pose: ViewState, _officerId: string): string => {
+    if (exploration.area !== 'surface' || exploration.pending !== null)
+      return 'La baliza no está disponible durante esta operación.';
+    if (fieldResolution !== null) return 'El perímetro ya está resuelto.';
+    savePerimeter(fieldHistory, true);
+    setFieldEncounterOpen(true);
+    return 'Contacto táctico iniciado en la baliza.';
+  }, [exploration.area, exploration.pending, fieldResolution, fieldHistory, savePerimeter]);
 
   const onSpatialEvent = useCallback((position: ViewState, event: ExplorationEvent) => {
     setExploration(position);
@@ -452,6 +467,7 @@ export function App() {
                 : missionPhase === 'field' ? 'relief-point'
                 : missionPhase === 'extract' || (missionPhase === 'abandoned' && exploration.area === 'surface') ? 'beam-out' : null}
               onSpatialEvent={onSpatialEvent} onGroundProbe={onGroundProbe} onGroundMedical={onGroundMedical}
+              onGroundPerimeter={onGroundPerimeter}
               squad={awayTeam.squad.map((id: string) => {
                 const officer = OFFICERS.find(candidate => candidate.id === id)!;
                 return { id: officer.id, name: officer.name };

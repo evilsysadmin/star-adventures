@@ -52,3 +52,25 @@ test('out-of-range, impostor, non-station, duplicate and corrupt commands fail c
   const selected=groundStationUse(world,away,near,'dorn','probe').pose;
   assert.throws(()=>investigateProbe(world,selected,startCrew(),away,'rhee'),/not deployed/);
 });
+
+
+test('a real squad officer at the perimeter uplink authorizes optional tactical contact',()=>{
+  const start=initial();
+  assert.throws(()=>groundStationUse(world,away,start,'mira','perimeter-uplink'),
+    /not adjacent/);
+  const moved=orderGroundOfficerMove(world,away,start,'mira',{x:7,y:6}).snapshot;
+  const before=JSON.stringify(moved);
+  const action=groundStationUse(world,away,moved,'mira','perimeter-uplink');
+  assert.deepEqual(action.pose,
+    {version:1,area:'surface',x:7,y:6,heading:'N',pending:null});
+  assert.deepEqual(action.event,
+    {type:'station',stationId:'perimeter-uplink',action:'secure-perimeter',
+     label:'Baliza de seguridad del perímetro'});
+  assert.equal(JSON.stringify(moved),before,'using the baliza must not teleport or mutate the squad');
+  const restored=deserializeGroundSquadPositions(world,away,
+    serializeGroundSquadPositions(world,away,moved));
+  assert.deepEqual(groundStationUse(world,away,restored,'mira','perimeter-uplink'),
+    action,'F5 must reproduce the exact same physical authorization');
+  assert.throws(()=>groundStationUse(world,away,restored,'venn','perimeter-uplink'),
+    /not adjacent/,'a distant selected officer may not borrow Mira\'s position');
+});
