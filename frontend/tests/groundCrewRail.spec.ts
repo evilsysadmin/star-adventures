@@ -37,11 +37,15 @@ for(const width of [360,390,430,1280,1757]){
       const dock=rect('.ground-squad-toolbar');
       const status=rect('.ground-squad-event-strip');
       const help=rect('.ground-squad-instructions');
+      const camera=rect('.ground-squad-viewbar');
+      const dornName=rect('[data-testid="ground-unit-dorn"] text.ground-unit-name');
       const scene=rect('[data-testid="ground-squad-board"]');
       return {rail:{left:rail.left,top:rail.top,bottom:rail.bottom,width:rail.width,height:rail.height},
         dock:{top:dock.top,bottom:dock.bottom,width:dock.width,height:dock.height},
         status:{top:status.top,bottom:status.bottom,height:status.height},
         help:{top:help.top,bottom:help.bottom,width:help.width},
+        camera:{right:camera.right,bottom:camera.bottom,width:camera.width},
+        dornName:{left:dornName.left,top:dornName.top},
         sceneWidth:scene.width,sceneHeight:scene.height,
         overflow:document.documentElement.scrollWidth>innerWidth};
     });
@@ -64,6 +68,8 @@ for(const width of [360,390,430,1280,1757]){
       expect(layout.status.bottom).toBeLessThanOrEqual(layout.rail.top+3);
       expect(layout.rail.bottom).toBeLessThanOrEqual(layout.dock.top+5);
       expect(layout.help.bottom).toBeLessThanOrEqual(layout.status.top+4);
+      expect(layout.camera.width).toBeLessThan(165);
+      expect(layout.camera.right<layout.dornName.left || layout.camera.bottom<layout.dornName.top).toBe(true);
     }
 
     await page.getByTestId('ground-select-dorn').click();
