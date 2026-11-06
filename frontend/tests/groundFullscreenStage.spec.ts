@@ -15,6 +15,11 @@ for(const width of [360,390,430,1280,1757]){
   const board=page.getByTestId('ground-squad-board');
   await expect(board).toBeVisible();
 
+  // ResizeObserver updates the viewBox after the first mounted frame.
+  await expect.poll(async()=>board.evaluate(node=>{
+   const svg=node as SVGSVGElement,rect=svg.getBoundingClientRect();
+   return Math.abs(svg.viewBox.baseVal.width/svg.viewBox.baseVal.height-rect.width/rect.height);
+  })).toBeLessThan(.08);
   const shape=await board.evaluate(node=>{
    const svg=node as SVGSVGElement,rect=svg.getBoundingClientRect();
    const camera=svg.viewBox.baseVal;
