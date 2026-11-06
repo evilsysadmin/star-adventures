@@ -15,12 +15,63 @@ export function GroundPlanetBackdrop(){
    <linearGradient id="planet-sky" x2="0" y2="1">
     <stop stopColor="#101b2d"/><stop offset="1" stopColor="#294247"/>
    </linearGradient>
+   <linearGradient id="planet-rock-terrace" x1="0" y1="0" x2=".62" y2="1">
+    <stop stopColor="#445750"/>
+    <stop offset=".43" stopColor="#30463f"/>
+    <stop offset="1" stopColor="#152e35"/>
+   </linearGradient>
+   <linearGradient id="planet-dusk-haze" x1="0" y1="0" x2="0" y2="1">
+    <stop stopColor="#91aca2" stopOpacity=".16"/>
+    <stop offset="1" stopColor="#1c363a" stopOpacity="0"/>
+   </linearGradient>
   </defs>
   <rect width="1120" height="550" fill="url(#planet-sky)"/>
   <circle cx="738" cy="93" r="23" fill="#d3c6a1" opacity=".68"/>
   <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175V550H0Z" fill="#253e46"/>
   <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239V550H0Z" fill="#1b353b"/>
   <ellipse cx="449" cy="330" rx="455" ry="110" fill="#071b23" opacity=".5"/>
+  {/* Far beyond the canonical 13×10 ground grid: terraces, dust and stone
+      strata give the planet scale without pretending to be extra playable
+      cells, objects or revealed terrain. This layer sits below every tile,
+      fog mask and officer, and never participates in ground-cell picking. */}
+  <g data-testid="ground-exterior-geology" pointerEvents="none" aria-hidden="true">
+   <path d="M0 314 Q94 284 170 299 T357 292 Q461 310 565 288
+     T785 295 Q938 265 1120 294V344H0Z"
+     fill="url(#planet-dusk-haze)"/>
+   <path d="M0 397 66 376 118 385 182 360 246 380 324 374
+     356 403 331 433 259 444 195 476 112 486 0 503Z"
+     fill="url(#planet-rock-terrace)" stroke="#536d63" strokeWidth="2"/>
+   <path d="M0 441 71 424 150 445 219 437 282 421 341 433
+     287 463 213 484 122 515 0 527Z"
+     fill="#243d3e" opacity=".88"/>
+   <path d="M0 490 85 474 151 484 229 465 297 467 260 493
+     174 519 96 544 0 550Z" fill="#182f35"/>
+   <path d="M867 378 936 356 1013 367 1081 347 1120 359
+     V495L1072 476 1011 448 957 431 904 415Z"
+     fill="url(#planet-rock-terrace)" stroke="#597267" strokeWidth="2"/>
+   <path d="M907 427 979 409 1032 423 1120 402V507
+     L1057 484 1000 454Z" fill="#243e40"/>
+   <path d="M943 476 1000 451 1083 478 1120 468V550
+     L1062 537 986 513Z" fill="#192e35"/>
+   <g data-testid="ground-exterior-strata" fill="none"
+     strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 408 67 389 118 397 188 373M28 459 89 444 151 457
+      224 447M0 505 95 487 153 499 224 479"
+      stroke="#8b9780" strokeWidth="2.1" opacity=".38"/>
+    <path d="M900 389 938 374 1002 384 1082 364M953 440
+      999 425 1056 446 1110 427M984 491 1030 474 1092 497"
+      stroke="#a0a088" strokeWidth="2" opacity=".34"/>
+    <path d="M52 420 76 418 84 430M203 395 232 402 253 396
+      M108 501 136 509M987 391 1006 401M1041 471 1067 466 1087 479"
+      stroke="#132a31" strokeWidth="4" opacity=".6"/>
+   </g>
+   <g fill="#789281" opacity=".5">
+    <circle cx="30" cy="442" r="3"/><circle cx="61" cy="451" r="2"/>
+    <circle cx="231" cy="469" r="3"/><circle cx="284" cy="442" r="2"/>
+    <circle cx="971" cy="429" r="2"/><circle cx="1061" cy="460" r="3"/>
+    <circle cx="1097" cy="493" r="2"/>
+   </g>
+  </g>
  </g>;
 }
 

@@ -15,6 +15,15 @@ for(const width of [390,1280]){
   const board=page.getByTestId('ground-squad-board');
   await expect(board).toBeVisible();
   await expect(page.getByTestId('ground-planet-backdrop')).toHaveCount(1);
+  const exterior=page.getByTestId('ground-exterior-geology');
+  await expect(exterior).toHaveCount(1);
+  await expect(exterior).toHaveAttribute('pointer-events','none');
+  await expect(page.getByTestId('ground-exterior-strata')).toHaveCount(1);
+  // This is distant, decorative terrain only: it must add no fake grid cells
+  // or hidden game objects, and turning on full-map must not reveal the fog.
+  await expect(exterior.locator('[data-cell-id], [data-fog-cell], [data-officer-id]')).toHaveCount(0);
+  const initiallyUnknown=await board.locator('[data-fog-state="unknown"]').count();
+  expect(initiallyUnknown).toBeGreaterThan(0);
   for(const id of ['probe','sensor-vault','relief-point','perimeter-uplink','beam-out'])
    await expect(page.getByTestId('ground-landmark-'+id)).toHaveCount(1);
   await expect(page.getByTestId('ground-landmark-sensor-vault').locator('text.ground-landmark-name')).toHaveText('ARCHIVO');
@@ -51,6 +60,7 @@ for(const width of [390,1280]){
    // must remain on screen and none of the neighbouring signs may overlap.
    await page.getByTestId('ground-camera-toggle').click();
    await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
+   expect(await board.locator('[data-fog-state="unknown"]').count()).toBe(initiallyUnknown);
    const clipping=await page.evaluate(()=>{
     const board=document.querySelector('[data-testid="ground-squad-board"]')!.getBoundingClientRect();
     return ['relief-point','perimeter-uplink'].map(id=>{
