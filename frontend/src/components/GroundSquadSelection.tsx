@@ -208,6 +208,7 @@ export function GroundSquadSelection({
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
   const [medicalNotice, setMedicalNotice] = useState('Acerca un oficial al puesto de socorro para atender a los civiles.');
+  const [lastNotice, setLastNotice] = useState<'move' | 'science' | 'medical'>('move');
   const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
   const probeAtHand = !!probe && !!selectedUnit &&
     Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
@@ -254,6 +255,7 @@ export function GroundSquadSelection({
   };
   const requestMove = (tileId: string | null) => {
     if (!tileId || disabled) return;
+    setLastNotice('move');
     setMoveMode(false);
     if (!selected.length) {
       setMoveNotice('Selecciona uno o varios oficiales antes de marchar.');
@@ -499,33 +501,43 @@ export function GroundSquadSelection({
     </div>
     <div className="ground-squad-toolbar" aria-label="Órdenes del equipo">
       <button type="button" data-testid="ground-select-all" disabled={disabled}
-        onClick={() => setSelected(squad.map(officer => officer.id))}>Todo el equipo</button>
+        aria-label="Todo el equipo" title="Seleccionar los tres oficiales"
+        onClick={() => setSelected(squad.map(officer => officer.id))}>Todos</button>
       <button type="button" data-testid="ground-selection-additive" disabled={disabled}
+        aria-label="Añadir selección" title="Activar selección múltiple"
         aria-pressed={additiveRoster} onClick={() => setAdditiveRoster(value => !value)}>
-        {additiveRoster ? 'Añadir: activo' : 'Añadir selección'}
+        {additiveRoster ? 'Sumar ✓' : 'Sumar'}
       </button>
       <button type="button" data-testid="ground-move-mode" aria-pressed={moveMode} disabled={disabled}
+        aria-label={moveMode ? 'Cancelar movimiento' : 'Mover selección · tocar destino'}
+        title="Ordenar movimiento tocando la casilla de destino"
         onClick={() => {
           setMoveMode(value => !value);
           setKeyboardCell(leaderUnit ? {x:leaderUnit.gridX,y:leaderUnit.gridY} : {x:position.x,y:position.y});
         }}>
-        {moveMode ? 'Cancelar movimiento' : 'Mover selección · tocar destino'}
+        {moveMode ? 'Cancelar' : 'Mover'}
       </button>
       <button type="button" data-testid="ground-inspect-probe"
         disabled={disabled || !probeAtHand}
+        aria-label={'Investigar sonda ' + (probeAtHand ? 'con ' + selectedUnit?.name : '· requiere proximidad')}
+        title={probeAtHand ? 'Investigar con el oficial seleccionado' : 'Requiere un oficial adyacente a la sonda'}
         onClick={() => {
           if (!probeAtHand || !selectedUnit) return;
+          setLastNotice('science');
           setScienceNotice(onInspectProbe(selectedUnit.id));
         }}>
-        Investigar sonda {probeAtHand ? '· ' + selectedUnit.name.split(' ')[0] : '· requiere proximidad'}
+        Sonda
       </button>
       <button type="button" data-testid="ground-assist-civilians"
         disabled={disabled || !reliefAtHand}
+        aria-label={'Atender civiles ' + (reliefAtHand ? 'con ' + selectedUnit?.name : '· requiere proximidad')}
+        title={reliefAtHand ? 'Atender civiles con el oficial seleccionado' : 'Requiere un oficial adyacente al puesto de socorro'}
         onClick={() => {
           if (!reliefAtHand || !selectedUnit) return;
+          setLastNotice('medical');
           setMedicalNotice(onAssistCivilians(selectedUnit.id));
         }}>
-        Atender civiles {reliefAtHand ? '· ' + selectedUnit.name.split(' ')[0] : '· requiere proximidad'}
+        Civiles
       </button>
     </div>
     <div className="ground-squad-event-strip" aria-label="Estado del equipo y órdenes">
@@ -534,9 +546,14 @@ export function GroundSquadSelection({
         selected.length === squad.length ? 'Todo el equipo seleccionado' :
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
-    <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
-    <p className="ground-squad-status" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
-    <p className="ground-squad-status" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
+    <p className="ground-squad-notice-current" data-testid="ground-current-notice" aria-live="polite">
+      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : moveNotice}
+    </p>
+    {/* Keep existing semantic status IDs for live feedback and regression
+        contracts, visually condensed into the single latest notice above. */}
+    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-move-status" role="status">{moveNotice}</p>
+    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
+    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
     </div>
     <details className="ground-squad-instructions">
       <summary>Controles y ayuda</summary>
