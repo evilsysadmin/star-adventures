@@ -68,6 +68,7 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:850});
  await land(page);
+ await expect.poll(async()=>(await cameraMetrics(page)).aspectError).toBeLessThan(.08);
  const camera=await cameraMetrics(page);
  // Follow camera matches the full portrait stage, rather than preserving
  // the old 440×300 letterboxed viewport.
