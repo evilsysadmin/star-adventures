@@ -506,6 +506,11 @@
     border-left-width:2px;border-radius:6px;
     background:#0b1e2ae9;box-shadow:0 6px 22px #0007;
   }
+  /* The legacy 240px decorative radial ring projected below this small
+     panel, creating a phantom vertical scrollbar even when the action fits. */
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission::after{
+    display:none;
+  }
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-top{
     gap:3px;
   }
