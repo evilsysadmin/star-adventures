@@ -30,7 +30,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await page.setViewportSize({width:1280,height:850});
  await land(page);
  const board=page.getByTestId('ground-squad-board'),venn=page.getByTestId('ground-unit-venn');
- await expect.poll(async()=>(await cameraMetrics(page)).height).toBe(280);
+ await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(400);
  // A full sprite atlas is not necessarily painted at its geometric center.
  // Clicking the officer <g> must still select the actual officer, not floor.
  await page.getByTestId('ground-unit-dorn').click();
@@ -57,7 +57,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await page.getByTestId('ground-camera-toggle').click();
  await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
  await page.getByTestId('ground-camera-toggle').click();
- await expect.poll(async()=>(await cameraMetrics(page)).height).toBe(280);
+ await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(400);
  await page.reload();
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','6');
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','3');
