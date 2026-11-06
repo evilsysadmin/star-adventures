@@ -449,6 +449,18 @@
     min-height:42px;padding:3px 2px;font-size:10px;line-height:1.2;
     overflow-wrap:normal;
   }
+  /* Help is a small edge tab above status, never a wide glass panel
+     across live officer/cell hit targets in the center of the scene. */
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions{
+    top:auto;bottom:155px;left:8px;right:auto;
+    width:max-content;max-width:calc(100% - 16px);
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions[open]{
+    max-height:min(320px,calc(100% - 265px));overflow-y:auto;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions summary{
+    min-height:31px;padding:6px 10px;
+  }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip{
     bottom:123px;left:8px;right:8px;gap:6px;
     padding:3px 7px;min-height:24px;
