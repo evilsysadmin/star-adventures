@@ -461,6 +461,18 @@
     min-height:42px;padding:3px 2px;font-size:10px;line-height:1.2;
     overflow-wrap:normal;
   }
+  /* A small camera button fits the left margin below the radio panel.
+     The old 315px wide viewbar covered Kael's on-board name and upper body. */
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar{
+    top:192px;bottom:auto;left:8px;right:auto;width:max-content;
+    max-width:calc(100% - 16px);gap:0;padding:3px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar span{
+    display:none;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar button{
+    min-height:34px;padding:5px 8px;font-size:10px;
+  }
   /* Help is a small edge tab above status, never a wide glass panel
      across live officer/cell hit targets in the center of the scene. */
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions{
