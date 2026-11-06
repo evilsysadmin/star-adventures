@@ -23,10 +23,10 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-perimeter-uplink').locator('text.ground-landmark-name')).toHaveText('BALIZA');
   await expect(page.getByTestId('ground-landmark-beam-out').locator('text.ground-landmark-name')).toHaveText('EXTRACCIÓN');
   if(width===1280){
-   // Screen-fit zoom: the old fixed 740×350 camera letterboxed into a
-   // short/wide playfield, leaving the playable surface and officers tiny.
+   // Fullscreen follows the officer with a larger world field: camera height
+   // grows with the stage while retaining a usable officer scale.
    await expect.poll(async()=>board.evaluate(node=>
-     (node as SVGSVGElement).viewBox.baseVal.height)).toBe(280);
+     (node as SVGSVGElement).viewBox.baseVal.height)).toBeGreaterThan(400);
    const camera=await board.evaluate(node=>{
      const svg=node as SVGSVGElement,view=svg.viewBox.baseVal;
      const rect=svg.getBoundingClientRect();
@@ -46,7 +46,11 @@ for(const width of [390,1280]){
    await expect(page.locator('.ground-squad-event-strip')).toHaveCount(1);
   }
   if(width===390){
-   // Both right-edge facilities remain legible in the mobile follow view.
+   // Mobile follow mode deliberately crops distant facilities: this is the
+   // point of tracking an officer. In explicit FULL MAP every named landmark
+   // must remain on screen and none of the neighbouring signs may overlap.
+   await page.getByTestId('ground-camera-toggle').click();
+   await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
    const clipping=await page.evaluate(()=>{
     const board=document.querySelector('[data-testid="ground-squad-board"]')!.getBoundingClientRect();
     return ['relief-point','perimeter-uplink'].map(id=>{
@@ -68,6 +72,8 @@ for(const width of [390,1280]){
       });
    });
    expect(collides).toEqual([false,false]);
+   await page.getByTestId('ground-camera-toggle').click();
+   await expect(page.getByTestId('ground-camera-toggle')).toHaveText('Mapa completo');
   }
   // Artwork is non-interactive: pointer-driven officer selection is unchanged.
   await page.getByTestId('ground-unit-dorn').click();
