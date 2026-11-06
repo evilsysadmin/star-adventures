@@ -55,10 +55,10 @@ test('out-of-range, impostor, non-station, duplicate and corrupt commands fail c
 
 
 test('a real squad officer at the perimeter uplink authorizes optional tactical contact',()=>{
-  const initial=initial();
-  assert.throws(()=>groundStationUse(world,away,initial,'mira','perimeter-uplink'),
+  const start=initial();
+  assert.throws(()=>groundStationUse(world,away,start,'mira','perimeter-uplink'),
     /not adjacent/);
-  const moved=orderGroundOfficerMove(world,away,initial,'mira',{x:7,y:6}).snapshot;
+  const moved=orderGroundOfficerMove(world,away,start,'mira',{x:7,y:6}).snapshot;
   const before=JSON.stringify(moved);
   const action=groundStationUse(world,away,moved,'mira','perimeter-uplink');
   assert.deepEqual(action.pose,
