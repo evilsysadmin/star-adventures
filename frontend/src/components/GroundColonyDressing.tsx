@@ -16,8 +16,13 @@ const rails=scene.walls.filter(p=>(
  (p.y===0&&p.x>0&&p.x<scene.width-1&&p.x%2===1)||
  (p.x===0&&p.y>0&&p.y<scene.height-1&&p.y%2===0)||
  (p.x===scene.width-1&&p.y>0&&p.y<scene.height-1&&p.y%2===0)));
+// Both paths are made entirely of real walkable cells. The southern
+// maintenance corridor joins the original entrance to form a usable loop.
 const paths=[[[3,4],[4,4]],[[4,4],[5,4]],[[5,4],[6,4]],[[5,5],[6,5]],[[6,5],[7,5]],
- [[7,4],[8,4]],[[8,4],[9,4]]];
+ [[7,4],[8,4]],[[8,4],[9,4]],[[9,4],[9,5]],[[9,5],[9,6]],
+ [[6,6],[7,6]],[[7,6],[8,6]],[[8,6],[9,6]],[[9,6],[9,7]],[[9,7],[10,7]]]
+ .filter(([a,b])=>!blocked.has(key(a[0],a[1]))&&!blocked.has(key(b[0],b[1])) &&
+   Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1);
 
 type Vision={explored:ReadonlySet<string>;visible:ReadonlySet<string>};
 const fade=(visible:ReadonlySet<string>,id:string)=>visible.has(id)?1:.34;
@@ -53,6 +58,26 @@ export function GroundColonyFloor({explored,visible}:Vision){
     </>}
    </g>;
   })}
+  {/* The maintenance gate occupies an actually walkable grid cell (8,6),
+       between two existing blocking perimeter cells (8,5 and 8,7).
+       This painting is purely decorative; authoritative movement and fog
+       continue to derive from world.scenes.surface. */}
+  {explored.has('8,6') && !blocked.has('8,6') && <g
+    data-testid="ground-service-gate"
+    data-fog={visible.has('8,6')?'visible':'remembered'}
+    transform={`translate(${project(8,6).x} ${project(8,6).y})`}
+    opacity={fade(visible,'8,6')}>
+    <path d="M-31 0 0 -15 31 0 0 15Z"
+      fill="#4b6562" stroke="#b7b59b" strokeWidth="1.8"/>
+    <path d="M-25 -1 0 -13 25 -1 0 12Z"
+      fill="#24484c" stroke="#74b8b1" strokeWidth="1.2"/>
+    <path d="M-23 2 -13 -3M-17 7 -7 2M14 -8 23 -3M8 -3 17 2"
+      fill="none" stroke="#f1c57d" strokeWidth="2.4" opacity=".86"/>
+    <path d="M-5 -4 0 -7 5 -4M-5 3 0 0 5 3"
+      fill="none" stroke="#9be0cb" strokeWidth="1.2"/>
+    <circle cx="-28" cy="0" r="2" fill="#ddc18c"/>
+    <circle cx="28" cy="0" r="2" fill="#ddc18c"/>
+  </g>}
   {paths.filter(([a,b])=>explored.has(key(a[0],a[1]))&&
       explored.has(key(b[0],b[1]))).map(([a,b],i)=>{
     const from=project(a[0],a[1]),to=project(b[0],b[1]);
