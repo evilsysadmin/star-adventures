@@ -10,7 +10,7 @@ const blocked=new Set([...scene.walls,...scene.objects].map(p=>key(p.x,p.y)));
 const cells=Array.from({length:scene.height},(_,y)=>
  Array.from({length:scene.width},(_,x)=>({x,y}))).flat();
 const lights=[[2,3],[3,5],[5,2],[6,6],[7,4],[9,4],[11,6]];
-const cargo=scene.walls.filter(p=>[[3,2],[10,2],[10,6],[4,8]].some(
+const cargo=scene.walls.filter(p=>[[10,2],[10,6],[4,8]].some(
  ([x,y])=>p.x===x&&p.y===y));
 const rails=scene.walls.filter(p=>(
  (p.y===0&&p.x>0&&p.x<scene.width-1&&p.x%2===1)||

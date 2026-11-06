@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
-import { GroundPlanetBackdrop, GroundOutpostLandmarks, GroundWildSectorScenery } from './GroundOutpostScenery';
+import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
+import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
@@ -152,6 +153,26 @@ export function GroundSquadSelection({
   const [compact, setCompact] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches);
   const [followSquad, setFollowSquad] = useState(true);
+  // The tactical SVG must match the actual, flex-sized viewport aspect.
+  // Otherwise xMidYMid letterboxes the entire scene on wide desktop displays,
+  // making both the buildings and the actual officer atlases look tiny.
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [viewportSize, setViewportSize] = useState({width:740,height:350});
+  useEffect(() => {
+    const element=viewportRef.current;
+    if(!element)return;
+    const update=()=>{
+      const {width,height}=element.getBoundingClientRect();
+      if(width<1||height<1)return;
+      setViewportSize(previous=>
+        Math.abs(previous.width-width)<1&&Math.abs(previous.height-height)<1
+          ? previous : {width,height});
+    };
+    update();
+    const observer=new ResizeObserver(update);
+    observer.observe(element);
+    return ()=>observer.disconnect();
+  }, []);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 520px)');
     const sync = () => setCompact(media.matches);
@@ -165,11 +186,20 @@ export function GroundSquadSelection({
   const focused = compact && followSquad;
   const focusX = Math.max(0,Math.min(fullWidth-440,Math.round(cameraCenter.x-220)));
   const focusY = Math.max(0,Math.min(fullHeight-300,Math.round(cameraCenter.y-150)));
-  const desktopX = Math.max(0,Math.min(fullWidth-740,Math.round(cameraCenter.x-320)));
-  const desktopY = Math.max(0,Math.min(fullHeight-350,Math.round(cameraCenter.y-184)));
+  // Keep full-map as an honest overview. In follow mode, use a closer
+  // 280-unit vertical field and adapt its width to the displayed SVG. This
+  // fills wide/short windows instead of leaving hundreds of empty pixels.
+  const desktopHeight=280;
+  const desktopWidth=Math.round(desktopHeight*viewportSize.width/viewportSize.height);
+  const desktopX=desktopWidth>=fullWidth
+    ? Math.round((fullWidth-desktopWidth)/2)
+    : Math.max(0,Math.min(fullWidth-desktopWidth,
+        Math.round(cameraCenter.x-desktopWidth/2)));
+  const desktopY=Math.max(0,Math.min(fullHeight-desktopHeight,
+    Math.round(cameraCenter.y-desktopHeight*.56)));
   const cameraView = !followSquad ? '0 0 1120 550'
     : focused ? focusX+' '+focusY+' 440 300'
-    : desktopX+' '+desktopY+' 740 350';
+    : desktopX+' '+desktopY+' '+desktopWidth+' '+desktopHeight;
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
@@ -330,7 +360,7 @@ export function GroundSquadSelection({
         {followSquad ? 'Mapa completo' : 'Seguir equipo'}
       </button>
     </div>}
-    <div className="ground-squad-viewport">
+    <div className="ground-squad-viewport" ref={viewportRef}>
       <svg ref={svg} data-testid="ground-squad-board" viewBox={cameraView}
         className={focused ? 'ground-squad-board-focused' : undefined} tabIndex={0}
         preserveAspectRatio="xMidYMid meet" role="img" onKeyDown={onBoardKeyDown}
@@ -346,29 +376,20 @@ export function GroundSquadSelection({
           fill={blocked.has(cell.key) ? '#1b3138' : wornPath.has(cell.key) ? '#5a6b5d' :
             cell.x>=9 || cell.y>=8 ? ((cell.x+cell.y)%3 ? '#536953' : '#626c52') :
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
-          stroke="#a8b6a1" strokeOpacity=".13" strokeWidth="1" />)}
+          stroke="#a8b6a1" strokeOpacity=".045" strokeWidth="1" />)}
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
-        {scene.walls.filter(cell => displayedFog.explored.has(cell.x+','+cell.y) &&
-          cell.x > 0 && cell.y > 0 &&
-          cell.x < scene.width - 1 && cell.y < scene.height - 1).map(cell => {
-            const p = tile(cell.x, cell.y);
-            return <g key={cell.x + ',' + cell.y} transform={'translate(' + p.x + ' ' + p.y + ')'} pointerEvents="none">
-              <path d="M-31 0 L0 -15 31 0 0 15Z" fill="#52615c" />
-              <path d="M-31 0 L0 15 V-15 L-31 -27Z" fill="#293c42" />
-              <path d="M0 15 L31 0 V-27 L0 -15Z" fill="#1a2b34" />
-            </g>;
-          })}
+        <GroundColonyWalls explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
-        <GroundOutpostLandmarks explored={displayedFog.explored} visible={displayedFog.visible} />
+        <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
         <g data-testid="ground-fog-layer" pointerEvents="none">
           {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>
             <polygon key={cell.key} data-fog-cell={cell.key}
               data-fog-state={displayedFog.explored.has(cell.key)?'remembered':'unknown'}
               points={tileShape(cell.x,cell.y)}
               fill={displayedFog.explored.has(cell.key)?'#0a1d24':'#020710'}
-              fillOpacity={displayedFog.explored.has(cell.key)?.73:.97}
-              stroke="#7f9896" strokeOpacity=".05" strokeWidth="1" />)}
+              fillOpacity={displayedFog.explored.has(cell.key)?.83:1}
+              stroke="#7f9896" strokeOpacity={displayedFog.explored.has(cell.key)?'.012':'0'} strokeWidth="1" />)}
         </g>
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
@@ -402,7 +423,7 @@ export function GroundSquadSelection({
             </g>
             {artUrl && <image data-testid={'ground-officer-sprite-' + unit.id}
               data-asset-state={artReady ? 'loaded' : 'fallback'}
-              href={artUrl} x="-25" y="-65" width="50" height="73"
+              href={artUrl} x="-27" y="-72" width="54" height="80"
               preserveAspectRatio="xMidYMax meet" pointerEvents="none"
               opacity={artReady && !showWalk ? 1 : 0}
               onLoad={() => setReadyArt(previous => new Set(previous).add(unit.id))}
@@ -412,7 +433,7 @@ export function GroundSquadSelection({
               })} />}
             {showWalk && <foreignObject
               data-testid={'ground-officer-walk-'+unit.id}
-              x="-25" y="-65" width="50" height="73" pointerEvents="none">
+              x="-27" y="-72" width="54" height="80" pointerEvents="none">
               <div aria-hidden="true" style={{
                 width:'100%',height:'100%',
                 backgroundImage:'url("'+walkUrl+'")',
@@ -422,7 +443,15 @@ export function GroundSquadSelection({
                   Math.floor(frame/WALK_ATLAS.columns)*100+'%',
               }} />
             </foreignObject>}
-            <text y={artReady || showWalk ? '-65' : '-37'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
+            {/* A stable, narrow selection silhouette. SVG <g> is not itself
+                painted: its bounding-box midpoint otherwise falls through
+                transparent R2 sprite pixels onto an underlying floor tile. The
+                upper bound deliberately stops above the next officer's body
+                in a stacked isometric column, avoiding false front-unit hits. */}
+            <rect data-testid={'ground-officer-hit-'+unit.id}
+              x="-18" y="-56" width="36" height="57" rx="7"
+              fill="transparent" pointerEvents="all" />
+            <text y={artReady || showWalk ? '-77' : '-42'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
       </svg>
@@ -467,6 +496,7 @@ export function GroundSquadSelection({
         Atender civiles {reliefAtHand ? '· ' + selectedUnit.name.split(' ')[0] : '· requiere proximidad'}
       </button>
     </div>
+    <div className="ground-squad-event-strip" aria-label="Estado del equipo y órdenes">
     <p className="ground-squad-status" data-testid="ground-selection-status" role="status">
       {selected.length === 0 ? 'Ningún oficial seleccionado' :
         selected.length === squad.length ? 'Todo el equipo seleccionado' :
@@ -475,6 +505,7 @@ export function GroundSquadSelection({
     <p className="ground-squad-status" data-testid="ground-move-status" role="status">{moveNotice}</p>
     <p className="ground-squad-status" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
     <p className="ground-squad-status" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
+    </div>
     <details className="ground-squad-instructions">
       <summary>Controles y ayuda</summary>
       <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.

@@ -22,7 +22,29 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-relief-point').locator('text.ground-landmark-name')).toHaveText('SOCORRO');
   await expect(page.getByTestId('ground-landmark-perimeter-uplink').locator('text.ground-landmark-name')).toHaveText('BALIZA');
   await expect(page.getByTestId('ground-landmark-beam-out').locator('text.ground-landmark-name')).toHaveText('EXTRACCIÓN');
-  if(width===1280) await expect(board).toHaveAttribute('viewBox','80 48 740 350');
+  if(width===1280){
+   // Screen-fit zoom: the old fixed 740×350 camera letterboxed into a
+   // short/wide playfield, leaving the playable surface and officers tiny.
+   await expect.poll(async()=>board.evaluate(node=>
+     (node as SVGSVGElement).viewBox.baseVal.height)).toBe(280);
+   const camera=await board.evaluate(node=>{
+     const svg=node as SVGSVGElement,view=svg.viewBox.baseVal;
+     const rect=svg.getBoundingClientRect();
+     const sprite=svg.querySelector('[data-testid="ground-officer-sprite-venn"]')!
+       .getBoundingClientRect();
+     const parent=svg.parentElement!.getBoundingClientRect();
+     return {
+       ratio:view.width/view.height,frameRatio:rect.width/rect.height,
+       spriteWidth:sprite.width,spriteHeight:sprite.height,
+       sceneHeight:parent.height,
+     };
+   });
+   expect(Math.abs(camera.ratio-camera.frameRatio)).toBeLessThan(.08);
+   expect(camera.spriteHeight).toBeGreaterThan(75);
+   expect(camera.spriteWidth).toBeGreaterThan(50);
+   expect(camera.sceneHeight).toBeGreaterThan(320);
+   await expect(page.locator('.ground-squad-event-strip')).toHaveCount(1);
+  }
   if(width===390){
    // Both right-edge facilities remain legible in the mobile follow view.
    const clipping=await page.evaluate(()=>{
