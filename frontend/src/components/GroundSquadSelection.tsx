@@ -558,7 +558,7 @@ export function GroundSquadSelection({
     <details className="ground-squad-instructions">
       <summary>Controles y ayuda</summary>
       <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
-      En móvil, activa «Añadir selección» y toca los nombres para crear un grupo.
+      En móvil, activa «Sumar» y toca los nombres para crear un grupo.
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
       En móvil, «Mover selección» y tocar destino; con teclado, flechas y Enter.
