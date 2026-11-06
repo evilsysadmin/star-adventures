@@ -66,7 +66,7 @@ export function atSquadPerimeterStation(
     const away = { ...startAwayTeam(), squad: [...squadIds] };
     const snapshot = deserializeGroundSquadPositions(world, away, raw) as GroundSnapshot;
     if (!matchesGroundAnchor(snapshot, position, squadIds)) return false;
-    return replayGroundSquadPositions(world, away, snapshot).officers.some(officer => {
+    return replayGroundSquadPositions(world, away, snapshot).officers.some((officer: {id:string}) => {
       try {
         return groundStationUse(world, away, snapshot, officer.id, 'perimeter-uplink')
           .event.action === 'secure-perimeter';
