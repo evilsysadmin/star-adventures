@@ -280,8 +280,8 @@
   /* Top-row mission and camera exits stay above the first officer labels;
      avoid a floating transmission covering the center of the ground scene. */
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-top{
-    top:83px;left:8px;right:auto;justify-content:flex-start;
-    max-width:calc(100% - min(184px,49vw));
+    top:83px;left:8px;right:auto;justify-content:flex-start;gap:4px;
+    max-width:calc(100% - min(200px,53vw));
   }
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-map-toggle{
     padding:5px 5px;font-size:8px;
