@@ -49,7 +49,7 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, allowWholeMove, disabled = false,
+  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
@@ -58,6 +58,7 @@ export function GroundSquadSelection({
   onMove: (target: Point, selection: string[]) => GroundMoveResult;
   onInspectProbe: (officerId: string) => string;
   onAssistCivilians: (officerId: string) => string;
+  onPerimeterContact: (officerId: string) => string;
   allowWholeMove: boolean;
   disabled?: boolean;
 }) {
@@ -208,7 +209,8 @@ export function GroundSquadSelection({
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
   const [medicalNotice, setMedicalNotice] = useState('Acerca un oficial al puesto de socorro para atender a los civiles.');
-  const [lastNotice, setLastNotice] = useState<'move' | 'science' | 'medical'>('move');
+  const [perimeterNotice, setPerimeterNotice] = useState('Acerca un oficial a la baliza para establecer contacto.');
+  const [lastNotice, setLastNotice] = useState<'move' | 'science' | 'medical' | 'perimeter'>('move');
   const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
   const probeAtHand = !!probe && !!selectedUnit &&
     Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
@@ -216,6 +218,10 @@ export function GroundSquadSelection({
     object.id === 'relief-point' && object.type === 'station');
   const reliefAtHand = !!reliefPoint && !!selectedUnit &&
     Math.abs(selectedUnit.gridX - reliefPoint.x) + Math.abs(selectedUnit.gridY - reliefPoint.y) === 1;
+  const uplink = scene.objects.find(object =>
+    object.id === 'perimeter-uplink' && object.type === 'station');
+  const perimeterAtHand = !!uplink && !!selectedUnit &&
+    Math.abs(selectedUnit.gridX - uplink.x) + Math.abs(selectedUnit.gridY - uplink.y) === 1;
   const [keyboardCell, setKeyboardCell] = useState<Point>(() => ({x:position.x,y:position.y}));
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -539,6 +545,17 @@ export function GroundSquadSelection({
         }}>
         Civiles
       </button>
+      {/* A sixth command only materializes when a *single* selected officer
+          is physically adjacent to the real uplink. It is not an always-on
+          fake button or a second copy of the classic camera controls. */}
+      {perimeterAtHand && selectedUnit && <button type="button"
+        data-testid="ground-perimeter-contact" disabled={disabled}
+        aria-label={'Establecer contacto en la baliza con ' + selectedUnit.name}
+        title="Abrir el encuentro táctico opcional desde este oficial"
+        onClick={() => {
+          setLastNotice('perimeter');
+          setPerimeterNotice(onPerimeterContact(selectedUnit.id));
+        }}>Baliza</button>}
     </div>
     <div className="ground-squad-event-strip" aria-label="Estado del equipo y órdenes">
     <p className="ground-squad-status" data-testid="ground-selection-status" role="status">
@@ -547,13 +564,14 @@ export function GroundSquadSelection({
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
     <p className="ground-squad-notice-current" data-testid="ground-current-notice" aria-live="polite">
-      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : moveNotice}
+      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : lastNotice === 'perimeter' ? perimeterNotice : moveNotice}
     </p>
     {/* Keep existing semantic status IDs for live feedback and regression
         contracts, visually condensed into the single latest notice above. */}
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-move-status" role="status">{moveNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
+    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-perimeter-status" role="status" aria-live="polite">{perimeterNotice}</p>
     </div>
     <details className="ground-squad-instructions">
       <summary>Controles y ayuda</summary>
