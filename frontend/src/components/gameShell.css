@@ -278,7 +278,8 @@
 }
 @media(max-width:700px){
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission{
-    top:129px;left:12px;right:12px;max-height:100px;padding:8px 10px;
+    top:129px;left:auto;right:8px;width:min(190px,50vw);
+    max-height:100px;padding:8px 10px;
   }
   /* Keep the reachable central tiles free: these controls dock above
      the squad commands, not across the officers or click-to-move corridor. */
