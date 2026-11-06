@@ -30,7 +30,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await page.setViewportSize({width:1280,height:850});
  await land(page);
  const board=page.getByTestId('ground-squad-board'),venn=page.getByTestId('ground-unit-venn');
- await expect.poll(async()=>(await cameraMetrics(page)).height).toBe(280);
+ await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(400);
  // A full sprite atlas is not necessarily painted at its geometric center.
  // Clicking the officer <g> must still select the actual officer, not floor.
  await page.getByTestId('ground-unit-dorn').click();
@@ -57,7 +57,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await page.getByTestId('ground-camera-toggle').click();
  await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
  await page.getByTestId('ground-camera-toggle').click();
- await expect.poll(async()=>(await cameraMetrics(page)).height).toBe(280);
+ await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(400);
  await page.reload();
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','6');
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','3');
@@ -68,9 +68,14 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:850});
  await land(page);
+ await expect.poll(async()=>(await cameraMetrics(page)).aspectError).toBeLessThan(.08);
  const camera=await cameraMetrics(page);
- expect(camera.height).toBe(300);
- expect(camera.width).toBe(440);
+ // Follow camera matches the full portrait stage, rather than preserving
+ // the old 440×300 letterboxed viewport.
+ expect(camera.height).toBeGreaterThan(300);
+ expect(camera.width).toBeLessThan(440);
+ expect(camera.aspectError).toBeLessThan(.08);
+ expect(camera.screenHeight).toBeGreaterThan(700);
  const art=page.getByTestId('ground-officer-sprite-venn');
  await expect(art).toHaveAttribute('width','54');
  await expect(art).toHaveAttribute('height','80');
