@@ -27,6 +27,17 @@ for(const width of [360,390,430,1280,1757]){
     await expect(page.getByTestId('explore-forward')).toHaveCount(0);
     await expect(page.getByTestId('ground-inspect-probe')).toBeVisible();
     await expect(page.getByTestId('ground-assist-civilians')).toBeVisible();
+    if(width>=1280){
+      // On desktop, the service transmission must read like a corner radio,
+      // not the 320px sidebar that obscured a large slice of the map.
+      const radio=await page.getByTestId('mission-transmission').boundingBox();
+      const dorn=await page.getByTestId('ground-unit-dorn').boundingBox();
+      expect(radio).not.toBeNull();
+      expect(dorn).not.toBeNull();
+      expect(radio!.width).toBeLessThanOrEqual(282);
+      expect(radio!.height).toBeLessThanOrEqual(178);
+      expect(radio!.x).toBeGreaterThan(dorn!.x+dorn!.width);
+    }
     // The mobile mission briefing and camera header must never obscure the
     // actual pickable board; this guards the visual regression from the first
     // real 390px screenshot, not merely document horizontal overflow.
@@ -65,7 +76,7 @@ for(const width of [360,390,430,1280,1757]){
   });
 }
 
-for(const width of [390,1280]){
+for(const width of [390,1280,1757]){
   test('transmisión de rescate abandonado no muestra scrollbar horizontal '+width+'px',async({page})=>{
     test.setTimeout(75_000);
     page.setDefaultTimeout(10_000);
@@ -92,7 +103,22 @@ for(const width of [390,1280]){
     }))).toEqual({noHorizontalOverflow:true,overflowX:'hidden'});
     await page.getByTestId('abandoned-return').scrollIntoViewIfNeeded();
     await expect(page.getByTestId('abandoned-return')).toBeVisible();
-    if(width===390||width===1280)
+    if(width>=1280){
+      // The extraction action must fit without a hidden scroll step, even
+      // when the historical save contains the longest mission status.
+      const bounds=await tx.evaluate(node=>{
+        const radio=node.getBoundingClientRect();
+        const action=node.querySelector('[data-testid="abandoned-return"]')!.getBoundingClientRect();
+        return {width:radio.width,height:radio.height,
+          noVerticalOverflow:node.scrollHeight<=node.clientHeight+1,
+          actionFullyInside:action.top>=radio.top&&action.bottom<=radio.bottom};
+      });
+      expect(bounds.width).toBeLessThanOrEqual(282);
+      expect(bounds.height).toBeLessThanOrEqual(178);
+      expect(bounds.noVerticalOverflow).toBe(true);
+      expect(bounds.actionFullyInside).toBe(true);
+    }
+    if(width===390||width===1280||width===1757)
       await page.screenshot({path:'test-results/surface-abandoned-no-horizontal-scroll-'+width+'.png'});
     await page.getByTestId('abandoned-return').click();
     await expect(page.getByTestId('explore-area')).toContainText('Puente');
