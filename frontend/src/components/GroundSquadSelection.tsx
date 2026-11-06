@@ -184,22 +184,22 @@ export function GroundSquadSelection({
   // testing still uses the SVG's actual CTM and canonical grid coordinates.
   const fullWidth=1120, fullHeight=550;
   const focused = compact && followSquad;
-  const focusX = Math.max(0,Math.min(fullWidth-440,Math.round(cameraCenter.x-220)));
-  const focusY = Math.max(0,Math.min(fullHeight-300,Math.round(cameraCenter.y-150)));
-  // Keep full-map as an honest overview. In follow mode, use a closer
-  // 280-unit vertical field and adapt its width to the displayed SVG. This
-  // fills wide/short windows instead of leaving hundreds of empty pixels.
-  const desktopHeight=280;
-  const desktopWidth=Math.round(desktopHeight*viewportSize.width/viewportSize.height);
-  const desktopX=desktopWidth>=fullWidth
-    ? Math.round((fullWidth-desktopWidth)/2)
-    : Math.max(0,Math.min(fullWidth-desktopWidth,
-        Math.round(cameraCenter.x-desktopWidth/2)));
-  const desktopY=Math.max(0,Math.min(fullHeight-desktopHeight,
-    Math.round(cameraCenter.y-desktopHeight*.56)));
+  // Fill the *actual* map viewport, not a 440×300 strip letterboxed in
+  // portrait. Mobile follows a narrower part of the authored surface;
+  // "Mapa completo" remains an explicit, un-cropped overview.
+  const aspect = viewportSize.width / viewportSize.height;
+  const cameraHeight = focused
+    ? Math.max(300, Math.min(fullHeight, Math.round(440 / aspect)))
+    : 280;
+  const cameraWidth = Math.round(cameraHeight * aspect);
+  const cameraX = cameraWidth >= fullWidth
+    ? Math.round((fullWidth-cameraWidth)/2)
+    : Math.max(0, Math.min(fullWidth-cameraWidth,
+        Math.round(cameraCenter.x-cameraWidth/2)));
+  const cameraY = Math.max(0, Math.min(fullHeight-cameraHeight,
+    Math.round(cameraCenter.y-cameraHeight*.56)));
   const cameraView = !followSquad ? '0 0 1120 550'
-    : focused ? focusX+' '+focusY+' 440 300'
-    : desktopX+' '+desktopY+' '+desktopWidth+' '+desktopHeight;
+    : cameraX+' '+cameraY+' '+cameraWidth+' '+cameraHeight;
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
