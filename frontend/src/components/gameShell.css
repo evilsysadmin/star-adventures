@@ -277,9 +277,18 @@
   min-height:34px;padding:7px 12px;
 }
 @media(max-width:700px){
+  /* Top-row mission and camera exits stay above the first officer labels;
+     avoid a floating transmission covering the center of the ground scene. */
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-top{
+    top:83px;left:8px;right:auto;justify-content:flex-start;
+    max-width:calc(100% - min(184px,49vw));
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-map-toggle{
+    padding:5px 5px;font-size:8px;
+  }
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission{
-    top:129px;left:auto;right:8px;width:min(190px,50vw);
-    max-height:100px;padding:8px 10px;
+    top:83px;left:auto;right:8px;width:min(176px,47vw);
+    max-height:104px;padding:8px 10px;
   }
   /* Keep the reachable central tiles free: these controls dock above
      the squad commands, not across the officers or click-to-move corridor. */
