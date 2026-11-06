@@ -443,6 +443,14 @@ export function GroundSquadSelection({
                   Math.floor(frame/WALK_ATLAS.columns)*100+'%',
               }} />
             </foreignObject>}
+            {/* A stable, narrow selection silhouette. SVG <g> is not itself
+                painted: its bounding-box midpoint otherwise falls through
+                transparent R2 sprite pixels onto an underlying floor tile. The
+                upper bound deliberately stops above the next officer's body
+                in a stacked isometric column, avoiding false front-unit hits. */}
+            <rect data-testid={'ground-officer-hit-'+unit.id}
+              x="-18" y="-56" width="36" height="57" rx="7"
+              fill="transparent" pointerEvents="all" />
             <text y={artReady || showWalk ? '-77' : '-42'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
