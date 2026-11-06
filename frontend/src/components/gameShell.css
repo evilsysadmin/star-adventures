@@ -318,3 +318,60 @@
     padding:2px 4px;font-size:9px;line-height:1.3;
   }
 }
+
+
+/* Away-Team command identity: keep the planet full-screen, but pull the
+   REAL three-officer selector into a left-side crew rail on desktop.
+   Nothing on this rail changes the underlying grid or order validation. */
+@media(min-width:701px){
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-rail{
+    position:absolute;z-index:6;top:228px;left:24px;bottom:auto;
+    width:198px;max-width:calc(100% - 48px);padding:10px;
+    border:1px solid #789da076;border-left:3px solid #c5ae80;
+    border-radius:5px;background:#0c1d29dc;backdrop-filter:blur(13px);
+    box-shadow:0 12px 40px #0009;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-list{
+    display:flex;flex-direction:column;gap:7px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-entry{
+    min-height:57px;padding:7px;gap:8px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-portrait{
+    flex-basis:37px;width:37px;height:42px;
+  }
+}
+@media(max-width:700px){
+  /* Single set of controls, condensed into a narrow squad strip above the
+     already-verified movement/action dock. Do not duplicate focus targets. */
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-rail{
+    position:absolute;z-index:6;top:auto;bottom:195px;
+    left:8px;right:8px;width:auto;max-width:none;padding:5px;
+    border:1px solid #799c9a80;border-radius:6px;
+    background:#0a1c27e8;backdrop-filter:blur(12px);box-shadow:0 8px 24px #0007;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-heading{display:none}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-list{
+    grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-entry{
+    min-width:0;min-height:45px;padding:4px;gap:5px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-portrait{
+    flex:0 0 25px;width:25px;height:31px;font-size:10px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-copy strong{font-size:10px}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-copy small{font-size:8px}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-indicator{display:none}
+  /* Camera switch and help remain reachable, but clear the crew selection
+     strip and the center-of-map officer sprites. */
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar{
+    top:204px;bottom:auto;left:8px;right:auto;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions{
+    top:263px;bottom:auto;left:8px;right:auto;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions[open]{
+    max-height:min(300px,calc(100% - 354px));
+  }
+}
