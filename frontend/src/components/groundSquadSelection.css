@@ -75,3 +75,57 @@
   .ground-squad-event-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;padding:5px 7px}
   .ground-squad-event-strip .ground-squad-status{padding:4px 5px;font-size:10px}
 }
+
+
+/* Authentic squad selection lives in one rail: recorded names, canonical
+   ranks and replayed tile positions. Monograms are deliberate UI markers,
+   never simulated portraits or fabricated HP/ammunition gauges. */
+.ground-squad-crew-rail{
+  min-width:0;padding:9px;background:#112631;
+  border-top:1px solid #40616a;
+}
+.ground-squad-crew-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  margin-bottom:7px;color:#c4d6cf;
+  font:700 9px/1.3 'Space Grotesk',sans-serif;letter-spacing:.12em;
+}
+.ground-squad-crew-heading span:last-child{color:#e6c78d;letter-spacing:0}
+.ground-squad-crew-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.ground-squad-crew-entry{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:51px;
+  border:1px solid #456672;border-left:3px solid transparent;
+  border-radius:3px;padding:6px 8px;
+  background:#18313bcc;color:#dfe9e3;text-align:left;
+  font:600 11px/1.3 'DM Sans',sans-serif;cursor:pointer;
+}
+.ground-squad-crew-entry:hover:not(:disabled){background:#2a4650;border-color:#90b5ac}
+.ground-squad-crew-entry[aria-pressed=true]{
+  border-color:#e1c88d;border-left-color:#e9cf99;
+  background:linear-gradient(90deg,#405d53,#1c3a43);
+  color:#fff7e6;box-shadow:inset 0 0 16px #e8d4a419;
+}
+.ground-squad-crew-entry:focus-visible{outline:2px solid #f5dfa3;outline-offset:2px}
+.ground-squad-crew-entry:disabled{opacity:.55;cursor:default}
+.ground-squad-crew-portrait{
+  display:grid;place-items:center;flex:0 0 34px;width:34px;height:38px;
+  border:1px solid #6e9391;border-radius:3px;
+  background:linear-gradient(140deg,#294953,#101f2a);
+  color:#e1d3b8;font:800 13px 'Space Grotesk',sans-serif;letter-spacing:.02em;
+}
+.ground-squad-crew-entry[aria-pressed=true] .ground-squad-crew-portrait{
+  border-color:#ddc99c;background:linear-gradient(140deg,#52665b,#273e43);
+}
+.ground-squad-crew-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.ground-squad-crew-copy strong{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ground-squad-crew-copy small{font-size:9px;line-height:1.3;font-weight:500;color:#a9c5c3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ground-squad-crew-indicator{font-size:12px;color:#95b0b0;flex:none}
+.ground-squad-crew-entry[aria-pressed=true] .ground-squad-crew-indicator{color:#f1d396}
+@media(max-width:520px){
+  .ground-squad-crew-rail{padding:6px}
+  .ground-squad-crew-list{gap:4px}
+  .ground-squad-crew-entry{padding:4px;min-height:48px;gap:5px}
+  .ground-squad-crew-portrait{flex-basis:26px;width:26px;height:32px;font-size:10px}
+  .ground-squad-crew-copy strong{font-size:10px}
+  .ground-squad-crew-copy small{font-size:8px}
+  .ground-squad-crew-indicator{display:none}
+}
