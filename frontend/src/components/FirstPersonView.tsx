@@ -6,6 +6,7 @@ import { startExploration, applyExploration, faceTile } from '../../../src/spati
 import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
 import { GroundSquadSelection } from './GroundSquadSelection';
+import { useGroundRealtime } from '../hooks/useGroundRealtime';
 import { planGroundSquadRoute } from '../../../src/groundSquadRoute.mjs';
 import { groundStationUse } from '../../../src/groundSquadInteractions.mjs';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
@@ -452,6 +453,10 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const groundRef = useRef(groundSnapshot);
   const squadKey = squad.map(officer => officer.id).join(',');
   const squadIds = squad.map(officer => officer.id);
+  const realtime = useGroundRealtime({
+    legacy:groundSnapshot,ids:squadIds,
+    surface:exploration.area==='surface',showSquad,paused,
+  });
   const [bridgeFallback, setBridgeFallback] = useState(false);
   const [previewStation, setPreviewStation] = useState<string | null>(null);
   const useCompatibleBridge = useCallback(() => setBridgeFallback(true), []);
@@ -562,7 +567,9 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     if (!current || !matchesGroundAnchor(current, stateRef.current, squadIds))
       return 'No hay un equipo táctico validado para interactuar.';
     try {
-      const action = groundStationUse(world, {...startAwayTeam(), squad: squadIds}, current, officerId, stationId);
+      const action = realtime.state
+        ? realtime.station(officerId,stationId)
+        : groundStationUse(world, {...startAwayTeam(), squad: squadIds}, current, officerId, stationId);
       if (stationId === 'probe' && action.event.action === 'inspect-probe')
         return onGroundProbe?.(action.pose as ViewState, officerId) ?? 'Investigación no disponible.';
       if (stationId === 'relief-point' && action.event.action === 'assist-evacuees')
@@ -577,7 +584,8 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           ? 'Selecciona un oficial junto al puesto de socorro para atender a los civiles.'
           : 'Selecciona un oficial junto a la baliza para establecer contacto.';
     }
-  }, [paused, showSquad, onGroundProbe, onGroundMedical, onGroundPerimeter, squadKey]);
+  }, [paused, showSquad, onGroundProbe, onGroundMedical, onGroundPerimeter,
+    squadKey, realtime.state, realtime.station]);
 
   const requestTransport = useCallback(() => {
     const result = requestCaptainTransport(world, stateRef.current);
@@ -633,8 +641,14 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           <div className="firstperson-render-stage">
           {exploration.area === 'surface' && showSquad && groundSnapshot
             ? <GroundSquadSelection squad={squad} position={exploration}
-                officers={groundOfficers(world, squadIds, groundSnapshot)}
-                snapshot={groundSnapshot} onMove={moveSelected}
+                officers={realtime.state ? realtime.state.motion.officers.map(officer=>({
+                  ...officer,heading:'N',
+                })) : groundOfficers(world, squadIds, groundSnapshot)}
+                snapshot={groundSnapshot} onMove={realtime.state?realtime.order:moveSelected}
+                realtime={!!realtime.state} realtimeFog={realtime.vision}
+                realtimeMovingIds={realtime.state?.motion.officers
+                  .filter(officer=>officer.route.length>0).map(officer=>officer.id)??[]}
+                onRealtimeToggle={()=>realtime.state?realtime.disable():realtime.enable()}
                 onInspectProbe={id => useGroundStation(id, 'probe')}
                 onAssistCivilians={id => useGroundStation(id, 'relief-point')}
                 onPerimeterContact={id => useGroundStation(id, 'perimeter-uplink')}

@@ -50,7 +50,7 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, disabled = false,
+  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeToggle, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
@@ -61,6 +61,10 @@ export function GroundSquadSelection({
   onAssistCivilians: (officerId: string) => string;
   onPerimeterContact: (officerId: string) => string;
   allowWholeMove: boolean;
+  realtime?: boolean;
+  realtimeFog?: {visible:ReadonlySet<string>;explored:ReadonlySet<string>}|null;
+  realtimeMovingIds?: string[];
+  onRealtimeToggle?:()=>void;
   disabled?: boolean;
 }) {
   // Every sprite has a validated, replayed cell; the classic FPS position is separate.
@@ -106,10 +110,11 @@ export function GroundSquadSelection({
   const [walking, setWalking] = useState<WalkSession | null>(null);
   const [walkPose, setWalkPose] = useState<WalkPose | null>(null);
   const [fogBeforeWalk, setFogBeforeWalk] = useState<{
-    explored:Set<string>;visible:Set<string>;
+    explored:ReadonlySet<string>;visible:ReadonlySet<string>;
   } | null>(null);
+  useEffect(()=>{if(realtime){setWalking(null);setWalkPose(null);setFogBeforeWalk(null);}},[realtime]);
   useEffect(() => {
-    if(!walking) return;
+    if(!walking || realtime) return;
     if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
       setWalkPose(null);setWalking(null);return;
     }
@@ -141,7 +146,7 @@ export function GroundSquadSelection({
           ? {x:walkPose.gridX,y:walkPose.gridY}
           : {x:unit.gridX,y:unit.gridY}))
     : fog.visible;
-  const displayedFog = walking && walkPose && fogBeforeWalk
+  const displayedFog = realtime && realtimeFog ? realtimeFog : walking && walkPose && fogBeforeWalk
     ? {visible:renderedVision,
        explored:new Set([...fogBeforeWalk.explored,...renderedVision])}
     : fog;
@@ -151,7 +156,7 @@ export function GroundSquadSelection({
   // Follow the leading selected officer even when a dispersed group has moved
   // away from the separate first-person campaign anchor.
   const cameraCenter = leaderUnit
-    ? walkPose?.officerId===leaderUnit.id ? {x:walkPose.x,y:walkPose.y}
+    ? !realtime && walkPose?.officerId===leaderUnit.id ? {x:walkPose.x,y:walkPose.y}
       : {x:leaderUnit.x,y:leaderUnit.y}
     : tile(position.x,position.y);
   const [compact, setCompact] = useState(() =>
@@ -260,7 +265,17 @@ export function GroundSquadSelection({
     if (Math.abs(local.x - center.x) / 40 + Math.abs(local.y - center.y) / 20 > 1) return null;
     return x + ',' + y;
   };
-  const requestMove = (tileId: string | null) => {
+  const pickFreePoint=(clientX:number,clientY:number):Point|null=>{
+    const root=svg.current,matrix=root?.getScreenCTM();
+    if(!root||!matrix)return null;
+    const p=root.createSVGPoint();p.x=clientX;p.y=clientY;
+    const local=p.matrixTransform(matrix.inverse());
+    const u=(local.x-440)/40,v=(local.y-52)/20;
+    const x=(u+v)/2,y=(v-u)/2;
+    return Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&
+      x<=scene.width-1&&y<=scene.height-1?{x,y}:null;
+  };
+  const requestMove = (tileId: string | null, exact?:Point|null) => {
     if (!tileId || disabled) return;
     setLastNotice('move');
     setMoveMode(false);
@@ -274,14 +289,19 @@ export function GroundSquadSelection({
       setMoveNotice('Casilla bloqueada u ocupada; el equipo no se mueve.');
       return;
     }
-    if ((selected.length === squad.length && allowWholeMove && x === position.x && y === position.y) ||
-        (selected.length === 1 && selectedUnit?.gridX === x && selectedUnit?.gridY === y)) {
-      setMoveNotice('La selección ya está en esa casilla.');
-      return;
+    if(realtime && selected.length!==1){
+      setMoveNotice('Movimiento libre beta: selecciona un único oficial.');return;
     }
-    const outcome = onMove({x,y}, [...selected]);
+    const destination=realtime&&exact?exact:{x,y};
+    if((!realtime && selected.length===squad.length && allowWholeMove &&
+        x===position.x && y===position.y) ||
+        (selected.length===1&&selectedUnit&&
+         Math.hypot(selectedUnit.gridX-destination.x,selectedUnit.gridY-destination.y)<.025)){
+      setMoveNotice('La selección ya está en ese punto.');return;
+    }
+    const outcome=onMove(destination,[...selected]);
     const success = typeof outcome==='boolean' ? outcome : outcome.moved;
-    if(success && typeof outcome!=='boolean' && outcome.path.length>1){
+    if(!realtime && success && typeof outcome!=='boolean' && outcome.path.length>1){
       setFogBeforeWalk(displayedFog);
       const path=outcome.path, first=path[0], last=walking?.path.at(-1);
       // Consecutive accepted commands for one officer append to the same
@@ -293,12 +313,13 @@ export function GroundSquadSelection({
           gridX:first.x,gridY:first.y,frame:0});
         setWalking({officerId:outcome.officerId,path,started:performance.now()});
       }
-    }else if(success){
+    }else if(success && !realtime){
       setWalking(null);setWalkPose(null);
     }
     const name = selected.length === 1 ? squad.find(officer => officer.id === selected[0])?.name :
       'Formación de ' + selected.length + ' oficiales';
-    setMoveNotice(success ? name + ' en torno a ' + x + ':' + y :
+    setMoveNotice(success ? name + (realtime?' en marcha hacia ':' en torno a ') +
+      (realtime?destination.x.toFixed(1)+':'+destination.y.toFixed(1):x+':'+y) :
       'No existe una formación segura: casilla ocupada o destino bloqueado.');
   };
   const onBoardKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
@@ -348,7 +369,7 @@ export function GroundSquadSelection({
     if (!roster || disabled) return;
     const end = { x: event.clientX, y: event.clientY };
     if (!start.dragged && !isSelectionDrag(start.start, end) && moveMode && start.tile) {
-      requestMove(start.tile);
+      requestMove(start.tile,realtime?pickFreePoint(event.clientX,event.clientY):null);
       return;
     }
     if (start.dragged || isSelectionDrag(start.start, end))
@@ -367,7 +388,7 @@ export function GroundSquadSelection({
 
   return <div className="ground-squad" data-testid="ground-squad-selection">
     {<div className="ground-squad-viewbar">
-      <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO' : 'MAPA COMPLETO'}</span>
+      <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO' : 'MAPA COMPLETO'}{realtime?' · LIBRE BETA':''}</span>
       <button type="button" data-testid="ground-camera-toggle" aria-pressed={followSquad}
         onClick={() => setFollowSquad(value => !value)}>
         {followSquad ? 'Mapa completo' : 'Seguir equipo'}
@@ -382,7 +403,8 @@ export function GroundSquadSelection({
         onPointerUp={onPointerUp} onPointerCancel={cancelGesture}
         onLostPointerCapture={cancelGesture} onContextMenu={event => {
           event.preventDefault();
-          requestMove(pickGroundCell(event.clientX, event.clientY));
+          requestMove(pickGroundCell(event.clientX,event.clientY),
+            realtime?pickFreePoint(event.clientX,event.clientY):null);
         }}>
         <GroundPlanetBackdrop />
         {sceneTiles.map(cell => <polygon key={cell.key} data-cell-id={cell.key} points={tileShape(cell.x, cell.y)}
@@ -407,20 +429,25 @@ export function GroundSquadSelection({
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
-        {orderGroundOfficersByDepth(units, walkPose).map(unit => {
+        {orderGroundOfficersByDepth(units, realtime?null:walkPose).map(unit => {
            // Keep fallback-uniform colours tied to identity, not painter order.
            const index = squad.findIndex(officer => officer.id === unit.id);
           const active = selected.includes(unit.id);
           const artReady = readyArt.has(unit.id);
           const artUrl = officerIdleArt[unit.id];
           const walkUrl = officerWalkArt[unit.id];
-          const moving = walking?.officerId===unit.id && walkPose?.officerId===unit.id;
+          const moving = realtime ? realtimeMovingIds.includes(unit.id) :
+            walking?.officerId===unit.id && walkPose?.officerId===unit.id;
           const showWalk = moving && readyWalk.has(unit.id);
-          const point = walkPose?.officerId===unit.id ? {x:walkPose.x,y:walkPose.y} : unit;
-          const frame = walkPose?.officerId===unit.id ? walkPose.frame : 0;
+          const point = !realtime && walkPose?.officerId===unit.id
+            ? {x:walkPose.x,y:walkPose.y} : unit;
+          const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%12 :
+            walkPose?.officerId===unit.id ? walkPose.frame : 0;
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
             data-officer-id={unit.id} data-proj-x={point.x} data-proj-y={point.y}
-            data-grid-x={unit.gridX} data-grid-y={unit.gridY} data-heading={unit.heading}
+            data-grid-x={Math.round(unit.gridX)} data-grid-y={Math.round(unit.gridY)}
+            data-world-x={unit.gridX.toFixed(3)} data-world-y={unit.gridY.toFixed(3)}
+            data-heading={unit.heading}
             data-walk-phase={moving?'moving':'idle'} data-walk-frame={frame}
             data-walk-atlas-ready={readyWalk.has(unit.id)}
             transform={'translate(' + point.x + ' ' + point.y + ')'}
@@ -497,7 +524,9 @@ export function GroundSquadSelection({
             </span>
             <span className="ground-squad-crew-copy">
               <strong>{officer.name}</strong>
-              <small>{rank ?? 'Oficial'}{unit ? ' · ' + unit.gridX + ':' + unit.gridY : ''}</small>
+              <small>{rank ?? 'Oficial'}{unit ? ' · ' + (realtime ?
+                unit.gridX.toFixed(1)+':'+unit.gridY.toFixed(1) :
+                unit.gridX+':'+unit.gridY) : ''}</small>
             </span>
             <span className="ground-squad-crew-indicator" aria-hidden="true">
               {isActive ? '◆' : '◇'}
@@ -576,6 +605,18 @@ export function GroundSquadSelection({
     </div>
     <details className="ground-squad-instructions">
       <summary>Controles y ayuda</summary>
+      {onRealtimeToggle && <button type="button" className="ground-realtime-toggle"
+        data-testid="ground-realtime-toggle" aria-pressed={realtime}
+        disabled={disabled} onClick={event=>{
+          onRealtimeToggle();
+          // Disclosure must not cover/intercept ground picking after activation.
+          event.currentTarget.closest('details')?.removeAttribute('open');
+        }}>
+        {realtime?'Volver al movimiento clásico':'Probar movimiento libre (beta)'}
+      </button>}
+      <p className="ground-squad-help">{realtime
+        ? 'Beta: elige un oficial; clic derecho o Mover y tocar. Cambia destino durante la marcha. Volver al clásico descarta el recorrido de prueba.'
+        : 'Prueba opcional: desplaza un oficial y cambia destino sin saltos. Las formaciones siguen en modo clásico.'}</p>
       <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Sumar» y toca los nombres para crear un grupo.
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
