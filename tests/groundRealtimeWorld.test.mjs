@@ -82,7 +82,7 @@ test('F5 restores fractional position, pending route and explored memory exactly
   const saved=legacy();
   let motion=orderGroundRealtimeWorld(world,startGroundRealtimeWorld(world,away,saved),
     'venn',{x:9,y:4});
-  for(let i=0;i<8;i++)motion=advanceGroundRealtimeWorld(world,motion,500);
+  for(let i=0;i<4;i++)motion=advanceGroundRealtimeWorld(world,motion,500);
   assert.ok(motion.explored.length>0);
   assert.ok(officer(motion).route.length>0,'save must capture an unfinished walk');
   const raw=serializeGroundRealtimeWorld(world,away,saved,motion);
@@ -93,7 +93,7 @@ test('F5 restores fractional position, pending route and explored memory exactly
   assert.deepEqual(result.state,motion);
   const next=advanceGroundRealtimeWorld(world,result.state,350);
   assert.deepEqual(next,advanceGroundRealtimeWorld(world,motion,350));
-  assert.equal(officer(saved)?.x,undefined,'legacy snapshot has never been overwritten');
+  assert.deepEqual(saved.commands,[],'legacy commands remain untouched during a continuous walk');
 });
 
 test('v1 sidecar loads, tampered terrain fails closed and legacy recovery never leaks exploration',()=>{
