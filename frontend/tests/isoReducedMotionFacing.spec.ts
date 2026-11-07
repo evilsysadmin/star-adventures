@@ -30,11 +30,11 @@ for(const width of [390,1280]){
   await expect(canvas).toHaveAttribute('data-sprite-facing-science','right');
   await expect(canvas).toHaveAttribute('data-sprite-idle-uv-science','1');
   // An authoritative enemy end-turn uses the same direction rule.
-  const before=replayCombatCommands('relay',[
+  const before=replayCombatCommands('frontier',[
    {type:'move',officer:'science',cell:'0:1'},
    {type:'move',officer:'science',cell:'1:1'},
   ]).combat.encounter.positions;
-  const after=replayCombatCommands('relay',[
+  const after=replayCombatCommands('frontier',[
    {type:'move',officer:'science',cell:'0:1'},
    {type:'move',officer:'science',cell:'1:1'},
    {type:'end-turn'},

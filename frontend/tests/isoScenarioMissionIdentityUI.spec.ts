@@ -1,11 +1,3 @@
-// Historical variants remain available only under explicit QA tools.
-async function chooseLegacyMode(page: import('@playwright/test').Page, id:string){
- const details=page.getByTestId('scenario-mode-advanced');
- if((await details.getAttribute('open'))===null)
-  await details.locator('summary').click();
- await page.getByTestId(id).click();
-}
-
 import { test, expect } from '@playwright/test';
 import { COMBAT_REPLAY_SAVE_KEY } from '../src/isoScenarioCombatReplay';
 import { COMBAT_MISSION_INSTANCE_SAVE_KEY } from '../src/isoScenarioCombatMissionInstanceSession';
@@ -16,19 +8,19 @@ for (const width of [390, 1280]) {
   await page.goto('/');
   // The shared fixture may contain a legacy replay; isolate this test.
   await page.evaluate(keys => keys.forEach(key => localStorage.removeItem(key)),
-   [COMBAT_REPLAY_SAVE_KEY, COMBAT_MISSION_INSTANCE_SAVE_KEY]);
+   [COMBAT_REPLAY_SAVE_KEY, COMBAT_MISSION_INSTANCE_SAVE_KEY].map(key => 'frontier-poc.' + key));
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await chooseLegacyMode(page,'scenario-replay-toggle');
   // Merely entering the replay view must not mint an ID for old saves.
-  expect(await page.evaluate(key => localStorage.getItem(key), COMBAT_MISSION_INSTANCE_SAVE_KEY)).toBeNull();
-  await page.getByTestId('scenario-tab-relay').click();
+  expect(await page.evaluate(key => localStorage.getItem(key), 'frontier-poc.' + COMBAT_MISSION_INSTANCE_SAVE_KEY)).toBeNull();
+  await page.getByTestId('scenario-restart').click();
+  await page.getByTestId('scenario-restart-confirm').click();
   const read = () => page.evaluate(keys => ({
    replay: JSON.parse(localStorage.getItem(keys[0])!),
    identity: JSON.parse(localStorage.getItem(keys[1])!),
-  }), [COMBAT_REPLAY_SAVE_KEY, COMBAT_MISSION_INSTANCE_SAVE_KEY]);
+  }), [COMBAT_REPLAY_SAVE_KEY, COMBAT_MISSION_INSTANCE_SAVE_KEY].map(key => 'frontier-poc.' + key));
   const started = await read();
-  expect(started.replay).toEqual({ version: 4, scenarioId: 'relay', actions: [] });
+  expect(started.replay).toEqual({ version: 4, scenarioId: 'frontier', actions: [] });
   expect(started.identity.version).toBe(1);
   expect(started.identity.instanceId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   expect(JSON.parse(started.identity.checkpoint)).toEqual(started.replay);
@@ -39,7 +31,6 @@ for (const width of [390, 1280]) {
   expect(advanced.replay.actions).toEqual([{ type: 'end-turn' }]);
   await page.reload();
   await page.getByTestId('tactical-view-missions').click();
-  await chooseLegacyMode(page,'scenario-replay-toggle');
   const restored = await read();
   expect(restored.identity.instanceId).toBe(started.identity.instanceId);
   expect(JSON.parse(restored.identity.checkpoint)).toEqual(restored.replay);
@@ -48,7 +39,8 @@ for (const width of [390, 1280]) {
   expect(continued.identity.instanceId).toBe(started.identity.instanceId);
   expect(continued.replay.actions).toHaveLength(2);
   expect(JSON.parse(continued.identity.checkpoint)).toEqual(continued.replay);
-  await page.getByTestId('scenario-tab-relay').click();
+  await page.getByTestId('scenario-restart').click();
+  await page.getByTestId('scenario-restart-confirm').click();
   const restarted = await read();
   expect(restarted.identity.instanceId).not.toBe(started.identity.instanceId);
   expect(JSON.parse(restarted.identity.checkpoint)).toEqual(restarted.replay);

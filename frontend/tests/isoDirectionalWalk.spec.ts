@@ -10,7 +10,7 @@ for(const width of [390,1280]){
   await expect(canvas).toBeVisible();
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   for(const [index,cell,direction] of [
-   [0,'2:1','east'],[1,'2:2','south'],[2,'1:2','west'],[3,'1:1','north']
+   [0,'1:2','south'],[1,'2:2','east'],[2,'1:2','west'],[3,'1:1','north']
   ] as const){
    if(index===3)await page.getByTestId('scenario-end-turn').click();
    await page.getByRole('button',{name:'Casilla '+cell,exact:true}).click();

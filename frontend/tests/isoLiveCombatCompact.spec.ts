@@ -10,7 +10,6 @@ for (const width of [360, 390, 430]) {
     await page.getByTestId('tactical-view-missions').click();
 
     const head = page.locator('.scenario-head');
-    const selector = page.locator('.scenario-selector');
     // The live combat is already compact and playable on entry.
     await expect(page.getByTestId('scenario-fire-order')).toBeVisible();
     await page.getByTestId('scenario-play-combat').click();
@@ -21,23 +20,21 @@ for (const width of [360, 390, 430]) {
     await expect(page.getByTestId('scenario-parley')).toBeVisible();
 
     const afterHead = await head.boundingBox();
-    const afterSelector = await selector.boundingBox();
     const roster = await page.locator('.scenario-roster').boundingBox();
     const canvas = await page.getByTestId('scenario-render-canvas').boundingBox();
     expect(afterHead!.height).toBeLessThan(160);
-    expect(afterSelector!.height).toBeLessThan(180);
     expect(roster!.height).toBeLessThan(95);
     expect(canvas!.height).toBeGreaterThanOrEqual(340);
     const viewTools = await page.locator('.scenario-viewtools').boundingBox();
     // The real play surface and six orders precede secondary configuration.
-    expect(canvas!.y).toBeLessThan(afterSelector!.y);
+    expect(canvas!.y).toBeLessThan(viewTools!.y);
     expect(canvas!.y).toBeLessThan(viewTools!.y);
     const orders = await page.locator('.scenario-orders').boundingBox();
-    expect(orders!.y).toBeLessThan(afterSelector!.y);
+    expect(orders!.y).toBeLessThan(viewTools!.y);
     const notice = await page.getByTestId('scenario-notice').boundingBox();
     const objectives = await page.getByTestId('scenario-objectives').boundingBox();
-    expect(notice!.y).toBeLessThan(afterSelector!.y);
-    expect(objectives!.y).toBeLessThan(afterSelector!.y);
+    expect(notice!.y).toBeLessThan(viewTools!.y);
+    expect(objectives!.y).toBeLessThan(viewTools!.y);
 
     const columns = await page.locator('.scenario-orders').evaluate(el =>
       getComputedStyle(el).gridTemplateColumns.split(' ').length);
@@ -48,9 +45,10 @@ for (const width of [360, 390, 430]) {
       expect(bounds!.height).toBeGreaterThanOrEqual(44);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    // Changing missions remains possible without exiting combat.
-    await page.getByTestId('scenario-tab-derelict').click();
-    await expect(page.getByTestId('scenario-tab-derelict')).toHaveAttribute('aria-pressed', 'true');
+    // Restarting is deliberate and can be cancelled without losing progress.
+    await page.getByTestId('scenario-restart').click();
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    await expect(page.getByTestId('scenario-restart')).toBeVisible();
     await expect(page.getByTestId('scenario-fire')).toBeVisible();
     await page.screenshot({ path: `test-results/live-combat-board-first-${width}.png`, fullPage: true });
   });
