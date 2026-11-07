@@ -28,6 +28,12 @@ for(const width of [390,1280]){
   await expect(board).toBeVisible();
   await expect(page.getByTestId('ground-colony-floor')).toHaveCount(1);
   await expect(page.getByTestId('ground-colony-fixtures')).toHaveCount(1);
+  // Floor-level metal seams are derived from solid walls and real paths.
+  await expect(page.getByTestId('ground-colony-corridor-rims')).toHaveCount(1);
+  await expect(page.getByTestId('ground-corridor-rim-5,6-south')).toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-corridor-rim-5,6-north')).toHaveCount(0);
+  await expect(page.getByTestId('ground-corridor-deck-3,4-to-4,4')).toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveCount(0);
   await expect(page.getByTestId('ground-dressing-4,4')).toHaveAttribute('data-fog','visible');
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveCount(0);
   await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(0);
@@ -38,13 +44,17 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-grid-x','9');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','4');
   await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(1);
   await board.screenshot({path:'test-results/away-colony-discovered-'+width+'.png'});
   await orderCell(page,4,5);
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveAttribute('data-fog','remembered');
+  await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveAttribute('data-fog','remembered');
   await page.reload();
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveAttribute('data-fog','remembered');
+  await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveAttribute('data-fog','remembered');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
