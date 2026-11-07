@@ -30,6 +30,10 @@ for(const width of [390,1280]) {
   await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
   await expect(page.getByTestId('ground-colony-walls')).toHaveCount(1);
   await expect(page.getByTestId('ground-colony-connected-roofs')).toHaveCount(1);
+  await expect(page.getByTestId('ground-colony-gateways')).toHaveCount(1);
+  // Never reveal an unopened entry before both physical wall ends are known.
+  await expect(page.getByTestId('ground-gateway-8,4')).toHaveCount(0);
+  await expect(page.getByTestId('ground-gateway-8,6')).toHaveCount(0);
   // Two visible contiguous wall cells share an actual roof. The distant
   // eastern wall must not disclose an unseen connection through the fog.
   await expect(page.getByTestId('ground-colony-roof-5,7-to-6,7')).toHaveCount(1);
@@ -64,6 +68,18 @@ for(const width of [390,1280]) {
   await expect(venn).toHaveAttribute('data-grid-x','9');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','visible');
+  const gateway=page.getByTestId('ground-gateway-8,4');
+  await expect(gateway).toHaveAttribute('data-fog','visible');
+  await expect(gateway).toHaveAttribute('data-gateway-kind','entry');
+  await expect(board.locator('[data-cell-id="8,4"]')).toHaveCount(1);
+  const portal=await gateway.evaluate(node=>{
+    const rect=(node as SVGGraphicsElement).getBBox();
+    return {width:rect.width,height:rect.height,
+      pointerEvents:getComputedStyle(node).pointerEvents};
+  });
+  expect(portal.width).toBeGreaterThan(35);
+  expect(portal.height).toBeGreaterThan(35);
+  expect(portal.pointerEvents).toBe('none');
   await expect(page.getByTestId('ground-architecture-wall-10,2')).toHaveCount(0);
   await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(1);
   await expect(page.getByTestId('ground-cargo-3,2')).toHaveCount(0);
@@ -72,8 +88,10 @@ for(const width of [390,1280]) {
   await expect(venn).toHaveAttribute('data-grid-x','4');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','remembered');
+  await expect(gateway).toHaveAttribute('data-fog','remembered');
   await page.reload();
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','remembered');
+  await expect(page.getByTestId('ground-gateway-8,4')).toHaveAttribute('data-fog','remembered');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
