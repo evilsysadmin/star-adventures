@@ -94,14 +94,17 @@ export function GroundColonyFloor({explored,visible}:Vision){
   {/* Metallic skirting follows real blocked neighbors. Open door and
        service-gate cells stay visually open and physically pickable. */}
   <g data-testid="ground-colony-corridor-rims" pointerEvents="none">
-    {corridorRims.filter(edge=>explored.has(edge.id)).map(edge=>{
+    {corridorRims.filter(edge=>explored.has(edge.id)&&
+      explored.has(key(edge.x+edge.dx,edge.y+edge.dy))).map(edge=>{
       const center=project(edge.x,edge.y);
       const line=`M${edge.from[0]} ${edge.from[1]}L${edge.to[0]} ${edge.to[1]}`;
+      const inSight=visible.has(edge.id)&&
+        visible.has(key(edge.x+edge.dx,edge.y+edge.dy));
       return <g key={edge.id+'-'+edge.side}
         data-testid={'ground-corridor-rim-'+edge.id+'-'+edge.side}
-        data-fog={visible.has(edge.id)?'visible':'remembered'}
+        data-fog={inSight?'visible':'remembered'}
         transform={`translate(${center.x} ${center.y})`}
-        opacity={fade(visible,edge.id)}>
+        opacity={inSight?1:.34}>
         <path d={line} fill="none" stroke="#1a3139" strokeWidth="6"/>
         <path d={line} fill="none" stroke="#baa77e" strokeWidth="2.5"/>
         <path d={line} fill="none" stroke="#9ed3c3" strokeWidth=".85"
