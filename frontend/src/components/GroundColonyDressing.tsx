@@ -73,6 +73,24 @@ export function GroundColonyFloor({explored,visible}:Vision){
     </>}
    </g>;
   })}
+  {/* Decking is below the wall trims and service-gate panel, so it
+       never paints across a doorway or raised entry lip. */}
+  {paths.filter(([a,b])=>explored.has(key(a[0],a[1]))&&
+      explored.has(key(b[0],b[1]))).map(([a,b],i)=>{
+    const from=project(a[0],a[1]),to=project(b[0],b[1]);
+    const isVisible=visible.has(key(a[0],a[1]))&&visible.has(key(b[0],b[1]));
+    const line=`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`;
+    return <g key={i}
+      data-testid={'ground-corridor-deck-'+key(a[0],a[1])+'-to-'+key(b[0],b[1])}
+      data-fog={isVisible?'visible':'remembered'}
+      pointerEvents="none" opacity={isVisible ? 0.86 : 0.26}>
+      <path d={line} stroke="#152e36" strokeWidth="22" strokeLinecap="round" fill="none" />
+      <path d={line} stroke="#687b76" strokeWidth="16" strokeLinecap="round" fill="none" />
+      <path d={line} stroke="#2b4b50" strokeWidth="10" strokeLinecap="round" fill="none" />
+      <path d={line} stroke="#e1c993" strokeWidth="1.4"
+        strokeDasharray="4 10" fill="none"/>
+    </g>;
+   })}
   {/* Metallic skirting follows real blocked neighbors. Open door and
        service-gate cells stay visually open and physically pickable. */}
   <g data-testid="ground-colony-corridor-rims" pointerEvents="none">
@@ -111,22 +129,7 @@ export function GroundColonyFloor({explored,visible}:Vision){
     <circle cx="-28" cy="0" r="2" fill="#ddc18c"/>
     <circle cx="28" cy="0" r="2" fill="#ddc18c"/>
   </g>}
-  {paths.filter(([a,b])=>explored.has(key(a[0],a[1]))&&
-      explored.has(key(b[0],b[1]))).map(([a,b],i)=>{
-    const from=project(a[0],a[1]),to=project(b[0],b[1]);
-    const isVisible=visible.has(key(a[0],a[1]))&&visible.has(key(b[0],b[1]));
-    const line=`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`;
-    return <g key={i}
-      data-testid={'ground-corridor-deck-'+key(a[0],a[1])+'-to-'+key(b[0],b[1])}
-      data-fog={isVisible?'visible':'remembered'}
-      pointerEvents="none" opacity={isVisible ? 0.86 : 0.26}>
-      <path d={line} stroke="#152e36" strokeWidth="22" strokeLinecap="round" fill="none" />
-      <path d={line} stroke="#687b76" strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d={line} stroke="#2b4b50" strokeWidth="10" strokeLinecap="round" fill="none" />
-      <path d={line} stroke="#e1c993" strokeWidth="1.4"
-        strokeDasharray="4 10" fill="none"/>
-    </g>;
-   })}
+
   </g>;
 }
 
