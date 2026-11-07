@@ -30,7 +30,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await page.setViewportSize({width:1280,height:850});
  await land(page);
  const board=page.getByTestId('ground-squad-board'),venn=page.getByTestId('ground-unit-venn');
- await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(400);
+ await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(330);
  // A full sprite atlas is not necessarily painted at its geometric center.
  // Clicking the officer <g> must still select the actual officer, not floor.
  await page.getByTestId('ground-unit-dorn').click();
@@ -42,6 +42,22 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  const before=await cameraMetrics(page);
  expect(before.aspectError).toBeLessThan(.08);
  expect(before.screenHeight).toBeGreaterThan(320);
+ // Old follow camera was effectively a nearly full 13x10 map (height ~548).
+ // Gameplay camera must show more of the actual officer and environment.
+ expect(before.height).toBeLessThan(430);
+ const horizontalTilePixels=before.screenWidth*80/before.width;
+ expect(horizontalTilePixels).toBeGreaterThan(165);
+ const unknown=page.locator('[data-fog-cell="10,4"]');
+ await expect(unknown).toHaveAttribute('data-fog-state','unknown');
+ const shroud=await unknown.evaluate(el=>({
+   fill:el.getAttribute('fill'),
+   opacity:el.getAttribute('fill-opacity'),
+   pointerEvents:getComputedStyle(el.parentElement?.parentElement).pointerEvents,
+ }));
+ expect(['#1a3037','#21363a','#1d3237','#243b3f']).toContain(shroud.fill);
+ expect(shroud.opacity).toBe('1');
+ expect(shroud.pointerEvents).toBe('none');
+ await board.screenshot({path:'test-results/away-gameplay-framing-1280.png'});
  await board.locator('[data-cell-id="5,4"]').click({button:'right'});
  await expect(venn).toHaveAttribute('data-grid-x','5');
  await expect(venn).toHaveAttribute('data-grid-y','4');
@@ -57,7 +73,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await page.getByTestId('ground-camera-toggle').click();
  await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
  await page.getByTestId('ground-camera-toggle').click();
- await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(400);
+ await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(330);
  await page.reload();
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','6');
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','3');
@@ -76,6 +92,13 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  expect(camera.width).toBeLessThan(440);
  expect(camera.aspectError).toBeLessThan(.08);
  expect(camera.screenHeight).toBeGreaterThan(700);
+ expect(camera.width).toBeGreaterThan(215);
+ expect(camera.width).toBeLessThan(300);
+ await expect(page.locator('[data-fog-cell="10,4"]'))
+   .toHaveAttribute('data-fog-state','unknown');
+ await page.getByTestId('ground-squad-board').screenshot({
+  path:'test-results/away-gameplay-framing-390.png',
+ });
  const art=page.getByTestId('ground-officer-sprite-venn');
  await expect(art).toHaveAttribute('width','54');
  await expect(art).toHaveAttribute('height','80');
