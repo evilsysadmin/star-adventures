@@ -197,11 +197,12 @@ export function GroundSquadSelection({
   // portrait. Mobile follows a narrower part of the authored surface;
   // "Mapa completo" remains an explicit, un-cropped overview.
   const aspect = viewportSize.width / viewportSize.height;
+  // Frame the *playable* surroundings, not almost the whole unknown board.
+  // Keep the exact isometric projection/picking and separate complete overview.
+  // Portrait retains enough lateral context to issue touch orders.
   const cameraHeight = focused
-    ? Math.max(300, Math.min(fullHeight, Math.round(440 / aspect)))
-    // Ease the desktop camera back slightly (~1.55px/world unit): the
-    // fullscreen stage stays immersive without giant officers/buildings.
-    : Math.max(280, Math.min(fullHeight, Math.round(viewportSize.height / 1.55)));
+    ? 520
+    : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
     ? Math.round((fullWidth-cameraWidth)/2)
@@ -417,14 +418,36 @@ export function GroundSquadSelection({
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
+        {/* The shroud is intentionally opaque and topology-independent:
+            its colors/strata depend only on x/y, never unseen walls, objects,
+            objectives, enemies or the underlying scene art. */}
         <g data-testid="ground-fog-layer" pointerEvents="none">
-          {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>
-            <polygon key={cell.key} data-fog-cell={cell.key}
-              data-fog-state={displayedFog.explored.has(cell.key)?'remembered':'unknown'}
-              points={tileShape(cell.x,cell.y)}
-              fill={displayedFog.explored.has(cell.key)?'#0a1d24':'#020710'}
-              fillOpacity={displayedFog.explored.has(cell.key)?.83:1}
-              stroke="#7f9896" strokeOpacity={displayedFog.explored.has(cell.key)?'.012':'0'} strokeWidth="1" />)}
+          {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>{
+            const remembered=displayedFog.explored.has(cell.key);
+            const center=tile(cell.x,cell.y);
+            const shade=(cell.x*17+cell.y*29)%4;
+            const colors=['#1a3037','#21363a','#1d3237','#243b3f'];
+            return <g key={cell.key} data-fog-terrain={cell.key}>
+              <polygon data-fog-cell={cell.key}
+                data-fog-state={remembered?'remembered':'unknown'}
+                points={tileShape(cell.x,cell.y)}
+                fill={remembered?'#25434a':colors[shade]}
+                fillOpacity={remembered?.86:1}
+                stroke="#8aaba4" strokeOpacity={remembered?.045:.065}
+                strokeWidth="1" />
+              {!remembered && <>
+                <path d={`M${center.x-32} ${center.y-2}
+                  L${center.x-9} ${center.y-12}
+                  L${center.x+12} ${center.y-2}
+                  L${center.x+29} ${center.y+3}`}
+                  fill="none" stroke="#78958b" strokeWidth="1.4" opacity=".18"/>
+                <path d={`M${center.x-24} ${center.y+5}
+                  L${center.x-8} ${center.y+11}
+                  L${center.x+17} ${center.y+3}`}
+                  fill="none" stroke="#0b242e" strokeWidth="2.2" opacity=".36"/>
+              </>}
+            </g>;
+          })}
         </g>
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
