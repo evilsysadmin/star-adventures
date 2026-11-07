@@ -91,10 +91,48 @@ export function GroundColonyWalls({explored,visible}:Vision){
      const fascia='M'+point(sx+px,sy+py)+' L'+point(ex+px,ey+py)+
        ' L'+point(ex+px,ey+py+9)+' L'+point(sx+px,sy+py+9)+'Z';
      const mx=(sx+ex)/2,my=(sy+ey)/2;
+     // Place the front wall on the screen-facing edge of the actual joined
+     // blocked tiles. Both 45-degree orientations must face down-screen.
+     const front=py>=0?1:-1;
+     const ax=sx+px*front,ay=sy+py*front;
+     const bx=ex+px*front,by=ey+py*front;
+     const facadeQuad=(u:number,v:number,top:number,bottom:number)=>{
+       const x1=ax+(bx-ax)*u,y1=ay+(by-ay)*u;
+       const x2=ax+(bx-ax)*v,y2=ay+(by-ay)*v;
+       return 'M'+point(x1,y1+top)+' L'+point(x2,y2+top)+
+         ' L'+point(x2,y2+bottom)+' L'+point(x1,y1+bottom)+'Z';
+     };
+     const warm=(from.x+from.y)%3===0;
+     const glass=warm?'#bda984':'#7fc4be';
      return <g key={id} data-testid={'ground-colony-roof-'+id}
        data-fog={bothVisible?'visible':'remembered'}
        opacity={bothVisible?0.94:0.3}>
        <path d={fascia} fill="#23383e" stroke="#0e252f" strokeWidth="1.5"/>
+       {/* A shared, windowed wall replaces the open gap between adjacent
+           blocked modules. It cannot create a new walkable cell or doorway;
+           the roof join only exists for two physical wall tiles. */}
+       <g data-testid={'ground-colony-facade-'+id}
+         data-fog={bothVisible?'visible':'remembered'}
+         pointerEvents="none">
+         <path d={facadeQuad(0,.99,2,30)}
+           fill="#2d474d" stroke="#102b33" strokeWidth="1.7"/>
+         <path d={facadeQuad(.07,.46,8,22)}
+           fill="#102d39" stroke="#849c99" strokeWidth="1.6"/>
+         <path d={facadeQuad(.54,.93,8,22)}
+           fill="#102d39" stroke="#849c99" strokeWidth="1.6"/>
+         <path d={facadeQuad(.11,.42,11,19)}
+           fill={glass} opacity=".83"/>
+         <path d={facadeQuad(.58,.89,11,19)}
+           fill={glass} opacity=".7"/>
+         <path d={facadeQuad(.1,.43,23,26)}
+           fill="#192e35" stroke="#809995" strokeWidth=".6"/>
+         <path d={facadeQuad(.57,.9,23,26)}
+           fill="#192e35" stroke="#809995" strokeWidth=".6"/>
+         <path d={facadeQuad(.46,.54,3,29)}
+           fill="#8f9c8b" stroke="#213c42" strokeWidth=".9"/>
+         <path d={facadeQuad(.03,.97,28,30)}
+           fill="#bfad82"/>
+       </g>
        <path data-testid={'ground-colony-roof-deck-'+id}
          d={roof} fill="#63756e" stroke="#abb9a3" strokeWidth="1.5"/>
        <path d={`M${point(sx-px*.6,sy-py*.6)} L${point(ex-px*.6,ey-py*.6)}`}
