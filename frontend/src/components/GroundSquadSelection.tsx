@@ -433,7 +433,7 @@ export function GroundSquadSelection({
                 points={tileShape(cell.x,cell.y)}
                 fill={remembered?'#25434a':colors[shade]}
                 fillOpacity={remembered?.86:1}
-                stroke="#8aaba4" strokeOpacity={remembered?.045:.065}
+                stroke="#8aaba4" strokeOpacity={remembered?.045:0}
                 strokeWidth="1" />
               {!remembered && <>
                 <path d={`M${center.x-32} ${center.y-2}
