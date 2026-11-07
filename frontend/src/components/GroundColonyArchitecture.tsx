@@ -21,6 +21,19 @@ const roofJoins=builtCells.flatMap(p=>([[1,0],[0,1]] as const).flatMap(
  ([dx,dy])=>builtKeys.has(key(p.x+dx,p.y+dy))
   ? [{from:p,to:{x:p.x+dx,y:p.y+dy}}] : []));
 
+// Two authored crossings of the eastern perimeter. Drawing a gateway is
+// conditional on the actual collision topology, not on a decorative marker.
+// A walkable gap must have built walls on both sides and free approach cells.
+const occupied=new Set([...scene.walls,...scene.objects].map(p=>key(p.x,p.y)));
+const gateways=[
+ {x:8,y:4,kind:'entry'},
+ {x:8,y:6,kind:'service'},
+].filter(g=>builtKeys.has(key(g.x,g.y-1))&&
+ builtKeys.has(key(g.x,g.y+1))&&
+ !occupied.has(key(g.x,g.y))&&
+ !occupied.has(key(g.x-1,g.y))&&
+ !occupied.has(key(g.x+1,g.y)));
+
 export function GroundColonyWalls({explored,visible}:Vision){
  return <g data-testid="ground-colony-walls" pointerEvents="none">
   {builtCells.filter(p=>explored.has(key(p.x,p.y)))
@@ -94,6 +107,44 @@ export function GroundColonyWalls({explored,visible}:Vision){
          stroke="#9bc9b9" strokeWidth="1.4" fill="none"/>
        <circle cx={mx} cy={my} r="3.5" fill="#253f45" stroke="#b8bfa8" strokeWidth="1.5"/>
        <circle cx={mx} cy={my} r="1.3" fill="#e0c58d"/>
+     </g>;
+    })}
+  </g>
+  {/* Hollow frames sit on the two real wall ends. Both adjacent walls
+       must have been explored: a glowing lintel cannot reveal hidden geometry.
+       All geometry is behind officers and excluded from pointer picking. */}
+  <g data-testid="ground-colony-gateways" pointerEvents="none">
+   {gateways.filter(g=>[key(g.x,g.y),key(g.x,g.y-1),key(g.x,g.y+1)]
+    .every(id=>explored.has(id))).map(g=>{
+     const ids=[key(g.x,g.y),key(g.x,g.y-1),key(g.x,g.y+1)];
+     const illuminated=ids.every(id=>visible.has(id));
+     const pos=at(g.x,g.y),id=key(g.x,g.y);
+     const accent=g.kind==='service'?'#8dd7c8':'#dfc48f';
+     return <g key={id} data-testid={'ground-gateway-'+id}
+       data-fog={illuminated?'visible':'remembered'}
+       data-gateway-kind={g.kind}
+       transform={`translate(${pos.x} ${pos.y})`}
+       opacity={illuminated?1:.3}>
+       <title>{g.kind==='service'?'Paso de mantenimiento':'Acceso al perímetro'}</title>
+       {/* The open floor remains unobstructed and uses its original tile ID. */}
+       <path d="M-29 13L26 -15" fill="none"
+         stroke="#132c35" strokeWidth="9" strokeLinecap="round"/>
+       <path d="M-29 13L26 -15" fill="none"
+         stroke={accent} strokeWidth="2" opacity=".8"/>
+       {/* Isometric side jambs support a hollow raised lintel, not a door
+           slab that would visually imply a closed or impassable square. */}
+       <path d="M-26 10V-27L26 -53V-16"
+         stroke="#102830" strokeWidth="11" fill="none" strokeLinejoin="round"/>
+       <path d="M-26 10V-27L26 -53V-16"
+         stroke="#768e8c" strokeWidth="6" fill="none" strokeLinejoin="round"/>
+       <path d="M-26 -27L26 -53"
+         stroke={accent} strokeWidth="2.4" fill="none"/>
+       <path d="M-26 -19V3M26 -45V-22" stroke="#b7d2c6"
+         strokeWidth="1.5" fill="none" opacity=".75"/>
+       <path d="M-17 -31L17 -48" stroke="#c6d9cb"
+         strokeWidth="1" strokeDasharray="5 5" fill="none" opacity=".65"/>
+       <circle cx="-26" cy="-28" r="3" fill={accent}/>
+       <circle cx="26" cy="-54" r="3" fill={accent}/>
      </g>;
     })}
   </g>

@@ -45,6 +45,9 @@ for(const width of [390,1280]){
   const gate=page.getByTestId('ground-service-gate');
   await expect(gate).toHaveCount(1);
   await expect(gate).toHaveAttribute('data-fog','visible');
+  const frame=page.getByTestId('ground-gateway-8,6');
+  await expect(frame).toHaveAttribute('data-fog','visible');
+  await expect(frame).toHaveAttribute('data-gateway-kind','service');
   const walkable=await board.evaluate(svg=>{
    const blocked=new Set(['8,5','8,7']);
    const items=['8,5','8,6','8,7'].map(tile=>{
@@ -55,6 +58,11 @@ for(const width of [390,1280]){
   });
   expect(walkable.every(x=>x.found)).toBe(true);
   expect(walkable.find(x=>x.tile==='8,6')!.fill).not.toBe(walkable.find(x=>x.tile==='8,5')!.fill);
+  // Click the real center of the open passage, not the gateway SVG art.
+  await moveTo(page,8,6);
+  await expect(mira).toHaveAttribute('data-grid-x','8');
+  await expect(mira).toHaveAttribute('data-grid-y','6');
+  await expect(mira).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await moveTo(page,9,6);
   await expect(mira).toHaveAttribute('data-grid-x','9');
   await expect(mira).toHaveAttribute('data-grid-y','6');
@@ -67,6 +75,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-unit-mira')).toHaveAttribute('data-grid-x','9');
   await expect(page.getByTestId('ground-unit-mira')).toHaveAttribute('data-grid-y','6');
   await expect(page.getByTestId('ground-service-gate')).toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-gateway-8,6')).toHaveAttribute('data-fog','visible');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
