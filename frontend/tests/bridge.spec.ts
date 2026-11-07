@@ -94,6 +94,9 @@ test('keyboard choices and skip-navigation work', async ({ page }) => {
 
 
 test('a saved command history restores the same decision after refresh', async ({ page }) => {
+  // This real bridge/F5/reopen journey approaches 30s when two WebGL contexts
+  // share a CI runner; preserve its assertions without a spurious retry.
+  test.setTimeout(60_000);
   await page.goto('/');
   await openStation(page, 'communications');
   await page.getByTestId('choice-hail').click();
