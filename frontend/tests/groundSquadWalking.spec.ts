@@ -45,9 +45,18 @@ for(const width of [390,1280]){
   // Cropped sprite frame must keep the intended unit size, not inherit the
   // map-root 100% SVG styling.
   const bounds=await walkArt.boundingBox();
-  expect(bounds?.width).toBeGreaterThan(10);
-  expect(bounds?.width).toBeLessThan(120);
-  expect(bounds?.height).toBeLessThan(160);
+  // Width/height are 54x80 world units in the sprite's SVG. Follow camera
+  // zoom is intentional; compare to the actual viewBox-to-screen transform
+  // rather than a fixed pixel ceiling from the old distant camera.
+  const expected=await page.getByTestId('ground-squad-board').evaluate(node=>{
+    const svg=node as SVGSVGElement,view=svg.viewBox.baseVal;
+    const rect=svg.getBoundingClientRect();
+    return {width:54*rect.width/view.width,height:80*rect.height/view.height};
+  });
+  expect(bounds?.width).toBeGreaterThan(expected.width-2);
+  expect(bounds?.width).toBeLessThan(expected.width+2);
+  expect(bounds?.height).toBeGreaterThan(expected.height-2);
+  expect(bounds?.height).toBeLessThan(expected.height+2);
   await expect.poll(async()=>Number(await venn.getAttribute('data-walk-frame')),{timeout:3_000})
     .toBeGreaterThan(0);
   // Capture the actual cropped atlas renderer, not a separately composed mock.
