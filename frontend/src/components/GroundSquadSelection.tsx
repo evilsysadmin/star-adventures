@@ -435,7 +435,7 @@ export function GroundSquadSelection({
                 fillOpacity={remembered?.86:1}
                 stroke="#8aaba4" strokeOpacity={remembered?.045:0}
                 strokeWidth="1" />
-              {!remembered && <>
+              {!remembered && shade===0 && <>
                 <path d={`M${center.x-32} ${center.y-2}
                   L${center.x-9} ${center.y-12}
                   L${center.x+12} ${center.y-2}
