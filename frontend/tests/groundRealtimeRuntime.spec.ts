@@ -51,6 +51,13 @@ for(const width of [390,1280]){
     },{timeout:6000}).toBeGreaterThan(.08);
     const mid=await pose(page);
     expect(Math.hypot(mid.x-9,mid.y-4)).toBeGreaterThan(1);
+    // Capture the *actual gameplay follow camera* as well: the overview
+    // previously made this improvement almost invisible in screenshots.
+    await page.getByTestId('ground-camera-toggle').click();
+    await page.getByTestId('ground-squad-board').screenshot({
+      path:'test-results/away-realtime-follow-'+width+'.png',
+    });
+    await page.getByTestId('ground-camera-toggle').click();
     await page.getByTestId('ground-squad-board').screenshot({
       path:'test-results/away-realtime-moving-'+width+'.png',
     });
