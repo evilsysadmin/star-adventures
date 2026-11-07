@@ -7,6 +7,7 @@ const scene=world.scenes.surface;
 const project=(x:number,y:number)=>({x:440+(x-y)*40,y:52+(x+y)*20});
 const key=(x:number,y:number)=>x+','+y;
 const blocked=new Set([...scene.walls,...scene.objects].map(p=>key(p.x,p.y)));
+const structuralWalls=new Set(scene.walls.map(p=>key(p.x,p.y)));
 const cells=Array.from({length:scene.height},(_,y)=>
  Array.from({length:scene.width},(_,x)=>({x,y}))).flat();
 const lights=[[2,3],[3,5],[5,2],[6,6],[7,4],[9,4],[11,6]];
@@ -23,6 +24,20 @@ const paths=[[[3,4],[4,4]],[[4,4],[5,4]],[[5,4],[6,4]],[[5,5],[6,5]],[[6,5],[7,5
  [[6,6],[7,6]],[[7,6],[8,6]],[[8,6],[9,6]],[[9,6],[9,7]],[[9,7],[10,7]]]
  .filter(([a,b])=>!blocked.has(key(a[0],a[1]))&&!blocked.has(key(b[0],b[1])) &&
    Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1);
+
+// Doorways and perimeter seams are taken from the actual authored collision
+// geometry. These are FLOOR-LEVEL trims, never a new wall or a pick target.
+// Isometric edges: north (y-1), east (x+1), south (y+1), west (x-1).
+const wallEdges=[
+ {side:'north',dx:0,dy:-1,from:[0,-20],to:[40,0]},
+ {side:'east',dx:1,dy:0,from:[40,0],to:[0,20]},
+ {side:'south',dx:0,dy:1,from:[0,20],to:[-40,0]},
+ {side:'west',dx:-1,dy:0,from:[-40,0],to:[0,-20]},
+] as const;
+const corridorRims=cells.filter(p=>p.x<9&&p.y<8&&!blocked.has(key(p.x,p.y)))
+ .flatMap(cell=>wallEdges.filter(edge=>
+  structuralWalls.has(key(cell.x+edge.dx,cell.y+edge.dy)))
+  .map(edge=>({...edge,x:cell.x,y:cell.y,id:key(cell.x,cell.y)})));
 
 type Vision={explored:ReadonlySet<string>;visible:ReadonlySet<string>};
 const fade=(visible:ReadonlySet<string>,id:string)=>visible.has(id)?1:.34;
@@ -58,6 +73,24 @@ export function GroundColonyFloor({explored,visible}:Vision){
     </>}
    </g>;
   })}
+  {/* Metallic skirting follows real blocked neighbors. Open door and
+       service-gate cells stay visually open and physically pickable. */}
+  <g data-testid="ground-colony-corridor-rims" pointerEvents="none">
+    {corridorRims.filter(edge=>explored.has(edge.id)).map(edge=>{
+      const center=project(edge.x,edge.y);
+      const line=`M${edge.from[0]} ${edge.from[1]}L${edge.to[0]} ${edge.to[1]}`;
+      return <g key={edge.id+'-'+edge.side}
+        data-testid={'ground-corridor-rim-'+edge.id+'-'+edge.side}
+        data-fog={visible.has(edge.id)?'visible':'remembered'}
+        transform={`translate(${center.x} ${center.y})`}
+        opacity={fade(visible,edge.id)}>
+        <path d={line} fill="none" stroke="#1a3139" strokeWidth="6"/>
+        <path d={line} fill="none" stroke="#baa77e" strokeWidth="2.5"/>
+        <path d={line} fill="none" stroke="#9ed3c3" strokeWidth=".85"
+          strokeDasharray="5 10"/>
+      </g>;
+    })}
+  </g>
   {/* The maintenance gate occupies an actually walkable grid cell (8,6),
        between two existing blocking perimeter cells (8,5 and 8,7).
        This painting is purely decorative; authoritative movement and fog
@@ -82,11 +115,16 @@ export function GroundColonyFloor({explored,visible}:Vision){
       explored.has(key(b[0],b[1]))).map(([a,b],i)=>{
     const from=project(a[0],a[1]),to=project(b[0],b[1]);
     const isVisible=visible.has(key(a[0],a[1]))&&visible.has(key(b[0],b[1]));
-    return <g key={i} opacity={isVisible ? 0.75 : 0.25}>
-      <path d={`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`}
-        stroke="#17252b" strokeWidth="5" fill="none" />
-      <path d={`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`}
-        stroke="#6fb6aa" strokeWidth="1" strokeDasharray="5 9" fill="none"/>
+    const line=`M${from.x} ${from.y+9} L${to.x} ${to.y+9}`;
+    return <g key={i}
+      data-testid={'ground-corridor-deck-'+key(a[0],a[1])+'-to-'+key(b[0],b[1])}
+      data-fog={isVisible?'visible':'remembered'}
+      pointerEvents="none" opacity={isVisible ? 0.86 : 0.26}>
+      <path d={line} stroke="#152e36" strokeWidth="22" strokeLinecap="round" fill="none" />
+      <path d={line} stroke="#687b76" strokeWidth="16" strokeLinecap="round" fill="none" />
+      <path d={line} stroke="#2b4b50" strokeWidth="10" strokeLinecap="round" fill="none" />
+      <path d={line} stroke="#e1c993" strokeWidth="1.4"
+        strokeDasharray="4 10" fill="none"/>
     </g>;
    })}
   </g>;
