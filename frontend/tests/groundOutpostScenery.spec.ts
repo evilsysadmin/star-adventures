@@ -32,10 +32,10 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-perimeter-uplink').locator('text.ground-landmark-name')).toHaveText('BALIZA');
   await expect(page.getByTestId('ground-landmark-beam-out').locator('text.ground-landmark-name')).toHaveText('EXTRACCIÓN');
   if(width===1280){
-   // Fullscreen follows the officer with a larger world field: camera height
-   // grows with the stage while retaining a usable officer scale.
+   // Normal follow framing now keeps officers/architecture prominent.
+   // The full 13x10 authored map remains accessible through overview.
    await expect.poll(async()=>board.evaluate(node=>
-     (node as SVGSVGElement).viewBox.baseVal.height)).toBeGreaterThan(400);
+     (node as SVGSVGElement).viewBox.baseVal.height)).toBeGreaterThan(330);
    const camera=await board.evaluate(node=>{
      const svg=node as SVGSVGElement,view=svg.viewBox.baseVal;
      const rect=svg.getBoundingClientRect();
