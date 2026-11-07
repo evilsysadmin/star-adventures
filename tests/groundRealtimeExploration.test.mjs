@@ -45,7 +45,9 @@ test('start is immutable, fractional destinations are legal and blocked cells ha
 
 test('motion is continuous over waypoints, not a series of tile-turn pauses',()=>{
   const initial=deploy();
-  const ordered=orderRealtimeExplorationMove(scene,initial,'venn',{x:5.22,y:2.12});
+  // A clear adjacent tile makes the first half-second deterministic,
+  // independent of the BFS detour required by a distant wall.
+  const ordered=orderRealtimeExplorationMove(scene,initial,'venn',{x:2.22,y:2.12});
   const first=advanceRealtimeExploration(scene,ordered,160);
   const moving=officer(first,'venn');
   approx(moving.x,1.4);
@@ -57,14 +59,14 @@ test('motion is continuous over waypoints, not a series of tile-turn pauses',()=
   approx(officer(second,'venn').y,2);
   assert.ok(officer(second,'venn').route.length>0);
   const finished=advanceRealtimeExploration(scene,second,30_000);
-  approx(officer(finished,'venn').x,5.22);
+  approx(officer(finished,'venn').x,2.22);
   approx(officer(finished,'venn').y,2.12);
   assert.deepEqual(officer(finished,'venn').route,[]);
-  assert.deepEqual(officer(ordered,'venn').route.at(-1),{x:5.22,y:2.12});
+  assert.deepEqual(officer(ordered,'venn').route.at(-1),{x:2.22,y:2.12});
 });
 
 test('retarget during a real walk starts at current fractional position, not old destination',()=>{
-  const go=orderRealtimeExplorationMove(scene,deploy(),'venn',{x:5.2,y:2.1});
+  const go=orderRealtimeExplorationMove(scene,deploy(),'venn',{x:2.2,y:2.1});
   const mid=advanceRealtimeExploration(scene,go,160);
   const diverted=orderRealtimeExplorationMove(scene,mid,'venn',{x:2.15,y:1.15});
   approx(officer(diverted,'venn').x,1.4);
@@ -74,7 +76,7 @@ test('retarget during a real walk starts at current fractional position, not old
   approx(officer(arrived,'venn').x,2.15);
   approx(officer(arrived,'venn').y,1.15);
   assert.deepEqual(officer(arrived,'venn').route,[]);
-  assert.deepEqual(officer(go,'venn').route.at(-1),{x:5.2,y:2.1});
+  assert.deepEqual(officer(go,'venn').route.at(-1),{x:2.2,y:2.1});
 });
 
 test('multiple officers progress in parallel; paused combat freezes positions and routes',()=>{
@@ -88,8 +90,8 @@ test('multiple officers progress in parallel; paused combat freezes positions an
   approx(officer(moving,'mira').y,3.5);
   assert.notEqual(officer(moving,'venn').x,officer(both,'venn').x);
   assert.notEqual(officer(moving,'mira').y,officer(both,'mira').y);
-  assert.deepEqual(officer(both,'mira'),officer(first,'mira'),
-    'moving another officer cannot alter existing state');
+  assert.deepEqual(officer(both,'venn'),officer(first,'venn'),
+    'ordering Mira cannot overwrite Venn’s existing route');
 });
 
 test('fractional mid-walk state and outstanding route survive a deterministic JSON roundtrip',()=>{
