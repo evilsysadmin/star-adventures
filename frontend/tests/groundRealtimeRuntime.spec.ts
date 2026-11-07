@@ -87,6 +87,11 @@ for(const width of [390,1280]){
     expect(Math.abs(arrived.x-3)).toBeLessThan(.03);
     expect(Math.abs(arrived.y-5)).toBeLessThan(.03);
 
+    // F5 restores the close follow camera: use overview for a distant
+    // group target, rather than clicking an offscreen point.
+    await page.getByTestId('ground-camera-toggle').click();
+    await expect(page.getByTestId('ground-camera-toggle'))
+      .toHaveAttribute('aria-pressed','false');
     // Group movement remains explicitly unavailable until collision avoidance.
     await page.getByTestId('ground-select-all').click();
     await clickGround(page,6,5);
