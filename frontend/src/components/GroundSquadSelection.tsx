@@ -607,7 +607,11 @@ export function GroundSquadSelection({
       <summary>Controles y ayuda</summary>
       {onRealtimeToggle && <button type="button" className="ground-realtime-toggle"
         data-testid="ground-realtime-toggle" aria-pressed={realtime}
-        disabled={disabled} onClick={onRealtimeToggle}>
+        disabled={disabled} onClick={event=>{
+          onRealtimeToggle();
+          // Disclosure must not cover/intercept ground picking after activation.
+          event.currentTarget.closest('details')?.removeAttribute('open');
+        }}>
         {realtime?'Volver al movimiento clásico':'Probar movimiento libre (beta)'}
       </button>}
       <p className="ground-squad-help">{realtime
