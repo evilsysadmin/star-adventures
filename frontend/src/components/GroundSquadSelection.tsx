@@ -5,6 +5,7 @@ import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
+import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
@@ -492,7 +493,7 @@ export function GroundSquadSelection({
               squad.map(item => ({ id: item.id, x: 0, y: 0, visible: true })),
               previous, officer.id, additiveRoster))}>
             <span className="ground-squad-crew-portrait" aria-hidden="true">
-              {officer.name.split(' ').map(part => part[0]).slice(0,2).join('')}
+              <GroundCrewPortrait officerId={officer.id}/>
             </span>
             <span className="ground-squad-crew-copy">
               <strong>{officer.name}</strong>

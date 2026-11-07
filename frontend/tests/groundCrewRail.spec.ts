@@ -30,6 +30,17 @@ for(const width of [360,390,430,1280,1757]){
     await expect(rail).toContainText('Oficial científica');
     await expect(rail).toContainText('Oficial táctico');
     await expect(rail).toContainText('Médica jefe');
+    // Original vector portraits render inside the existing accessible button,
+    // without third-party image requests or extra focus/click targets.
+    await expect(rail.locator('svg[data-testid^="ground-crew-portrait-art-"]')).toHaveCount(3);
+    for (const id of ['venn','dorn','mira']) {
+      const portrait=page.getByTestId('ground-crew-portrait-art-'+id);
+      await expect(portrait).toBeVisible();
+      const bounds=await portrait.boundingBox();
+      expect(bounds?.width).toBeGreaterThan(15);
+      expect(bounds?.height).toBeGreaterThan(18);
+      await expect(portrait.locator('image')).toHaveCount(0);
+    }
 
     const layout=await page.evaluate(()=>{
       const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
