@@ -112,6 +112,7 @@ export function GroundColonyWalls({explored,visible}:Vision){
            blocked modules. It cannot create a new walkable cell or doorway;
            the roof join only exists for two physical wall tiles. */}
        <g data-testid={'ground-colony-facade-'+id}
+         data-fog={bothVisible?'visible':'remembered'}
          pointerEvents="none">
          <path d={facadeQuad(0,.99,2,30)}
            fill="#2d474d" stroke="#102b33" strokeWidth="1.7"/>
