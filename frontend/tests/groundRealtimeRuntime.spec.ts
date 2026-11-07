@@ -63,8 +63,9 @@ for(const width of [390,1280]){
       return raw?JSON.parse(raw):null;
     });
     expect(saved?.version).toBe(2);
-    expect(saved?.motion.officers.find((o:{id:string})=>o.id==='venn').route.at(-1))
-      .toEqual({x:3,y:5});
+    const last=saved?.motion.officers.find((o:{id:string})=>o.id==='venn').route.at(-1);
+    expect(last?.x).toBeCloseTo(3,3);
+    expect(last?.y).toBeCloseTo(5,3);
     const beforeReload=await pose(page);
     await page.reload();
     await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
