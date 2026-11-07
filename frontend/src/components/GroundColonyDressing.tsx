@@ -17,6 +17,24 @@ const rails=scene.walls.filter(p=>(
  (p.y===0&&p.x>0&&p.x<scene.width-1&&p.x%2===1)||
  (p.x===0&&p.y>0&&p.y<scene.height-1&&p.y%2===0)||
  (p.x===scene.width-1&&p.y>0&&p.y<scene.height-1&&p.y%2===0)));
+// The sensor archive and science probe bound a small open-top laboratory.
+// Only declare its deck if their positions, the physical wall between them,
+// and *all six* approach cells agree with the authoritative scene. If the
+// mission map changes, no floor invents a room or paints through an obstacle.
+const sensorArchive=scene.objects.find(object=>object.id==='sensor-vault');
+const scienceProbe=scene.objects.find(object=>object.id==='probe');
+const scienceBayTiles=(()=>{
+ if(!sensorArchive||!scienceProbe||sensorArchive.y!==scienceProbe.y||
+    scienceProbe.x-sensorArchive.x!==2||
+    !structuralWalls.has(key(sensorArchive.x+1,sensorArchive.y)))return [];
+ const tiles=Array.from({length:2},(_,dy)=>
+   Array.from({length:3},(_,dx)=>({
+     x:sensorArchive.x+dx,y:sensorArchive.y+dy+1
+   }))).flat();
+ return tiles.every(p=>p.x>=0&&p.x<scene.width&&p.y>=0&&p.y<scene.height&&
+   !blocked.has(key(p.x,p.y)))?tiles:[];
+})();
+const scienceBayTop=scienceBayTiles[0]?.y??-1;
 // Both paths are made entirely of real walkable cells. The southern
 // maintenance corridor joins the original entrance to form a usable loop.
 const paths=[[[3,4],[4,4]],[[4,4],[5,4]],[[5,4],[6,4]],[[5,5],[6,5]],[[6,5],[7,5]],
@@ -73,6 +91,40 @@ export function GroundColonyFloor({explored,visible}:Vision){
     </>}
    </g>;
   })}
+  {/* Open-top science bay: six canonical, obstacle-free floor tiles.
+       Each piece fades independently with the real fog; nothing is pickable
+       and no wall, station or new room is added to the simulation. */}
+  <g data-testid="ground-science-bay" pointerEvents="none">
+   {scienceBayTiles.filter(cell=>explored.has(key(cell.x,cell.y))).map(cell=>{
+     const id=key(cell.x,cell.y),pos=project(cell.x,cell.y);
+     const top=cell.y===scienceBayTop;
+     const isEntrance=cell.y===scienceBayTop+1 &&
+       cell.x===sensorArchive!.x+1;
+     return <g key={id} data-testid={'ground-science-bay-cell-'+id}
+       data-fog={visible.has(id)?'visible':'remembered'}
+       transform={`translate(${pos.x} ${pos.y})`}
+       opacity={fade(visible,id)}>
+       <path d="M-39 0L0 -19.5L39 0L0 19.5Z"
+         fill="#42616b" stroke="#9bb6aa" strokeWidth=".85"/>
+       <path d="M-31 0L0 -15.5L31 0L0 15.5Z"
+         fill="#233f4b" stroke="#78a3a0" strokeWidth="1"/>
+       <path d="M-21 -1L0 -11L21 -1M-21 4L0 14L21 4"
+         fill="none" stroke="#526d73" strokeWidth="1.3"/>
+       <path d="M-24 1L-11 -5M11 -5L24 1"
+         fill="none" stroke="#92c4b4" strokeWidth="1.7" opacity=".68"/>
+       <circle cx="-28" cy="0" r="1.5" fill="#e6c89b"/>
+       <circle cx="28" cy="0" r="1.5" fill="#e6c89b"/>
+       {top&&<path d="M0 -20L39 0"
+         fill="none" stroke="#b9d8c4" strokeWidth="2.3"/>}
+       {isEntrance&&<>
+         <path d="M-38 0L0 19"
+           stroke="#d8bd80" strokeWidth="2" strokeDasharray="5 4"/>
+         <text y="3" textAnchor="middle" fontFamily="monospace"
+           fontSize="8" letterSpacing="1" fill="#cadfcb">LAB 01</text>
+       </>}
+     </g>;
+   })}
+  </g>
   {/* Decking is below the wall trims and service-gate panel, so it
        never paints across a doorway or raised entry lip. */}
   {paths.filter(([a,b])=>explored.has(key(a[0],a[1]))&&
