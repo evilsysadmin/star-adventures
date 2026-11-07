@@ -110,7 +110,7 @@ export function GroundSquadSelection({
   const [walking, setWalking] = useState<WalkSession | null>(null);
   const [walkPose, setWalkPose] = useState<WalkPose | null>(null);
   const [fogBeforeWalk, setFogBeforeWalk] = useState<{
-    explored:Set<string>;visible:Set<string>;
+    explored:ReadonlySet<string>;visible:ReadonlySet<string>;
   } | null>(null);
   useEffect(()=>{if(realtime){setWalking(null);setWalkPose(null);setFogBeforeWalk(null);}},[realtime]);
   useEffect(() => {
