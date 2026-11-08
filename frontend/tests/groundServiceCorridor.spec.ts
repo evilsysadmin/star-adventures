@@ -72,6 +72,15 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-service-floor-8,6'))
     .toHaveAttribute('data-fog','visible');
   await board.screenshot({path:'test-results/away-connected-corridor-revealed-'+width+'.png'});
+  // A full-map screenshot is NOT a credible visual review of an interior.
+  // Capture the actual player-following view with Nara at the far gateway.
+  await page.getByTestId('ground-camera-toggle').click();
+  await expect(page.getByTestId('ground-camera-toggle'))
+    .toHaveAttribute('aria-pressed','true');
+  await board.screenshot({path:'test-results/away-connected-corridor-follow-'+width+'.png'});
+  await page.getByTestId('ground-camera-toggle').click();
+  await expect(page.getByTestId('ground-camera-toggle'))
+    .toHaveAttribute('aria-pressed','false');
 
   await walk(page,4,5);
   await expect(wall).toHaveAttribute('data-fog','remembered');
