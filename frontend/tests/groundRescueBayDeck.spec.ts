@@ -38,7 +38,7 @@ for(const width of [390,1280]){
 
   const edge=page.getByTestId('ground-bay-wall-face-5,6-south');
   await expect(edge).toHaveAttribute('data-fog','visible');
-  const surface=board.locator('[data-cell-id="5,5"]');
+  const surface=board.locator('[data-cell-id="5,4"]');
   await expect(surface).toHaveCount(1);
   await board.screenshot({path:'test-results/away-connected-rescue-bay-'+width+'.png'});
 
@@ -47,7 +47,7 @@ for(const width of [390,1280]){
   await surface.click({button:'right'});
   const venn=page.getByTestId('ground-unit-venn');
   await expect(venn).toHaveAttribute('data-grid-x','5');
-  await expect(venn).toHaveAttribute('data-grid-y','5');
+  await expect(venn).toHaveAttribute('data-grid-y','4');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:15_000});
   await page.reload();
   await expect(page.getByTestId('ground-bay-floor-4,5')).toHaveCount(1);
