@@ -103,8 +103,8 @@ export function GroundServiceCorridor({explored,visible}:Vision){
         const lit=visible.has(k)&&visible.has(wall);
         const a=side.a,b=side.b,edge=stroke(a,b);
         const sill='M'+a[0]+' '+(a[1]-5)+'L'+b[0]+' '+(b[1]-5);
-        const front='M'+a[0]+' '+(a[1]-48)+
-          'L'+b[0]+' '+(b[1]-48)+'L'+b[0]+' '+(b[1]-6)+
+        const front='M'+a[0]+' '+(a[1]-66)+
+          'L'+b[0]+' '+(b[1]-66)+'L'+b[0]+' '+(b[1]-6)+
           'L'+a[0]+' '+(a[1]-6)+'Z';
         return <g key={k+'-'+side.name}
           data-testid={'ground-service-wall-'+k+'-'+side.name}
@@ -115,19 +115,28 @@ export function GroundServiceCorridor({explored,visible}:Vision){
           {side.rear&&<>
             <path d={front} fill="#293f48" stroke="#a9b39e"
               strokeWidth="2"/>
-            <path d={'M'+a[0]+' '+(a[1]-40)+
-              'L'+b[0]+' '+(b[1]-40)+'L'+b[0]+' '+(b[1]-13)+
-              'L'+a[0]+' '+(a[1]-13)+'Z'}
-              fill="#183842" stroke="#718e89" strokeWidth="1.7"/>
-            <path d={'M'+a[0]+' '+(a[1]-37)+
-              'L'+b[0]+' '+(b[1]-37)+'L'+b[0]+' '+(b[1]-19)+
-              'L'+a[0]+' '+(a[1]-19)+'Z'}
-              fill="url(#ground-corridor-window-light)" opacity=".9"/>
-            <path d={'M'+(a[0]+b[0])/2+' '+((a[1]+b[1])/2-41)+
-              'L'+(a[0]+b[0])/2+' '+((a[1]+b[1])/2-13)}
-              stroke="#b5bcad" strokeWidth="3" fill="none"/>
-            <path d={'M'+a[0]+' '+(a[1]-50)+'L'+b[0]+' '+(b[1]-50)}
-              fill="none" stroke="#d3c195" strokeWidth="3"/>
+            {/* A full-height structural facade, not just a floor trim:
+                two horizontal bays of glazing with an opaque lintel. The
+                facade is owned by the *existing* blocked neighbor. */}
+            <path d={'M'+a[0]+' '+(a[1]-58)+
+              'L'+b[0]+' '+(b[1]-58)+'L'+b[0]+' '+(b[1]-14)+
+              'L'+a[0]+' '+(a[1]-14)+'Z'}
+              fill="#102c37" stroke="#99ada4" strokeWidth="2"/>
+            <path d={'M'+a[0]+' '+(a[1]-55)+
+              'L'+b[0]+' '+(b[1]-55)+'L'+b[0]+' '+(b[1]-35)+
+              'L'+a[0]+' '+(a[1]-35)+'Z'}
+              fill="url(#ground-corridor-window-light)" opacity=".91"/>
+            <path d={'M'+a[0]+' '+(a[1]-31)+
+              'L'+b[0]+' '+(b[1]-31)+'L'+b[0]+' '+(b[1]-17)+
+              'L'+a[0]+' '+(a[1]-17)+'Z'}
+              fill="#4d7880" stroke="#759a98" strokeWidth="1.1"/>
+            <path d={'M'+(a[0]+b[0])/2+' '+((a[1]+b[1])/2-60)+
+              'L'+(a[0]+b[0])/2+' '+((a[1]+b[1])/2-12)}
+              stroke="#bec6b7" strokeWidth="4" fill="none"/>
+            <path d={'M'+a[0]+' '+(a[1]-68)+'L'+b[0]+' '+(b[1]-68)}
+              fill="none" stroke="#ddc390" strokeWidth="4"/>
+            <path d={'M'+a[0]+' '+(a[1]-12)+'L'+b[0]+' '+(b[1]-12)}
+              fill="none" stroke="#70b7ab" strokeWidth="2.4"/>
           </>}
           <path d={edge} stroke="#102b34" strokeWidth="7" fill="none"/>
           <path d={sill} stroke="#98bdb0" strokeWidth="2" fill="none"/>
