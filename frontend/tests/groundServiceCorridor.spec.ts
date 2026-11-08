@@ -60,6 +60,14 @@ for(const width of [390,1280]){
   const wall=page.getByTestId('ground-service-wall-8,4-north');
   await expect(wall).toHaveAttribute('data-wall-cell','8,3');
   await expect(wall).toHaveAttribute('data-fog','visible');
+  // This is now a real raised facade tied to the authored solid wall, not
+  // just another 2 px trim or an invisible blocker over the passage.
+  const facade=await wall.evaluate(node=>{
+    const box=(node as SVGGraphicsElement).getBBox();
+    return {height:box.height,events:getComputedStyle(node).pointerEvents};
+  });
+  expect(facade.height).toBeGreaterThan(70);
+  expect(facade.events).toBe('none');
   await expect(page.getByTestId('ground-gateway-8,4'))
     .toHaveAttribute('data-gateway-kind','entry');
 
