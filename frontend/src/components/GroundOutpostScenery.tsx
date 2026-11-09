@@ -25,12 +25,12 @@ export function GroundPlanetBackdrop(){
     <stop offset="1" stopColor="#1c363a" stopOpacity="0"/>
    </linearGradient>
   </defs>
-  <rect width="1120" height="550" fill="url(#planet-sky)"/>
+  <rect x="-72" y="0" width="1280" height="640" fill="url(#planet-sky)"/>
   <circle cx="738" cy="93" r="23" fill="#d3c6a1" opacity=".68"/>
   <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175V550H0Z" fill="#253e46"/>
   <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239V550H0Z" fill="#1b353b"/>
   <ellipse cx="449" cy="330" rx="455" ry="110" fill="#071b23" opacity=".5"/>
-  {/* Far beyond the canonical 13×10 ground grid: terraces, dust and stone
+  {/* Far beyond the currently visible ground grid: terraces, dust and stone
       strata give the planet scale without pretending to be extra playable
       cells, objects or revealed terrain. This layer sits below every tile,
       fog mask and officer, and never participates in ground-cell picking. */}
