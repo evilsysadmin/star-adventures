@@ -432,34 +432,37 @@ export function GroundSquadSelection({
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
-        {/* The shroud is intentionally opaque and topology-independent:
-            its colors/strata depend only on x/y, never unseen walls, objects,
-            objectives, enemies or the underlying scene art. */}
+        {/* One world-space material, rather than checkerboard colors per
+            undiscovered tile. Fog is still derived ONLY from explored cells,
+            never unseen walls, mission objects or combat data. */}
         <g data-testid="ground-fog-layer" pointerEvents="none">
+          <defs>
+            <linearGradient id="ground-undiscovered-gradient"
+              gradientUnits="userSpaceOnUse" x1="-72" y1="0" x2="1140" y2="660">
+              <stop stopColor="#233b40"/>
+              <stop offset=".5" stopColor="#1c3139"/>
+              <stop offset="1" stopColor="#112730"/>
+            </linearGradient>
+          </defs>
+          {/* The compound silhouette is painted first, covering subpixel
+              hairlines between neighboring diamonds with the SAME gradient.
+              No second geometry, object or navigational cells are exposed. */}
+          <path data-testid="ground-undiscovered-continuous-field"
+            d={sceneTiles.filter(cell=>!displayedFog.explored.has(cell.key))
+              .map(cell=>'M'+tileShape(cell.x,cell.y).trim()
+                .replace(/\\s+/g,'L')+'Z').join(' ')}
+            fill="url(#ground-undiscovered-gradient)"
+            pointerEvents="none"/>
           {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>{
             const remembered=displayedFog.explored.has(cell.key);
-            const center=tile(cell.x,cell.y);
-            const shade=(cell.x*17+cell.y*29)%4;
-            const colors=['#1a3037','#21363a','#1d3237','#243b3f'];
             return <g key={cell.key} data-fog-terrain={cell.key}>
               <polygon data-fog-cell={cell.key}
                 data-fog-state={remembered?'remembered':'unknown'}
                 points={tileShape(cell.x,cell.y)}
-                fill={remembered?'#25434a':colors[shade]}
+                fill={remembered?'#25434a':'url(#ground-undiscovered-gradient)'}
                 fillOpacity={remembered?.60:1}
                 stroke="#8aaba4" strokeOpacity={remembered?.045:0}
                 strokeWidth="1" />
-              {!remembered && shade===0 && <>
-                <path d={`M${center.x-32} ${center.y-2}
-                  L${center.x-9} ${center.y-12}
-                  L${center.x+12} ${center.y-2}
-                  L${center.x+29} ${center.y+3}`}
-                  fill="none" stroke="#78958b" strokeWidth="1.4" opacity=".18"/>
-                <path d={`M${center.x-24} ${center.y+5}
-                  L${center.x-8} ${center.y+11}
-                  L${center.x+17} ${center.y+3}`}
-                  fill="none" stroke="#0b242e" strokeWidth="2.2" opacity=".36"/>
-              </>}
             </g>;
           })}
         </g>
