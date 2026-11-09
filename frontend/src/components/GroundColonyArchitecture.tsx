@@ -87,6 +87,8 @@ function GroundWarehouseBlock({known,visible}:{
      {x:d.x-3,y:d.y+57},{x:c.x+4,y:c.y+57},
      {x:b.x+5,y:b.y+57},{x:a.x-4,y:a.y+57},
    ])} fill="#081d26" opacity=".48"/>
+   <path d={poly([a,b,c,d])} fill="url(#ground-warehouse-roof)"
+     stroke="#c3b99b" strokeWidth="3"/>
    <path d={returnWall} fill="#213c45" stroke="#162b35" strokeWidth="2"/>
    <path d={wall} fill="#38545a" stroke="#1a3339" strokeWidth="2.5"/>
    {/* Horizontal continuous side paneling instead of per-cell boxed walls. */}
@@ -102,8 +104,9 @@ function GroundWarehouseBlock({known,visible}:{
        fill="#1a343e"/>
      <path d={facade(u,u+.2,35,39)} fill="#bba379"/>
    </g>)}
-   <path d={poly([a,b,c,d])} fill="url(#ground-warehouse-roof)"
-     stroke="#c3b99b" strokeWidth="3"/>
+   {/* Front eave stays visible above the glass even with deep roof shadow. */}
+   <path d={'M'+d.x+' '+d.y+'L'+c.x+' '+c.y}
+     stroke="#c3b99b" strokeWidth="3" fill="none"/>
    {/* One continuous roof spine, service markings, and real-looking vents. */}
    <path d={'M'+(a.x-9)+' '+(a.y+14)+'L'+(b.x-9)+' '+(b.y+14)}
      stroke="#243d46" strokeWidth="6" fill="none"/>
