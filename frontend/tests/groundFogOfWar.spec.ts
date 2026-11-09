@@ -30,6 +30,34 @@ for(const width of [390,1280]){
   await page.getByTestId('ground-camera-toggle').click();
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-fog-layer')).toHaveCount(1);
+  // Base terrain is now continuous *behind* the authoritative fog, while the
+  // exact same cell polygons remain as the only selectable world positions.
+  const material=await board.evaluate(root=>{
+    const byId=(id:string)=>root.querySelector('[data-cell-id="'+id+'"]');
+    const all=[...root.querySelectorAll('polygon[data-cell-id]')];
+    return {
+      tiles:all.length,
+      west:byId('4,4')?.getAttribute('fill'),
+      neighboring:byId('5,4')?.getAttribute('fill'),
+      east:byId('14,5')?.getAttribute('fill'),
+      wall:byId('15,2')?.getAttribute('fill'),
+      regions:[...root.querySelectorAll('[data-testid^="ground-continuous-floor-"]')]
+        .map(node=>({area:node.getAttribute('data-testid'),
+          pointer:getComputedStyle(node).pointerEvents,
+          size:node.getAttribute('d')?.length??0})),
+      gradients:[...root.querySelectorAll('linearGradient[id^="ground-continuous-"]')]
+        .map(node=>node.getAttribute('gradientUnits')),
+    };
+  });
+  expect(material.tiles).toBe(216);
+  expect(material.west).toBe('url(#ground-continuous-colony)');
+  expect(material.neighboring).toBe(material.west);
+  expect(material.east).toBe('url(#ground-continuous-outside)');
+  expect(material.wall).toBe('url(#ground-continuous-wallstone)');
+  expect(material.regions).toHaveLength(2);
+  expect(material.regions.every(x=>x.pointer==='none'&&x.size>200)).toBe(true);
+  expect(material.gradients).toEqual(['userSpaceOnUse','userSpaceOnUse','userSpaceOnUse']);
+
   await expect(board.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','unknown');
   // The never-explored sector is one continuous, opaque world-space
   // atmosphere: no per-cell palette revealing an obvious checkerboard.
