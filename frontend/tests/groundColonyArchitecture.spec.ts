@@ -85,6 +85,23 @@ for(const width of [390,1280]) {
   await expect(unseen).toHaveAttribute('stroke-opacity','0');
   for(const id of ['probe','sensor-vault','relief-point','perimeter-uplink','beam-out'])
    await expect(page.getByTestId('ground-landmark-'+id)).toHaveCount(1);
+  // The authored science objective is now an actual volumetric receiver,
+  // not a generic icon. Its position, fog ownership and picking are unchanged.
+  const station=page.getByTestId('ground-landmark-probe');
+  const dish=station.getByTestId('ground-probe-array');
+  await expect(dish).toHaveCount(1);
+  await expect(station).toHaveAttribute('data-fog','visible');
+  const probeBounds=await dish.evaluate(node=>{
+    const rect=(node as SVGGraphicsElement).getBBox();
+    return {width:rect.width,height:rect.height,
+      passive:getComputedStyle(node).pointerEvents==='none',
+      ariaHidden:node.getAttribute('aria-hidden')==='true'};
+  });
+  expect(probeBounds.width).toBeGreaterThan(85);
+  expect(probeBounds.height).toBeGreaterThan(130);
+  expect(probeBounds.passive&&probeBounds.ariaHidden).toBe(true);
+  await expect(page.getByTestId('ground-waypoint-label-probe'))
+    .toHaveAttribute('transform','translate(76 -45)');
   await board.screenshot({path:'test-results/away-architecture-initial-'+width+'.png'});
   // The east building doesn't leak through fog; only an accepted real path
   // reveals it. Rendering must never intercept the right-click ground command.
