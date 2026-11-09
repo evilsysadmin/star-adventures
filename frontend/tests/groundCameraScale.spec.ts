@@ -54,7 +54,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
    opacity:el.getAttribute('fill-opacity'),
    pointerEvents:getComputedStyle(el.parentElement?.parentElement).pointerEvents,
  }));
- expect(['#1a3037','#21363a','#1d3237','#243b3f']).toContain(shroud.fill);
+ expect(shroud.fill).toBe('url(#ground-undiscovered-gradient)');
  expect(shroud.opacity).toBe('1');
  expect(shroud.pointerEvents).toBe('none');
  await board.screenshot({path:'test-results/away-gameplay-framing-1280.png'});
