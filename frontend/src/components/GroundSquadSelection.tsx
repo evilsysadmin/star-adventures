@@ -557,6 +557,11 @@ export function GroundSquadSelection({
             ? {x:walkPose.x,y:walkPose.y} : unit;
           const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%12 :
             walkPose?.officerId===unit.id ? walkPose.frame : 0;
+          // Camera-aligned identity plaques remain visual only; the original
+          // player selection targets and projection are unchanged.
+          const callSign=unit.name.split(' ')[0];
+          const plateWidth=Math.max(36,callSign.length*7.5+18);
+          const plateY=artReady||showWalk?-69:-40;
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
             data-officer-id={unit.id} data-proj-x={point.x} data-proj-y={point.y}
             data-grid-x={Math.round(unit.gridX)} data-grid-y={Math.round(unit.gridY)}
@@ -615,7 +620,16 @@ export function GroundSquadSelection({
             <rect data-testid={'ground-officer-hit-'+unit.id}
               x="-18" y="-56" width="36" height="57" rx="7"
               fill="transparent" pointerEvents="all" />
-            <text y={artReady || showWalk ? '-63' : '-34'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
+            <g data-testid={'ground-officer-nameplate-'+unit.id}
+              className="ground-officer-nameplate" pointerEvents="none"
+              transform={'translate(0 '+plateY+')'}>
+              <rect x={-plateWidth/2} y="-12" width={plateWidth} height="17" rx="3"
+                fill="#0b1e2a" fillOpacity=".95"
+                stroke={active?'#f0ca80':'#659aad'} strokeWidth="1"/>
+              <path d="M-3.5 5L0 9L3.5 5" fill="#0b1e2a"
+                stroke={active?'#f0ca80':'#659aad'} strokeWidth=".8"/>
+              <text y="0" textAnchor="middle" className="ground-unit-name">{callSign}</text>
+            </g>
           </g>;
         })}
       </svg>
