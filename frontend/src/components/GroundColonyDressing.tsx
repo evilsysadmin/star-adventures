@@ -2,6 +2,7 @@ import world from '../../../content/scenes/meridian.json';
 import {GroundRescueBayDeck} from './GroundRescueBayDeck';
 import {GroundServiceCorridor} from './GroundServiceCorridor';
 import {GroundServiceYard} from './GroundServiceYard';
+import {GroundColonyWidePlaza} from './GroundColonyWidePlaza';
 
 // Original vector set dressing in the approved colony/away-team direction.
 // Every detail is scenery; authoritative terrain, paths and collisions still
@@ -14,7 +15,7 @@ const structuralWalls=new Set(scene.walls.map(p=>key(p.x,p.y)));
 const cells=Array.from({length:scene.height},(_,y)=>
  Array.from({length:scene.width},(_,x)=>({x,y}))).flat();
 const lights=[[2,3],[3,5],[5,2],[6,6],[7,4],[9,4],[11,6]];
-const cargo=scene.walls.filter(p=>[[10,2],[10,6],[4,8]].some(
+const cargo=scene.walls.filter(p=>[[10,2],[10,6],[4,8],[15,7],[16,9]].some(
  ([x,y])=>p.x===x&&p.y===y));
 const rails=scene.walls.filter(p=>(
  (p.y===0&&p.x>0&&p.x<scene.width-1&&p.x%2===1)||
@@ -78,6 +79,7 @@ export function GroundColonyFloor({explored,visible}:Vision){
   })}
   {/* The first connected room footprint is the floor beneath route and
        obstacle dressing, never a second source of movement geometry. */}
+  <GroundColonyWidePlaza explored={explored} visible={visible}/>
   <GroundRescueBayDeck explored={explored} visible={visible}/>
   {/* The exterior apron continues the real service-gate topology; the
        corridor stays above it so the gateway threshold remains legible. */}
