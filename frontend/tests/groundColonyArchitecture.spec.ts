@@ -102,6 +102,25 @@ for(const width of [390,1280]) {
   expect(probeBounds.passive&&probeBounds.ariaHidden).toBe(true);
   await expect(page.getByTestId('ground-waypoint-label-probe'))
     .toHaveAttribute('transform','translate(76 -45)');
+  // Real browser paint order: ground fog must NOT amputate a discovered
+  // tall mast into a free-floating dish. Officers still render last.
+  const stationLayer=await board.evaluate(root=>{
+    const fog=root.querySelector('[data-testid="ground-fog-layer"]');
+    const stations=root.querySelector('[data-testid="ground-outpost-landmarks"]');
+    const unit=root.querySelector('[data-testid="ground-unit-venn"]');
+    return {
+      stationsAfterFog:!!fog&&!!stations&&
+        Boolean(fog.compareDocumentPosition(stations)&Node.DOCUMENT_POSITION_FOLLOWING),
+      unitsAfterStations:!!stations&&!!unit&&
+        Boolean(stations.compareDocumentPosition(unit)&Node.DOCUMENT_POSITION_FOLLOWING),
+      noExtraPickTargets:stations?.querySelectorAll('[data-cell-id],[data-officer-id]').length===0,
+      fogStillPresent:!!fog,
+    };
+  });
+  expect(stationLayer).toEqual({
+    stationsAfterFog:true,unitsAfterStations:true,
+    noExtraPickTargets:true,fogStillPresent:true,
+  });
   await board.screenshot({path:'test-results/away-architecture-initial-'+width+'.png'});
   // The east building doesn't leak through fog; only an accepted real path
   // reveals it. Rendering must never intercept the right-click ground command.
