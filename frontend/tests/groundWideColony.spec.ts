@@ -43,6 +43,16 @@ for(const width of [390,1280]){
   await orderCell(page,15,5);
   await expect(page.getByTestId('ground-plaza-floor-15,5'))
     .toHaveAttribute('data-fog','visible');
+  // Three adjacent canonical obstacles become ONE explored industrial bay.
+  // No separate box-art remains, while the original blocked cell IDs exist.
+  const hangar=page.getByTestId('ground-colony-industrial-bay');
+  await expect(hangar).toHaveAttribute('data-footprint','14,2 15,2 16,2');
+  await expect(hangar).toHaveAttribute('pointer-events','none');
+  for(const id of ['14,2','15,2','16,2']){
+    await expect(page.getByTestId('ground-architecture-wall-'+id)).toHaveCount(0);
+    await expect(board.locator('[data-cell-id="'+id+'"]')).toHaveCount(1);
+  }
+
   await expect(page.getByTestId('ground-plaza-light-15,4'))
     .toHaveAttribute('data-fog','visible');
   await expect(page.getByTestId('ground-landmark-sensor-vault')).toHaveCount(1);
@@ -57,7 +67,8 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-unit-venn'))
     .toHaveAttribute('data-grid-y','5');
   await expect(page.getByTestId('ground-plaza-floor-15,5'))
-    .toHaveAttribute('data-fog','visible');
+    .toHaveAttribute('data-fog','visible');  await expect(page.getByTestId('ground-colony-industrial-bay')).toHaveCount(1);
+
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
     .toBe(true);
  });
