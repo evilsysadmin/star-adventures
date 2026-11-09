@@ -202,8 +202,12 @@ export function GroundArchiveVolume3D({explored,visible}:Vision){
     setStatus('ready');
     return ()=>{
       disposeArt();
+      // React.StrictMode intentionally replays effects on initial mount.
+      // Force-losing this canvas context would make the second WebGLRenderer
+      // fail even though the ground scene and saved session are valid.
+      // Disposing GPU resources is sufficient; the browser owns canvas loss
+      // when the real DOM node is removed on navigation or page reload.
       renderer.dispose();
-      renderer.forceContextLoss();
     };
   },[known]);
   return <foreignObject data-testid="ground-archive-volume-3d"
