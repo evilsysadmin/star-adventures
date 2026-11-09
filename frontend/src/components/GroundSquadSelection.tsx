@@ -5,6 +5,7 @@ import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
+import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
@@ -414,6 +415,9 @@ export function GroundSquadSelection({
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
           stroke="#a8b6a1" strokeOpacity=".045" strokeWidth="1" />)}
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
+        {/* Optional world-space 3D volume: the SVG tiles/units remain authoritative,
+            and the original vector architecture remains a graphics fallback. */}
+        <GroundArchiveVolume3D explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyWalls explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
