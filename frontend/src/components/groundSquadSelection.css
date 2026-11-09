@@ -143,4 +143,4 @@
 /* Explored-but-out-of-sight is a dark, remembered solid environment rather
    than transparent wireframe debris. Unknown cells remain fully shrouded.
    Paint properties only: no heavy CSS filters per tile, no pointer changes. */
-.ground-squad-board [data-fog="remembered"]{opacity:.68}
+[data-testid="ground-squad-board"] [data-fog="remembered"]{opacity:.68}
