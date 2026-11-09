@@ -22,11 +22,11 @@ for (const width of [390, 1280]) {
       // fullscreen stage. Test the actual follow/full-map interaction here;
       // the immersive camera dimensions have their own browser gate.
       const board = page.getByTestId('ground-squad-board');
-      await expect(board).not.toHaveAttribute('viewBox', '0 0 1120 550');
+      await expect(board).not.toHaveAttribute('viewBox', '-72 0 1280 640');
       await page.getByTestId('ground-camera-toggle').click();
-      await expect(board).toHaveAttribute('viewBox', '0 0 1120 550');
+      await expect(board).toHaveAttribute('viewBox', '-72 0 1280 640');
       await page.getByTestId('ground-camera-toggle').click();
-      await expect(board).not.toHaveAttribute('viewBox', '0 0 1120 550');
+      await expect(board).not.toHaveAttribute('viewBox', '-72 0 1280 640');
     }
     await expect(page.getByTestId('ground-unit-venn')).toBeVisible();
     await expect(page.getByTestId('ground-unit-dorn')).toBeVisible();
