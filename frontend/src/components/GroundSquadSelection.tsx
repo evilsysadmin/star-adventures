@@ -198,6 +198,14 @@ export function GroundSquadSelection({
   // perimeter. Move the *camera frame*, not the ground projection / picking.
   const fullFrame=groundSurfaceFrame(scene.width,scene.height);
   const fullWidth=fullFrame.width, fullHeight=fullFrame.height;
+  // Only offer a regional close-up where the squad has legitimately mapped
+  // some ground. A wholly unknown sector would otherwise render as an empty
+  // black viewport, misleading players into thinking the camera is broken.
+  const sectorDiscovered=(lo:number,hi:number)=>
+    [...displayedFog.explored].some(position=>{
+      const x=Number(position.split(',')[0]);
+      return Number.isFinite(x)&&x>=lo&&x<=hi;
+    });
   const sectorMode=compact&&!followSquad&&overviewSector!=='all';
   const focused=compact&&followSquad;
   // Sector coordinates are *camera targets*, never newly revealed stations
@@ -423,8 +431,12 @@ export function GroundSquadSelection({
           onChange={event=>setOverviewSector(event.target.value as 'all'|'west'|'center'|'east')}>
           <option value="all">Todo el mapa</option>
           <option value="west">Zona oeste</option>
-          <option value="center">Zona central</option>
-          <option value="east">Zona este</option>
+          <option value="center" disabled={!sectorDiscovered(7,11)}>
+            Zona central
+          </option>
+          <option value="east" disabled={!sectorDiscovered(12,scene.width-1)}>
+            Zona este
+          </option>
         </select>
       </label>}
     </div>}
