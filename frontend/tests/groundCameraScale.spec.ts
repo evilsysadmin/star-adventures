@@ -138,7 +138,12 @@ for(const width of [390,430]){
   // Unknown regions cannot masquerade as an empty/broken viewport.
   // The option unlocks ONLY once the squad actually charts that sector.
   await expect(sectors.locator('option[value="west"]')).toBeEnabled();
-  await expect(sectors.locator('option[value="east"]')).toBeDisabled();
+  // Chromium's accessibility-enabled state for <option> is not always
+  // identical to the native HTML disabled flag. Assert the actual browser
+  // property AND serialized attribute instead of a misleading role matcher.
+  const eastOption=sectors.locator('option[value="east"]');
+  await expect(eastOption).toHaveAttribute('disabled','');
+  expect(await eastOption.evaluate(node=>(node as HTMLOptionElement).disabled)).toBe(true);
   const initial=await squad.getAttribute('data-grid-x');
   await sectors.selectOption('west');
   const west=await board.evaluate(node=>{
@@ -178,7 +183,8 @@ for(const width of [390,430]){
   await expect(squad).toHaveAttribute('data-grid-x','15');
   await expect(squad).toHaveAttribute('data-grid-y','5');
   await expect(squad).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
-  await expect(sectors.locator('option[value="east"]')).toBeEnabled();
+  await expect(eastOption).not.toHaveAttribute('disabled');
+  expect(await eastOption.evaluate(node=>(node as HTMLOptionElement).disabled)).toBe(false);
   await sectors.selectOption('east');
   const east=await board.evaluate(node=>{
     const svg=node as SVGSVGElement,v=svg.viewBox.baseVal,r=svg.getBoundingClientRect();
