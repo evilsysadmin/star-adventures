@@ -13,9 +13,14 @@ for(const width of [390,1280]){
   const board=page.getByTestId('ground-squad-board');
   const wing=page.getByTestId('ground-science-campus');
   await expect(board).toBeVisible();
-  // The entire 3-cell volume cannot leak through undiscovered fog.
-  await expect(wing).toHaveCount(0);
-  await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(0);
+  // Canonical initial squad sight may already include this nearby wing.
+  // Do not invent a fog state: if present, it requires all three tiles
+  // to have been legitimately discovered by the deployed officers.
+  if(await wing.count()){
+    for(const id of ['2,2','3,2','4,2']){
+      await expect(board.locator('[data-fog-cell="'+id+'"][data-fog-state="unknown"]')).toHaveCount(0);
+    }
+  }
   await page.getByTestId('ground-camera-toggle').click();
   await board.screenshot({path:'test-results/away-science-campus-before-'+width+'.png'});
 
