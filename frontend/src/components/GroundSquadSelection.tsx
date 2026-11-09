@@ -474,7 +474,9 @@ export function GroundSquadSelection({
             data-walk-phase={moving?'moving':'idle'} data-walk-frame={frame}
             data-walk-atlas-ready={readyWalk.has(unit.id)}
             transform={'translate(' + point.x + ' ' + point.y + ')'}
-            className={active ? 'ground-unit is-selected' : 'ground-unit'}>
+            className={active
+              ? 'ground-unit is-selected'+(selected[0]===unit.id?' is-selection-leader':'')
+              : 'ground-unit'}>
             <circle r="27" cy="-7" fill="transparent" />
             <ellipse rx="18" ry="8" cy="10" fill="#081821" opacity=".85" />
             <ellipse rx="22" ry="10" cy="9" fill="none" stroke={active ? '#e8ca82' : '#69949b'}
