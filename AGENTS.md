@@ -2,6 +2,12 @@
 
 This is an independent ShadowOps game. Follow these rules for every repository change.
 
+## GitHub account routing (mandatory)
+
+- For every operation on `evilsysadmin/*` repositories (reads, writes, PRs, checks, merges, workflows), explicitly select the connected GitHub account named **ShadowOps** (profile `evilsysadmin`). If a tool exposes `link_id`, use the **current session's** identifier advertised for `link_name: ShadowOps`; do not omit it when multiple accounts are connected.
+- The **Nullforge** connection (profile `nullforgeops`) is separate. Never use it for ShadowOps or silently fall back to it. If ShadowOps fails, verify the account-specific link selection and report the blocker rather than assuming GitHub is disconnected.
+- Verify the repository owner/name before acting. Never persist a `link_id`, OAuth token or other credentials in Git; connection identifiers may change after reconnection.
+
 ## Product
 - Build one complete playable episode before generating more sectors, ships or lore.
 - Exploration, science and diplomacy must be real alternatives to combat.
