@@ -126,6 +126,39 @@ for(const width of [390,1280]){
   expect(fogMaterial.worldSpace).toBe('userSpaceOnUse');
   expect(fogMaterial.unionPathLength).toBeGreaterThan(300);
 
+  // The undiscovered perimeter must not outline a floating island:
+  // surround and hidden tiles share the exact world-space paint.
+  const seam=await board.evaluate(root=>{
+    const surround=root.querySelector('[data-testid="ground-fog-seamless-surround"]');
+    const unknown=root.querySelector('[data-fog-state="unknown"]');
+    const gradient=root.querySelector('#ground-undiscovered-gradient');
+    const haze=root.querySelector('[data-testid="ground-shared-atmospheric-haze"]');
+    const pick=root.querySelector('polygon[data-cell-id]');
+    const fog=root.querySelector('[data-testid="ground-fog-layer"]');
+    const backdrop=root.querySelector('[data-testid="ground-planet-backdrop"]');
+    return {
+      matchingFill:surround?.getAttribute('fill')===unknown?.getAttribute('fill'),
+      fullBleed:surround?.getAttribute('x')==='-72'&&
+        surround?.getAttribute('width')==='1280'&&
+        surround?.getAttribute('height')==='640',
+      sameWorldCoords:gradient?.getAttribute('gradientUnits')==='userSpaceOnUse',
+      passive:surround?getComputedStyle(surround).pointerEvents==='none':false,
+      hazePassive:haze?getComputedStyle(haze).pointerEvents==='none':false,
+      hazeNoTargets:haze?.querySelectorAll('[data-cell-id],[data-fog-cell],[data-officer-id]').length===0,
+      afterBackdrop:!!surround&&!!backdrop&&
+        Boolean(backdrop.compareDocumentPosition(surround)&Node.DOCUMENT_POSITION_FOLLOWING),
+      beforePicking:!!surround&&!!pick&&
+        Boolean(surround.compareDocumentPosition(pick)&Node.DOCUMENT_POSITION_FOLLOWING),
+      weatherAfterFog:!!fog&&!!haze&&
+        Boolean(fog.compareDocumentPosition(haze)&Node.DOCUMENT_POSITION_FOLLOWING),
+    };
+  });
+  expect(seam).toEqual({
+    matchingFill:true,fullBleed:true,sameWorldCoords:true,
+    passive:true,hazePassive:true,hazeNoTargets:true,
+    afterBackdrop:true,beforePicking:true,weatherAfterFog:true,
+  });
+
   await expect(page.getByTestId('ground-scenery-crystal-5')).toHaveAttribute('visibility','hidden');
   await board.screenshot({path:'test-results/away-fog-unknown-'+width+'.png'});
 
