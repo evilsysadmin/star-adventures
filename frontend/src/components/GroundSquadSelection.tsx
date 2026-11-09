@@ -164,6 +164,9 @@ export function GroundSquadSelection({
   const [compact, setCompact] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches);
   const [followSquad, setFollowSquad] = useState(true);
+  // Optional, camera-only inspection of a wide colony on portrait screens.
+  // "Mapa completo" stays genuinely complete; sector views are explicit.
+  const [overviewSector,setOverviewSector]=useState<'all'|'west'|'center'|'east'>('all');
   // The tactical SVG must match the actual, flex-sized viewport aspect.
   // Otherwise xMidYMid letterboxes the entire scene on wide desktop displays,
   // making both the buildings and the actual officer atlases look tiny.
@@ -195,25 +198,32 @@ export function GroundSquadSelection({
   // perimeter. Move the *camera frame*, not the ground projection / picking.
   const fullFrame=groundSurfaceFrame(scene.width,scene.height);
   const fullWidth=fullFrame.width, fullHeight=fullFrame.height;
-  const focused = compact && followSquad;
-  // Fill the *actual* map viewport, not a 440×300 strip letterboxed in
-  // portrait. Mobile follows a narrower part of the authored surface;
-  // "Mapa completo" remains an explicit, un-cropped overview.
+  const sectorMode=compact&&!followSquad&&overviewSector!=='all';
+  const focused=compact&&followSquad;
+  // Sector coordinates are *camera targets*, never newly revealed stations
+  // or authored map geometry. Each uses only the existing canonical tile
+  // projection and may be selected even while wholly unexplored.
+  const sectorCenter=overviewSector==='west' ? tile(3,5)
+    : overviewSector==='center' ? tile(8,5)
+    : overviewSector==='east' ? tile(14,6) : cameraCenter;
+  const viewCenter=sectorMode ? sectorCenter : cameraCenter;
+  // Fill the *actual* map viewport, not a letterboxed preview.
+  // "Mapa completo" remains an explicit, entirely un-cropped overview.
   const aspect = viewportSize.width / viewportSize.height;
   // Frame the *playable* surroundings, not almost the whole unknown board.
   // Keep the exact isometric projection/picking and separate complete overview.
   // Portrait retains enough lateral context to issue touch orders.
-  const cameraHeight = focused
+  const cameraHeight = focused||sectorMode
     ? 520
     : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
     ? fullFrame.left+Math.round((fullWidth-cameraWidth)/2)
     : Math.max(fullFrame.left, Math.min(fullFrame.left+fullWidth-cameraWidth,
-        Math.round(cameraCenter.x-cameraWidth/2)));
+        Math.round(viewCenter.x-cameraWidth/2)));
   const cameraY = Math.max(fullFrame.top, Math.min(fullFrame.top+fullHeight-cameraHeight,
-    Math.round(cameraCenter.y-cameraHeight*.56)));
-  const cameraView = !followSquad
+    Math.round(viewCenter.y-cameraHeight*.56)));
+  const cameraView = !followSquad&&!sectorMode
     ? fullFrame.left+' '+fullFrame.top+' '+fullWidth+' '+fullHeight
     : cameraX+' '+cameraY+' '+cameraWidth+' '+cameraHeight;
   const [moveMode, setMoveMode] = useState(false);
@@ -400,11 +410,23 @@ export function GroundSquadSelection({
 
   return <div className="ground-squad" data-testid="ground-squad-selection">
     {<div className="ground-squad-viewbar">
-      <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO' : 'MAPA COMPLETO'}{realtime?' · LIBRE BETA':''}</span>
+      <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO'
+        : sectorMode ? 'SECTOR '+overviewSector.toUpperCase() : 'MAPA COMPLETO'}{realtime?' · LIBRE BETA':''}</span>
       <button type="button" data-testid="ground-camera-toggle" aria-pressed={followSquad}
-        onClick={() => setFollowSquad(value => !value)}>
+        onClick={() => { setFollowSquad(value => !value);setOverviewSector('all'); }}>
         {followSquad ? 'Mapa completo' : 'Seguir equipo'}
       </button>
+      {compact&&!followSquad&&<label className="ground-squad-sector-picker">
+        <span>Examinar</span>
+        <select data-testid="ground-map-sector" aria-label="Examinar sector del mapa"
+          value={overviewSector}
+          onChange={event=>setOverviewSector(event.target.value as 'all'|'west'|'center'|'east')}>
+          <option value="all">Todo el mapa</option>
+          <option value="west">Zona oeste</option>
+          <option value="center">Zona central</option>
+          <option value="east">Zona este</option>
+        </select>
+      </label>}
     </div>}
     <div className="ground-squad-viewport" ref={viewportRef}>
       <svg ref={svg} data-testid="ground-squad-board" viewBox={cameraView}
