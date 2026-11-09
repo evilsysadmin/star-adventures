@@ -47,6 +47,11 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-grid-x','4');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(board.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','remembered');
+  await expect(board.locator('[data-fog-cell="10,4"]'))
+    .toHaveAttribute('fill-opacity','0.6');
+  // The expanded east edge is still wholly unknown at this point.
+  await expect(board.locator('[data-fog-cell="16,10"]'))
+    .toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-fog-memory-'+width+'.png'});
 
   await page.reload();
