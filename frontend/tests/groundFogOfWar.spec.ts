@@ -30,6 +30,20 @@ for(const width of [390,1280]){
   await page.getByTestId('ground-camera-toggle').click();
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-fog-layer')).toHaveCount(1);
+  // Mission plaques are attached only to original stations and inherit
+  // their discovered/undiscovered visibility; all pass events through.
+  const waypoints=await board.evaluate(root=>
+    ['probe','sensor-vault','relief-point','perimeter-uplink','beam-out']
+      .map(id=>{
+        const station=root.querySelector('[data-testid="ground-landmark-'+id+'"]');
+        const plaque=station?.querySelector('[data-testid="ground-waypoint-label-'+id+'"]');
+        return {id,exists:!!plaque,
+          passive:plaque?getComputedStyle(plaque).pointerEvents==='none':false,
+          caption:plaque?.querySelector('text')?.textContent,
+          hidden:station?.getAttribute('visibility')==='hidden'};
+      }));
+  expect(waypoints.every(p=>p.exists&&p.passive&&!!p.caption)).toBe(true);
+  expect(waypoints.find(p=>p.id==='beam-out')?.hidden).toBe(true);
   // Base terrain is now continuous *behind* the authoritative fog, while the
   // exact same cell polygons remain as the only selectable world positions.
   const material=await board.evaluate(root=>{
