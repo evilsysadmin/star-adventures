@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent, type KeyboardE
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
+import { GroundCanyonRelief } from './GroundCanyonRelief';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
 import { groundSurfaceFrame } from '../groundSurfaceFrame';
@@ -459,6 +460,7 @@ export function GroundSquadSelection({
             realtime?pickFreePoint(event.clientX,event.clientY):null);
         }}>
         <GroundPlanetBackdrop />
+        <GroundCanyonRelief />
         <defs>
           {/* One material coordinate system across the whole explored
               installation. Tile IDs and all movement math stay identical. */}
