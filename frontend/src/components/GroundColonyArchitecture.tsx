@@ -1,4 +1,5 @@
 import world from '../../../content/scenes/meridian.json';
+import {GroundMedicalFacility} from './GroundMedicalFacility';
 
 // Original isometric colony structures. Only canonical blocked wall / station
 // cells own physical buildings. Architecture is not a picking surface.
@@ -406,25 +407,8 @@ function StationGeometry({id}:{id:string}){
   <path d="M-5 -65V-78M5 -65V-78" stroke="#9bb7b3" strokeWidth="2"/>
   <circle cy="-79" r="3" fill="#e6c58c"/>
  </>;
- if(id==='relief-point')return <>
-  <ellipse cy="10" rx="39" ry="16" fill="#061b23" opacity=".7"/>
-  <path d="M-35 -3 0 -20 35 -3 0 16Z" fill="#4c6061"
-    stroke="#c3b993" strokeWidth="2.3"/>
-  <path d="M-32 -2V-31L0 -48V-19Z" fill="#7a7770"/>
-  <path d="M0 -19V-48L32 -31V-2Z" fill="#384d53"/>
-  <path d="M-38 -32 0 -54 38 -32 0 -12Z" fill="#9f9b87"
-    stroke="#e0cda2" strokeWidth="2.4"/>
-  <path d="M-34 -31 0 -50 34 -31" stroke="#c6a774" strokeWidth="3"/>
-  <path d="M13 -34 27 -27V-11L13 -18Z" fill="#172d38"
-    stroke="#a3b7b3" strokeWidth="1.5"/>
-  <path d="M-22 -17 -7 -25V-6L-22 2Z" fill="#152f39"
-    stroke="#9dd5c8" strokeWidth="1.4"/>
-  <path d="M0 -44V-27M-9 -35H9" stroke="#fff0d5" strokeWidth="5"/>
-  <path d="M-37 -31 -43 -25M37 -31 43 -25"
-    stroke="#a6b8ae" strokeWidth="2.5"/>
-  <circle cx="28" cy="-36" r="3" fill="#ffb67d"/>
- </>;
- if(id==='probe')return <>
+ if(id==='relief-point')return <GroundMedicalFacility/>;
+  if(id==='probe')return <>
   <ellipse cy="8" rx="37" ry="14" fill="#071820" opacity=".75"/>
   <path d="M-29 -2 0 -18 29 -2 0 14Z" fill="#4a686b"
     stroke="#c1c9ad" strokeWidth="2"/>
@@ -483,9 +467,10 @@ export function GroundColonyStations({explored,visible}:Vision){
    const p=at(object.x,object.y);
    const caption=labels[object.id]??object.label;
    const plaqueWidth=Math.max(52,caption.length*7.8+18);
-   const plaqueX=object.id==='sensor-vault'?54:object.id==='probe'?18:0;
+   const plaqueX=object.id==='sensor-vault'?54:object.id==='probe'?18:
+     object.id==='relief-point'?60:0;
    const plaqueY=object.id==='sensor-vault'?-38:object.id==='probe'?-47:
-     object.id==='relief-point'?-59:object.id==='perimeter-uplink'?39:37;
+     object.id==='relief-point'?-85:object.id==='perimeter-uplink'?39:37;
    return <g key={object.id} data-testid={'ground-landmark-'+object.id}
      data-fog={inSight?'visible':known?'remembered':'unknown'}
      visibility={known?'visible':'hidden'} opacity={inSight?1:.34}
