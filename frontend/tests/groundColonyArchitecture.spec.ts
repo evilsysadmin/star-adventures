@@ -65,7 +65,17 @@ for(const width of [390,1280]) {
   await expect(page.getByTestId('ground-colony-facade-8,2-to-8,3')).toHaveCount(0);
   await expect(page.getByTestId('ground-colony-roof-deck-8,1-to-8,2')).toHaveCount(0);
   await expect(page.getByTestId('ground-outpost-landmarks')).toHaveCount(1);
-  await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(1);
+  // The same physically blocked middle wall is now part of a single
+  // Archive–Sonda wing. Verify both the shared real footprint and the
+  // absence of a duplicate little building on that wall tile.
+  const scienceWing=page.getByTestId('ground-science-campus');
+  await expect(scienceWing).toHaveAttribute('data-footprint','2,2 3,2 4,2');
+  await expect(scienceWing).toHaveAttribute('pointer-events','none');
+  await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(0);
+  for(const id of ['2,2','3,2','4,2']){
+    await expect(board.locator('[data-cell-id="'+id+'"]')).toHaveCount(1);
+    await expect(board.locator('[data-fog-cell="'+id+'"][data-fog-state="unknown"]')).toHaveCount(0);
+  }
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveCount(0);
   // Unknown ground is genuinely opaque: no misleading checkerboard contours
   // or hints of unrevealed obstacles remain in the dark part of the scene.
