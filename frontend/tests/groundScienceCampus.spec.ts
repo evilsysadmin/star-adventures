@@ -25,9 +25,11 @@ for(const width of [390,1280]){
   await board.screenshot({path:'test-results/away-science-campus-before-'+width+'.png'});
 
   // Move the REAL selected officer. No test-only sensor reveal or teleport.
-  await board.locator('[data-cell-id="3,3"]').click({button:'right'});
-  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','3');
-  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','3');
+  // 3,3 is visually overlapped by another officer in this isometric view;
+  // 2,4 has a genuine unobstructed hit point and sight to all three cells.
+  await board.locator('[data-cell-id="2,4"]').click({button:'right'});
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','2');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','4');
   await expect(page.getByTestId('ground-unit-venn'))
     .toHaveAttribute('data-walk-phase','idle',{timeout:25_000});
 
@@ -42,8 +44,8 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-probe')).toHaveCount(1);
   await board.screenshot({path:'test-results/away-science-campus-revealed-'+width+'.png'});
   await page.reload();
-  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','3');
-  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','3');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','2');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','4');
   await expect(page.getByTestId('ground-science-campus')).toHaveCount(1);
   await expect(page.getByTestId('ground-landmark-sensor-vault')).toHaveCount(1);
   await expect(page.getByTestId('ground-landmark-probe')).toHaveCount(1);
