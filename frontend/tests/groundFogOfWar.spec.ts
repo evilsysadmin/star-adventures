@@ -31,6 +31,30 @@ for(const width of [390,1280]){
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-fog-layer')).toHaveCount(1);
   await expect(board.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','unknown');
+  // The never-explored sector is one continuous, opaque world-space
+  // atmosphere: no per-cell palette revealing an obvious checkerboard.
+  const continuous=page.getByTestId('ground-undiscovered-continuous-field');
+  await expect(continuous).toHaveAttribute('fill','url(#ground-undiscovered-gradient)');
+  await expect(continuous).toHaveAttribute('pointer-events','none');
+  const fogMaterial=await board.evaluate(root=>{
+    const cells=[...root.querySelectorAll('[data-fog-state="unknown"]')];
+    const gradient=root.querySelector('#ground-undiscovered-gradient');
+    const field=root.querySelector('[data-testid="ground-undiscovered-continuous-field"]');
+    return {
+      count:cells.length,
+      fills:[...new Set(cells.map(cell=>cell.getAttribute('fill')))],
+      opaque:cells.every(cell=>cell.getAttribute('fill-opacity')==='1'&&
+        cell.getAttribute('stroke-opacity')==='0'),
+      worldSpace:gradient?.getAttribute('gradientUnits'),
+      unionPathLength:field?.getAttribute('d')?.length??0,
+    };
+  });
+  expect(fogMaterial.count).toBeGreaterThan(40);
+  expect(fogMaterial.fills).toEqual(['url(#ground-undiscovered-gradient)']);
+  expect(fogMaterial.opaque).toBe(true);
+  expect(fogMaterial.worldSpace).toBe('userSpaceOnUse');
+  expect(fogMaterial.unionPathLength).toBeGreaterThan(300);
+
   await expect(page.getByTestId('ground-scenery-crystal-5')).toHaveAttribute('visibility','hidden');
   await board.screenshot({path:'test-results/away-fog-unknown-'+width+'.png'});
 
