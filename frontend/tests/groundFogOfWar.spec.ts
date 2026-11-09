@@ -30,6 +30,29 @@ for(const width of [390,1280]){
   await page.getByTestId('ground-camera-toggle').click();
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-fog-layer')).toHaveCount(1);
+  // Canyon geology is scenery, never a fake tile, hidden-object leak,
+  // station or input target. Its SVG painter order is behind the real map.
+  const canyon=await board.evaluate(root=>{
+    const geology=root.querySelector('[data-testid="ground-canyon-relief"]');
+    const ground=root.querySelector('polygon[data-cell-id]');
+    const bg=root.querySelector('[data-testid="ground-planet-backdrop"]');
+    const direct=[...root.children];
+    return {
+      present:!!geology,
+      passive:geology?getComputedStyle(geology).pointerEvents==='none':false,
+      excluded:geology?.getAttribute('aria-hidden')==='true',
+      nonInteractive:geology?.querySelectorAll(
+        '[data-cell-id],[data-fog-cell],[data-testid^="ground-landmark-"],button,a'
+      ).length===0,
+      behindTiles:!!ground&&!!geology&&geology.compareDocumentPosition(ground)&Node.DOCUMENT_POSITION_FOLLOWING,
+      afterBackdrop:!!bg&&!!geology&&
+        direct.indexOf(geology)>direct.indexOf(bg),
+      gradients:geology?.querySelectorAll('linearGradient').length,
+    };
+  });
+  expect(canyon.present&&canyon.passive&&canyon.excluded&&canyon.nonInteractive).toBe(true);
+  expect(Boolean(canyon.behindTiles)&&canyon.afterBackdrop).toBe(true);
+  expect(canyon.gradients).toBeGreaterThanOrEqual(4);
   // Mission plaques are attached only to original stations and inherit
   // their discovered/undiscovered visibility; all pass events through.
   const waypoints=await board.evaluate(root=>
