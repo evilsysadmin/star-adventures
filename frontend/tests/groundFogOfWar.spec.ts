@@ -30,6 +30,31 @@ for(const width of [390,1280]){
   await page.getByTestId('ground-camera-toggle').click();
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-fog-layer')).toHaveCount(1);
+  // The new medical volume is *only* an authored relief-point visual.
+  // It inherits station discovery and never creates a new pick target.
+  const medical=await board.evaluate(root=>{
+    const all=[...root.querySelectorAll('[data-testid^="ground-landmark-"]')];
+    const station=root.querySelector('[data-testid="ground-landmark-relief-point"]');
+    const volume=station?.querySelector('[data-testid="ground-medical-facility-volume"]');
+    const plaque=station?.querySelector('[data-testid="ground-waypoint-label-relief-point"]');
+    const box=(volume as SVGGElement | null)?.getBBox();
+    return {
+      totalStations:all.length,
+      exists:!!volume,
+      passive:volume?getComputedStyle(volume).pointerEvents==='none':false,
+      hiddenWhenUnknown:root.querySelector('[data-fog-cell="6,4"]')
+        ?.getAttribute('data-fog-state')!=='unknown'||
+        station?.getAttribute('visibility')==='hidden',
+      size:box?{width:box.width,height:box.height}:null,
+      originalLabel:plaque?.querySelector('text')?.textContent,
+      shift:plaque?.getAttribute('transform'),
+    };
+  });
+  expect(medical.totalStations).toBe(5);
+  expect(medical.exists&&medical.passive&&medical.hiddenWhenUnknown).toBe(true);
+  expect(medical.size?.height).toBeGreaterThan(120);
+  expect(medical.originalLabel).toBe('SOCORRO');
+  expect(medical.shift).toBe('translate(60 -85)');
   // Mission plaques are attached only to original stations and inherit
   // their discovered/undiscovered visibility; all pass events through.
   const waypoints=await board.evaluate(root=>
