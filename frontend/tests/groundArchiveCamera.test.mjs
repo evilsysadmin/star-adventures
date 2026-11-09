@@ -24,5 +24,5 @@ test('height changes rendering only; cells keep their unchanged x/z anchor',()=>
   assert.ok(Math.abs(floor.x-roof.x)<1e-8);
   assert.ok(roof.y>floor.y);
   assert.ok(Math.abs((roof.y-floor.y)*ARCHIVE_RENDER_HEIGHT/2-
-    2.5*40*Math.SQRT6)<.01);
+    2.5*20*Math.SQRT6)<.01);
 });
