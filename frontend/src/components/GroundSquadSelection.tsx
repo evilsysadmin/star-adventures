@@ -277,8 +277,15 @@ export function GroundSquadSelection({
     const local=p.matrixTransform(matrix.inverse());
     const u=(local.x-440)/40,v=(local.y-52)/20;
     const x=(u+v)/2,y=(v-u)/2;
-    return Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&
-      x<=scene.width-1&&y<=scene.height-1?{x,y}:null;
+    if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||
+      x>scene.width-1||y>scene.height-1)return null;
+    // At 390px, a full 18x12 overview grants only ~24 CSS px per tile.
+    // A pointer aimed at its center may land 0.03-0.06 tiles off-center.
+    // Quantize only near BOTH center axes; deliberate sub-cell clicks remain
+    // fractional, and every destination still passes canonical pathfinding.
+    const nearX=Math.round(x),nearY=Math.round(y);
+    return Math.abs(x-nearX)<.09&&Math.abs(y-nearY)<.09
+      ? {x:nearX,y:nearY} : {x,y};
   };
   const requestMove = (tileId: string | null, exact?:Point|null) => {
     if (!tileId || disabled) return;
