@@ -21,7 +21,7 @@ const tile=(x:number,y:number)=>{
 };
 const route=[
   [{x:9,y:4},{x:10,y:4},{x:11,y:4},{x:12,y:4},{x:13,y:4},{x:14,y:4},{x:15,y:4},{x:16,y:4}],
-  [{x:9,y:6},{x:10,y:6},{x:11,y:6},{x:12,y:6},{x:13,y:6},{x:14,y:6},{x:15,y:6},{x:16,y:6}],
+  [{x:9,y:5},{x:10,y:5},{x:11,y:5},{x:11,y:6},{x:12,y:6},{x:13,y:6},{x:14,y:6},{x:15,y:6},{x:16,y:6}],
 ].filter(path=>path.every(p=>apronKeys.has(key(p.x,p.y))));
 
 type Vision={explored:ReadonlySet<string>;visible:ReadonlySet<string>};
