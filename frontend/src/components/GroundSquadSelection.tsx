@@ -493,6 +493,13 @@ export function GroundSquadSelection({
             <ellipse rx="18" ry="8" cy="10" fill="#081821" opacity=".85" />
             <ellipse rx="22" ry="10" cy="9" fill="none" stroke={active ? '#e8ca82' : '#69949b'}
               strokeWidth={active ? 3 : 1.5} />
+            {/* Reduce art-only size to match the larger colony's building
+                scale. Keep the world pivot, selection ring and tap hitbox in
+                canonical coordinates; zoom, walking and grid picking stay
+                unchanged. */}
+            <g data-testid={'ground-officer-visible-art-'+unit.id}
+              transform="translate(0 9) scale(.76) translate(0 -9)"
+              pointerEvents="none">
             <g data-testid={'ground-officer-proxy-' + unit.id} opacity={artReady || showWalk ? 0 : 1}>
             <path d="M-12 3 L-10 -12 Q0 -20 10 -12 L12 3 Q0 10 -12 3Z"
               fill={['#9c6c4e','#607a87','#517c76'][index % 3]} stroke="#bbd0ca" strokeWidth="1.3" />
@@ -522,6 +529,7 @@ export function GroundSquadSelection({
                   Math.floor(frame/WALK_ATLAS.columns)*100+'%',
               }} />
             </foreignObject>}
+            </g>
             {/* A stable, narrow selection silhouette. SVG <g> is not itself
                 painted: its bounding-box midpoint otherwise falls through
                 transparent R2 sprite pixels onto an underlying floor tile. The
@@ -530,7 +538,7 @@ export function GroundSquadSelection({
             <rect data-testid={'ground-officer-hit-'+unit.id}
               x="-18" y="-56" width="36" height="57" rx="7"
               fill="transparent" pointerEvents="all" />
-            <text y={artReady || showWalk ? '-77' : '-42'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
+            <text y={artReady || showWalk ? '-63' : '-34'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
       </svg>
