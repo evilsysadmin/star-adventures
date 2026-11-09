@@ -446,7 +446,7 @@ export function GroundSquadSelection({
                 data-fog-state={remembered?'remembered':'unknown'}
                 points={tileShape(cell.x,cell.y)}
                 fill={remembered?'#25434a':colors[shade]}
-                fillOpacity={remembered?.86:1}
+                fillOpacity={remembered?.60:1}
                 stroke="#8aaba4" strokeOpacity={remembered?.045:0}
                 strokeWidth="1" />
               {!remembered && shade===0 && <>
