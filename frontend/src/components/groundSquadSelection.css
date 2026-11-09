@@ -144,3 +144,32 @@
    than transparent wireframe debris. Unknown cells remain fully shrouded.
    Paint properties only: no heavy CSS filters per tile, no pointer changes. */
 [data-testid="ground-squad-board"] [data-fog="remembered"]{opacity:.68}
+
+/* The fully mapped 18×12 colony cannot fill a portrait display without
+   cropping or distorting it. Offer deliberate, touch-friendly zoomed sectors
+   only when the actual full overview is open. Never add a fake mission marker. */
+.ground-squad-sector-picker{
+  display:inline-flex;align-items:center;gap:6px;min-width:0;
+  font:600 10px 'DM Sans',sans-serif;color:#b9cfc8;
+}
+.ground-squad-sector-picker select{
+  min-height:44px;max-width:160px;min-width:118px;
+  padding:7px 24px 7px 8px;border:1px solid #72999a;
+  border-radius:3px;background:#233f4a;color:#f6e8bd;
+  font:600 11px 'DM Sans',sans-serif;cursor:pointer;
+}
+.ground-squad-sector-picker select:focus-visible{
+  outline:2px solid #f0d49a;outline-offset:2px;
+}
+@media(max-width:520px){
+  .ground-squad-viewbar:has(.ground-squad-sector-picker){
+    flex-wrap:wrap;justify-content:flex-start;gap:5px 9px;
+    max-width:calc(100% - 16px);
+  }
+  .ground-squad-viewbar:has(.ground-squad-sector-picker)>span{
+    flex:1 1 100%;
+  }
+  .ground-squad-sector-picker select{
+    min-width:118px;max-width:min(46vw,160px);
+  }
+}

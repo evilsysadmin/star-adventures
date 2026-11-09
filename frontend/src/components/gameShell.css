@@ -549,3 +549,28 @@
     min-width:0;font-size:9px;
   }
 }
+
+/* The mobile map inspector docks in the empty upper-left margin, under the
+   bridge/mission controls and left of the real officer silhouettes. The old
+   horizontal layout crossed Nara's floating name on the zoomed west sector. */
+@media(max-width:520px){
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
+  .ground-squad-viewbar:has(.ground-squad-sector-picker){
+    top:124px;bottom:auto;left:8px;right:auto;
+    width:138px;max-width:calc(100% - 200px);
+    padding:4px;gap:4px;flex-direction:column;
+    align-items:stretch;flex-wrap:nowrap;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
+  .ground-squad-viewbar:has(.ground-squad-sector-picker) button{
+    min-height:42px;width:100%;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
+  .ground-squad-viewbar .ground-squad-sector-picker{
+    display:flex;width:100%;min-width:0;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
+  .ground-squad-viewbar .ground-squad-sector-picker select{
+    width:100%;min-width:0;max-width:none;min-height:44px;
+  }
+}

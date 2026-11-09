@@ -117,3 +117,106 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  });
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+for(const width of [390,430]){
+ test('mobile full map can inspect actual sectors without resizing game state '+width,async({page})=>{
+  test.setTimeout(160_000);
+  page.setDefaultTimeout(15_000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  const board=page.getByTestId('ground-squad-board');
+  const squad=page.getByTestId('ground-unit-venn');
+  await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
+  await page.getByTestId('ground-camera-toggle').click();
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+
+  const sectors=page.getByTestId('ground-map-sector');
+  await expect(sectors).toBeVisible();
+  await expect(sectors).toHaveValue('all');
+  await board.screenshot({path:'test-results/away-overview-portrait-'+width+'.png'});
+
+  // Unknown regions cannot masquerade as an empty/broken viewport.
+  // The option unlocks ONLY once the squad actually charts that sector.
+  await expect(sectors.locator('option[value="west"]')).toBeEnabled();
+  // Chromium's accessibility-enabled state for <option> is not always
+  // identical to the native HTML disabled flag. Assert the actual browser
+  // property AND serialized attribute instead of a misleading role matcher.
+  const eastOption=sectors.locator('option[value="east"]');
+  await expect(eastOption).toHaveAttribute('disabled','');
+  expect(await eastOption.evaluate(node=>(node as HTMLOptionElement).disabled)).toBe(true);
+  const initial=await squad.getAttribute('data-grid-x');
+  await sectors.selectOption('west');
+  const west=await board.evaluate(node=>{
+    const svg=node as SVGSVGElement,v=svg.viewBox.baseVal,r=svg.getBoundingClientRect();
+    return {x:v.x,y:v.y,width:v.width,height:v.height,
+      aspectError:Math.abs(v.width/v.height-r.width/r.height)};
+  });
+  expect(west.width).toBeLessThan(400);
+  expect(west.height).toBe(520);
+  expect(west.aspectError).toBeLessThan(.08);
+  await expect(squad).toHaveAttribute('data-grid-x',initial!);
+  // The inspector is docked away from the actual officer silhouette and
+  // mission briefing, including at the narrowest tested portrait width.
+  const overlaps=await page.evaluate(()=>{
+    const box=(sel:string)=>document.querySelector(sel)!.getBoundingClientRect();
+    const i=box('.ground-squad-viewbar');
+    const unit=box('[data-testid="ground-unit-venn"]');
+    const mission=box('.mission-transmission');
+    const hit=(a:DOMRect,b:DOMRect)=>a.left<b.right&&a.right>b.left&&
+      a.top<b.bottom&&a.bottom>b.top;
+    return {unit:hit(i,unit),mission:hit(i,mission)};
+  });
+  expect(overlaps).toEqual({unit:false,mission:false});
+  // A real right-click order must still select a canonical free tile after
+  // changing the world-space camera projection.
+  await board.locator('[data-cell-id="2,4"]').click({button:'right'});
+  await expect(squad).toHaveAttribute('data-grid-x','2');
+  await expect(squad).toHaveAttribute('data-grid-y','4');
+  await expect(squad).toHaveAttribute('data-walk-phase','idle',{timeout:25000});
+  await board.screenshot({path:'test-results/away-sector-west-'+width+'.png'});
+
+  await sectors.selectOption('all');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+  // Actually explore the east service yard before offering a close-up;
+  // no direct state mutation or test-only fog override is permitted.
+  await board.locator('[data-cell-id="15,5"]').click({button:'right'});
+  await expect(squad).toHaveAttribute('data-grid-x','15');
+  await expect(squad).toHaveAttribute('data-grid-y','5');
+  await expect(squad).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
+  await expect(eastOption).not.toHaveAttribute('disabled');
+  expect(await eastOption.evaluate(node=>(node as HTMLOptionElement).disabled)).toBe(false);
+  await sectors.selectOption('east');
+  const east=await board.evaluate(node=>{
+    const svg=node as SVGSVGElement,v=svg.viewBox.baseVal,r=svg.getBoundingClientRect();
+    return {x:v.x,width:v.width,height:v.height,
+      aspectError:Math.abs(v.width/v.height-r.width/r.height)};
+  });
+  expect(east.x-west.x).toBeGreaterThan(250);
+  expect(east.width).toBeLessThan(400);
+  expect(east.height).toBe(520);
+  expect(east.aspectError).toBeLessThan(.08);
+  await expect(board.locator('[data-fog-cell="15,5"]')).toHaveCount(0);
+  await expect(board.locator('[data-fog-cell="16,10"]')).toHaveAttribute('data-fog-state','unknown');
+  await board.screenshot({path:'test-results/away-sector-east-'+width+'.png'});
+
+  await sectors.selectOption('all');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+  await page.getByTestId('ground-camera-toggle').click();
+  await expect(sectors).toHaveCount(0);
+  const followed=await cameraMetrics(page);
+  expect(followed.height).toBe(520);
+  await page.reload();
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','15');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','5');
+  await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ });
+}
+
+test('desktop map remains a full, uncropped 18x12 overview without mobile sector HUD',async({page})=>{
+ await page.setViewportSize({width:1280,height:850});
+ await land(page);
+ await page.getByTestId('ground-camera-toggle').click();
+ await expect(page.getByTestId('ground-squad-board')).toHaveAttribute('viewBox','-72 0 1280 640');
+ await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
+});
