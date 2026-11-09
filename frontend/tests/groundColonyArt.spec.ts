@@ -51,6 +51,8 @@ for(const width of [390,1280]){
   await orderCell(page,4,5);
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveAttribute('data-fog','remembered');
+  await expect(page.getByTestId('ground-dressing-9,4'))
+    .toHaveCSS('opacity','0.68');
   await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveAttribute('data-fog','remembered');
   await page.reload();
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveAttribute('data-fog','remembered');
