@@ -117,3 +117,69 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  });
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+for(const width of [390,430]){
+ test('mobile full map can inspect actual sectors without resizing game state '+width,async({page})=>{
+  test.setTimeout(120_000);
+  page.setDefaultTimeout(15_000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  const board=page.getByTestId('ground-squad-board');
+  const squad=page.getByTestId('ground-unit-venn');
+  await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
+  await page.getByTestId('ground-camera-toggle').click();
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+
+  const sectors=page.getByTestId('ground-map-sector');
+  await expect(sectors).toBeVisible();
+  await expect(sectors).toHaveValue('all');
+  await board.screenshot({path:'test-results/away-overview-portrait-'+width+'.png'});
+
+  // User-selected camera sectors: they do NOT grant map knowledge or move a
+  // unit. The old complete 18x12 view remains available verbatim.
+  const initial=await squad.getAttribute('data-grid-x');
+  await sectors.selectOption('east');
+  const east=await board.evaluate(node=>{
+    const svg=node as SVGSVGElement,v=svg.viewBox.baseVal,r=svg.getBoundingClientRect();
+    return {x:v.x,y:v.y,width:v.width,height:v.height,
+      aspectError:Math.abs(v.width/v.height-r.width/r.height)};
+  });
+  expect(east.width).toBeLessThan(400);
+  expect(east.height).toBe(520);
+  expect(east.aspectError).toBeLessThan(.08);
+  await expect(board.locator('[data-fog-cell="16,10"]')).toHaveAttribute('data-fog-state','unknown');
+  await expect(squad).toHaveAttribute('data-grid-x',initial!);
+  await board.screenshot({path:'test-results/away-sector-east-'+width+'.png'});
+
+  await sectors.selectOption('west');
+  const west=await board.evaluate(node=>(node as SVGSVGElement).viewBox.baseVal.x);
+  expect(east.x-west).toBeGreaterThan(250);
+  // Picking remains real after changing world-space cameras; the accessible
+  // movement command must still reach a free cell next to the old outpost.
+  await board.locator('[data-cell-id="2,4"]').click({button:'right'});
+  await expect(squad).toHaveAttribute('data-grid-x','2');
+  await expect(squad).toHaveAttribute('data-grid-y','4');
+  await expect(squad).toHaveAttribute('data-walk-phase','idle',{timeout:25000});
+  await board.screenshot({path:'test-results/away-sector-west-'+width+'.png'});
+
+  await sectors.selectOption('all');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+  await page.getByTestId('ground-camera-toggle').click();
+  await expect(sectors).toHaveCount(0);
+  const followed=await cameraMetrics(page);
+  expect(followed.height).toBe(520);
+  await page.reload();
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','2');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','4');
+  await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ });
+}
+
+test('desktop map remains a full, uncropped 18x12 overview without mobile sector HUD',async({page})=>{
+ await page.setViewportSize({width:1280,height:850});
+ await land(page);
+ await page.getByTestId('ground-camera-toggle').click();
+ await expect(page.getByTestId('ground-squad-board')).toHaveAttribute('viewBox','-72 0 1280 640');
+ await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
+});
