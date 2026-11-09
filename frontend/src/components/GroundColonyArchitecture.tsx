@@ -481,17 +481,27 @@ export function GroundColonyStations({explored,visible}:Vision){
   {scene.objects.map(object=>{
    const id=key(object.x,object.y),known=explored.has(id),inSight=visible.has(id);
    const p=at(object.x,object.y);
+   const caption=labels[object.id]??object.label;
+   const plaqueWidth=Math.max(52,caption.length*7.8+18);
+   const plaqueX=object.id==='sensor-vault'?54:object.id==='probe'?18:0;
+   const plaqueY=object.id==='sensor-vault'?-38:object.id==='probe'?-47:
+     object.id==='relief-point'?-59:object.id==='perimeter-uplink'?39:37;
    return <g key={object.id} data-testid={'ground-landmark-'+object.id}
      data-fog={inSight?'visible':known?'remembered':'unknown'}
      visibility={known?'visible':'hidden'} opacity={inSight?1:.34}
      transform={`translate(${p.x} ${p.y})`}>
      <title>{object.label}</title>
      <StationGeometry id={object.id}/>
-     <text x={object.id==='sensor-vault'?43:object.id==='probe'?18:0}
-       y={object.id==='sensor-vault'?-38:object.id==='probe'?-47:
-         object.id==='relief-point'?-59:object.id==='perimeter-uplink'?39:37}
-       textAnchor={object.id==='sensor-vault'?'start':'middle'}
-       className="ground-landmark-name">{labels[object.id]??object.label}</text>
+     {/* Grounded waypoints, visible only through the existing station fog.
+         All labels are decorative and never intercept real picking. */}
+     <g data-testid={'ground-waypoint-label-'+object.id}
+       pointerEvents="none" transform={'translate('+plaqueX+' '+plaqueY+')'}>
+       <rect x={-plaqueWidth/2} y="-14" width={plaqueWidth} height="20" rx="3"
+         fill="#111c24" fillOpacity=".96" stroke="#ebc775" strokeWidth="1.5"/>
+       <path d="M-4 6L0 12L4 6" fill="#111c24"
+         stroke="#ebc775" strokeWidth="1"/>
+       <text x="0" y="0" textAnchor="middle" className="ground-landmark-name">{caption}</text>
+     </g>
    </g>;
   })}
  </g>;
