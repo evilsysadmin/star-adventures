@@ -139,3 +139,17 @@
   background:#415b51;color:#fff0cf}
 .ground-realtime-toggle:focus-visible{outline:2px solid #f0d49a;outline-offset:2px}
 .ground-realtime-toggle:disabled{opacity:.5;cursor:not-allowed}
+
+/* Mobile portrait: the real crew rail already identifies every officer.
+   Show one in-world name (the current order leader) instead of stacking
+   three heavy labels over the small isometric squad. This changes neither
+   selection rings nor the pointer hit geometry, and desktop keeps labels. */
+@media(max-width:520px){
+  .ground-squad-board .ground-unit:not(.is-selection-leader) .ground-unit-name{
+    visibility:hidden;
+  }
+  .ground-squad-board .ground-unit.is-selection-leader .ground-unit-name{
+    font-size:12px;
+    stroke-width:3px;
+  }
+}
