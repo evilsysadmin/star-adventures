@@ -455,14 +455,15 @@ export function GroundSquadSelection({
             pointerEvents="none"/>
           {sceneTiles.filter(cell=>!displayedFog.visible.has(cell.key)).map(cell=>{
             const remembered=displayedFog.explored.has(cell.key);
-            return <polygon key={cell.key} data-fog-terrain={cell.key}
-              data-fog-cell={cell.key}
-              data-fog-state={remembered?'remembered':'unknown'}
-              points={tileShape(cell.x,cell.y)}
-              fill={remembered?'#25434a':'url(#ground-undiscovered-gradient)'}
-              fillOpacity={remembered?.60:1}
-              stroke="#8aaba4" strokeOpacity={remembered?.045:0}
-              strokeWidth="1" />;
+            return <g key={cell.key} data-fog-terrain={cell.key}>
+              <polygon data-fog-cell={cell.key}
+                data-fog-state={remembered?'remembered':'unknown'}
+                points={tileShape(cell.x,cell.y)}
+                fill={remembered?'#25434a':'url(#ground-undiscovered-gradient)'}
+                fillOpacity={remembered?.60:1}
+                stroke="#8aaba4" strokeOpacity={remembered?.045:0}
+                strokeWidth="1" />
+            </g>;
           })}
         </g>
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
