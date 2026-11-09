@@ -13,10 +13,16 @@ const labels:Record<string,string>={
 
 // Existing adjacent wall tiles form contiguous built structures, not isolated
 // crates. The bridges are only between *two* real blocked building cells.
-const cargoKeys=new Set(['10,2','10,6','4,8']);
+const cargoKeys=new Set(['10,2','10,6','4,8','15,7','16,9']);
 const builtCells=scene.walls.filter(p=>p.x>0&&p.y>0&&
   p.x<scene.width-1&&p.y<scene.height-1&&!cargoKeys.has(key(p.x,p.y)));
 const builtKeys=new Set(builtCells.map(p=>key(p.x,p.y)));
+// The western-facing cargo annex is three adjacent *existing blocked* cells.
+// It becomes a single authored building once its complete footprint is known;
+// never infer a new traversable roof or disclose an unexplored wall.
+const warehouseFootprint=[{x:14,y:2},{x:15,y:2},{x:16,y:2}];
+const warehouseKeys=new Set(warehouseFootprint.map(p=>key(p.x,p.y)));
+const warehouseValid=warehouseFootprint.every(p=>builtKeys.has(key(p.x,p.y)));
 const roofJoins=builtCells.flatMap(p=>([[1,0],[0,1]] as const).flatMap(
  ([dx,dy])=>builtKeys.has(key(p.x+dx,p.y+dy))
   ? [{from:p,to:{x:p.x+dx,y:p.y+dy}}] : []));
@@ -34,9 +40,102 @@ const gateways=[
  !occupied.has(key(g.x-1,g.y))&&
  !occupied.has(key(g.x+1,g.y)));
 
+// One authored, three-cell industrial service hangar. The footprint consists
+// only of canonical blocked walls: x=14..16, y=2. Unlike three independent
+// cardboard modules this shares one structural roof, base, facades, lighting
+// and continuous glazing. It never offers a false door or changes picking.
+function GroundWarehouseBlock({known,visible}:{
+ known:boolean;visible:ReadonlySet<string>;
+}){
+ if(!known)return null;
+ const p0=at(14,2),p2=at(16,2);
+ const roofCorners=[
+  {x:p0.x,y:p0.y-20-60},       // far north
+  {x:p2.x+40,y:p2.y-60},       // far east
+  {x:p2.x,y:p2.y+20-60},       // front east
+  {x:p0.x-40,y:p0.y-60},       // front west
+ ];
+ const [a,b,c,d]=roofCorners;
+ const poly=(points:Array<{x:number;y:number}>)=>
+   points.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(2)+' '+p.y.toFixed(2)).join(' ')+'Z';
+ const facade=(start:number,end:number,top:number,bottom:number)=>
+   poly([start,end,end,start].map((t,i)=>({
+     x:d.x+(c.x-d.x)*t,
+     y:d.y+(c.y-d.y)*t+(i<2?top:bottom),
+   })));
+ const knownId=warehouseFootprint.map(p=>key(p.x,p.y));
+ const lit=knownId.every(k=>visible.has(k));
+ const wall=poly([d,c,{x:c.x,y:c.y+58},{x:d.x,y:d.y+58}]);
+ const returnWall=poly([b,c,{x:c.x,y:c.y+58},{x:b.x,y:b.y+58}]);
+ return <g data-testid="ground-colony-industrial-bay"
+   data-footprint="14,2 15,2 16,2" data-fog={lit?'visible':'remembered'}
+   opacity={lit?1:.65} pointerEvents="none" aria-hidden="true">
+   <defs>
+    <linearGradient id="ground-warehouse-roof" x1="0" y1="0" x2="0" y2="1">
+     <stop stopColor="#87958a"/>
+     <stop offset=".48" stopColor="#596e6b"/>
+     <stop offset="1" stopColor="#334b53"/>
+    </linearGradient>
+    <linearGradient id="ground-warehouse-glass" x1="0" y1="0" x2="0" y2="1">
+     <stop stopColor="#8ec7c0"/>
+     <stop offset=".52" stopColor="#427b83"/>
+     <stop offset="1" stopColor="#143b4e"/>
+    </linearGradient>
+   </defs>
+   {/* Contact shadow and plinth remain on the three *blocked* diamonds. */}
+   <path d={poly([
+     {x:d.x-3,y:d.y+57},{x:c.x+4,y:c.y+57},
+     {x:b.x+5,y:b.y+57},{x:a.x-4,y:a.y+57},
+   ])} fill="#081d26" opacity=".48"/>
+   <path d={poly([a,b,c,d])} fill="url(#ground-warehouse-roof)"
+     stroke="#c3b99b" strokeWidth="3"/>
+   <path d={returnWall} fill="#213c45" stroke="#162b35" strokeWidth="2"/>
+   <path d={wall} fill="#38545a" stroke="#1a3339" strokeWidth="2.5"/>
+   {/* Horizontal continuous side paneling instead of per-cell boxed walls. */}
+   {[16,39].map(delta=><path key={delta}
+    d={'M'+d.x+' '+(d.y+delta)+'L'+c.x+' '+(c.y+delta)}
+    stroke="#718981" strokeWidth="2.2" fill="none" opacity=".7"/>)}
+   {[.13,.40,.67].map((u,i)=><g key={i}>
+     <path d={facade(u,u+.2,12,32)} fill="#172f3b"
+       stroke="#9fb9b1" strokeWidth="1.8"/>
+     <path d={facade(u+.024,u+.176,15,29)}
+       fill="url(#ground-warehouse-glass)"/>
+     <path d={facade(u+.092,u+.102,13,31)}
+       fill="#1a343e"/>
+     <path d={facade(u,u+.2,35,39)} fill="#bba379"/>
+   </g>)}
+   {/* Front eave stays visible above the glass even with deep roof shadow. */}
+   <path d={'M'+d.x+' '+d.y+'L'+c.x+' '+c.y}
+     stroke="#c3b99b" strokeWidth="3" fill="none"/>
+   {/* One continuous roof spine, service markings, and real-looking vents. */}
+   <path d={'M'+(a.x-9)+' '+(a.y+14)+'L'+(b.x-9)+' '+(b.y+14)}
+     stroke="#243d46" strokeWidth="6" fill="none"/>
+   <path d={'M'+(d.x+8)+' '+(d.y-7)+'L'+(c.x+8)+' '+(c.y-7)}
+     stroke="#cfb483" strokeWidth="2.8" fill="none"/>
+   <path d={'M'+(a.x+3)+' '+(a.y+9)+'L'+(b.x+3)+' '+(b.y+9)}
+     stroke="#b5c7b9" strokeWidth="1.3" fill="none" opacity=".75"/>
+   {[0,1,2].map(i=>{
+     const x=925+i*39,y=311+i*20;
+     return <g key={i}>
+       <path d={'M'+(x-12)+' '+(y-2)+'L'+x+' '+(y-8)+'L'+(x+15)+' '+(y-1)+'L'+(x+3)+' '+(y+5)+'Z'}
+         fill="#233b46" stroke="#8caaa5" strokeWidth="1.5"/>
+       <path d={'M'+(x-7)+' '+(y-1)+'L'+(x+7)+' '+(y+6)}
+         stroke="#c7b88d" strokeWidth="1.6"/>
+     </g>;
+   })}
+   <path d={'M'+d.x+' '+(d.y+54)+'L'+c.x+' '+(c.y+54)}
+     stroke="#c6a36d" strokeWidth="4" fill="none"/>
+   <circle cx={d.x+17} cy={d.y+8} r="3.5" fill="#f2bd7c"/>
+   <circle cx={c.x-11} cy={c.y+12} r="3.5" fill="#f2bd7c"/>
+   <title>Hangar industrial sellado, fuera de la zona transitable</title>
+ </g>;
+}
+
 export function GroundColonyWalls({explored,visible}:Vision){
+ const warehouseKnown=warehouseValid&&warehouseFootprint.every(p=>explored.has(key(p.x,p.y)));
  return <g data-testid="ground-colony-walls" pointerEvents="none">
-  {builtCells.filter(p=>explored.has(key(p.x,p.y)))
+  {builtCells.filter(p=>explored.has(key(p.x,p.y))&&
+    (!warehouseKnown||!warehouseKeys.has(key(p.x,p.y))))
     .map(p=>{
      const xy=key(p.x,p.y),pos=at(p.x,p.y);
      const annex=p.x===8,service=p.x===3&&p.y===2;
@@ -74,7 +173,9 @@ export function GroundColonyWalls({explored,visible}:Vision){
     })}
   <g data-testid="ground-colony-connected-roofs">
    {roofJoins.filter(({from,to})=>
-     explored.has(key(from.x,from.y))&&explored.has(key(to.x,to.y)))
+     explored.has(key(from.x,from.y))&&explored.has(key(to.x,to.y))&&
+     (!warehouseKnown||
+       (!warehouseKeys.has(key(from.x,from.y))&&!warehouseKeys.has(key(to.x,to.y)))))
     .map(({from,to})=>{
      const start=at(from.x,from.y),end=at(to.x,to.y);
      const bothVisible=visible.has(key(from.x,from.y))&&visible.has(key(to.x,to.y));
@@ -148,6 +249,7 @@ export function GroundColonyWalls({explored,visible}:Vision){
      </g>;
     })}
   </g>
+  <GroundWarehouseBlock known={warehouseKnown} visible={visible}/>
   {/* Hollow frames sit on the two real wall ends. Both adjacent walls
        must have been explored: a glowing lintel cannot reveal hidden geometry.
        All geometry is behind officers and excluded from pointer picking. */}

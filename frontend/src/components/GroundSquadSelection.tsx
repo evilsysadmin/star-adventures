@@ -5,6 +5,8 @@ import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
+import { groundSurfaceFrame } from '../groundSurfaceFrame';
+import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
@@ -189,9 +191,10 @@ export function GroundSquadSelection({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, []);
-  // Map dimensions are the whole authored 13×10 surface; all screen hit
-  // testing still uses the SVG's actual CTM and canonical grid coordinates.
-  const fullWidth=1120, fullHeight=550;
+  // Actual 18×12 canonical terrain is larger than the original 13×10
+  // perimeter. Move the *camera frame*, not the ground projection / picking.
+  const fullFrame=groundSurfaceFrame(scene.width,scene.height);
+  const fullWidth=fullFrame.width, fullHeight=fullFrame.height;
   const focused = compact && followSquad;
   // Fill the *actual* map viewport, not a 440×300 strip letterboxed in
   // portrait. Mobile follows a narrower part of the authored surface;
@@ -205,12 +208,13 @@ export function GroundSquadSelection({
     : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
-    ? Math.round((fullWidth-cameraWidth)/2)
-    : Math.max(0, Math.min(fullWidth-cameraWidth,
+    ? fullFrame.left+Math.round((fullWidth-cameraWidth)/2)
+    : Math.max(fullFrame.left, Math.min(fullFrame.left+fullWidth-cameraWidth,
         Math.round(cameraCenter.x-cameraWidth/2)));
-  const cameraY = Math.max(0, Math.min(fullHeight-cameraHeight,
+  const cameraY = Math.max(fullFrame.top, Math.min(fullFrame.top+fullHeight-cameraHeight,
     Math.round(cameraCenter.y-cameraHeight*.56)));
-  const cameraView = !followSquad ? '0 0 1120 550'
+  const cameraView = !followSquad
+    ? fullFrame.left+' '+fullFrame.top+' '+fullWidth+' '+fullHeight
     : cameraX+' '+cameraY+' '+cameraWidth+' '+cameraHeight;
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
@@ -273,8 +277,15 @@ export function GroundSquadSelection({
     const local=p.matrixTransform(matrix.inverse());
     const u=(local.x-440)/40,v=(local.y-52)/20;
     const x=(u+v)/2,y=(v-u)/2;
-    return Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&
-      x<=scene.width-1&&y<=scene.height-1?{x,y}:null;
+    if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||
+      x>scene.width-1||y>scene.height-1)return null;
+    // At 390px, a full 18x12 overview grants only ~24 CSS px per tile.
+    // A pointer aimed at its center may land 0.03-0.06 tiles off-center.
+    // Quantize only near BOTH center axes; deliberate sub-cell clicks remain
+    // fractional, and every destination still passes canonical pathfinding.
+    const nearX=Math.round(x),nearY=Math.round(y);
+    return Math.abs(x-nearX)<.09&&Math.abs(y-nearY)<.09
+      ? {x:nearX,y:nearY} : {x,y};
   };
   const requestMove = (tileId: string | null, exact?:Point|null) => {
     if (!tileId || disabled) return;
@@ -414,6 +425,9 @@ export function GroundSquadSelection({
             (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
           stroke="#a8b6a1" strokeOpacity=".045" strokeWidth="1" />)}
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
+        {/* Optional world-space 3D volume: the SVG tiles/units remain authoritative,
+            and the original vector architecture remains a graphics fallback. */}
+        <GroundArchiveVolume3D explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyWalls explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
@@ -432,7 +446,7 @@ export function GroundSquadSelection({
                 data-fog-state={remembered?'remembered':'unknown'}
                 points={tileShape(cell.x,cell.y)}
                 fill={remembered?'#25434a':colors[shade]}
-                fillOpacity={remembered?.86:1}
+                fillOpacity={remembered?.60:1}
                 stroke="#8aaba4" strokeOpacity={remembered?.045:0}
                 strokeWidth="1" />
               {!remembered && shade===0 && <>
@@ -479,6 +493,13 @@ export function GroundSquadSelection({
             <ellipse rx="18" ry="8" cy="10" fill="#081821" opacity=".85" />
             <ellipse rx="22" ry="10" cy="9" fill="none" stroke={active ? '#e8ca82' : '#69949b'}
               strokeWidth={active ? 3 : 1.5} />
+            {/* Reduce art-only size to match the larger colony's building
+                scale. Keep the world pivot, selection ring and tap hitbox in
+                canonical coordinates; zoom, walking and grid picking stay
+                unchanged. */}
+            <g data-testid={'ground-officer-visible-art-'+unit.id}
+              transform="translate(0 9) scale(.76) translate(0 -9)"
+              pointerEvents="none">
             <g data-testid={'ground-officer-proxy-' + unit.id} opacity={artReady || showWalk ? 0 : 1}>
             <path d="M-12 3 L-10 -12 Q0 -20 10 -12 L12 3 Q0 10 -12 3Z"
               fill={['#9c6c4e','#607a87','#517c76'][index % 3]} stroke="#bbd0ca" strokeWidth="1.3" />
@@ -508,6 +529,7 @@ export function GroundSquadSelection({
                   Math.floor(frame/WALK_ATLAS.columns)*100+'%',
               }} />
             </foreignObject>}
+            </g>
             {/* A stable, narrow selection silhouette. SVG <g> is not itself
                 painted: its bounding-box midpoint otherwise falls through
                 transparent R2 sprite pixels onto an underlying floor tile. The
@@ -516,7 +538,7 @@ export function GroundSquadSelection({
             <rect data-testid={'ground-officer-hit-'+unit.id}
               x="-18" y="-56" width="36" height="57" rx="7"
               fill="transparent" pointerEvents="all" />
-            <text y={artReady || showWalk ? '-77' : '-42'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
+            <text y={artReady || showWalk ? '-63' : '-34'} textAnchor="middle" className="ground-unit-name">{unit.name.split(' ')[0]}</text>
           </g>;
         })}
       </svg>

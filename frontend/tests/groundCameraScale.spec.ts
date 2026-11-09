@@ -1,7 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
 
 // The camera is presentation only: resizing it must not change the pure
-// 13×10 landing grid, route planning, squad state, fog or F5 continuity.
+// 18×12 landing grid, route planning, squad state, fog or F5 continuity.
 test.use({storageState:{cookies:[],origins:[]}});
 
 async function land(page:Page){
@@ -42,7 +42,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  const before=await cameraMetrics(page);
  expect(before.aspectError).toBeLessThan(.08);
  expect(before.screenHeight).toBeGreaterThan(320);
- // Old follow camera was effectively a nearly full 13x10 map (height ~548).
+ // Old follow camera was effectively a nearly full 18x12 map (height ~548).
  // Gameplay camera must show more of the actual officer and environment.
  expect(before.height).toBeLessThan(430);
  const horizontalTilePixels=before.screenWidth*80/before.width;
@@ -71,7 +71,7 @@ test('desktop zoom fits real viewport and still picks exact grid cells after res
  await expect(venn).toHaveAttribute('data-grid-y','3');
  await board.screenshot({path:'test-results/away-desktop-large-zoom.png'});
  await page.getByTestId('ground-camera-toggle').click();
- await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
+ await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
  await page.getByTestId('ground-camera-toggle').click();
  await expect.poll(async()=>(await cameraMetrics(page)).height).toBeGreaterThan(330);
  await page.reload();
@@ -99,6 +99,12 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  await page.getByTestId('ground-squad-board').screenshot({
   path:'test-results/away-gameplay-framing-390.png',
  });
+ // The wider world needs smaller people, not smaller accessible hit targets.
+ const scaled=page.getByTestId('ground-officer-visible-art-venn');
+ await expect(scaled).toHaveAttribute('transform','translate(0 9) scale(.76) translate(0 -9)');
+ await expect(scaled).toHaveCSS('pointer-events','none');
+ await expect(page.getByTestId('ground-officer-hit-venn')).toHaveAttribute('width','36');
+ await expect(page.getByTestId('ground-officer-hit-venn')).toHaveAttribute('height','57');
  const art=page.getByTestId('ground-officer-sprite-venn');
  await expect(art).toHaveAttribute('width','54');
  await expect(art).toHaveAttribute('height','80');

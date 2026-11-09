@@ -17,7 +17,7 @@ async function clickCell(page:import('@playwright/test').Page,x:number,y:number)
 }
 
 for(const width of [390,1280]){
- test('real 13x10 east sector, follow/full-map camera and F5 '+width+'px',async({page})=>{
+ test('real 18x12 east sector, follow/full-map camera and F5 '+width+'px',async({page})=>{
   test.setTimeout(105_000);
   page.setDefaultTimeout(15_000);
   await page.setViewportSize({width,height:850});
@@ -33,7 +33,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-wild-sector-scenery')).toBeVisible();
   await expect(page.getByTestId('ground-camera-toggle')).toHaveAttribute('aria-pressed','true');
   await page.getByTestId('ground-camera-toggle').click();
-  await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await board.screenshot({path:'test-results/ground-expanded-all-'+width+'.png'});
   await clickCell(page,9,4);
   const venn=page.getByTestId('ground-unit-venn');
@@ -43,7 +43,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-move-status')).toContainText('9:4');
   await page.getByTestId('ground-camera-toggle').click();
   await expect(page.getByTestId('ground-camera-toggle')).toHaveAttribute('aria-pressed','true');
-  await expect(board).not.toHaveAttribute('viewBox','0 0 1120 550');
+  await expect(board).not.toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:12_000});
   await board.screenshot({path:'test-results/ground-expanded-follow-'+width+'.png'});
   await page.reload();

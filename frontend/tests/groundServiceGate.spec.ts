@@ -31,7 +31,7 @@ for(const width of [390,1280]){
   for(const tile of ['8,4','8,5','8,6','8,7','9,6'])
    await expect(board.locator('[data-cell-id="'+tile+'"]')).toHaveCount(1);
   await page.getByTestId('ground-camera-toggle').click();
-  await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   const unknown=await board.locator('[data-fog-state="unknown"]').count();
   expect(unknown).toBeGreaterThan(0);
   // Moving a real officer to the rear maintenance entrance discovers it

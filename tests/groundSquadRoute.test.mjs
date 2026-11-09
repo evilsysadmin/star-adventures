@@ -35,7 +35,7 @@ test('pathfinding safely routes around walls and station footprints',() => {
 test('unreachable, invalid and no-op destinations cannot move the squad',() => {
   assert.deepEqual(planGroundSquadRoute(world,start,{x:4,y:5}),[]);
   assert.equal(planGroundSquadRoute(world,start,{x:0,y:0}),null);
-  assert.throws(()=>planGroundSquadRoute(world,start,{x:13,y:4}));
+  assert.throws(()=>planGroundSquadRoute(world,start,{x:18,y:4}));
   assert.throws(()=>planGroundSquadRoute(world,{...start,area:'bridge'},{x:4,y:4}));
   assert.throws(()=>planGroundSquadRoute(world,{...start,pending:{id:'beam-out',to:'bridge'}},{x:4,y:4}));
 });

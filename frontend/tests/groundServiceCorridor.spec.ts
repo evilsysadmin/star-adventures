@@ -49,7 +49,7 @@ for(const width of [390,1280]){
   await board.screenshot({path:'test-results/away-connected-corridor-initial-'+width+'.png'});
 
   await page.getByTestId('ground-camera-toggle').click();
-  await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await walk(page,9,4);
   await expect(page.getByTestId('ground-service-floor-9,4'))
     .toHaveAttribute('data-fog','visible');

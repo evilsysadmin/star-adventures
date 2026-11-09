@@ -60,6 +60,6 @@ test('blocked/invalid group commands reject atomically without mutating saved hi
   assert.throws(()=>command(['venn','venn'],{x:3,y:5}),/Invalid/);
   assert.throws(()=>command(['venn','unknown'],{x:3,y:5}),/Invalid/);
   assert.throws(()=>command(['venn'],{x:3,y:5}),/Invalid/);
-  assert.throws(()=>command(['venn','dorn'],{x:13,y:5}),/Invalid/);
+  assert.throws(()=>command(['venn','dorn'],{x:18,y:5}),/Invalid/);
   assert.equal(JSON.stringify(snapshot),saved);
 });
