@@ -1,6 +1,7 @@
 import world from '../../../content/scenes/meridian.json';
 import {GroundRescueBayDeck} from './GroundRescueBayDeck';
 import {GroundServiceCorridor} from './GroundServiceCorridor';
+import {GroundServiceYard} from './GroundServiceYard';
 
 // Original vector set dressing in the approved colony/away-team direction.
 // Every detail is scenery; authoritative terrain, paths and collisions still
@@ -78,6 +79,9 @@ export function GroundColonyFloor({explored,visible}:Vision){
   {/* The first connected room footprint is the floor beneath route and
        obstacle dressing, never a second source of movement geometry. */}
   <GroundRescueBayDeck explored={explored} visible={visible}/>
+  {/* The exterior apron continues the real service-gate topology; the
+       corridor stays above it so the gateway threshold remains legible. */}
+  <GroundServiceYard explored={explored} visible={visible}/>
   <GroundServiceCorridor explored={explored} visible={visible}/>
   {/* Decking is below the wall trims and service-gate panel, so it
        never paints across a doorway or raised entry lip. */}
