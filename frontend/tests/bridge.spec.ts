@@ -94,6 +94,9 @@ test('keyboard choices and skip-navigation work', async ({ page }) => {
 
 
 test('a saved command history restores the same decision after refresh', async ({ page }) => {
+  // This real bridge/F5/reopen journey approaches 30s when two WebGL contexts
+  // share a CI runner; preserve its assertions without a spurious retry.
+  test.setTimeout(60_000);
   await page.goto('/');
   await openStation(page, 'communications');
   await page.getByTestId('choice-hail').click();
@@ -102,7 +105,10 @@ test('a saved command history restores the same decision after refresh', async (
   await expect(page.getByTestId('console-locked')).toBeVisible();
   await expect(page.getByTestId('explore-heading')).toContainText('RUMBO N · 5:3');
   await page.getByTestId('explore-use').click();
-  await expect(page.getByTestId('choice-mediate')).toBeVisible();
+  // After restoring WebGL + local history on a contended CI worker, opening
+  // the real console may take longer than Playwright's default 5s assertion.
+  // Keep the actual mission choice and diplomacy assertions intact.
+  await expect(page.getByTestId('choice-mediate')).toBeVisible({timeout:15_000});
   await expect(page.getByTestId('diplomacy-score')).toHaveText('02');
   await page.getByTestId('choice-mediate').click();
   await page.reload();
