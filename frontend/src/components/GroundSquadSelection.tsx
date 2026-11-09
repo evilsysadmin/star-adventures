@@ -45,9 +45,15 @@ const officerWalkArt: Record<string,string> = {
   varela: maleWalk, solan: maleWalk, dorn: maleWalk, rhee: maleWalk,
 };
 const blocked = new Set(scene.walls.map(cell => cell.x + ',' + cell.y));
-// Paths between authored facilities are only painted terrain, never a
-// movement shortcut or a substitute for the canonical walkability grid.
-const wornPath = new Set(['4,5','4,4','4,3','3,3','2,3','5,4','5,5','6,5']);
+// Canonical cell polygons remain the *only* pointer targets. Original
+// per-cell terrain palettes made the colony resemble a checkerboard even
+// after the undiscoved-fog treatment; material shading is now world-space.
+const floorMaterial=(cell:{x:number;y:number;key:string})=>
+  blocked.has(cell.key) ? 'url(#ground-continuous-wallstone)'
+    : cell.x>=9||cell.y>=8 ? 'url(#ground-continuous-outside)'
+    : 'url(#ground-continuous-colony)';
+const cellPath=(cell:{x:number;y:number})=>
+  'M'+tileShape(cell.x,cell.y).replaceAll(' ','L')+'Z';
 const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
@@ -453,11 +459,45 @@ export function GroundSquadSelection({
             realtime?pickFreePoint(event.clientX,event.clientY):null);
         }}>
         <GroundPlanetBackdrop />
-        {sceneTiles.map(cell => <polygon key={cell.key} data-cell-id={cell.key} points={tileShape(cell.x, cell.y)}
-          fill={blocked.has(cell.key) ? '#1b3138' : wornPath.has(cell.key) ? '#5a6b5d' :
-            cell.x>=9 || cell.y>=8 ? ((cell.x+cell.y)%3 ? '#536953' : '#626c52') :
-            (cell.x*7+cell.y*11)%5===0 ? '#51675f' : (cell.x+cell.y)%2 ? '#3e5751' : '#435d55'}
-          stroke="#a8b6a1" strokeOpacity=".045" strokeWidth="1" />)}
+        <defs>
+          {/* One material coordinate system across the whole explored
+              installation. Tile IDs and all movement math stay identical. */}
+          <linearGradient id="ground-continuous-colony"
+            gradientUnits="userSpaceOnUse" x1="210" y1="105" x2="870" y2="555">
+            <stop stopColor="#71877b"/>
+            <stop offset=".5" stopColor="#526e67"/>
+            <stop offset="1" stopColor="#354f54"/>
+          </linearGradient>
+          <linearGradient id="ground-continuous-outside"
+            gradientUnits="userSpaceOnUse" x1="180" y1="200" x2="1180" y2="660">
+            <stop stopColor="#66796b"/>
+            <stop offset=".53" stopColor="#526a62"/>
+            <stop offset="1" stopColor="#3b4d4b"/>
+          </linearGradient>
+          <linearGradient id="ground-continuous-wallstone"
+            gradientUnits="userSpaceOnUse" x1="170" y1="175" x2="1120" y2="550">
+            <stop stopColor="#354a4b"/>
+            <stop offset="1" stopColor="#20383f"/>
+          </linearGradient>
+        </defs>
+        {/* Shared undercoat covers tiny raster seams between neighboring
+            diamonds. This is *below* fog and authored scenery, and cannot
+            reveal unseen objects or intercept a grid interaction. */}
+        {(['colony','outside'] as const).map(area=><path key={area}
+          data-testid={'ground-continuous-floor-'+area}
+          d={sceneTiles.filter(cell=>!blocked.has(cell.key)&&
+             (area==='outside' ? cell.x>=9||cell.y>=8
+               : cell.x<9&&cell.y<8)).map(cellPath).join(' ')}
+          fill={area==='outside'
+            ? 'url(#ground-continuous-outside)'
+            : 'url(#ground-continuous-colony)'}
+          pointerEvents="none" aria-hidden="true"/>)}
+        {sceneTiles.map(cell => <polygon key={cell.key}
+          data-cell-id={cell.key} data-ground-material={blocked.has(cell.key)
+            ? 'wallstone' : cell.x>=9||cell.y>=8 ? 'outside' : 'colony'}
+          points={tileShape(cell.x, cell.y)}
+          fill={floorMaterial(cell)}
+          stroke="#b4c4ae" strokeOpacity=".025" strokeWidth=".8" />)}
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
         {/* Optional world-space 3D volume: the SVG tiles/units remain authoritative,
             and the original vector architecture remains a graphics fallback. */}
