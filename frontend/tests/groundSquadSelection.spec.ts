@@ -31,6 +31,18 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('ground-unit-venn')).toBeVisible();
     await expect(page.getByTestId('ground-unit-dorn')).toBeVisible();
     await expect(page.getByTestId('ground-unit-mira')).toBeVisible();
+    // The in-world nameplates must not steal officer hitbox input. These
+    // assertions are exercised in both desktop and 390px real browser flows.
+    const nameplates=await page.getByTestId('ground-squad-board').evaluate(root=>
+      [...root.querySelectorAll('[data-testid^="ground-officer-nameplate-"]')]
+        .map(node=>({
+          text:node.querySelector('text')?.textContent,
+          passive:getComputedStyle(node).pointerEvents==='none',
+          framed:node.querySelector('rect')?.getAttribute('fill')==='#0b1e2a',
+        })));
+    expect(nameplates).toHaveLength(3);
+    expect(nameplates.map(p=>p.text).sort()).toEqual(['Isa','Kael','Nara']);
+    expect(nameplates.every(p=>p.passive&&p.framed)).toBe(true);
 
     await page.getByTestId('ground-unit-dorn').click();
     await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed', 'true');
