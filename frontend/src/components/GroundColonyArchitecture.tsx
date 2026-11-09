@@ -13,7 +13,7 @@ const labels:Record<string,string>={
 
 // Existing adjacent wall tiles form contiguous built structures, not isolated
 // crates. The bridges are only between *two* real blocked building cells.
-const cargoKeys=new Set(['10,2','10,6','4,8']);
+const cargoKeys=new Set(['10,2','10,6','4,8','15,7','16,9']);
 const builtCells=scene.walls.filter(p=>p.x>0&&p.y>0&&
   p.x<scene.width-1&&p.y<scene.height-1&&!cargoKeys.has(key(p.x,p.y)));
 const builtKeys=new Set(builtCells.map(p=>key(p.x,p.y)));
