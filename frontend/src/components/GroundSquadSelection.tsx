@@ -480,6 +480,16 @@ export function GroundSquadSelection({
             <stop offset="1" stopColor="#20383f"/>
           </linearGradient>
         </defs>
+        {/* Give the entire visible world the EXACT same atmospheric material
+            as undiscovered terrain. Otherwise the fog's outermost cells draw
+            a giant board-shaped island against an unrelated backdrop. This is
+            only a paint layer: known positions, picking and LOS are unchanged.
+            The root gradient is defined in the fog layer below and uses the
+            same user-space coordinates for every fragment. */}
+        <rect data-testid="ground-fog-seamless-surround"
+          x="-72" y="0" width="1280" height="640"
+          fill="url(#ground-undiscovered-gradient)"
+          pointerEvents="none" aria-hidden="true"/>
         {/* Shared undercoat covers tiny raster seams between neighboring
             diamonds. This is *below* fog and authored scenery, and cannot
             reveal unseen objects or intercept a grid interaction. */}
@@ -539,6 +549,30 @@ export function GroundSquadSelection({
                 strokeWidth="1" />
             </g>;
           })}
+        </g>
+        {/* Continuous weather, not gameplay geography: these soft world-space
+            bands cross both shrouded and discovered cells. They add atmosphere
+            without exposing a wall, station or path before exploration. */}
+        <g data-testid="ground-shared-atmospheric-haze"
+          pointerEvents="none" aria-hidden="true">
+          <defs>
+            <radialGradient id="ground-haze-amber">
+              <stop stopColor="#d9ac7c" stopOpacity=".16"/>
+              <stop offset="1" stopColor="#d9ac7c" stopOpacity="0"/>
+            </radialGradient>
+            <radialGradient id="ground-haze-cold">
+              <stop stopColor="#8cc6c4" stopOpacity=".13"/>
+              <stop offset="1" stopColor="#8cc6c4" stopOpacity="0"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="714" cy="267" rx="450" ry="208"
+            fill="url(#ground-haze-amber)"/>
+          <ellipse cx="230" cy="480" rx="420" ry="176"
+            fill="url(#ground-haze-cold)"/>
+          <path d="M-72 538Q134 516 313 543T695 529T1128 542
+            M-72 580Q108 556 332 585T745 574T1208 582"
+            stroke="#a3c1b1" strokeOpacity=".07"
+            strokeWidth="5" fill="none"/>
         </g>
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
