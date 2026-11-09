@@ -99,6 +99,12 @@ test('mobile follow keeps existing playable framing and larger officer art',asyn
  await page.getByTestId('ground-squad-board').screenshot({
   path:'test-results/away-gameplay-framing-390.png',
  });
+ // The wider world needs smaller people, not smaller accessible hit targets.
+ const scaled=page.getByTestId('ground-officer-visible-art-venn');
+ await expect(scaled).toHaveAttribute('transform','translate(0 9) scale(.76) translate(0 -9)');
+ await expect(scaled).toHaveCSS('pointer-events','none');
+ await expect(page.getByTestId('ground-officer-hit-venn')).toHaveAttribute('width','36');
+ await expect(page.getByTestId('ground-officer-hit-venn')).toHaveAttribute('height','57');
  const art=page.getByTestId('ground-officer-sprite-venn');
  await expect(art).toHaveAttribute('width','54');
  await expect(art).toHaveAttribute('height','80');
