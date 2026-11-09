@@ -5,6 +5,7 @@ import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
+import { groundSurfaceFrame } from '../groundSurfaceFrame';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt } from '../isoOfficerAnimation';
@@ -190,9 +191,10 @@ export function GroundSquadSelection({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, []);
-  // Map dimensions are the whole authored 13×10 surface; all screen hit
-  // testing still uses the SVG's actual CTM and canonical grid coordinates.
-  const fullWidth=1120, fullHeight=550;
+  // Actual 18×12 canonical terrain is larger than the original 13×10
+  // perimeter. Move the *camera frame*, not the ground projection / picking.
+  const fullFrame=groundSurfaceFrame(scene.width,scene.height);
+  const fullWidth=fullFrame.width, fullHeight=fullFrame.height;
   const focused = compact && followSquad;
   // Fill the *actual* map viewport, not a 440×300 strip letterboxed in
   // portrait. Mobile follows a narrower part of the authored surface;
@@ -206,12 +208,13 @@ export function GroundSquadSelection({
     : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
-    ? Math.round((fullWidth-cameraWidth)/2)
-    : Math.max(0, Math.min(fullWidth-cameraWidth,
+    ? fullFrame.left+Math.round((fullWidth-cameraWidth)/2)
+    : Math.max(fullFrame.left, Math.min(fullFrame.left+fullWidth-cameraWidth,
         Math.round(cameraCenter.x-cameraWidth/2)));
-  const cameraY = Math.max(0, Math.min(fullHeight-cameraHeight,
+  const cameraY = Math.max(fullFrame.top, Math.min(fullFrame.top+fullHeight-cameraHeight,
     Math.round(cameraCenter.y-cameraHeight*.56)));
-  const cameraView = !followSquad ? '0 0 1120 550'
+  const cameraView = !followSquad
+    ? fullFrame.left+' '+fullFrame.top+' '+fullWidth+' '+fullHeight
     : cameraX+' '+cameraY+' '+cameraWidth+' '+cameraHeight;
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
