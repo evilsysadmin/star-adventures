@@ -40,18 +40,26 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-walk-phase','moving');
   const walkArt=page.getByTestId('ground-officer-walk-venn');
   await expect(walkArt).toBeVisible();
+  // The colony art scale is independent of input geometry and route state.
+  // Assert the actual shared transform, rather than weakening sprite checks.
+  await expect(page.getByTestId('ground-officer-visible-art-venn'))
+    .toHaveAttribute('transform','translate(0 9) scale(.76) translate(0 -9)');
+  await expect(page.getByTestId('ground-officer-hit-venn')).toHaveAttribute('width','36');
   await expect(walkArt.locator('div')).toHaveCSS('background-size','300% 200%');
   await expect(walkArt.locator('div')).toHaveCSS('background-image',/officer-female-walk-v1-/);
-  // Cropped sprite frame must keep the intended unit size, not inherit the
-  // map-root 100% SVG styling.
+  // Cropped frame keeps the explicit 54×80 world-size atlas, rendered at
+  // 76% through the shared *art-only* transform (selection is still full size).
   const bounds=await walkArt.boundingBox();
-  // Width/height are 54x80 world units in the sprite's SVG. Follow camera
-  // zoom is intentional; compare to the actual viewBox-to-screen transform
-  // rather than a fixed pixel ceiling from the old distant camera.
+  // The inner walk atlas remains 54×80 SVG units; its parent art-only scale
+  // is 0.76. Follow camera zoom still derives from the actual viewBox and
+  // rendered SVG bounds, not a fixed screen-pixel ceiling.
   const expected=await page.getByTestId('ground-squad-board').evaluate(node=>{
     const svg=node as SVGSVGElement,view=svg.viewBox.baseVal;
     const rect=svg.getBoundingClientRect();
-    return {width:54*rect.width/view.width,height:80*rect.height/view.height};
+    const art=svg.querySelector('[data-testid="ground-officer-visible-art-venn"]');
+    if(art?.getAttribute('transform')!=='translate(0 9) scale(.76) translate(0 -9)')
+      throw new Error('Unexpected authored officer art scale');
+    return {width:54*.76*rect.width/view.width,height:80*.76*rect.height/view.height};
   });
   expect(bounds?.width).toBeGreaterThan(expected.width-2);
   expect(bounds?.width).toBeLessThan(expected.width+2);
