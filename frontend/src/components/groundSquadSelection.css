@@ -139,3 +139,8 @@
   background:#415b51;color:#fff0cf}
 .ground-realtime-toggle:focus-visible{outline:2px solid #f0d49a;outline-offset:2px}
 .ground-realtime-toggle:disabled{opacity:.5;cursor:not-allowed}
+
+/* Explored-but-out-of-sight is a dark, remembered solid environment rather
+   than transparent wireframe debris. Unknown cells remain fully shrouded.
+   Paint properties only: no heavy CSS filters per tile, no pointer changes. */
+.ground-squad-board [data-fog="remembered"]{opacity:.68}
