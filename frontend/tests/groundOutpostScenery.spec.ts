@@ -33,7 +33,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-beam-out').locator('text.ground-landmark-name')).toHaveText('EXTRACCIÓN');
   if(width===1280){
    // Normal follow framing now keeps officers/architecture prominent.
-   // The full 13x10 authored map remains accessible through overview.
+   // The full 18x12 authored map remains accessible through overview.
    await expect.poll(async()=>board.evaluate(node=>
      (node as SVGSVGElement).viewBox.baseVal.height)).toBeGreaterThan(330);
    const camera=await board.evaluate(node=>{
@@ -59,7 +59,7 @@ for(const width of [390,1280]){
    // point of tracking an officer. In explicit FULL MAP every named landmark
    // must remain on screen and none of the neighbouring signs may overlap.
    await page.getByTestId('ground-camera-toggle').click();
-   await expect(board).toHaveAttribute('viewBox','0 0 1120 550');
+   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
    expect(await board.locator('[data-fog-state="unknown"]').count()).toBe(initiallyUnknown);
    const clipping=await page.evaluate(()=>{
     const board=document.querySelector('[data-testid="ground-squad-board"]')!.getBoundingClientRect();
