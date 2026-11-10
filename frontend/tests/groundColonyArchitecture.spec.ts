@@ -34,29 +34,37 @@ for(const width of [390,1280]) {
   // Never reveal an unopened entry before both physical wall ends are known.
   await expect(page.getByTestId('ground-gateway-8,4')).toHaveCount(0);
   await expect(page.getByTestId('ground-gateway-8,6')).toHaveCount(0);
-  // Two visible contiguous wall cells share an actual roof. The distant
-  // eastern wall must not disclose an unseen connection through the fog.
-  await expect(page.getByTestId('ground-colony-roof-5,7-to-6,7')).toHaveCount(1);
-  const facade=page.getByTestId('ground-colony-facade-5,7-to-6,7');
-  await expect(facade).toHaveAttribute('data-fog','visible');
-  // The actual connected wall carries two glazing panes and structural
-  // mullions. It must be tall enough to read as a building, not floor trim.
-  const paneSize=await facade.evaluate(element=>{
+  // A single manufacturing wing replaces *both* the isolated 2-cell roof
+  // and tiny per-wall modules. Its footprint must be the real discovered
+  // south walls (including the originally visible contiguous 5,7/6,7 pair).
+  const south=page.getByTestId('ground-south-industrial-wing');
+  const hangar=south.locator('[data-render-class="single-continuous-industrial-hangar"]'+
+    '[data-footprint~="5,7"][data-footprint~="6,7"]');
+  await expect(hangar).toHaveCount(1);
+  const footprint=await hangar.getAttribute('data-footprint');
+  expect(footprint!.split(' ').length).toBeGreaterThanOrEqual(2);
+  for(const tile of footprint!.split(' ')){
+    expect(['2,7','3,7','4,7','5,7','6,7','7,7']).toContain(tile);
+    await expect(board.locator('[data-cell-id="'+tile+'"]')).toHaveCount(1);
+    await expect(board.locator('[data-fog-cell="'+tile+'"][data-fog-state="unknown"]')).toHaveCount(0);
+  }
+  const silhouette=await hangar.evaluate(element=>{
     const bounds=(element as SVGGraphicsElement).getBBox();
     return {width:bounds.width,height:bounds.height,
-      pointerEvents:getComputedStyle(element).pointerEvents};
+      passive:getComputedStyle(element).pointerEvents==='none'};
   });
-  expect(paneSize.width).toBeGreaterThan(35);
-  expect(paneSize.height).toBeGreaterThan(25);
-  expect(paneSize.pointerEvents).toBe('none');
-  const deck=page.getByTestId('ground-colony-roof-deck-5,7-to-6,7');
-  await expect(deck).toHaveCount(1);
-  const dimensions=await deck.evaluate(node=>{
-    const bounds=(node as SVGGraphicsElement).getBBox();
-    return {width:bounds.width,height:bounds.height};
-  });
-  expect(dimensions.width).toBeGreaterThan(35);
-  expect(dimensions.height).toBeGreaterThan(20);
+  expect(silhouette.width).toBeGreaterThan(90);
+  expect(silhouette.height).toBeGreaterThan(70);
+  expect(silhouette.passive).toBe(true);
+  for(const x of [5,6]){
+    await expect(page.getByTestId('ground-architecture-wall-'+x+',7')).toHaveCount(0);
+  }
+  await expect(page.getByTestId('ground-colony-roof-5,7-to-6,7')).toHaveCount(0);
+  // The old WebGL court must not place yet another brick under this wing.
+  const remaining=(await page.getByTestId('ground-landing-court-3d')
+    .getAttribute('data-pbr-wall-fallback-columns'))?.split(',')??[];
+  expect(remaining).not.toContain('5');
+  expect(remaining).not.toContain('6');
   // The only eastern entry (8,4) stays physically open. No visual canopy
   // may bridge an open tile or reveal an unobserved pair of blocked tiles.
   await expect(page.getByTestId('ground-colony-roof-8,3-to-8,4')).toHaveCount(0);
@@ -153,7 +161,9 @@ for(const width of [390,1280]) {
   await page.reload();
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','remembered');
   await expect(page.getByTestId('ground-gateway-8,4')).toHaveAttribute('data-fog','remembered');
-  await expect(page.getByTestId('ground-colony-facade-5,7-to-6,7')).toHaveCount(1);
+  await expect(page.getByTestId('ground-south-industrial-wing')
+    .locator('[data-render-class="single-continuous-industrial-hangar"]'+
+      '[data-footprint~="5,7"][data-footprint~="6,7"]')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
