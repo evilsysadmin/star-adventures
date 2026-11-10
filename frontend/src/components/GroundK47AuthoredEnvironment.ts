@@ -3,7 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import world from '../../../content/scenes/meridian.json';
 import artManifest from '../../../content/scenes/k47-environment-art.json';
 import {
-  eligibleAuthoredSlots,verifyPublishedGLBBytes,assertModelWithinFootprint,
+  eligibleAuthoredSlots,validateAuthoredSlots,verifyPublishedGLBBytes,assertModelWithinFootprint,
   type ArtManifest,type ArtSlot,
 } from '../k47EnvironmentAssets';
 
@@ -106,8 +106,25 @@ export async function addK47AuthoredEnvironment(
     },
   };
 }
-export function eligiblePublishedK47ArtIds(explored:ReadonlySet<string>){
-  return eligibleAuthoredSlots(runtimeManifest,runtimeWorld,explored).map(x=>x.id);
+// Development-only: let artists inspect a candidate against the REAL landing
+// scene before promoting an immutable GLB to R2. The normal published bundle
+// never reads window overrides; a malformed preview never breaks gameplay.
+// The same strict manifest, origin, footprint and SHA gates still apply.
+export function k47ArtManifestForRendering():ArtManifest{
+  if(!import.meta.env.DEV||typeof window==='undefined')return runtimeManifest;
+  const candidate=(window as typeof window & {
+    __k47ArtPreviewManifest?:ArtManifest
+  }).__k47ArtPreviewManifest;
+  if(!candidate)return runtimeManifest;
+  try{
+    validateAuthoredSlots(candidate,runtimeWorld);
+    return candidate;
+  }catch{return runtimeManifest;}
+}
+export function eligiblePublishedK47ArtIds(
+  explored:ReadonlySet<string>,manifest:ArtManifest=runtimeManifest,
+){
+  return eligibleAuthoredSlots(manifest,runtimeWorld,explored).map(x=>x.id);
 }
 export const K47_AUTHORED_SLOT_COUNT=runtimeManifest.slots.length;
 export const K47_PUBLISHED_SLOT_COUNT=runtimeManifest.slots.filter(x=>x.status==='published').length;
