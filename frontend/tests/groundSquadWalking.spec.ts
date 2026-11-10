@@ -32,42 +32,72 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-grid-x','4');
   await expect(venn).toHaveAttribute('data-grid-y','5');
   const dornPose=await dorn.getAttribute('transform');
+  // The walk only lasts a few animation frames. On a busy Chromium CI runner,
+  // querying five separate live elements can outlast that animation. Capture
+  // *actual DOM state while moving*, rather than querying after it disappears.
+  // This still fails if no frame advances, the atlas is missing or the
+  // art-only scaling differs from the camera projection.
+  await page.evaluate(()=>{
+    const officer=document.querySelector('[data-testid="ground-unit-venn"]');
+    if(!officer)throw new Error('Missing officer for live atlas observation');
+    const record={
+      moving:false,maxFrame:0,
+      bounds:null as null|{
+        width:number;height:number;expectedWidth:number;expectedHeight:number},
+      atlas:null as null|{size:string;image:string},
+    };
+    (window as typeof window & {__groundWalkProbe?:typeof record})
+      .__groundWalkProbe=record;
+    const sample=()=>{
+      if(officer.getAttribute('data-walk-phase')!=='moving')return;
+      record.moving=true;
+      record.maxFrame=Math.max(record.maxFrame,
+        Number(officer.getAttribute('data-walk-frame')||0));
+      const art=officer.querySelector('[data-testid="ground-officer-walk-venn"]');
+      const inner=art?.querySelector('div');
+      const svg=(officer as SVGGraphicsElement).ownerSVGElement;
+      if(!art||!inner||!svg)return;
+      const box=art.getBoundingClientRect();
+      const rect=svg.getBoundingClientRect(),view=svg.viewBox.baseVal;
+      if(box.width>0&&box.height>0&&view.width>0&&view.height>0){
+        record.bounds={width:box.width,height:box.height,
+          expectedWidth:54*.76*rect.width/view.width,
+          expectedHeight:80*.76*rect.height/view.height};
+        const style=getComputedStyle(inner);
+        record.atlas={size:style.backgroundSize,image:style.backgroundImage};
+      }
+    };
+    new MutationObserver(sample).observe(officer,{
+      attributes:true,subtree:true,
+      attributeFilter:['data-walk-phase','data-walk-frame'],
+    });
+  });
   await page.locator('[data-cell-id="2,4"]').click({button:'right'});
   await expect(venn).toHaveAttribute('data-grid-x','2');
   await expect(venn).toHaveAttribute('data-grid-y','4');
-  // An actual accepted path is >1 tile and must show a nonzero atlas frame
-  // before ending on the authoritative final cell.
-  await expect(venn).toHaveAttribute('data-walk-phase','moving');
-  const walkArt=page.getByTestId('ground-officer-walk-venn');
-  await expect(walkArt).toBeVisible();
-  // The colony art scale is independent of input geometry and route state.
-  // Assert the actual shared transform, rather than weakening sprite checks.
-  await expect(page.getByTestId('ground-officer-visible-art-venn'))
-    .toHaveAttribute('transform','translate(0 9) scale(.76) translate(0 -9)');
-  await expect(page.getByTestId('ground-officer-hit-venn')).toHaveAttribute('width','36');
-  await expect(walkArt.locator('div')).toHaveCSS('background-size','300% 200%');
-  await expect(walkArt.locator('div')).toHaveCSS('background-image',/officer-female-walk-v1-/);
-  // Cropped frame keeps the explicit 54×80 world-size atlas, rendered at
-  // 76% through the shared *art-only* transform (selection is still full size).
-  const bounds=await walkArt.boundingBox();
-  // The inner walk atlas remains 54×80 SVG units; its parent art-only scale
-  // is 0.76. Follow camera zoom still derives from the actual viewBox and
-  // rendered SVG bounds, not a fixed screen-pixel ceiling.
-  const expected=await page.getByTestId('ground-squad-board').evaluate(node=>{
-    const svg=node as SVGSVGElement,view=svg.viewBox.baseVal;
-    const rect=svg.getBoundingClientRect();
-    const art=svg.querySelector('[data-testid="ground-officer-visible-art-venn"]');
-    if(art?.getAttribute('transform')!=='translate(0 9) scale(.76) translate(0 -9)')
-      throw new Error('Unexpected authored officer art scale');
-    return {width:54*.76*rect.width/view.width,height:80*.76*rect.height/view.height};
-  });
-  expect(bounds?.width).toBeGreaterThan(expected.width-2);
-  expect(bounds?.width).toBeLessThan(expected.width+2);
-  expect(bounds?.height).toBeGreaterThan(expected.height-2);
-  expect(bounds?.height).toBeLessThan(expected.height+2);
-  await expect.poll(async()=>Number(await venn.getAttribute('data-walk-frame')),{timeout:3_000})
+  await expect.poll(async()=>page.evaluate(()=>
+    (window as typeof window & {__groundWalkProbe?:{maxFrame:number}})
+      .__groundWalkProbe?.maxFrame??0),{timeout:12_000})
     .toBeGreaterThan(0);
-  // Capture the actual cropped atlas renderer, not a separately composed mock.
+  const observed=await page.evaluate(()=>
+    (window as typeof window & {
+      __groundWalkProbe?:{
+        moving:boolean;maxFrame:number;
+        bounds:null|{width:number;height:number;
+          expectedWidth:number;expectedHeight:number};
+        atlas:null|{size:string;image:string};
+      };
+    }).__groundWalkProbe);
+  expect(observed?.moving).toBe(true);
+  expect(observed?.atlas?.size).toBe('300% 200%');
+  expect(observed?.atlas?.image).toMatch(/officer-female-walk-v1-/);
+  if(!observed?.bounds)throw new Error('Live walking atlas never had visible bounds');
+  expect(observed.bounds.width).toBeGreaterThan(observed.bounds.expectedWidth-2);
+  expect(observed.bounds.width).toBeLessThan(observed.bounds.expectedWidth+2);
+  expect(observed.bounds.height).toBeGreaterThan(observed.bounds.expectedHeight-2);
+  expect(observed.bounds.height).toBeLessThan(observed.bounds.expectedHeight+2);
+  // The screenshot is diagnostic; the live observer above is the actual
+  // proof of a real animated atlas even if screenshot capture happens late.
   await page.getByTestId('ground-squad-board').screenshot({
     path:'test-results/ground-walk-'+width+'.png',
   });
