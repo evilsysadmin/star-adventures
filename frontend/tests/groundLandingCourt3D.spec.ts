@@ -48,6 +48,17 @@ for(const width of [390,1280]){
         Boolean(court.compareDocumentPosition(decorations)&Node.DOCUMENT_POSITION_FOLLOWING),
     };
   });
+  const wallReveal=await board.evaluate(root=>{
+    const columns=(root.querySelector('[data-testid="ground-landing-court-3d"]')
+      ?.getAttribute('data-discovered-wall-columns')??'')
+      .split(',').filter(Boolean).map(Number);
+    const leaking=columns.filter(x=>
+      root.querySelector('[data-fog-cell="'+x+',7"]')
+        ?.getAttribute('data-fog-state')==='unknown');
+    return {columns,leaking};
+  });
+  expect(wallReveal.columns.every(x=>[3,4,5,6,7].includes(x))).toBe(true);
+  expect(wallReveal.leaking).toEqual([]);
   expect(structure.cells).toBe(216);
   expect(structure.courtCells).toBeGreaterThan(14);
   expect(structure.canvasSize).toEqual(['1120','550']);
