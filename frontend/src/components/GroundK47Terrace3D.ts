@@ -65,7 +65,8 @@ export function addK47Terrace(scene:THREE.Scene,knownColumns:ReadonlySet<number>
    metalness:.45,roughness:.17
  }));
  const rock=material(new THREE.MeshStandardMaterial({
-   vertexColors:true,roughness:1,metalness:0,flatShading:true
+   vertexColors:true,roughness:.97,metalness:0,flatShading:true,
+   emissive:0x6f5949,emissiveIntensity:.58,side:THREE.DoubleSide
  }));
  const box=(name:string,x:number,y:number,z:number,w:number,h:number,d:number,mat:THREE.Material)=>{
    const mesh=new THREE.Mesh(geometry(new THREE.BoxGeometry(w,h,d)),mat);
@@ -88,7 +89,7 @@ export function addK47Terrace(scene:THREE.Scene,knownColumns:ReadonlySet<number>
  // foundation than the main courtyard. It is NOT a traversable cliff or a
  // new elevation in the game: all columns sit under existing blocked cells.
  const rockLayer=(x:number,level:number)=>{
-   const top=-.04-level*.37,bottom=top-.45;
+   const top=-.04-level*.27,bottom=top-.32;
    const shade=(level%3)*.07;
    const vertices=[
      [x-.51,top,6.52],[x+.51,top+.06,6.52],
@@ -118,10 +119,12 @@ export function addK47Terrace(scene:THREE.Scene,knownColumns:ReadonlySet<number>
    meshGeometry.computeVertexNormals();
    const mesh=new THREE.Mesh(meshGeometry,rock);
    mesh.name='known-rock-foundation-'+x+'-'+level;
-   mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+   // The undercroft is a lit geological retaining edge, not a black pit:
+   // heavy shadows here made the first real Chromium render unreadable.
+   mesh.castShadow=false;mesh.receiveShadow=false;group.add(mesh);
  };
  for(const x of known){
-   for(let level=0;level<4;level++)rockLayer(x,level);
+   for(let level=0;level<2;level++)rockLayer(x,level);
    // One substantial founded structure per blocked cell; modulated
    // heights/roof forms make an industrial silhouette, not a solid slab.
    box('base-'+x,x,.14,7,.96,.32,.96,dark);
