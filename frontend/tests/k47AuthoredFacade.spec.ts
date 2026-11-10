@@ -74,6 +74,10 @@ for(const width of [390,1280]){
   await expect(art).toHaveAttribute('data-authored-art-ready',
      'west-archive-shell',{timeout:25_000});
   await expect(art).toHaveAttribute('data-authored-art-state','ready');
+  // The previously shipped Three archive occupies these SAME blocked cells.
+  // A successful new GLB must replace it, not stack a second building.
+  await expect(board.getByTestId('ground-archive-volume-3d'))
+    .toHaveCSS('visibility','hidden');
   // West edge is a real blocked world region but has no SVG architecture
   // placeholder. Art readiness above is the authoritative replacement gate.
   await expect(board.getByTestId('ground-architecture-wall-0,3'))
@@ -88,3 +92,28 @@ for(const width of [390,1280]){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
+
+test('GLB failure keeps the existing, real west archive building as fallback',async({page})=>{
+ test.setTimeout(95_000);
+ await page.setViewportSize({width:390,height:850});
+ await page.addInitScript(candidate=>{
+  (window as typeof window & {__k47ArtPreviewManifest?:unknown})
+    .__k47ArtPreviewManifest=candidate;
+ },manifest);
+ await page.route(url,route=>route.fulfill({
+  status:503,contentType:'text/plain',body:'candidate unavailable',
+  headers:{'access-control-allow-origin':'*'},
+ }));
+ await page.goto('/');
+ await page.getByTestId('captain-transport').click();
+ await page.getByTestId('transport-confirm').click();
+ const board=page.getByTestId('ground-squad-board');
+ const art=page.getByTestId('ground-landing-court-3d');
+ await expect(art).toHaveAttribute('data-renderer-state','ready',{timeout:25_000});
+ await board.locator('[data-cell-id="1,4"]').click({button:'right'});
+ await expect(art).toHaveAttribute('data-authored-art-state','fallback',{timeout:25_000});
+ await expect(art).not.toHaveAttribute('data-authored-art-ready','west-archive-shell');
+ await expect(board.getByTestId('ground-archive-volume-3d'))
+   .toHaveCSS('visibility','visible');
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+});
