@@ -77,6 +77,17 @@ export function addK47CanyonSurround(scene:THREE.Scene){
  const geometries:THREE.BufferGeometry[]=[];
  for(const side of ['west','east'] as const){
    const geo=cliffGeometry(side);
+   geo.computeBoundingBox();
+   const bounds=geo.boundingBox;
+   // Physical geometry contract, not a promise made by a data attribute.
+   // If an edit reintroduces a giant foreground curtain or intersects the
+   // canonical board, fail WebGL to its proven SVG fallback instead.
+   if(!bounds||bounds.max.y>K47_CANYON_MAX_HEIGHT||
+     (side==='west'&&bounds.max.x>=0)||
+     (side==='east'&&bounds.min.x<=17)){
+     geo.dispose();
+     throw new Error('K47 canyon escaped its non-playable world bounds');
+   }
    geometries.push(geo);
    const mesh=new THREE.Mesh(geo,material);
    mesh.name='non-playable-'+side+'-cliff';
