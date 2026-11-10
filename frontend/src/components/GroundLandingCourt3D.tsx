@@ -93,7 +93,7 @@ function makeCourtSurface(){
   geometry.computeVertexNormals();
   return geometry;
 }
-function buildCourt(scene:THREE.Scene){
+function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>){
   const resources:Array<{dispose:()=>void}>=[];
   const texture=courtTexture();
   if(texture)resources.push(texture);
@@ -126,7 +126,7 @@ function buildCourt(scene:THREE.Scene){
   // Substantial industrial foundation behind the yard, on real blocked wall
   // cells only. It casts physically coherent shadow onto the public court.
   for(const x of [3,4,5,6,7]){
-    if(!occupied.has(id(x,7)))continue;
+    if(!occupied.has(id(x,7))||!knownWallColumns.has(x))continue;
     box('court-wall-base-'+x,x,.26,7,.94,.52,.93,shadow);
     box('court-wall-cap-'+x,x,.57,7,.96,.11,.94,metal);
     box('court-wall-conduit-'+x,x,.38,6.58,.93,.07,.095,bronze);
@@ -140,7 +140,7 @@ function buildCourt(scene:THREE.Scene){
   }
   // Only authentic blocked wall cells receive tall utility housings.
   for(const x of [3,6]){
-    if(!occupied.has(id(x,7)))continue;
+    if(!occupied.has(id(x,7))||!knownWallColumns.has(x))continue;
     box('court-service-unit-'+x,x,.84,7,.48,.45,.37,metal);
     box('court-service-cap-'+x,x,1.11,7,.54,.09,.43,bronze);
   }
@@ -164,6 +164,10 @@ export function GroundLandingCourt3D({explored}:Vision){
   const canvas=useRef<HTMLCanvasElement>(null);
   const [state,setState]=useState<'idle'|'ready'|'fallback'>('idle');
   const active=topologyValid&&courtCells.some(p=>explored.has(id(p.x,p.z)));
+  // Roofs and utility boxes project ABOVE their ground cell's fog silhouette.
+  // Only real discovered walls may ever enter the Three scene. Rebuild the
+  // one-shot renderer when the actual explored frontier advances.
+  const knownWalls=[3,4,5,6,7].filter(x=>explored.has(id(x,7))).join(',');
   useEffect(()=>{
     if(!active||!canvas.current)return;
     let renderer:THREE.WebGLRenderer|undefined;
@@ -180,7 +184,7 @@ export function GroundLandingCourt3D({explored}:Vision){
       renderer.shadowMap.enabled=true;
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const scene=new THREE.Scene();
-      disposeCourt=buildCourt(scene);
+      disposeCourt=buildCourt(scene,new Set(knownWalls.split(',').filter(Boolean).map(Number)));
       renderer.render(scene,makeGroundArchiveCamera());
       setState('ready');
     }catch{
@@ -192,10 +196,11 @@ export function GroundLandingCourt3D({explored}:Vision){
       return;
     }
     return ()=>{disposeCourt?.();renderer?.dispose();};
-  },[active]);
+  },[active,knownWalls]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
+    data-discovered-wall-columns={knownWalls}
     data-renderer-state={state}
     x="0" y="0" width={ARCHIVE_RENDER_WIDTH} height={ARCHIVE_RENDER_HEIGHT}
     aria-hidden="true" pointerEvents="none"
