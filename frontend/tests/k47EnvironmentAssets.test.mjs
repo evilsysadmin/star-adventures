@@ -108,7 +108,7 @@ test('3D bounds may occupy only the known blocked footprint, not free tiles',()=
 });
 
 test('real SHA-256 verifies exact embedded GLB bytes and rejects mutation',async()=>{
-  const model=smallGLB();
+  const model=smallGLB({extras:{tag:'valid'}});
   const sha256=createHash('sha256').update(Buffer.from(model)).digest('hex');
   const m=published();m.slots[0].asset.sha256=sha256;
   m.slots[0].asset.bytes=model.byteLength;
@@ -117,7 +117,12 @@ test('real SHA-256 verifies exact embedded GLB bytes and rejects mutation',async
   assert.doesNotThrow(()=>validateAuthoredSlots(m,world));
   await assert.doesNotReject(verifyPublishedGLBBytes(m.slots[0],model));
   const wrong=new Uint8Array(model.slice(0));
-  wrong[wrong.length-1]^=1;
+  // Change a valid JSON string while preserving exact byte size and glTF 2.0
+  // structure. An invalid JSON chunk would fail *before* the SHA-256 check.
+  const offset=Buffer.from(wrong).indexOf(Buffer.from('"valid"'));
+  assert.ok(offset>0);
+  wrong[offset+1]='t'.charCodeAt(0); // "valid" -> "talid"
+  assert.doesNotThrow(()=>validateEmbeddedGlb(wrong.buffer));
   await assert.rejects(verifyPublishedGLBBytes(m.slots[0],wrong.buffer),/SHA-256/);
   const truncated=model.slice(0,model.byteLength-1);
   await assert.rejects(verifyPublishedGLBBytes(m.slots[0],truncated),/byte count/);
