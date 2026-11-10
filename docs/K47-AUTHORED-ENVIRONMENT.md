@@ -164,6 +164,15 @@ The revised asset is placed in the real **west archive** blocked footprint
 and extent are rotated into that 1×3 tile slot. This should preserve the
 central playable yard and set substantial architecture behind the officers.
 The canonical camera, touch targets, movement, fog and saving are unchanged.
+The older `GroundArchiveVolume3D` is already a volumetric model on the same
+western blocked cells. Its canvas must be hidden only after successful
+checksum-verified new-GLB insertion: otherwise **two buildings are composited
+on top of each other**. A 503, SHA mismatch, broken model, unpublished slot
+or missing WebGL must retain the original 3D fallback.
+
+The second real Chromium visual review also found the 4.9-unit roofline
+uncomfortably close to the top HUD. The candidate now uses a lower 3.04-unit
+west profile; a bound-specific GLB test verifies its rotated 1×3-cell envelope.
 
 `frontend/tests/k47AuthoredFacade.spec.ts` injects that exact candidate
 manifest in local Vite, intercepts its immutable SHA URL with locally
