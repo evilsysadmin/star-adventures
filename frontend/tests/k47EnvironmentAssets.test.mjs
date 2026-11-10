@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {
   validateAuthoredSlots,eligibleAuthoredSlots,
-  validateEmbeddedGlb,assertModelWithinFootprint,
+  validateEmbeddedGlb,verifyPublishedGLBBytes,assertModelWithinFootprint,
 } from '../src/k47EnvironmentAssets.ts';
 
 const root=new URL('../../',import.meta.url);
@@ -104,4 +105,22 @@ test('3D bounds may occupy only the known blocked footprint, not free tiles',()=
   assert.throws(()=>assertModelWithinFootprint(slot,{
     min:{x:2.51,y:0,z:6.51},max:{x:7.49,y:7,z:7.49},
   }),/taller/);
+});
+
+test('real SHA-256 verifies exact embedded GLB bytes and rejects mutation',async()=>{
+  const model=smallGLB();
+  const sha256=createHash('sha256').update(Buffer.from(model)).digest('hex');
+  const m=published();m.slots[0].asset.sha256=sha256;
+  m.slots[0].asset.bytes=model.byteLength;
+  m.slots[0].asset.url=
+    'https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb';
+  assert.doesNotThrow(()=>validateAuthoredSlots(m,world));
+  await assert.doesNotReject(verifyPublishedGLBBytes(m.slots[0],model));
+  const wrong=new Uint8Array(model.slice(0));
+  wrong[wrong.length-1]^=1;
+  await assert.rejects(verifyPublishedGLBBytes(m.slots[0],wrong.buffer),/SHA-256/);
+  const truncated=model.slice(0,model.byteLength-1);
+  await assert.rejects(verifyPublishedGLBBytes(m.slots[0],truncated),/byte count/);
+  const unpub=clone().slots[0];
+  await assert.rejects(verifyPublishedGLBBytes(unpub,model),/unpublished/);
 });
