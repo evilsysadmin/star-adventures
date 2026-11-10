@@ -1,6 +1,8 @@
 import world from '../../../content/scenes/meridian.json';
 import {GroundMedicalFacility} from './GroundMedicalFacility';
 import {GroundProbeArray} from './GroundProbeArray';
+import {GroundSouthIndustrialWing} from './GroundSouthIndustrialWing';
+import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 
 // Original isometric colony structures. Only canonical blocked wall / station
 // cells own physical buildings. Architecture is not a picking surface.
@@ -225,10 +227,15 @@ function GroundScienceCampus({known,visible}:{
 export function GroundColonyWalls({explored,visible}:Vision){
  const warehouseKnown=warehouseValid&&warehouseFootprint.every(p=>explored.has(key(p.x,p.y)));
  const scienceKnown=scienceValid&&scienceFootprint.every(p=>explored.has(key(p.x,p.y)));
+ const southSpans=southIndustrialSpans(explored,scene.walls);
+ const southCovered=southIndustrialCoveredColumns(southSpans);
+ const hasSouthWing=(x:number,y:number)=>y===7&&southCovered.has(x);
  return <g data-testid="ground-colony-walls" pointerEvents="none">
   <GroundScienceCampus known={scienceKnown} visible={visible}/>
+  <GroundSouthIndustrialWing spans={southSpans} visible={visible}/>
   {builtCells.filter(p=>explored.has(key(p.x,p.y))&&
     (!scienceKnown||p.x!==3||p.y!==2)&&
+    !hasSouthWing(p.x,p.y)&&
     (!warehouseKnown||!warehouseKeys.has(key(p.x,p.y))))
     .map(p=>{
      const xy=key(p.x,p.y),pos=at(p.x,p.y);
@@ -268,6 +275,9 @@ export function GroundColonyWalls({explored,visible}:Vision){
   <g data-testid="ground-colony-connected-roofs">
    {roofJoins.filter(({from,to})=>
      explored.has(key(from.x,from.y))&&explored.has(key(to.x,to.y))&&
+     // The new single roof already covers its actual south-wall footprint:
+     // retaining any joined-roof strip here would overlay duplicate geometry.
+     !hasSouthWing(from.x,from.y)&&!hasSouthWing(to.x,to.y)&&
      (!warehouseKnown||
        (!warehouseKeys.has(key(from.x,from.y))&&!warehouseKeys.has(key(to.x,to.y)))))
     .map(({from,to})=>{
