@@ -3,7 +3,9 @@
 // permitted to bridge an unexplored cell or invent a walkable surface.
 export type SouthWingSpan={start:number;end:number;cells:readonly string[]};
 export const SOUTH_FACTORY_ROW=7;
-const SOUTH_FACTORY_START=2;
+// x=2 retains its old per-cell frontage: the GLB-authored replacement
+// footprint and our new shared facade both begin at the same x=3 edge.
+const SOUTH_FACTORY_START=3;
 const SOUTH_FACTORY_END=7;
 const key=(x:number,y:number)=>x+','+y;
 
