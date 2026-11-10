@@ -172,3 +172,15 @@
     min-width:118px;max-width:min(46vw,160px);
   }
 }
+
+
+/* This is one world-aligned PBR replacement for the original 2D rescue bay
+   floor. Only when a real WebGL frame is ready should the opaque SVG material
+   give way to the 3D concrete. All route hatches, station markings and
+   handrails remain SVG above it. The untouched SVG floor remains the fallback
+   when WebGL cannot initialize (or the sector has not yet been discovered). */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-bay-continuous-floor"] [data-testid^="ground-bay-floor-"]{
+  opacity:.08;
+}
