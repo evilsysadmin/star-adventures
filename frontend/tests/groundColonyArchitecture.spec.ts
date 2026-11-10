@@ -63,6 +63,7 @@ for(const width of [390,1280]) {
       spans,
     };
   });
+  expect(frontageState.spans.length).toBeGreaterThan(0);
   expect(frontageState.passive&&frontageState.noPickTargets).toBe(true);
   expect(frontageState.aboveGroundFog&&frontageState.belowStations).toBe(true);
   expect(frontageState.spans.every(span=>span.blocked&&span.discovered&&
