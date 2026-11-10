@@ -45,16 +45,16 @@ jobs:
       # Keep the original web check name for Infra admission. Each of the five
       # browser shards is mandatory; file assignment uses measured spec durations.
       # New specs receive a fallback weight and are assigned automatically.
-      - name: Build deterministic K-47 south facade candidate (never deployed)
+      - name: Build deterministic K-47 west archive candidate (never deployed)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p frontend/test-results
-          python3 frontend/scripts/build_k47_south_facade.py > "$RUNNER_TEMP/k47-south.glb"
-          sha="$(sha256sum "$RUNNER_TEMP/k47-south.glb" | cut -d' ' -f1)"
-          bytes="$(wc -c < "$RUNNER_TEMP/k47-south.glb")"
+          python3 frontend/scripts/build_k47_west_facade.py > "$RUNNER_TEMP/k47-west.glb"
+          sha="$(sha256sum "$RUNNER_TEMP/k47-west.glb" | cut -d' ' -f1)"
+          bytes="$(wc -c < "$RUNNER_TEMP/k47-west.glb")"
           test "$bytes" -ge 100000 && test "$bytes" -le 4194304
-          cp "$RUNNER_TEMP/k47-south.glb" "frontend/test-results/south-industrial-shell-${sha:0:16}.glb"
+          cp "$RUNNER_TEMP/k47-west.glb" "frontend/test-results/west-archive-shell-${sha:0:16}.glb"
           echo "K47_AUTHORED_CANDIDATE sha256=$sha bytes=$bytes"
       - name: Browser journey, keyboard and mobile widths (shard 1/5)
         run: node scripts/run-browser-shard.mjs 1/5
@@ -62,8 +62,8 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: staradvs-k47-south-candidate-${{ github.sha }}
-          path: frontend/test-results/south-industrial-shell-*.glb
+          name: staradvs-k47-west-candidate-${{ github.sha }}
+          path: frontend/test-results/west-archive-shell-*.glb
           if-no-files-found: error
           retention-days: 14
       - name: Upload browser screenshots and lockfile
