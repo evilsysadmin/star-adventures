@@ -21,6 +21,7 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-topology-valid','true');
   await expect(court).toHaveAttribute('visibility','visible');
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
+  await expect(court).toHaveAttribute('data-terrace-kit','k47-industrial-terrace-v1');
   // The existing solid SVG floor must actually uncover the 3D art, while
   // keeping the separately rendered mission/hatch decorations above it.
   await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
@@ -59,6 +60,13 @@ for(const width of [390,1280]){
   });
   expect(wallReveal.columns.every(x=>[3,4,5,6,7].includes(x))).toBe(true);
   expect(wallReveal.leaking).toEqual([]);
+  // The new rocky retaining wall may replace only real, already discovered
+  // blocked cells. Their SVG artwork remains a WebGL-failure fallback.
+  for(const column of wallReveal.columns){
+    const oldWall=board.locator('[data-testid="ground-architecture-wall-'+column+',7"]');
+    await expect(oldWall).toHaveCount(1);
+    await expect(oldWall).toHaveCSS('opacity','0');
+  }
   expect(structure.cells).toBe(216);
   expect(structure.courtCells).toBeGreaterThan(14);
   expect(structure.canvasSize).toEqual(['1120','550']);
@@ -67,6 +75,7 @@ for(const width of [390,1280]){
   await expect(board.locator('[data-fog-cell="10,4"]'))
     .toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-industrial-pbr-court-'+width+'.png'});
+  await page.screenshot({path:'test-results/away-k47-terrace-full-'+width+'.png'});
 
   // A live move command still resolves against the exact canonical cell.
   await board.locator('[data-cell-id="5,4"]').click({button:'right'});
@@ -98,6 +107,11 @@ test('WebGL failure leaves the original entire SVG landing fully playable',async
  const board=page.getByTestId('ground-squad-board');
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','fallback');
+ await expect(court).toHaveAttribute('data-terrace-kit','k47-industrial-terrace-v1');
+ for(const column of [3,4,5,6,7]){
+   const wall=board.locator('[data-testid="ground-architecture-wall-'+column+',7"]');
+   if(await wall.count())await expect(wall).not.toHaveCSS('opacity','0');
+ }
  // The original SVG floor must remain fully legible if there is no WebGL.
  await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
    .not.toHaveCSS('opacity','0.08');
