@@ -118,3 +118,30 @@ Never commit big GLB binaries or R2 credentials to this public repo.
 
 This is a **prerequisite**, not the actual visual finish line. The first
 published, author-reviewed GLB is the next material deliverable.
+
+
+## Local visual acceptance before R2 promotion
+
+The development Vite server supports a **test-only** `window.__k47ArtPreviewManifest`
+injected **before page load** (for example through Playwright
+`page.addInitScript`). Production builds completely ignore this hook.
+The injected manifest must satisfy the same real blocked-cell footprint, pinned
+HTTPS R2 URL, SHA-256, provenance, byte budget and embedded GLB checks as the
+published manifest. In a browser test, intercept that exact immutable candidate
+URL using `page.route` and fulfil it with the **actual local candidate GLB
+bytes**, not a fabricated cloud response. This is a local preview, not proof
+that the asset is live on R2.
+
+The real `GroundLandingCourt3D` renderer then puts the preview model **inside
+the actual running game**, with the original camera, selectable officers,
+mission elements, movement, fog and SVG fallback. A model does not load until
+the player has discovered every cell of its footprint; use real orders to
+explore it, not a fog bypass. Capture the entire scene at **390 and 1280 px**,
+inspect the resulting PNGs, and reject visually poor assets even when WebGL
+tests pass. Reload after movement to verify there is no model or save mismatch.
+Use `frontend/tests/k47AuthoredGlbRuntime.spec.ts` as the working reference.
+
+An invalid preview is ignored; a missing, corrupt or out-of-bounds GLB retains
+the original playable scenery. The shipped manifest remains `unpublished`
+until Infra proves an actual immutable, authorized R2 upload. This preview
+hook is **not** a new asset source, bypass or network publishing mechanism.
