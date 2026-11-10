@@ -66,8 +66,10 @@ for(const width of [390,1280]){
   await expect(art).toHaveAttribute('data-authored-art-ready',
      'west-archive-shell',{timeout:25_000});
   await expect(art).toHaveAttribute('data-authored-art-state','ready');
+  // West edge is a real blocked world region but has no SVG architecture
+  // placeholder. Art readiness above is the authoritative replacement gate.
   await expect(board.getByTestId('ground-architecture-wall-0,3'))
-    .toHaveCSS('opacity','0');
+    .toHaveCount(0);
   await expect(board.locator('[data-cell-id]')).toHaveCount(216);
   expect(requests).toBeGreaterThanOrEqual(1);
   await board.screenshot({path:'test-results/k47-west-authored-facade-'+width+'.png'});
