@@ -19,7 +19,7 @@ function ConnectedSouthHangar({span,visible}:{span:SouthWingSpan;visible:Readonl
  const start=at(span.start,7),end=at(span.end,7);
  // The roof is a single isometric slab over a contiguous 1xN wall row.
  // The wall rises from that SAME tile footprint, not from a walkable cell.
- const rise=67;
+ const rise=51;
  const a=point(start.x,start.y-20-rise);
  const b=point(end.x+40,end.y-rise);
  const c=point(end.x,end.y+20-rise);
@@ -33,7 +33,7 @@ function ConnectedSouthHangar({span,visible}:{span:SouthWingSpan;visible:Readonl
  const allLit=span.cells.every(k=>visible.has(k));
  const id=span.start+'-to-'+span.end;
  const bayCount=count;
- const machineCenter=lerp(upper(.58),front(.58),.44);
+ const machineCenter=lerp(upper(.43),front(.43),.24);
  return <g key={id}
   data-testid={'ground-south-industrial-hangar-'+id}
   data-footprint={span.cells.join(' ')}
@@ -43,16 +43,16 @@ function ConnectedSouthHangar({span,visible}:{span:SouthWingSpan;visible:Readonl
   opacity={allLit?1:.36}>
   {/* One shadow across the entire authored, physically blocked frontage. */}
   <path d={polygon([
-    front(0,65),front(1,65),offset(c,12,79),offset(d,-8,79),
+    front(0,52),front(1,52),offset(c,9,64),offset(d,-6,64),
   ])} fill="#07171c" opacity=".70"/>
   {/* Dark structural right return and the continuous front wall, not
       separated mini-houses with gaps between every wall square. */}
   <path d={polygon([b,c,offset(c,0,62),offset(b,0,62)])}
     fill="#1e3b43" stroke="#10262d" strokeWidth="2.5"/>
-  <path d={quad(0,1,0,65)}
+  <path d={quad(0,1,0,52)}
     fill="url(#k47-south-hangar-front)"
     stroke="#132b32" strokeWidth="2.5"/>
-  <path d={quad(0,1,50,57)}
+  <path d={quad(0,1,44,49)}
     fill="#132c34" stroke="#be9d68" strokeWidth="1"/>
   {/* Uninterrupted heavy horizontal fascia gives the building real length
       at ordinary camera zoom. Lower gold accent is restrained. */}
@@ -124,18 +124,18 @@ function ConnectedSouthHangar({span,visible}:{span:SouthWingSpan;visible:Readonl
     'L'+lerp(b,c,.35).x+' '+(lerp(b,c,.35).y-2)}
     stroke="#a0b8ae" strokeWidth="1.5" fill="none"/>
   {count>=3&&<g data-testid={'ground-south-hangar-roof-plant-'+id}>
-    <ellipse cx={machineCenter.x+6} cy={machineCenter.y+4}
-      rx="28" ry="13" fill="#122f35" opacity=".7"/>
-    <path d={'M'+(machineCenter.x-29)+' '+(machineCenter.y-6)+
-      'l27 -14 34 15 -29 16Z'}
+    <ellipse cx={machineCenter.x+3} cy={machineCenter.y+4}
+      rx="20" ry="10" fill="#122f35" opacity=".7"/>
+    <path d={'M'+(machineCenter.x-22)+' '+(machineCenter.y-4)+
+      'l20 -11 24 11 -20 12Z'}
       fill="#253d45" stroke="#a6b6a7" strokeWidth="1.4"/>
-    <path d={'M'+(machineCenter.x-29)+' '+(machineCenter.y-6)+
-      'v-15l27 -14v15Z'} fill="#485e61" stroke="#192d35" strokeWidth="1.1"/>
-    <path d={'M'+(machineCenter.x-2)+' '+(machineCenter.y-20)+
-      'v-15l34 15v15Z'} fill="#293f47" stroke="#152d34" strokeWidth="1.1"/>
-    {[-14,-5,4,13].map(dx=><path key={dx}
-      d={'M'+(machineCenter.x+dx)+' '+(machineCenter.y-12)+
-        'l13 5'} stroke="#c5ac79" strokeWidth="1.5" opacity=".75"/>)}
+    <path d={'M'+(machineCenter.x-22)+' '+(machineCenter.y-4)+
+      'v-11l20 -11v11Z'} fill="#485e61" stroke="#192d35" strokeWidth="1.1"/>
+    <path d={'M'+(machineCenter.x-2)+' '+(machineCenter.y-15)+
+      'v-11l24 11v11Z'} fill="#293f47" stroke="#152d34" strokeWidth="1.1"/>
+    {[-11,-5,1,7].map(dx=><path key={dx}
+      d={'M'+(machineCenter.x+dx)+' '+(machineCenter.y-9)+
+        'l9 4'} stroke="#c5ac79" strokeWidth="1.5" opacity=".75"/>)}
   </g>}
   {/* No decorative plank may act as a click target. */}
   <title>Complejo industrial conectado del perímetro sur</title>
@@ -147,14 +147,14 @@ export function GroundSouthIndustrialWing({spans,visible}:Props){
    data-span-count={spans.length} pointerEvents="none" aria-hidden="true">
   <defs>
    <linearGradient id="k47-south-hangar-front" x1="0" y1="0" x2=".12" y2="1">
-     <stop stopColor="#5b7876"/>
-     <stop offset=".32" stopColor="#304f56"/>
-     <stop offset="1" stopColor="#182e38"/>
+     <stop stopColor="#6b8781"/>
+     <stop offset=".32" stopColor="#4e6c6d"/>
+     <stop offset="1" stopColor="#29474f"/>
    </linearGradient>
    <linearGradient id="k47-south-hangar-roof" x1="0" y1="0" x2=".15" y2="1">
-     <stop stopColor="#96a49a"/>
-     <stop offset=".48" stopColor="#60786f"/>
-     <stop offset="1" stopColor="#2c4b51"/>
+     <stop stopColor="#9cafa2"/>
+     <stop offset=".48" stopColor="#71887e"/>
+     <stop offset="1" stopColor="#416061"/>
    </linearGradient>
    <linearGradient id="k47-south-hangar-window" x1="0" y1="0" x2="0" y2="1">
      <stop stopColor="#87c4b7"/>
