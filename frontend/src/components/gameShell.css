@@ -629,6 +629,13 @@
     display:block;line-height:1.4;font-size:11px;
     margin:7px 0;color:#b2d8e3;
   }
+  /* A historic refused-rescue save has an actionable extraction button.
+     Keep that primary exit visible without an inner vertical scroll:
+     the short objective stays; the narrative is available in the diary. */
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission:has([data-testid="abandoned-return"]) .mission-transmission-story{
+    display:none;
+  }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-rail{
     top:75px;left:10px;bottom:auto;width:151px;max-width:151px;
     padding:7px;border:2px solid #667981;border-left:3px solid #d2bc8b;
@@ -642,6 +649,7 @@
     display:grid;grid-template-columns:1fr;gap:7px;
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-entry{
+    position:relative;
     display:flex;flex-direction:column;align-items:stretch;gap:3px;
     min-height:133px;padding:5px 6px 6px;
     border-radius:2px;border:1px solid #5d7a82;
