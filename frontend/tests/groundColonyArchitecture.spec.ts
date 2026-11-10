@@ -29,6 +29,46 @@ for(const width of [390,1280]) {
   await page.getByTestId('ground-camera-toggle').click();
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-colony-walls')).toHaveCount(1);
+  // This large, contiguous face is strictly the authored SOUTH blocked wall,
+  // never an alternative pick-grid or newly disclosed unknown topography.
+  const frontage=page.getByTestId('ground-industrial-frontage');
+  await expect(frontage).toHaveCount(1);
+  const frontageState=await board.evaluate(root=>{
+    const group=root.querySelector('[data-testid="ground-industrial-frontage"]');
+    const fog=root.querySelector('[data-testid="ground-fog-layer"]');
+    const stations=root.querySelector('[data-testid="ground-outpost-landmarks"]');
+    const spans=[...(group?.querySelectorAll('[data-testid^="ground-frontage-span-"]')??[])]
+      .map(element=>{
+        const keys=(element.getAttribute('data-footprint')??'').split(' ');
+        const bounds=(element as SVGGraphicsElement).getBBox();
+        return {
+          keys,
+          fog:element.getAttribute('data-fog'),
+          dimensions:{width:bounds.width,height:bounds.height},
+          blocked:keys.every(id=>root.querySelector('[data-cell-id="'+id+'"]')
+             ?.getAttribute('data-ground-material')==='wallstone'),
+          discovered:keys.every(id=>!root.querySelector(
+             '[data-fog-cell="'+id+'"][data-fog-state="unknown"]')),
+          unobstructed:keys.every(id=>id.endsWith(',7')),
+          passive:getComputedStyle(element).pointerEvents==='none',
+        };
+      });
+    return {
+      passive:!!group&&getComputedStyle(group).pointerEvents==='none',
+      noPickTargets:group?.querySelectorAll('[data-cell-id],[data-officer-id]').length===0,
+      aboveGroundFog:!!group&&!!fog&&Boolean(
+        fog.compareDocumentPosition(group)&Node.DOCUMENT_POSITION_FOLLOWING),
+      belowStations:!!group&&!!stations&&Boolean(
+        group.compareDocumentPosition(stations)&Node.DOCUMENT_POSITION_FOLLOWING),
+      spans,
+    };
+  });
+  expect(frontageState.passive&&frontageState.noPickTargets).toBe(true);
+  expect(frontageState.aboveGroundFog&&frontageState.belowStations).toBe(true);
+  expect(frontageState.spans.every(span=>span.blocked&&span.discovered&&
+    span.unobstructed&&span.passive&&span.keys.length>=2)).toBe(true);
+  expect(frontageState.spans.every(span=>span.dimensions.width>60&&
+    span.dimensions.height>70)).toBe(true);
   await expect(page.getByTestId('ground-colony-connected-roofs')).toHaveCount(1);
   await expect(page.getByTestId('ground-colony-gateways')).toHaveCount(1);
   // Never reveal an unopened entry before both physical wall ends are known.
@@ -145,6 +185,7 @@ for(const width of [390,1280]) {
   await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(1);
   await expect(page.getByTestId('ground-cargo-3,2')).toHaveCount(0);
   await board.screenshot({path:'test-results/away-architecture-revealed-'+width+'.png'});
+  await board.screenshot({path:'test-results/away-industrial-frontage-'+width+'.png'});
   await orderCell(page,4,5);
   await expect(venn).toHaveAttribute('data-grid-x','4');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
