@@ -29,7 +29,12 @@ export function groundVisionCells(scene,eyes,radius=GROUND_VISION_RADIUS){
  if(!Number.isSafeInteger(scene?.width)||!Number.isSafeInteger(scene?.height)||
     !Number.isSafeInteger(radius)||radius<1||radius>8||!Array.isArray(eyes))
   throw new TypeError('Invalid ground visibility input');
- const opaque=new Set([...scene.walls,...scene.objects].map(p=>key(p.x,p.y)));
+ // A floor-level transport pad is traversable sight, not a solid wall.
+ // Keep every other station/object opaque: this does not alter movement,
+ // interactions, collision or mission state.
+ const opaque=new Set([...scene.walls,...scene.objects.filter(object=>
+   !(object.id==='beam-out'&&object.type==='transition'))]
+   .map(p=>key(p.x,p.y)));
  const result=new Set();
  for(const eye of eyes){
   if(!valid(scene,eye.x,eye.y))throw new RangeError('Observer outside map');
