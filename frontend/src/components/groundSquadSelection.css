@@ -205,16 +205,3 @@
 ){
   opacity:0;
 }
-
-/* The original west-wall vector modules are suppressed ONLY when the actual
-   checksum-proven west authored model is in the shared Three scene. Keep
-   station signs, archive objective, officers and selectable grid untouched. */
-[data-testid="ground-squad-board"]:has(
-  [data-testid="ground-landing-court-3d"][data-authored-art-ready~="west-archive-shell"]
-) :is(
-  [data-testid="ground-architecture-wall-0,3"],
-  [data-testid="ground-architecture-wall-0,4"],
-  [data-testid="ground-architecture-wall-0,5"],
-  [data-testid="ground-colony-roof-0,3-to-0,4"],
-  [data-testid="ground-colony-roof-0,4-to-0,5"]
-){opacity:0}
