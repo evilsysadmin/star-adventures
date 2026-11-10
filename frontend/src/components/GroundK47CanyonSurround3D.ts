@@ -4,8 +4,11 @@ import * as THREE from 'three';
 // are OUTSIDE the canonical 18×12 board (x < 0 or x > 17), so the scenery
 // cannot imply an undiscovered path, wall, mission objective or cover tile.
 // The same orthographic camera/pointer contract still belongs to SVG.
-export const K47_CANYON_SURROUND='k47-ambient-canyon-v1';
-const POINTS=25;
+export const K47_CANYON_SURROUND='k47-ambient-canyon-v2';
+// The 1280px QA capture caught a high tan wall crossing the top-left HUD.
+// Keep the ambient landforms below one world-unit and outside the board.
+export const K47_CANYON_MAX_HEIGHT=1.05;
+const POINTS=36;
 type CliffSide='west'|'east';
 
 function cliffGeometry(side:CliffSide){
@@ -15,7 +18,7 @@ function cliffGeometry(side:CliffSide){
    return v-Math.floor(v);
  };
  const push=(a:number[],b:number[],c:number[],level:number,facet:number)=>{
-   const c0=new THREE.Color(['#9a8570','#746d62','#c1a182','#554e4b','#a78c76'][facet%5]);
+   const c0=new THREE.Color(['#67766f','#505e5b','#718077','#384b4b','#596b63'][facet%5]);
    c0.multiplyScalar(level);
    for(const p of [a,b,c]){
      positions.push(p[0],p[1],p[2]);
@@ -29,21 +32,21 @@ function cliffGeometry(side:CliffSide){
    const t=i/POINTS;
    const z=1+t*11;
    const west=side==='west';
-   const outerX=west?-4.5:21.2;
-   const innerX=west?-1.15:18.25;
-   const ridgeline=2.8+1.1*Math.sin(t*9.5)+.42*(rng(i,0)-.5);
+   const outerX=west?-2.9:19.95;
+   const innerX=west?-.65:17.65;
+   const ridge=.68+.16*Math.sin(t*10)+.14*(rng(i,0)-.5);
    const steps=[
-     [outerX,.08],
-     [outerX+(innerX-outerX)*.34,ridgeline],
-     [outerX+(innerX-outerX)*.75,ridgeline*.67],
-     [innerX,-.42],
+     [outerX,-.12],
+     [outerX+(innerX-outerX)*.34,Math.min(K47_CANYON_MAX_HEIGHT,ridge)],
+     [outerX+(innerX-outerX)*.76,ridge*.49],
+     [innerX,-.36],
    ];
    for(let layer=0;layer<4;layer++){
      const [x,y]=steps[layer];
      rings[layer].push([
-       x+(rng(i,layer+8)-.5)*.43,
-       y+(rng(i,layer+5)-.5)*.26,
-       z+(rng(i,layer+17)-.5)*.28,
+       x+(rng(i,layer+8)-.5)*.20,
+       y+(rng(i,layer+5)-.5)*.08,
+       z+(rng(i,layer+17)-.5)*.14,
      ]);
    }
  }
@@ -51,7 +54,7 @@ function cliffGeometry(side:CliffSide){
    for(let i=0;i<POINTS;i++){
      const a=rings[layer][i],b=rings[layer][i+1],
        c=rings[layer+1][i+1],d=rings[layer+1][i];
-     const level=layer===0?.73:layer===1?1.03:.84;
+     const level=layer===0?.80:layer===1?.91:.74;
      push(a,b,c,level,layer+i*3);
      push(a,c,d,level*.94,layer+i*3+1);
    }
@@ -69,7 +72,7 @@ export function addK47CanyonSurround(scene:THREE.Scene){
  scene.add(group);
  const material=new THREE.MeshStandardMaterial({
    vertexColors:true,metalness:0,roughness:1,flatShading:true,
-   side:THREE.DoubleSide,emissive:0x514035,emissiveIntensity:.28,
+   side:THREE.DoubleSide,emissive:0x46544c,emissiveIntensity:.33,
  });
  const geometries:THREE.BufferGeometry[]=[];
  for(const side of ['west','east'] as const){
@@ -81,10 +84,8 @@ export function addK47CanyonSurround(scene:THREE.Scene){
    mesh.receiveShadow=false;
    group.add(mesh);
  }
- // Low warm practical lighting reveals stratification without making the
- // distant cliffs a brighter focus than the playable scientific campus.
- const practical=new THREE.PointLight(0xe7a477,1.8,12,2);
- practical.position.set(17,3,7);group.add(practical);
+ // No extra spotlight. The existing court's lighting already gives the
+ // canyon depth; an added warm point light washed out the rock to tan.
  return {dispose:()=>{
    scene.remove(group);
    geometries.forEach(geo=>geo.dispose());
