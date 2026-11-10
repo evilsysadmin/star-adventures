@@ -101,6 +101,34 @@ for(const width of [390,1280]){
   expect(material.regions.every(x=>x.pointer==='none'&&x.size>200)).toBe(true);
   expect(material.gradients).toEqual(['userSpaceOnUse','userSpaceOnUse','userSpaceOnUse']);
 
+  // World-space materials should cross the real tile seams without
+  // introducing another selectable grid or prematurely revealing new terrain.
+  const patina=await board.evaluate(root=>{
+    const overlay=root.querySelector('[data-testid="ground-weathered-surface"]');
+    const tiles=root.querySelector('polygon[data-cell-id]');
+    const fog=root.querySelector('[data-testid="ground-fog-layer"]');
+    const materials=['colony','regolith'].map(name=>{
+      const pattern=root.querySelector('#ground-patina-'+name);
+      const shape=overlay?.querySelector('[data-testid="ground-weathering-'+name+'"]');
+      return {pattern:pattern?.getAttribute('patternUnits'),
+        d:shape?.getAttribute('d')?.length??0,
+        fill:shape?.getAttribute('fill'),
+        passive:shape?getComputedStyle(shape).pointerEvents==='none':false};
+    });
+    return {materials,passive:overlay?getComputedStyle(overlay).pointerEvents==='none':false,
+      noPickTargets:overlay?.querySelectorAll('[data-cell-id],[data-fog-cell],[data-officer-id]').length===0,
+      afterTiles:!!tiles&&!!overlay&&
+        Boolean(tiles.compareDocumentPosition(overlay)&Node.DOCUMENT_POSITION_FOLLOWING),
+      beforeFog:!!fog&&!!overlay&&
+        Boolean(overlay.compareDocumentPosition(fog)&Node.DOCUMENT_POSITION_FOLLOWING)};
+  });
+  expect(patina.materials).toEqual([
+    {pattern:'userSpaceOnUse',d:expect.any(Number),fill:'url(#ground-patina-colony)',passive:true},
+    {pattern:'userSpaceOnUse',d:expect.any(Number),fill:'url(#ground-patina-regolith)',passive:true},
+  ]);
+  expect(patina.materials.every(item=>item.d>200)).toBe(true);
+  expect(patina.passive&&patina.noPickTargets&&patina.afterTiles&&patina.beforeFog).toBe(true);
+
   await expect(board.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','unknown');
   // The never-explored sector is one continuous, opaque world-space
   // atmosphere: no per-cell palette revealing an obvious checkerboard.
