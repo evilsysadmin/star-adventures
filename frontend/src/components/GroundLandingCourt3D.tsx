@@ -3,6 +3,10 @@ import * as THREE from 'three';
 import world from '../../../content/scenes/meridian.json';
 import {ARCHIVE_RENDER_HEIGHT,ARCHIVE_RENDER_WIDTH,
   makeGroundArchiveCamera} from '../groundArchiveCamera';
+import {
+  addK47AuthoredEnvironment,eligiblePublishedK47ArtIds,
+  K47_AUTHORED_SLOT_COUNT,K47_PUBLISHED_SLOT_COUNT,
+} from './GroundK47AuthoredEnvironment';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -163,15 +167,22 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>){
 export function GroundLandingCourt3D({explored}:Vision){
   const canvas=useRef<HTMLCanvasElement>(null);
   const [state,setState]=useState<'idle'|'ready'|'fallback'>('idle');
+  const [artState,setArtState]=useState<'unpublished'|'loading'|'ready'|'fallback'>('unpublished');
+  const [loadedArtIds,setLoadedArtIds]=useState('');
   const active=topologyValid&&courtCells.some(p=>explored.has(id(p.x,p.z)));
   // Roofs and utility boxes project ABOVE their ground cell's fog silhouette.
   // Only real discovered walls may ever enter the Three scene. Rebuild the
   // one-shot renderer when the actual explored frontier advances.
   const knownWalls=[3,4,5,6,7].filter(x=>explored.has(id(x,7))).join(',');
+  // Adding an entirely discovered authored building triggers a repaint, but
+  // unrelated set churn never causes a redundant GLTF/CDN request.
+  const authoredKey=eligiblePublishedK47ArtIds(explored).join(' ');
   useEffect(()=>{
     if(!active||!canvas.current)return;
     let renderer:THREE.WebGLRenderer|undefined;
     let disposeCourt:(()=>void)|undefined;
+    let disposeAuthored:(()=>void)|undefined;
+    const abortArt=new AbortController();
     try{
       renderer=new THREE.WebGLRenderer({canvas:canvas.current,alpha:true,
         antialias:true,powerPreference:'low-power'});
@@ -185,22 +196,55 @@ export function GroundLandingCourt3D({explored}:Vision){
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const scene=new THREE.Scene();
       disposeCourt=buildCourt(scene,new Set(knownWalls.split(',').filter(Boolean).map(Number)));
-      renderer.render(scene,makeGroundArchiveCamera());
+      const camera=makeGroundArchiveCamera();
+      renderer.render(scene,camera);
       setState('ready');
+      // This fetches NOTHING until an R2 object is explicitly published and
+      // all of the asset's actual blocked cells are known to the squad.
+      if(authoredKey){
+        setArtState('loading');
+        void addK47AuthoredEnvironment(scene,explored,abortArt.signal).then(result=>{
+          if(abortArt.signal.aborted){
+            result.dispose();return;
+          }
+          disposeAuthored=result.dispose;
+          if(result.loadedIds.length)renderer?.render(scene,camera);
+          setLoadedArtIds(result.loadedIds.join(' '));
+          setArtState(result.failedIds.length?'fallback':
+            result.loadedIds.length?'ready':'unpublished');
+        }).catch(()=>{
+          if(!abortArt.signal.aborted)setArtState('fallback');
+        });
+      }else{
+        setArtState('unpublished');
+        setLoadedArtIds('');
+      }
     }catch{
       // The original SVG remains fully playable on phones, WebGL-disabled
       // browsers or software-renderer failure. No faux "successful" art.
+      abortArt.abort();
+      disposeAuthored?.();
       disposeCourt?.();
       renderer?.dispose();
+      setArtState('fallback');
       setState('fallback');
       return;
     }
-    return ()=>{disposeCourt?.();renderer?.dispose();};
-  },[active,knownWalls]);
+    return ()=>{
+      abortArt.abort();
+      disposeAuthored?.();
+      disposeCourt?.();
+      renderer?.dispose();
+    };
+  },[active,knownWalls,authoredKey]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
     data-discovered-wall-columns={knownWalls}
+    data-authored-art-slots={K47_AUTHORED_SLOT_COUNT}
+    data-published-art-slots={K47_PUBLISHED_SLOT_COUNT}
+    data-authored-art-state={artState}
+    data-authored-art-ready={loadedArtIds}
     data-renderer-state={state}
     x="0" y="0" width={ARCHIVE_RENDER_WIDTH} height={ARCHIVE_RENDER_HEIGHT}
     aria-hidden="true" pointerEvents="none"
