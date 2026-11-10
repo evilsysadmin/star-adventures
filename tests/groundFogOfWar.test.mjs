@@ -29,6 +29,21 @@ test('two walls closing a diagonal corner prevent impossible peeking',()=>{
  assert.ok(!cells.has('3,3'));
 });
 
+test('teleport pad is a floor feature, not a wall blocking south K-47 art',()=>{
+ const moved=orderGroundOfficerMove(world,away,deploy(),'venn',{x:5,y:6});
+ const seen=groundFogOfWar(world,away,moved.snapshot).explored;
+ for(const x of [3,4,5,6,7])
+  assert.ok(seen.has(x+',7'),'actual southern wall '+x+',7 is discovered');
+ // No weakening of true opacity: built walls still hide the tiles behind.
+ const scene={width:7,height:7,walls:[{x:3,y:2}],objects:[
+  {id:'beam-out',type:'transition',x:1,y:2},
+  {id:'solid-medical',type:'station',x:5,y:2},
+ ]};
+ assert.ok(groundVisionCells(scene,[{x:1,y:3}],3).has('1,1'));
+ assert.ok(!groundVisionCells(scene,[{x:3,y:3}],3).has('3,1'));
+ assert.ok(!groundVisionCells(scene,[{x:5,y:3}],3).has('5,1'));
+});
+
 test('actual squad moves reveal intermediate terrain and remember it after returning',()=>{
  const initial=deploy();
  const old=groundFogOfWar(world,away,initial);

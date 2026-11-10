@@ -5,7 +5,7 @@ import {ARCHIVE_RENDER_HEIGHT,ARCHIVE_RENDER_WIDTH,
   makeGroundArchiveCamera} from '../groundArchiveCamera';
 import {
   addK47AuthoredEnvironment,eligiblePublishedK47ArtIds,
-  K47_AUTHORED_SLOT_COUNT,K47_PUBLISHED_SLOT_COUNT,
+  k47ArtManifestForRendering,
 } from './GroundK47AuthoredEnvironment';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
@@ -176,7 +176,8 @@ export function GroundLandingCourt3D({explored}:Vision){
   const knownWalls=[3,4,5,6,7].filter(x=>explored.has(id(x,7))).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
   // unrelated set churn never causes a redundant GLTF/CDN request.
-  const authoredKey=eligiblePublishedK47ArtIds(explored).join(' ');
+  const artManifest=k47ArtManifestForRendering();
+  const authoredKey=eligiblePublishedK47ArtIds(explored,artManifest).join(' ');
   useEffect(()=>{
     if(!active||!canvas.current)return;
     let renderer:THREE.WebGLRenderer|undefined;
@@ -203,7 +204,7 @@ export function GroundLandingCourt3D({explored}:Vision){
       // all of the asset's actual blocked cells are known to the squad.
       if(authoredKey){
         setArtState('loading');
-        void addK47AuthoredEnvironment(scene,explored,abortArt.signal).then(result=>{
+        void addK47AuthoredEnvironment(scene,explored,abortArt.signal,artManifest).then(result=>{
           if(abortArt.signal.aborted){
             result.dispose();return;
           }
@@ -236,13 +237,13 @@ export function GroundLandingCourt3D({explored}:Vision){
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,authoredKey]);
+  },[active,knownWalls,authoredKey,artManifest]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
     data-discovered-wall-columns={knownWalls}
-    data-authored-art-slots={K47_AUTHORED_SLOT_COUNT}
-    data-published-art-slots={K47_PUBLISHED_SLOT_COUNT}
+    data-authored-art-slots={artManifest.slots.length}
+    data-published-art-slots={artManifest.slots.filter(slot=>slot.status==='published').length}
     data-authored-art-state={artState}
     data-authored-art-ready={loadedArtIds}
     data-renderer-state={state}

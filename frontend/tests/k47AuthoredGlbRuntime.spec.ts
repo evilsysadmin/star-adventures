@@ -129,3 +129,67 @@ test('undiscovered art does not fetch, invalid CDN response is fallback',async({
  expect(failed.failed).toEqual(['south-industrial-shell']);
  expect(requests).toBe(1);
 });
+
+for(const width of [390,1280]){
+ test('dev art candidate renders in the REAL landing canvas before R2 publication '+width,
+ async({page})=>{
+  test.setTimeout(125_000);
+  await page.setViewportSize({width,height:850});
+  const body=testGLB(),{manifest,url}=publishedManifest(body);
+  // Only the development server consumes this override. It must still pass
+  // the exact production SHA, R2 origin, footprint and fog gates.
+  await page.addInitScript(value=>{
+    (window as typeof window & {__k47ArtPreviewManifest?:unknown})
+      .__k47ArtPreviewManifest=value;
+  },manifest);
+  let requests=0;
+  await page.route(url,route=>{
+    requests++;
+    return route.fulfill({status:200,contentType:'model/gltf-binary',
+      headers:{'access-control-allow-origin':'*'},body});
+  });
+  await page.goto('/');
+  await page.getByTestId('captain-transport').click();
+  await page.getByTestId('transport-confirm').click();
+  const board=page.getByTestId('ground-squad-board');
+  const court=page.getByTestId('ground-landing-court-3d');
+  await expect(court).toHaveAttribute('data-published-art-slots','1');
+  await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
+  // Actually explore the front of the south shell instead of inventing
+  // exploration state or bypassing the normal fog.
+  await board.locator('[data-cell-id="5,6"]').click({button:'right'});
+  await expect(court).toHaveAttribute('data-authored-art-ready',
+    'south-industrial-shell',{timeout:35000});
+  await expect(court).toHaveAttribute('data-authored-art-state','ready');
+  await expect(board.getByTestId('ground-architecture-wall-3,7'))
+    .toHaveCSS('opacity','0');
+  expect(requests).toBeGreaterThanOrEqual(1);
+  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+  await board.screenshot({path:'test-results/k47-authored-preview-'+width+'.png'});
+  await page.reload();
+  await expect(court).toHaveAttribute('data-authored-art-ready',
+    'south-industrial-shell',{timeout:35000});
+  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    .toBe(true);
+ });
+}
+
+test('invalid dev art preview is ignored instead of blanking the landing',async({page})=>{
+ const body=testGLB(),{manifest}=publishedManifest(body);
+ manifest.slots[0].asset!.url='https://invalid.example/not-authorized.glb';
+ await page.addInitScript(value=>{
+   (window as typeof window & {__k47ArtPreviewManifest?:unknown})
+     .__k47ArtPreviewManifest=value;
+ },manifest);
+ await page.route('**/star-adventures/environment/*.glb',route=>
+   route.abort('failed'));
+ await page.goto('/');
+ await page.getByTestId('captain-transport').click();
+ await page.getByTestId('transport-confirm').click();
+ const court=page.getByTestId('ground-landing-court-3d');
+ await expect(court).toHaveAttribute('data-published-art-slots','0');
+ await expect(court).toHaveAttribute('data-authored-art-state','unpublished');
+ await expect(page.getByTestId('ground-squad-board')
+   .locator('[data-cell-id]')).toHaveCount(216);
+});
