@@ -97,8 +97,7 @@ function makeCourtSurface(){
   geometry.computeVertexNormals();
   return geometry;
 }
-function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
-  southWallFallback:THREE.Group){
+function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>){
   const resources:Array<{dispose:()=>void}>=[];
   const texture=courtTexture();
   if(texture)resources.push(texture);
@@ -121,21 +120,20 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
   const rubber=makeMat(0x263f42,.09,.95);
   resources.push(metal,shadow,bronze,rubber);
   const box=(name:string,x:number,y:number,z:number,
-    w:number,h:number,d:number,mat:THREE.Material,
-    parent:THREE.Object3D=scene)=>{
+    w:number,h:number,d:number,mat:THREE.Material)=>{
     const geometry=new THREE.BoxGeometry(w,h,d);
     resources.push(geometry);
     const mesh=new THREE.Mesh(geometry,mat);
     mesh.name=name;mesh.position.set(x,y,z);
-    mesh.receiveShadow=true;mesh.castShadow=true;parent.add(mesh);
+    mesh.receiveShadow=true;mesh.castShadow=true;scene.add(mesh);
   };
   // Substantial industrial foundation behind the yard, on real blocked wall
   // cells only. It casts physically coherent shadow onto the public court.
   for(const x of [3,4,5,6,7]){
     if(!occupied.has(id(x,7))||!knownWallColumns.has(x))continue;
-    box('court-wall-base-'+x,x,.26,7,.94,.52,.93,shadow,southWallFallback);
-    box('court-wall-cap-'+x,x,.57,7,.96,.11,.94,metal,southWallFallback);
-    box('court-wall-conduit-'+x,x,.38,6.58,.93,.07,.095,bronze,southWallFallback);
+    box('court-wall-base-'+x,x,.26,7,.94,.52,.93,shadow);
+    box('court-wall-cap-'+x,x,.57,7,.96,.11,.94,metal);
+    box('court-wall-conduit-'+x,x,.38,6.58,.93,.07,.095,bronze);
   }
   // Industrial seams and embedded service conduits are flush with the
   // original *walkable* floor. They never form new collision geometry.
@@ -147,8 +145,8 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
   // Only authentic blocked wall cells receive tall utility housings.
   for(const x of [3,6]){
     if(!occupied.has(id(x,7))||!knownWallColumns.has(x))continue;
-    box('court-service-unit-'+x,x,.84,7,.48,.45,.37,metal,southWallFallback);
-    box('court-service-cap-'+x,x,1.11,7,.54,.09,.43,bronze,southWallFallback);
+    box('court-service-unit-'+x,x,.84,7,.48,.45,.37,metal);
+    box('court-service-cap-'+x,x,1.11,7,.54,.09,.43,bronze);
   }
   scene.add(new THREE.HemisphereLight(0xbed0d0,0x21363b,2.05));
   const sun=new THREE.DirectionalLight(0xffd3a3,3.1);
@@ -198,10 +196,7 @@ export function GroundLandingCourt3D({explored}:Vision){
       renderer.shadowMap.enabled=true;
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const scene=new THREE.Scene();
-      const southWallFallback=new THREE.Group();
-      scene.add(southWallFallback);
-      disposeCourt=buildCourt(scene,new Set(knownWalls.split(',').filter(Boolean).map(Number)),
-        southWallFallback);
+      disposeCourt=buildCourt(scene,new Set(knownWalls.split(',').filter(Boolean).map(Number)));
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
       setState('ready');
@@ -214,9 +209,6 @@ export function GroundLandingCourt3D({explored}:Vision){
             result.dispose();return;
           }
           disposeAuthored=result.dispose;
-          // Replace both SVG and WebGL fallback walls only AFTER the fully
-          // verified authored model has entered the same scene.
-          southWallFallback.visible=!result.loadedIds.includes('south-industrial-shell');
           if(result.loadedIds.length)renderer?.render(scene,camera);
           setLoadedArtIds(result.loadedIds.join(' '));
           setArtState(result.failedIds.length?'fallback':
