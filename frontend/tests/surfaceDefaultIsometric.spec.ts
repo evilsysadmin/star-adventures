@@ -28,14 +28,14 @@ for(const width of [360,390,430,1280,1757]){
     await expect(page.getByTestId('ground-inspect-probe')).toBeVisible();
     await expect(page.getByTestId('ground-assist-civilians')).toBeVisible();
     if(width>=1280){
-      // On desktop, the service transmission must read like a corner radio,
-      // not the 320px sidebar that obscured a large slice of the map.
+      // Desktop uses the real top-right mission console from the reference,
+      // without overlapping the selected officers on the central board.
       const radio=await page.getByTestId('mission-transmission').boundingBox();
       const dorn=await page.getByTestId('ground-unit-dorn').boundingBox();
       expect(radio).not.toBeNull();
       expect(dorn).not.toBeNull();
-      expect(radio!.width).toBeLessThanOrEqual(282);
-      expect(radio!.height).toBeLessThanOrEqual(178);
+      expect(radio!.width).toBeLessThanOrEqual(330);
+      expect(radio!.height).toBeLessThanOrEqual(228);
       expect(radio!.x).toBeGreaterThan(dorn!.x+dorn!.width);
     }
     // The mobile mission briefing and camera header must never obscure the
@@ -113,8 +113,8 @@ for(const width of [390,1280,1757]){
           noVerticalOverflow:node.scrollHeight<=node.clientHeight+1,
           actionFullyInside:action.top>=radio.top&&action.bottom<=radio.bottom};
       });
-      expect(bounds.width).toBeLessThanOrEqual(282);
-      expect(bounds.height).toBeLessThanOrEqual(178);
+      expect(bounds.width).toBeLessThanOrEqual(330);
+      expect(bounds.height).toBeLessThanOrEqual(228);
       expect(bounds.noVerticalOverflow).toBe(true);
       expect(bounds.actionFullyInside).toBe(true);
     }
