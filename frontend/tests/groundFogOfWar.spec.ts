@@ -54,7 +54,7 @@ for(const width of [390,1280]){
   expect(medical.exists&&medical.passive&&medical.hiddenWhenUnknown).toBe(true);
   expect(medical.size?.height).toBeGreaterThan(120);
   expect(medical.originalLabel).toBe('SOCORRO');
-  expect(medical.shift).toBe('translate(60 -85)');
+  expect(medical.shift).toBe('translate(60 -85) scale(.78)');
   // Mission plaques are attached only to original stations and inherit
   // their discovered/undiscovered visibility; all pass events through.
   const waypoints=await board.evaluate(root=>
