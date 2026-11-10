@@ -64,9 +64,12 @@ export function addK47Terrace(scene:THREE.Scene,knownColumns:ReadonlySet<number>
    color:0x5e9c9e,emissive:0x22616a,emissiveIntensity:.78,
    metalness:.45,roughness:.17
  }));
- const rock=material(new THREE.MeshStandardMaterial({
-   vertexColors:true,roughness:.97,metalness:0,flatShading:true,
-   emissive:0x6f5949,emissiveIntensity:.58,side:THREE.DoubleSide
+ // The geological skirt is not a dark load-bearing polygon; world-space
+ // vertex tones must remain legible under the one-shot WebGL shadow map.
+ // Using a basic facet material also avoids a near-black canyon when the
+ // directional light falls behind the exposed lower retaining face.
+ const rock=material(new THREE.MeshBasicMaterial({
+   vertexColors:true,side:THREE.DoubleSide
  }));
  const box=(name:string,x:number,y:number,z:number,w:number,h:number,d:number,mat:THREE.Material)=>{
    const mesh=new THREE.Mesh(geometry(new THREE.BoxGeometry(w,h,d)),mat);
