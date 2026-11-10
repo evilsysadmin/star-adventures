@@ -5,7 +5,7 @@ import {expect,test} from '@playwright/test';
 test.use({storageState:{cookies:[],origins:[]}});
 
 for(const width of [360,390,430,1280,1757]){
-  test('compact crew rail and one-row orders preserve real selection at '+width+'px',async({page})=>{
+  test('authored tactical command frame preserves real selection at '+width+'px',async({page})=>{
     test.setTimeout(100_000);
     page.setDefaultTimeout(15_000);
     const height=width===1757?800:850;
@@ -52,8 +52,8 @@ for(const width of [360,390,430,1280,1757]){
       const dornName=rect('[data-testid="ground-unit-dorn"] text.ground-unit-name');
       const scene=rect('[data-testid="ground-squad-board"]');
       return {rail:{left:rail.left,top:rail.top,bottom:rail.bottom,width:rail.width,height:rail.height},
-        dock:{top:dock.top,bottom:dock.bottom,width:dock.width,height:dock.height},
-        status:{top:status.top,bottom:status.bottom,height:status.height},
+        dock:{left:dock.left,right:dock.right,top:dock.top,bottom:dock.bottom,width:dock.width,height:dock.height},
+        status:{left:status.left,top:status.top,bottom:status.bottom,height:status.height},
         help:{top:help.top,bottom:help.bottom,width:help.width},
         camera:{right:camera.right,bottom:camera.bottom,width:camera.width},
         dornName:{left:dornName.left,top:dornName.top},
@@ -66,11 +66,17 @@ for(const width of [360,390,430,1280,1757]){
     expect(layout.dock.bottom).toBeLessThanOrEqual(height);
     expect(layout.rail.top).toBeGreaterThanOrEqual(0);
     if(width>700){
+      // Desktop is now an actual command frame: three readable portraits
+      // down the left; a two-row order console and status docked alongside.
       expect(layout.rail.width).toBeLessThanOrEqual(175);
-      expect(layout.rail.height).toBeLessThan(210);
-      expect(layout.dock.height).toBeLessThan(58);
-      expect(layout.dock.width).toBeLessThan(500);
-      expect(layout.status.bottom).toBeLessThan(layout.dock.top);
+      expect(layout.rail.height).toBeGreaterThan(390);
+      expect(layout.rail.height).toBeLessThan(550);
+      expect(layout.dock.height).toBeGreaterThan(100);
+      expect(layout.dock.height).toBeLessThan(155);
+      expect(layout.dock.width).toBeLessThan(440);
+      expect(layout.status.top).toBeGreaterThanOrEqual(layout.dock.top-5);
+      expect(layout.status.left).toBeGreaterThan(layout.dock.right+10);
+      expect(layout.status.bottom).toBeLessThanOrEqual(height);
       expect(layout.help.top).toBeGreaterThanOrEqual(layout.rail.bottom);
     }else{
       expect(layout.rail.height).toBeLessThan(68);
