@@ -63,7 +63,8 @@ png += chunk(b"IDAT", zlib.compress(pixels, 9))
 png += chunk(b"IEND", b"")
 
 # The canonical west archive slot occupies exactly x=0, z=3..5, y=[0,4.9].
-# The model's rotated local bounds are x=[-.475,.475], z=[-1.4,1.4].
+# The model's rotated local bounds are x=[-.475,.475], z=[-1.4,1.4],
+# y=[0,3.04]. A low rear hangar is preferable to the first 4.9-unit tower.
 # The canvas renderer adds the world anchor [0,0,4].
 # The authored base spans five world units along its *original* long axis.
 # Rotate and proportionally fit it into three real blocked cells at x=0,
@@ -73,7 +74,9 @@ surfaces = {i: {"p": [], "n": [], "uv": []} for i in range(12)}
 
 def west_space(vertex):
     x,y,z=vertex
-    return (z*.95,y,-x*.56)
+    # Low archive/hangar profile: vertical engineering volumes must remain
+    # clearly *behind* the landing party, not become a tower in the HUD.
+    return (z*.95,y*.62,-x*.56)
 
 def uv_for(mat):
     x, y = mat % 4, mat // 4
