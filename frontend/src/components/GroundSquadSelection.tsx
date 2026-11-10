@@ -515,7 +515,6 @@ export function GroundSquadSelection({
         <GroundColonyWalls explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFixtures explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundWildSectorScenery explored={displayedFog.explored} visible={displayedFog.visible} />
-        <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
         {/* One world-space material, rather than checkerboard colors per
             undiscovered tile. Fog is still derived ONLY from explored cells,
             never unseen walls, mission objects or combat data. */}
@@ -574,6 +573,12 @@ export function GroundSquadSelection({
             stroke="#a3c1b1" strokeOpacity=".07"
             strokeWidth="5" fill="none"/>
         </g>
+        {/* Known elevated station equipment must remain above the ground
+            fog: an unknown neighboring tile can cover its mast while leaving
+            the high dish floating in empty sky. Each parent station already
+            uses the canonical explored/visible sets to hide unknown targets
+            and dim remembered ones; only its paint order changes. */}
+        <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
