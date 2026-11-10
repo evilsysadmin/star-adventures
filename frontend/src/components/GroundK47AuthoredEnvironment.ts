@@ -3,7 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import world from '../../../content/scenes/meridian.json';
 import artManifest from '../../../content/scenes/k47-environment-art.json';
 import {
-  eligibleAuthoredSlots,validateEmbeddedGlb,assertModelWithinFootprint,
+  eligibleAuthoredSlots,verifyPublishedGLBBytes,assertModelWithinFootprint,
   type ArtManifest,type ArtSlot,
 } from '../k47EnvironmentAssets';
 
@@ -49,12 +49,7 @@ async function fetchVerifiedGLB(slot:ArtSlot,signal:AbortSignal){
   const response=await fetch(asset.url,{mode:'cors',cache:'force-cache',signal});
   if(!response.ok||response.type==='opaque')throw new Error('K47 art CDN returned an error');
   const bytes=await response.arrayBuffer();
-  if(bytes.byteLength!==asset.bytes)
-    throw new Error('K47 art CDN returned the wrong byte count');
-  validateEmbeddedGlb(bytes);
-  const hash=await crypto.subtle.digest('SHA-256',bytes);
-  const digest=Array.from(new Uint8Array(hash),x=>x.toString(16).padStart(2,'0')).join('');
-  if(digest!==asset.sha256)throw new Error('K47 art CDN checksum mismatch');
+  await verifyPublishedGLBBytes(slot,bytes);
   if(signal.aborted)throw new DOMException('Art load aborted','AbortError');
   const model=await parseGLB(bytes);
   if(signal.aborted){
