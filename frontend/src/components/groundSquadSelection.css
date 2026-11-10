@@ -184,3 +184,39 @@
 ) [data-testid="ground-bay-continuous-floor"] [data-testid^="ground-bay-floor-"]{
   opacity:.08;
 }
+
+
+/* A ready, authored 3D retaining-wall kit supersedes the five little SVG
+   cubes and their joins on the SAME real blocked cells. The original wall
+   artwork is retained intact as the WebGL-disabled / unmounted fallback.
+   Fog gating is unchanged: unknown SVG walls were never rendered, and the
+   3D model includes only discovered wall columns. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-architecture-wall-3,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-architecture-wall-4,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-architecture-wall-5,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-architecture-wall-6,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-architecture-wall-7,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-colony-roof-3,7-to-4,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-colony-roof-4,7-to-5,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-colony-roof-5,7-to-6,7"],
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-testid="ground-colony-roof-6,7-to-7,7"]{
+  opacity:0;
+}
