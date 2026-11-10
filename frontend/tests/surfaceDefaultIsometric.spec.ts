@@ -58,6 +58,18 @@ for(const width of [360,390,430,1280,1757]){
       await expect(page.getByTestId('ground-move-mode')).toBeInViewport();
       await expect(page.getByTestId('ground-inspect-probe')).toBeInViewport();
     }
+    // These are secondary wayfinding cues, not the principal architecture.
+    // Bound their *rendered* width on both compact and wide surfaces, while
+    // retaining a readable marker and the real SVG station title.
+    if(width===390||width===1280){
+      const waypoint=page.getByTestId('ground-waypoint-label-beam-out');
+      await expect(waypoint).toBeVisible();
+      const marker=await waypoint.boundingBox();
+      expect(marker).not.toBeNull();
+      expect(marker!.width).toBeLessThan(width===390?135:185);
+      expect(marker!.height).toBeGreaterThan(width===390?12:18);
+      await expect(page.getByTestId('ground-landmark-beam-out')).toBeVisible();
+    }
     if(width===390||width===1280||width===1757)
       await page.screenshot({path:'test-results/surface-default-squad-'+width+'.png'});
 
