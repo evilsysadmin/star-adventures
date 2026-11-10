@@ -134,6 +134,17 @@ export function validateEmbeddedGlb(bytes:ArrayBuffer):void{
     'unsupported required extensions');
 }
 
+export async function verifyPublishedGLBBytes(slot:ArtSlot,bytes:ArrayBuffer){
+  const asset=slot.asset;
+  assert(slot.status==='published'&&!!asset,'cannot verify unpublished asset');
+  assert(bytes.byteLength===asset.bytes,'GLB byte count does not match manifest');
+  validateEmbeddedGlb(bytes);
+  const digestBytes=await crypto.subtle.digest('SHA-256',bytes);
+  const digest=Array.from(new Uint8Array(digestBytes),
+    byte=>byte.toString(16).padStart(2,'0')).join('');
+  assert(digest===asset.sha256,'GLB SHA-256 does not match manifest');
+}
+
 export function assertModelWithinFootprint(
   slot:ArtSlot,bounds:{min:{x:number;y:number;z:number};
     max:{x:number;y:number;z:number}},
