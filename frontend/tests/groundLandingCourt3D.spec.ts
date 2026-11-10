@@ -21,6 +21,10 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-topology-valid','true');
   await expect(court).toHaveAttribute('visibility','visible');
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
+  // The existing solid SVG floor must actually uncover the 3D art, while
+  // keeping the separately rendered mission/hatch decorations above it.
+  await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
+    .toHaveCSS('opacity','0.08');
   const structure=await board.evaluate(root=>{
     const court=root.querySelector('[data-testid="ground-landing-court-3d"]');
     const canvas=court?.querySelector('canvas');
@@ -83,6 +87,9 @@ test('WebGL failure leaves the original entire SVG landing fully playable',async
  const board=page.getByTestId('ground-squad-board');
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','fallback');
+ // The original SVG floor must remain fully legible if there is no WebGL.
+ await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
+   .not.toHaveCSS('opacity','0.08');
  await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
  await board.locator('[data-cell-id="5,4"]').click({button:'right'});
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','5');
