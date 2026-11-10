@@ -4,6 +4,7 @@ import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
+import { GroundIndustrialFrontage } from './GroundIndustrialFrontage';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
 import { groundSurfaceFrame } from '../groundSurfaceFrame';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
@@ -578,6 +579,10 @@ export function GroundSquadSelection({
             the high dish floating in empty sky. Each parent station already
             uses the canonical explored/visible sets to hide unknown targets
             and dim remembered ones; only its paint order changes. */}
+        {/* One coherent south-side architectural volume, aligned to
+            discovered actual blocked terrain and above its ground fog.
+            Officers, valid paths and mission structures remain authoritative. */}
+        <GroundIndustrialFrontage explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible} />
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
