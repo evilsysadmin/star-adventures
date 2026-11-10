@@ -101,7 +101,7 @@ for(const width of [390,1280]) {
   expect(probeBounds.height).toBeGreaterThan(130);
   expect(probeBounds.passive&&probeBounds.ariaHidden).toBe(true);
   await expect(page.getByTestId('ground-waypoint-label-probe'))
-    .toHaveAttribute('transform','translate(76 -45)');
+    .toHaveAttribute('transform','translate(76 -45) scale(.78)');
   // Real browser paint order: ground fog must NOT amputate a discovered
   // tall mast into a free-floating dish. Officers still render last.
   const stationLayer=await board.evaluate(root=>{
