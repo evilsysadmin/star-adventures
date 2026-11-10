@@ -7,22 +7,22 @@ import {fileURLToPath} from 'node:url';
 // No R2 mutation: Playwright serves local candidate bytes at their exact
 // content-addressed URL to the game's production-verifying GLB loader.
 test.use({storageState:{cookies:[],origins:[]}});
-const script=fileURLToPath(new URL('../scripts/build_k47_south_facade.py',import.meta.url));
+const script=fileURLToPath(new URL('../scripts/build_k47_west_facade.py',import.meta.url));
 function buildCandidate(){
  const bytes=execFileSync('python3',[script],{maxBuffer:5*1024*1024});
  if(bytes.length<100_000||bytes.length>4*1024*1024)
-   throw new Error('Original south facade is empty or over budget');
+   throw new Error('Original west facade is empty or over budget');
  return bytes;
 }
 const bytes=buildCandidate();
 const sha256=createHash('sha256').update(bytes).digest('hex');
-const url='https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb';
+const url='https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/west-archive-shell-'+sha256.slice(0,16)+'.glb';
 const manifest={schemaVersion:1,scene:'meridian.surface',slots:[{
- id:'south-industrial-shell',
- footprint:[[3,7],[4,7],[5,7],[6,7],[7,7]],
- anchor:[5,0,7],
+ id:'west-archive-shell',
+ footprint:[[0,3],[0,4],[0,5]],
+ anchor:[0,0,4],
  status:'published',asset:{url,sha256,bytes:bytes.length,license:'original',
-   source:'ShadowOps original K-47 architecture study generator, no third-party material'},
+   source:'ShadowOps original K-47 rear archive study generator, no third-party material'},
 }]};
 
 test('original authored candidate is deterministic, glTF 2.0 and locally bounded',()=>{
@@ -41,7 +41,7 @@ test('original authored candidate is deterministic, glTF 2.0 and locally bounded
    entry.max?.length===3&&entry.max[1]>3.5)).toBe(true);
 });
 for(const width of [390,1280]){
- test('real landing previews original south frontage with verified 3D art '+width,
+ test('real landing previews original west facility with verified 3D art '+width,
  async({page})=>{
   test.setTimeout(115_000);
   await page.setViewportSize({width,height:850});
@@ -62,18 +62,18 @@ for(const width of [390,1280]){
   const board=page.getByTestId('ground-squad-board');
   const art=page.getByTestId('ground-landing-court-3d');
   await expect(art).toHaveAttribute('data-renderer-state','ready',{timeout:25_000});
-  await board.locator('[data-cell-id="5,6"]').click({button:'right'});
+  await board.locator('[data-cell-id="1,4"]').click({button:'right'});
   await expect(art).toHaveAttribute('data-authored-art-ready',
-     'south-industrial-shell',{timeout:25_000});
+     'west-archive-shell',{timeout:25_000});
   await expect(art).toHaveAttribute('data-authored-art-state','ready');
-  await expect(board.getByTestId('ground-architecture-wall-3,7'))
+  await expect(board.getByTestId('ground-architecture-wall-0,3'))
     .toHaveCSS('opacity','0');
   await expect(board.locator('[data-cell-id]')).toHaveCount(216);
   expect(requests).toBeGreaterThanOrEqual(1);
-  await board.screenshot({path:'test-results/k47-south-authored-facade-'+width+'.png'});
+  await board.screenshot({path:'test-results/k47-west-authored-facade-'+width+'.png'});
   await page.reload();
   await expect(art).toHaveAttribute('data-authored-art-ready',
-    'south-industrial-shell',{timeout:25_000});
+    'west-archive-shell',{timeout:25_000});
   await expect(board.locator('[data-cell-id]')).toHaveCount(216);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
