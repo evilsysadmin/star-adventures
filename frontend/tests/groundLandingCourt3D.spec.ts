@@ -22,6 +22,7 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('visibility','visible');
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
   await expect(court).toHaveAttribute('data-terrace-kit','k47-industrial-terrace-v1');
+  await expect(court).toHaveAttribute('data-canyon-kit','k47-ambient-canyon-v1');
   // The existing solid SVG floor must actually uncover the 3D art, while
   // keeping the separately rendered mission/hatch decorations above it.
   await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
@@ -108,6 +109,7 @@ test('WebGL failure leaves the original entire SVG landing fully playable',async
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','fallback');
  await expect(court).toHaveAttribute('data-terrace-kit','k47-industrial-terrace-v1');
+  await expect(court).toHaveAttribute('data-canyon-kit','k47-ambient-canyon-v1');
  for(const column of [3,4,5,6,7]){
    const wall=board.locator('[data-testid="ground-architecture-wall-'+column+',7"]');
    if(await wall.count())await expect(wall).not.toHaveCSS('opacity','0');
