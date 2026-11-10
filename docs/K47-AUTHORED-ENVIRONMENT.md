@@ -1,0 +1,120 @@
+# K-47 — authored environment kit, not more procedural scenery
+
+## Why this contract exists
+
+The supplied K-47 reference is a dense, cinematic industrial colony, with large
+connected buildings, weathered metal, rock cuttings, believable silhouettes,
+warm practical lights, and a playable yard filling the scene. Real Chromium
+1280/390 screenshots demonstrated that several iterations of SVG boxes and
+procedural Three.js cliff ribbons still looked like a small schematic diorama
+(#245, #250, #251, **#255 rejected unmerged after green CI**).
+
+**Do not call this loader an art overhaul.** It only makes it possible to
+replace the current placeholder geometry with *real original authored models*
+without throwing away the existing squad and mission systems. Its three slots
+are deliberately `unpublished` until qualifying binary assets exist.
+
+## Canonical frame
+
+- One world tile is one Three.js unit, `x` for column and `z` for row,
+  `y` up; the origin and iso projection belong to
+  `frontend/src/groundArchiveCamera.ts`.
+- Do **not** shift the camera, pickable SVG polygons, 18×12 terrain, officer
+  positions, pathfinding, unknown fog or mission objective coordinates.
+- Use world-relative geometry: model meshes are exported around their local
+  `[0,0,0]`; the loader adds each slot's declared `anchor` world position.
+- Three initial locked, **non-walkable** slots live in
+  `content/scenes/k47-environment-art.json`:
+
+| Art slot | Real blocked footprint | Initial anchor |
+| --- | --- | --- |
+| `south-industrial-shell` | `3,7` through `7,7` | `[5,0,7]` |
+| `west-archive-shell` | `0,3`, `0,4`, `0,5` | `[0,0,4]` |
+| `east-utilities-shell` | `8,1`, `8,2`, `8,3` | `[8,0,2]` |
+
+Assets must fit the bounding rectangle of their footprint (maximum 6cm
+slack), project above rather than through the actual floor, and have
+world-space `y` within `[-0.4, 5]`. A roof or catwalk is *decoration only*;
+do not depict an accessible new exit, doorway or elevation in a blocked cell.
+For buildings with real interactions, mission targets and HUD labels remain
+separate SVG/DOM objects.
+
+## Authoring recipe
+
+1. Create the **whole south industrial frontage as one authored industrial
+   structure** in Blender or another proper DCC: varied large warehouse
+   masses, parapets, industrial windows, railings, conduits and substantial
+   supporting details rather than repeated generic cubes. Sculpt/texture
+   rocky containment below/behind the actual footprint where permitted.
+2. Unwrap UVs; use physically based baked materials (metal/roughness),
+   photographic-quality rough surfaces, normals and AO. All images must be
+   embedded into a **single self-contained glTF 2.0 GLB**; PNG/JPEG textures
+   are preferred for compatibility. No external `uri`, video, Draco,
+   meshopt, runtime scripts or new extension dependency.
+3. Keep one GLB at **4 MiB or less** and the total environment budget within
+   twelve slots. Choose useful texture resolution and reduce geometry/atlases
+   before exceeding the budget. Avoid baking interface, officer sprites,
+   target labels or objectives into the art.
+4. Record attribution/provenance in the manifest. The public GitHub repository
+   accepts only **original work** or properly verified **CC0**. Potential
+   material sources include
+   [Poly Haven](https://polyhaven.com/license) and
+   [ambientCG](https://ambientcg.com/), but source/license must be checked
+   for each chosen asset. Never include franchise models or ripped game art.
+5. Run a **same-camera screenshot** at 390 and 1280 px, with the full
+   functioning away team. If the result remains a sparse diorama or hides
+   the squad, reject the art *regardless of CI status*. Match scene coverage,
+   depth, detailed industrial material, warm/blue lighting and silhouette
+   rather than copying the reference screen pixels.
+
+## Content-addressed delivery — infrastructure owns R2
+
+The GLB is uploaded by the infrastructure owner to R2 using a name of the form
+`star-adventures/environment/<logical-id>-<first-16-hex-sha256>.glb`.
+
+For a local **original/licensed** file:
+```sh
+sha256sum your-asset.glb
+wc -c < your-asset.glb
+```
+
+Set the matching slot to `status: "published"`, with an `asset` object
+containing:
+
+```json
+{
+  "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/<logical-id>-<sha16>.glb",
+  "sha256": "<real full SHA-256>",
+  "bytes": 123456,
+  "license": "original",
+  "source": "Authored by <actual creator / source reference>"
+}
+```
+
+The placeholders above are **documentation only**, not working URLs. Publish
+a real immutable object through `shadowops-infra` and verify its existence,
+CORS, content type and checksum **before** editing the manifest in the game.
+Never commit big GLB binaries or R2 credentials to this public repo.
+
+## Runtime and failure behavior
+
+- **Zero network calls** for unpublished placeholders.
+- Only load once all required real blocked cells are in
+  `explored`. The scene's actual fog is still drawn **above** WebGL.
+- Require HTTPS on the pinned R2 host, matching SHA-256 prefix in the URL,
+  actual byte length, actual full checksum, valid GLB 2.0, no external
+  references, no unapproved extensions, and a live model fully inside
+  its declared footprint. Every failure leaves the previous
+  procedural/SVG environment available and selectable.
+- Render approved models inside the existing single landing-court WebGL
+  canvas and the canonical orthographic camera. Do not add an additional
+  renderer or input plane.
+- The `south-industrial-shell` loading gate suppresses the **five matching
+  SVG wall modules only after the verified mesh has been placed**. Build an
+  equivalent carefully layered replacement for other slots before publishing
+  them, especially the archive mission label.
+- Validate in browser: real movement, F5, fog and no WebGL, at 390/1280;
+  run the GLB unit security tests in the CI mandatory `test:grid` gate.
+
+This is a **prerequisite**, not the actual visual finish line. The first
+published, author-reviewed GLB is the next material deliverable.

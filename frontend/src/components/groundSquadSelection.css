@@ -184,3 +184,24 @@
 ) [data-testid="ground-bay-continuous-floor"] [data-testid^="ground-bay-floor-"]{
   opacity:.08;
 }
+
+
+/* Only a VERIFIED, PRESENT authored R2 GLB may supersede the matching tiny
+   vector boxes. WebGL-ready alone never hides the working SVG. A CDN failure,
+   corrupt GLB, out-of-footprint mesh, missing WebGL or unvisited wall retains
+   the original architectural art, signs and tactical picking. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-authored-art-ready~="south-industrial-shell"]
+) :is(
+  [data-testid="ground-architecture-wall-3,7"],
+  [data-testid="ground-architecture-wall-4,7"],
+  [data-testid="ground-architecture-wall-5,7"],
+  [data-testid="ground-architecture-wall-6,7"],
+  [data-testid="ground-architecture-wall-7,7"],
+  [data-testid="ground-colony-roof-3,7-to-4,7"],
+  [data-testid="ground-colony-roof-4,7-to-5,7"],
+  [data-testid="ground-colony-roof-5,7-to-6,7"],
+  [data-testid="ground-colony-roof-6,7-to-7,7"]
+){
+  opacity:0;
+}
