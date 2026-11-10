@@ -574,3 +574,157 @@
     width:100%;min-width:0;max-width:none;min-height:44px;
   }
 }
+
+
+/* K-47 tactical-stage framing. At wide desktop/landscape resolutions only,
+   keep the actual game full bleed, but give the EXISTING functional controls
+   a dedicated left crew rail and bottom two-row console, as in the reference.
+   No duplicate controls, invented weapon/HP stats or additional game logic. */
+@media (min-width:1100px) and (min-height:700px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .game-toolbar{
+    min-height:63px;padding:7px 18px;
+    background:linear-gradient(180deg,#080f19f9,#101c25f4);
+    border-bottom:2px solid #4b6470;
+    box-shadow:inset 0 -3px 0 #0a0f14,0 5px 25px #0009;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .game-identity{
+    font:italic 800 clamp(17px,1.65vw,26px)/1 'Space Grotesk',sans-serif;
+    letter-spacing:.11em;color:#dce9f1;
+    text-shadow:0 1px 0 #455d83,0 0 15px #789ac048;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .game-identity small{
+    font:700 9px/1.3 ui-monospace,monospace;
+    color:#83b9d0;letter-spacing:.11em;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .game-toolbar button{
+    min-height:41px;border-radius:2px;
+    border:1px solid #677f8a;
+    background:linear-gradient(#20323c,#101b25);
+    box-shadow:inset 0 1px 0 #afc9d02b;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .firstperson-top{
+    top:71px;left:177px;right:330px;max-width:calc(100% - 525px);
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar{
+    top:118px;left:175px;max-width:calc(100% - 526px);
+    padding:5px 7px;gap:9px;border-radius:3px;
+    border-color:#587581;background:#0b1a25e5;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-viewbar button{
+    min-height:37px;padding:6px 11px;
+    color:#f4d58c;background:#193748;
+    border-color:#8c9a86;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission{
+    top:73px;right:13px;width:305px;max-height:min(214px,calc(100% - 350px));
+    padding:12px 14px;
+    border:2px solid #b7a070;border-radius:4px;
+    background:linear-gradient(#0b1a26f4,#0b2230f0);
+    box-shadow:0 0 0 3px #070e16cf,0 15px 34px #000a,inset 0 0 16px #73a6ae12;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-phase{
+    color:#f6d884;font-size:13px;letter-spacing:.08em;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad) .mission-transmission-story{
+    display:block;line-height:1.4;font-size:11px;
+    margin:7px 0;color:#b2d8e3;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-rail{
+    top:75px;left:10px;bottom:auto;width:151px;max-width:151px;
+    padding:7px;border:2px solid #667981;border-left:3px solid #d2bc8b;
+    border-radius:3px;background:linear-gradient(#192b35ed,#111c27fa);
+    box-shadow:0 0 0 3px #070e16c0,0 12px 38px #000c;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-heading{
+    font-size:8px;letter-spacing:.08em;line-height:1.35;padding:2px 3px 4px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-list{
+    display:grid;grid-template-columns:1fr;gap:7px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-entry{
+    display:flex;flex-direction:column;align-items:stretch;gap:3px;
+    min-height:133px;padding:5px 6px 6px;
+    border-radius:2px;border:1px solid #5d7a82;
+    background:linear-gradient(160deg,#20333fae,#081823e8);
+    box-shadow:inset 0 0 0 2px #061822;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-entry[aria-pressed=true]{
+    border-color:#f2ce7f;
+    box-shadow:inset 0 0 0 2px #413b2b,0 0 11px #d8b97c47;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-portrait{
+    flex:none;width:100%;height:84px;
+    border-radius:2px;
+    background:linear-gradient(135deg,#425968,#112735);
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-copy{
+    gap:1px;flex:auto;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-copy strong{
+    font-size:12px;line-height:1.3;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-copy small{
+    font-size:9px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-crew-indicator{
+    position:absolute;right:9px;bottom:8px;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions{
+    top:auto;bottom:141px;left:10px;width:151px;max-width:151px;
+    border-radius:3px;background:#0a1a25e9;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-instructions[open]{
+    max-height:min(330px,calc(100% - 220px));
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    left:10px;right:auto;bottom:12px;transform:none;
+    width:406px;max-width:calc(100% - 30px);
+    padding:8px;gap:5px;margin:0;
+    border:2px solid #637f8d;border-top:3px solid #aaac99;
+    border-radius:4px;background:linear-gradient(#172a36f7,#080f1aed);
+    box-shadow:0 0 0 3px #060f18,0 12px 36px #000c;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-width:0;min-height:48px;padding:4px 5px;gap:2px;
+    background:linear-gradient(#113043,#071c2c);
+    border:1px solid #3688aa;border-radius:3px;
+    color:#a9e2f4;font:800 10px/1.2 ui-monospace,monospace;
+    text-transform:uppercase;letter-spacing:.03em;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button::before{
+    content:'◇';font:20px/1 ui-monospace,monospace;color:#7ac7e2;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button[data-testid="ground-select-all"]::before{content:'◎'}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button[data-testid="ground-selection-additive"]::before{content:'✛'}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button[data-testid="ground-move-mode"]::before{content:'⌖'}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button[data-testid="ground-inspect-probe"]::before{content:'◈'}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button[data-testid="ground-assist-civilians"]::before{content:'✚'}
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button:disabled{
+    opacity:.55;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button[aria-pressed=true]{
+    background:linear-gradient(#524221,#392b16);
+    border-color:#f6bd4b;color:#ffe3a4;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip{
+    bottom:13px;left:440px;right:14px;transform:none;width:auto;
+    max-width:none;min-height:112px;display:flex;
+    flex-direction:column;align-items:flex-start;justify-content:center;
+    gap:7px;padding:12px 17px;border:2px solid #5c7784;
+    border-top:3px solid #b0a98d;border-radius:4px;
+    background:linear-gradient(#132936ec,#081722f4);
+    box-shadow:0 0 0 3px #06111a,0 12px 36px #000b;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip::before{
+    content:'ESTADO DEL EQUIPO';color:#e8ca82;
+    font:800 11px ui-monospace,monospace;letter-spacing:.12em;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip .ground-squad-status{
+    font-size:12px;color:#8dd4e4;
+  }
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-notice-current{
+    font-size:12px;max-width:100%;white-space:normal;
+  }
+}
