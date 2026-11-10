@@ -161,7 +161,10 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-authored-art-ready',
     'south-industrial-shell',{timeout:35000});
   await expect(court).toHaveAttribute('data-authored-art-state','ready');
-  await expect(board.getByTestId('ground-architecture-wall-3,7'))
+  // The new contiguous SVG factory is the genuine visual fallback for
+  // exactly these blocked wall cells. The verified GLB must REPLACE it,
+  // never stack another opaque building on top.
+  await expect(board.getByTestId('ground-south-industrial-wing'))
     .toHaveCSS('opacity','0');
   expect(requests).toBeGreaterThanOrEqual(1);
   await expect(board.locator('[data-cell-id]')).toHaveCount(216);
