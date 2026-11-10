@@ -110,5 +110,8 @@ export async function addK47AuthoredEnvironment(
     },
   };
 }
+export function eligiblePublishedK47ArtIds(explored:ReadonlySet<string>){
+  return eligibleAuthoredSlots(runtimeManifest,runtimeWorld,explored).map(x=>x.id);
+}
 export const K47_AUTHORED_SLOT_COUNT=runtimeManifest.slots.length;
 export const K47_PUBLISHED_SLOT_COUNT=runtimeManifest.slots.filter(x=>x.status==='published').length;
