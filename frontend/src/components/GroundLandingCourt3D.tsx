@@ -7,6 +7,7 @@ import {
   addK47AuthoredEnvironment,eligiblePublishedK47ArtIds,
   k47ArtManifestForRendering,
 } from './GroundK47AuthoredEnvironment';
+import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -174,6 +175,14 @@ export function GroundLandingCourt3D({explored}:Vision){
   // Only real discovered walls may ever enter the Three scene. Rebuild the
   // one-shot renderer when the actual explored frontier advances.
   const knownWalls=[3,4,5,6,7].filter(x=>explored.has(id(x,7))).join(',');
+  // The continuous SVG hangar owns the discovered connected south wall.
+  // Keep these tiny PBR block foundations as fallback for isolated wall
+  // cells only: drawing both is what gave the previous GLB study its
+  // double-building silhouette. Gameplay, floor and fog remain untouched.
+  const authoredSouth=southIndustrialCoveredColumns(
+    southIndustrialSpans(explored,surface.walls));
+  const pbrWallColumns=knownWalls.split(',').filter(Boolean)
+    .map(Number).filter(x=>!authoredSouth.has(x)).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
   // unrelated set churn never causes a redundant GLTF/CDN request.
   const artManifest=k47ArtManifestForRendering();
@@ -196,7 +205,7 @@ export function GroundLandingCourt3D({explored}:Vision){
       renderer.shadowMap.enabled=true;
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const scene=new THREE.Scene();
-      disposeCourt=buildCourt(scene,new Set(knownWalls.split(',').filter(Boolean).map(Number)));
+      disposeCourt=buildCourt(scene,new Set(pbrWallColumns.split(',').filter(Boolean).map(Number)));
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
       setState('ready');
@@ -237,11 +246,12 @@ export function GroundLandingCourt3D({explored}:Vision){
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,authoredKey,artManifest]);
+  },[active,knownWalls,pbrWallColumns,authoredKey,artManifest]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
     data-discovered-wall-columns={knownWalls}
+    data-pbr-wall-fallback-columns={pbrWallColumns}
     data-authored-art-slots={artManifest.slots.length}
     data-published-art-slots={artManifest.slots.filter(slot=>slot.status==='published').length}
     data-authored-art-state={artState}
