@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import world from '../../../content/scenes/meridian.json';
 import {ARCHIVE_RENDER_HEIGHT,ARCHIVE_RENDER_WIDTH,
   makeGroundArchiveCamera} from '../groundArchiveCamera';
+import {addK47Terrace,K47_TERRACE_KIT} from './GroundK47Terrace3D';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -157,7 +158,11 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>){
   amber.position.set(3.2,2,5.1);scene.add(amber);
   const teal=new THREE.PointLight(0x9cdbd6,2.5,6,2);
   teal.position.set(6.1,1.8,3.3);scene.add(teal);
-  return ()=>resources.forEach(resource=>resource.dispose());
+  const environment=addK47Terrace(scene,knownWallColumns);
+  return ()=>{
+    environment.dispose();
+    resources.forEach(resource=>resource.dispose());
+  };
 }
 
 export function GroundLandingCourt3D({explored}:Vision){
@@ -201,6 +206,7 @@ export function GroundLandingCourt3D({explored}:Vision){
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
     data-discovered-wall-columns={knownWalls}
+    data-terrace-kit={K47_TERRACE_KIT}
     data-renderer-state={state}
     x="0" y="0" width={ARCHIVE_RENDER_WIDTH} height={ARCHIVE_RENDER_HEIGHT}
     aria-hidden="true" pointerEvents="none"
