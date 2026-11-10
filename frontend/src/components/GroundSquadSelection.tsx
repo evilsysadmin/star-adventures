@@ -5,6 +5,7 @@ import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
+import { GroundLandingCourt3D } from './GroundLandingCourt3D';
 import { groundSurfaceFrame } from '../groundSurfaceFrame';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
@@ -508,6 +509,10 @@ export function GroundSquadSelection({
           points={tileShape(cell.x, cell.y)}
           fill={floorMaterial(cell)}
           stroke="#b4c4ae" strokeOpacity=".025" strokeWidth=".8" />)}
+        {/* The original 3D environment shares the EXACT canonical SVG
+            projection and sits beneath gameplay decals and the authoritative
+            fog; WebGL may fail without changing the playable board. */}
+        <GroundLandingCourt3D explored={displayedFog.explored} visible={displayedFog.visible} />
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
         {/* Optional world-space 3D volume: the SVG tiles/units remain authoritative,
             and the original vector architecture remains a graphics fallback. */}
