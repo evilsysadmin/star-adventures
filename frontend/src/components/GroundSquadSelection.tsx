@@ -459,7 +459,6 @@ export function GroundSquadSelection({
           requestMove(pickGroundCell(event.clientX,event.clientY),
             realtime?pickFreePoint(event.clientX,event.clientY):null);
         }}>
-        <GroundPlanetBackdrop />
         <defs>
           {/* One material coordinate system across the whole explored
               installation. Tile IDs and all movement math stay identical. */}
@@ -491,6 +490,12 @@ export function GroundSquadSelection({
           x="-72" y="0" width="1280" height="640"
           fill="url(#ground-undiscovered-gradient)"
           pointerEvents="none" aria-hidden="true"/>
+        {/* Draw the non-interactive planet ABOVE the opaque uniform fog
+            undercoat but BELOW every canonical tile/unknown fog polygon.
+            Previously the full-screen fog rect buried all authored cliffs,
+            distant mountain layers and moon: a black floating board. No
+            unpublished grid geometry or stations can show through fog. */}
+        <GroundPlanetBackdrop />
         {/* Shared undercoat covers tiny raster seams between neighboring
             diamonds. This is *below* fog and authored scenery, and cannot
             reveal unseen objects or intercept a grid interaction. */}
