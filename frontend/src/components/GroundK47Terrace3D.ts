@@ -44,16 +44,6 @@ function weatheredMetal(){
  texture.anisotropy=4;
  return texture;
 }
-function cylinderBetween(a:THREE.Vector3,b:THREE.Vector3,r:number){
- const direction=b.clone().sub(a);
- const mesh=new THREE.CylinderGeometry(r,r,direction.length(),8);
- mesh.rotateX(Math.PI/2);
- // The caller uses this geometry only with horizontal X world pipes,
- // so the cylinder's axis is parallel to X after its dedicated rotation.
- mesh.rotateY(Math.PI/2);
- return mesh;
-}
-
 export function addK47Terrace(scene:THREE.Scene,knownColumns:ReadonlySet<number>){
  const group=new THREE.Group();group.name=K47_TERRACE_KIT;scene.add(group);
  const resources:Array<{dispose:()=>void}>=[];
