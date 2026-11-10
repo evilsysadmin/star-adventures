@@ -12,9 +12,6 @@ const labels:Record<string,string>={
 export function GroundPlanetBackdrop(){
  return <g pointerEvents="none" data-testid="ground-planet-backdrop">
   <defs>
-   <linearGradient id="planet-sky" x2="0" y2="1">
-    <stop stopColor="#101b2d"/><stop offset="1" stopColor="#294247"/>
-   </linearGradient>
    <linearGradient id="planet-rock-terrace" x1="0" y1="0" x2=".62" y2="1">
     <stop stopColor="#445750"/>
     <stop offset=".43" stopColor="#30463f"/>
@@ -25,7 +22,9 @@ export function GroundPlanetBackdrop(){
     <stop offset="1" stopColor="#1c363a" stopOpacity="0"/>
    </linearGradient>
   </defs>
-  <rect x="-72" y="0" width="1280" height="640" fill="url(#planet-sky)"/>
+  {/* The fog-undercoat already paints the entire game with the exact
+      undiscovered-world gradient. No opaque sky plate may re-cover it:
+      keep these distant geological silhouettes behind real tile fog. */}
   <circle cx="738" cy="93" r="23" fill="#d3c6a1" opacity=".68"/>
   <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175V550H0Z" fill="#253e46"/>
   <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239V550H0Z" fill="#1b353b"/>

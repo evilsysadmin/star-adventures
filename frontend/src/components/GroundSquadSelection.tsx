@@ -459,7 +459,6 @@ export function GroundSquadSelection({
           requestMove(pickGroundCell(event.clientX,event.clientY),
             realtime?pickFreePoint(event.clientX,event.clientY):null);
         }}>
-        <GroundPlanetBackdrop />
         <defs>
           {/* One material coordinate system across the whole explored
               installation. Tile IDs and all movement math stay identical. */}
@@ -491,6 +490,12 @@ export function GroundSquadSelection({
           x="-72" y="0" width="1280" height="640"
           fill="url(#ground-undiscovered-gradient)"
           pointerEvents="none" aria-hidden="true"/>
+        {/* Draw the non-interactive planet ABOVE the opaque uniform fog
+            undercoat but BELOW every canonical tile/unknown fog polygon.
+            Previously the full-screen fog rect buried all authored cliffs,
+            distant mountain layers and moon: a black floating board. No
+            unpublished grid geometry or stations can show through fog. */}
+        <GroundPlanetBackdrop />
         {/* Shared undercoat covers tiny raster seams between neighboring
             diamonds. This is *below* fog and authored scenery, and cannot
             reveal unseen objects or intercept a grid interaction. */}
@@ -525,12 +530,18 @@ export function GroundSquadSelection({
             never unseen walls, mission objects or combat data. */}
         <g data-testid="ground-fog-layer" pointerEvents="none">
           <defs>
-            <linearGradient id="ground-undiscovered-gradient"
-              gradientUnits="userSpaceOnUse" x1="-72" y1="0" x2="1140" y2="660">
-              <stop stopColor="#233b40"/>
-              <stop offset=".5" stopColor="#1c3139"/>
-              <stop offset="1" stopColor="#112730"/>
-            </linearGradient>
+            {/* One world-space atmospheric falloff shared by the outside
+                planet AND every unrevealed tile. Soft central dusk light
+                anchors the colony to a real landscape, while the untouched
+                fully opaque fog still hides unknown stations and paths. */}
+            <radialGradient id="ground-undiscovered-gradient"
+              gradientUnits="userSpaceOnUse" cx="535" cy="265" r="790"
+              gradientTransform="matrix(1 0 0 .82 0 30)">
+              <stop stopColor="#324a48"/>
+              <stop offset=".32" stopColor="#293f42"/>
+              <stop offset=".7" stopColor="#182e35"/>
+              <stop offset="1" stopColor="#0e222f"/>
+            </radialGradient>
           </defs>
           {/* The compound silhouette is painted first, covering subpixel
               hairlines between neighboring diamonds with the SAME gradient.
