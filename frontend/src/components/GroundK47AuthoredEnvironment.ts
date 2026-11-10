@@ -78,8 +78,9 @@ export async function addK47AuthoredEnvironment(
   scene:THREE.Scene,
   explored:ReadonlySet<string>,
   signal:AbortSignal,
+  manifest:ArtManifest=runtimeManifest,
 ):Promise<K47ArtResult>{
-  const slots=eligibleAuthoredSlots(runtimeManifest,runtimeWorld,explored);
+  const slots=eligibleAuthoredSlots(manifest,runtimeWorld,explored);
   const models:THREE.Object3D[]=[];
   const failedIds:string[]=[];
   for(const slot of slots){
