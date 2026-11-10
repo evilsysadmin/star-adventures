@@ -145,8 +145,16 @@ for(const width of [390,1280]){
       passive:surround?getComputedStyle(surround).pointerEvents==='none':false,
       hazePassive:haze?getComputedStyle(haze).pointerEvents==='none':false,
       hazeNoTargets:haze?.querySelectorAll('[data-cell-id],[data-fog-cell],[data-officer-id]').length===0,
-      afterBackdrop:!!surround&&!!backdrop&&
-        Boolean(backdrop.compareDocumentPosition(surround)&Node.DOCUMENT_POSITION_FOLLOWING),
+      backdropAboveUniformFog:!!surround&&!!backdrop&&
+        Boolean(surround.compareDocumentPosition(backdrop)&Node.DOCUMENT_POSITION_FOLLOWING),
+      backdropUnderTileFog:!!backdrop&&!!fog&&
+        Boolean(backdrop.compareDocumentPosition(fog)&Node.DOCUMENT_POSITION_FOLLOWING),
+      backdropUnderTileTargets:!!backdrop&&!!pick&&
+        Boolean(backdrop.compareDocumentPosition(pick)&Node.DOCUMENT_POSITION_FOLLOWING),
+      noOpaqueLandscapePlate:backdrop?.querySelector('rect')===null,
+      originalPlanetRocksVisible:!!backdrop?.querySelector(
+        '[data-testid="ground-exterior-geology"]'),
+      passivePlanet:backdrop?getComputedStyle(backdrop).pointerEvents==='none':false,
       beforePicking:!!surround&&!!pick&&
         Boolean(surround.compareDocumentPosition(pick)&Node.DOCUMENT_POSITION_FOLLOWING),
       weatherAfterFog:!!fog&&!!haze&&
@@ -156,7 +164,10 @@ for(const width of [390,1280]){
   expect(seam).toEqual({
     matchingFill:true,fullBleed:true,sameWorldCoords:true,
     passive:true,hazePassive:true,hazeNoTargets:true,
-    afterBackdrop:true,beforePicking:true,weatherAfterFog:true,
+    backdropAboveUniformFog:true,backdropUnderTileFog:true,
+    backdropUnderTileTargets:true,noOpaqueLandscapePlate:true,
+    originalPlanetRocksVisible:true,passivePlanet:true,
+    beforePicking:true,weatherAfterFog:true,
   });
 
   await expect(page.getByTestId('ground-scenery-crystal-5')).toHaveAttribute('visibility','hidden');
