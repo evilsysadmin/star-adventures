@@ -37,8 +37,13 @@ test('original authored candidate is deterministic, glTF 2.0 and locally bounded
  expect(json.images[0].uri).toBeUndefined();
  expect(json.meshes[0].primitives.length).toBeGreaterThanOrEqual(9);
  expect(json.nodes[0].name).toContain('K47');
+ // A low industrial profile must remain below the mission/HUD skyline.
  expect(json.accessors.some((entry:{max?:number[]})=>
-   entry.max?.length===3&&entry.max[1]>3.5)).toBe(true);
+   entry.max?.length===3&&entry.max[1]>2.6&&entry.max[1]<3.1)).toBe(true);
+ expect(json.accessors.every((entry:{min?:number[],max?:number[]})=>
+   entry.max?.length!==3||(entry.min![0]>=-.51&&entry.max![0]<=.51&&
+     entry.min![1]>=0&&entry.max![1]<=3.1&&
+     entry.min![2]>=-1.49&&entry.max![2]<=1.49))).toBe(true);
 });
 for(const width of [390,1280]){
  test('real landing previews original west facility with verified 3D art '+width,
