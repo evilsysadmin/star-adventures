@@ -463,7 +463,7 @@ export function GroundColonyStations({explored,visible}:Vision){
      {/* Grounded waypoints, visible only through the existing station fog.
          All labels are decorative and never intercept real picking. */}
      <g data-testid={'ground-waypoint-label-'+object.id}
-       pointerEvents="none" transform={'translate('+plaqueX+' '+plaqueY+')'}>
+       pointerEvents="none" transform={'translate('+plaqueX+' '+plaqueY+') scale(.78)'}>
        <rect x={-plaqueWidth/2} y="-14" width={plaqueWidth} height="20" rx="3"
          fill="#111c24" fillOpacity=".96" stroke="#ebc775" strokeWidth="1.5"/>
        <path d="M-4 6L0 12L4 6" fill="#111c24"
