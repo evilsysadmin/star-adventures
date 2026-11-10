@@ -205,3 +205,14 @@
 ){
   opacity:0;
 }
+
+
+/* The west archive already has its own volumetric WebGL fallback. A verified
+   authored GLB occupies those SAME blocked cells, so stacking the canvases
+   makes a physically impossible double building. Keep the original archive
+   visible for unpublished, delayed, corrupt, failed or unsupported GLBs. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-authored-art-ready~="west-archive-shell"]
+) [data-testid="ground-archive-volume-3d"]{
+  visibility:hidden;
+}
