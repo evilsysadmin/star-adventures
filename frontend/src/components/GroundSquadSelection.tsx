@@ -479,6 +479,40 @@ export function GroundSquadSelection({
             <stop stopColor="#354a4b"/>
             <stop offset="1" stopColor="#20383f"/>
           </linearGradient>
+          {/* World-space micro-weathering crosses tile boundaries: the colony
+              is aged metal/concrete, and outside is rocky regolith. No filters,
+              images, animated particles, extra paths for selection or fog. */}
+          <pattern id="ground-patina-colony" patternUnits="userSpaceOnUse"
+            width="137" height="109" x="17" y="11">
+            <path d="M8 19l17 -3 12 4M81 38l23 -4 18 2
+              M14 87l20 -5 23 4M100 89l18 -3" fill="none"
+              stroke="#d5c2a4" strokeWidth="1.15" strokeOpacity=".22"/>
+            <path d="M39 6l-8 12 5 11M113 58l-14 13 6 12
+              M48 71l17 -4 -6 -11M72 23l-5 13" fill="none"
+              stroke="#162b32" strokeWidth="2" strokeOpacity=".33"/>
+            <path d="M10 52q14 -7 31 -3l9 6q-24 7 -40 -3Z
+              M85 74q14 -11 34 -6l-4 11q-16 5 -30 -5Z"
+              fill="#2c3f42" fillOpacity=".22"/>
+            <path d="M5 101l19 -5M110 18l16 -4" fill="none"
+              stroke="#b08163" strokeWidth="2.5" strokeOpacity=".25"/>
+            <circle cx="66" cy="90" r="1.6" fill="#d2b68d" opacity=".38"/>
+            <circle cx="128" cy="47" r="2" fill="#c09472" opacity=".30"/>
+          </pattern>
+          <pattern id="ground-patina-regolith" patternUnits="userSpaceOnUse"
+            width="149" height="131" x="29" y="31">
+            <path d="M5 26l21 -7 18 3M92 18l17 -8 23 8
+              M27 103l21 -13 20 4M107 104l24 -5" fill="none"
+              stroke="#c2ac8b" strokeWidth="2" strokeOpacity=".27"/>
+            <path d="M13 56l31 6 14 -14M77 67l25 -8 18 9
+              M30 115l17 7M119 34l-7 11 -10 3" fill="none"
+              stroke="#182e33" strokeWidth="3" strokeOpacity=".36"/>
+            <path d="M9 75l21 -8 14 5 -9 10 -23 1Z
+              M75 106l23 -12 17 7 -7 11 -23 5Z"
+              fill="#203f3d" fillOpacity=".18"/>
+            <circle cx="64" cy="20" r="2.5" fill="#ceb990" opacity=".35"/>
+            <circle cx="140" cy="82" r="1.7" fill="#c8ab83" opacity=".42"/>
+            <circle cx="24" cy="13" r="1.3" fill="#d0c39d" opacity=".30"/>
+          </pattern>
         </defs>
         {/* Give the entire visible world the EXACT same atmospheric material
             as undiscovered terrain. Otherwise the fog's outermost cells draw
@@ -508,6 +542,18 @@ export function GroundSquadSelection({
           points={tileShape(cell.x, cell.y)}
           fill={floorMaterial(cell)}
           stroke="#b4c4ae" strokeOpacity=".025" strokeWidth=".8" />)}
+        {/* Exactly two continuous, authored walkable-ground overlays, not
+            another grid or navigable object. Subsequent fog covers every
+            unknown tile, so texture never reveals an unseen obstacle. */}
+        <g data-testid="ground-weathered-surface" pointerEvents="none"
+          aria-hidden="true">
+          {(['colony','regolith'] as const).map(material=><path key={material}
+            data-testid={'ground-weathering-'+material}
+            d={sceneTiles.filter(cell=>!blocked.has(cell.key)&&
+              (material==='regolith' ? cell.x>=9||cell.y>=8
+                : cell.x<9&&cell.y<8)).map(cellPath).join(' ')}
+            fill={'url(#ground-patina-'+material+')'}/>)}
+        </g>
         <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
         {/* Optional world-space 3D volume: the SVG tiles/units remain authoritative,
             and the original vector architecture remains a graphics fallback. */}
