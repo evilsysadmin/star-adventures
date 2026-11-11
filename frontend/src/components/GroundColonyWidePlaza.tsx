@@ -62,6 +62,7 @@ export function GroundColonyWidePlaza({explored,visible}:Vision){
         const id=key(p.x,p.y),lit=visible.has(id);
         const d=tile(p.x,p.y);
         return <g key={id} data-testid={'ground-plaza-floor-'+id}
+          data-modular-paving={p.x<=11&&p.y<=9?'true':'false'}
           data-fog={lit?'visible':'remembered'} opacity={lit?1:.32}>
           <path d={d} fill="url(#ground-wide-plaza-metal)"/>
           <path d={d} fill="url(#ground-wide-plaza-wear)"/>
