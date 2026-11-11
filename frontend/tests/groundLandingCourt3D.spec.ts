@@ -23,6 +23,8 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
   await expect(court).toHaveAttribute('data-modular-region','0,0:12x10');
   await expect(court).toHaveAttribute('data-modular-exterior-terraces','3');
+  await expect(court).toHaveAttribute('data-modular-prefab-ids',
+   /prefab\\.industrial-apron-3x2/);
   const modular=await board.evaluate(root=>{
     const court=root.querySelector('[data-testid="ground-landing-court-3d"]');
     const cells=(court?.getAttribute('data-modular-cell-ids')||'')
