@@ -225,3 +225,13 @@
 ) [data-modular-rock-proxy="true"]{
   visibility:hidden;
 }
+
+/* The reusable Three terrain only becomes visible if the old opaque SVG
+   paving stops covering its actual 3D-replaced cells. Never hide unreplaced
+   far-eastern SVG floor or its separate route markings. Like the rescue bay,
+   both paving systems retain full SVG rollback when WebGL is not ready. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-modular-paving="true"]{
+  opacity:.06;
+}
