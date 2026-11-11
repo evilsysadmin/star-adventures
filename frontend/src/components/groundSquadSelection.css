@@ -257,3 +257,14 @@
 ) [data-testid="ground-science-campus"]{
  visibility:hidden;
 }
+
+/* Archivo's old 70px-high painted SVG tower was above every 3D layer,
+   so simply replacing GroundScienceCampus barely changed visible pixels.
+   Its station, label, fog state and interaction MUST remain. Remove only
+   that obsolete tower's decorative volume after the genuine 3x1 blocked
+   science prefab is present AND WebGL is ready. Otherwise keep full SVG. */
+[data-testid="ground-squad-board"]:has(
+ [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-modular-prefab-ids~="prefab.science-campus-3x1"]
+) [data-testid="ground-landmark-volume-sensor-vault"]{
+ visibility:hidden;
+}
