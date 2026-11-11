@@ -3,6 +3,7 @@ import {GroundMedicalFacility} from './GroundMedicalFacility';
 import {GroundProbeArray} from './GroundProbeArray';
 import {GroundSouthIndustrialWing} from './GroundSouthIndustrialWing';
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
+import {waypointRibbonShift,type LabelViewFrame} from '../groundWaypointRibbon';
 
 // Original isometric colony structures. Only canonical blocked wall / station
 // cells own physical buildings. Architecture is not a picking surface.
@@ -453,7 +454,7 @@ function StationGeometry({id}:{id:string}){
  </>;
 }
 
-export function GroundColonyStations({explored,visible}:Vision){
+export function GroundColonyStations({explored,visible,labelFrame}:Vision & {labelFrame?:LabelViewFrame}){
  return <g data-testid="ground-outpost-landmarks" pointerEvents="none">
   {scene.objects.map(object=>{
    const id=key(object.x,object.y),known=explored.has(id),inSight=visible.has(id);
@@ -464,6 +465,16 @@ export function GroundColonyStations({explored,visible}:Vision){
      object.id==='relief-point'?60:0;
    const plaqueY=object.id==='sensor-vault'?-38:object.id==='probe'?-45:
      object.id==='relief-point'?-85:object.id==='perimeter-uplink'?39:37;
+   // Move the painted plaque within the visible mobile camera, never its
+   // world anchor, original station geometry, discovery status or picking.
+   // An offscreen objective stays offscreen instead of becoming a false HUD pin.
+   const shift=labelFrame
+     ? waypointRibbonShift(p.x,plaqueX,plaqueWidth,labelFrame)
+     :0;
+   const plaqueShift=(shift??0)/.78;
+   // When a specially offset plaque is pulled into a narrow camera,
+   // tether its arrow to the real station center, not the old offset point.
+   const pointerX=labelFrame&&shift!==null&&shift!==0?-plaqueX/.78:0;
    return <g key={object.id} data-testid={'ground-landmark-'+object.id}
      data-fog={inSight?'visible':known?'remembered':'unknown'}
      visibility={known?'visible':'hidden'} opacity={inSight?1:.34}
@@ -473,12 +484,20 @@ export function GroundColonyStations({explored,visible}:Vision){
      {/* Grounded waypoints, visible only through the existing station fog.
          All labels are decorative and never intercept real picking. */}
      <g data-testid={'ground-waypoint-label-'+object.id}
+       data-ribbon-shift={(shift??0).toFixed(2)}
+       visibility={shift===null?'hidden':undefined}
        pointerEvents="none" transform={'translate('+plaqueX+' '+plaqueY+') scale(.78)'}>
-       <rect x={-plaqueWidth/2} y="-14" width={plaqueWidth} height="20" rx="3"
-         fill="#111c24" fillOpacity=".96" stroke="#ebc775" strokeWidth="1.5"/>
-       <path d="M-4 6L0 12L4 6" fill="#111c24"
-         stroke="#ebc775" strokeWidth="1"/>
-       <text x="0" y="0" textAnchor="middle" className="ground-landmark-name">{caption}</text>
+       <rect x={plaqueShift-plaqueWidth/2} y="-14" width={plaqueWidth}
+         height="20" rx="3" fill="#111c24" fillOpacity=".96"
+         stroke="#ebc775" strokeWidth="1.5"/>
+       {/* The pointer tip remains attached to the real station even when
+           only the panel slides away from a camera edge. */}
+       {pointerX!==0&&<path d={`M${plaqueShift} 6L${pointerX} 8`}
+         fill="none" stroke="#ebc775" strokeWidth=".9" />}
+       <path d={`M${pointerX-4} 6L${pointerX} 12L${pointerX+4} 6`}
+         fill="#111c24" stroke="#ebc775" strokeWidth="1"/>
+       <text x={plaqueShift} y="0" textAnchor="middle"
+         className="ground-landmark-name">{caption}</text>
      </g>
    </g>;
   })}
