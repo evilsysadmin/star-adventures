@@ -196,9 +196,10 @@ export function GroundLandingCourt3D({explored}:Vision){
   const modulePlan=compileGroundVisualScene({
     width:surface.width,height:surface.height,
     walls:surface.walls,objects:surface.objects,explored,
-  },{x:0,y:0,width:12,height:10},{
-    id:'prefab.industrial-apron-3x2',anchor:{x:2,y:4},
-  });
+  },{x:0,y:0,width:12,height:10},[
+    {id:'prefab.industrial-apron-3x2',anchor:{x:2,y:4}},
+    {id:'prefab.science-campus-3x1',anchor:{x:2,y:2}},
+  ]);
   const moduleKey=[
     modulePlan.tiles.map(p=>p.assetId+':'+p.cellId).join(' '),
     modulePlan.edges.map(p=>p.assetId+':'+p.cellId+':'+p.side+':'+p.blockedNeighbor).join(' '),
