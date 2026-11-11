@@ -26,7 +26,25 @@ for(const width of [390,1280]){
     await page.getByTestId('explore-use').click();
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie');
-    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    const board=page.getByTestId('ground-squad-board');
+    await expect(board).toBeVisible();
+    const clinic=page.getByTestId('ground-medical-facility-volume');
+    await expect(clinic).toHaveAttribute('data-architectural-form',
+      'low-profile-modular-relief-clinic');
+    await expect(clinic).toHaveAttribute('data-station-footprint','6,4');
+    // Artwork cannot add phantom stations, clickable cells or a
+    // misleading walkable annex around the authoritative rescue point.
+    await expect(clinic.locator('[data-cell-id], [data-officer-id], button')).toHaveCount(0);
+    const silhouette=await clinic.evaluate(node=>{
+      const g=node as SVGGraphicsElement,rect=g.getBBox();
+      return {height:rect.height,width:rect.width,
+        passive:getComputedStyle(g).pointerEvents==='none'};
+    });
+    expect(silhouette.height).toBeGreaterThan(98);
+    expect(silhouette.height).toBeLessThan(135);
+    expect(silhouette.width).toBeLessThan(190);
+    expect(silhouette.passive).toBe(true);
+    await board.screenshot({path:'test-results/away-medical-low-clinic-'+width+'.png'});
     const assist=page.getByTestId('ground-assist-civilians');
     await expect(assist).toBeDisabled();
     await expect(page.getByTestId('mission-phase')).toContainText('MISIÓN EN SUPERFICIE');
