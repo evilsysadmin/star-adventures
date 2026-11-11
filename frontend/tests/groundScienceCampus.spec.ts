@@ -42,6 +42,10 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-modular-prefab-ids',
     /science-campus-3x1/);
   await expect(wing).toHaveCSS('visibility','hidden');
+  await expect(page.getByTestId('ground-landmark-volume-sensor-vault'))
+    .toHaveCSS('visibility','hidden');
+  await expect(page.getByTestId('ground-waypoint-label-sensor-vault'))
+    .toHaveCSS('visibility','visible');
   await expect(wing).toHaveAttribute('pointer-events','none');
   await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(0);
   for(const id of ['2,2','3,2','4,2']){
@@ -87,6 +91,10 @@ test('no WebGL preserves visible SVG science shell and real mission terminals',a
    .toHaveAttribute('data-renderer-state','fallback');
  const wing=page.getByTestId('ground-science-campus');
  await expect(wing).toHaveCSS('visibility','visible');
+ await expect(page.getByTestId('ground-landmark-volume-sensor-vault'))
+   .toHaveCSS('visibility','visible');
+ await expect(page.getByTestId('ground-waypoint-label-sensor-vault'))
+   .toHaveCSS('visibility','visible');
  await expect(wing).toHaveAttribute('data-footprint','2,2 3,2 4,2');
  for(const id of ['2,2','3,2','4,2']){
   await expect(board.locator('[data-fog-cell="'+id+'"][data-fog-state="unknown"]'))
