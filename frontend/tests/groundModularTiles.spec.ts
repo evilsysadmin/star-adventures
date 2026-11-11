@@ -8,6 +8,7 @@ import {prefabCatalog} from '../src/groundVisual/prefabCatalog';
 import * as THREE from 'three';
 import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
  from '../src/groundVisual/exteriorGeologicalTerraces';
+import {addIndustrialApron3D} from '../src/groundVisual/IndustrialApron3D';
 
 // Playwright executes tests in Node ESM (no bare JSON import). Read the
 // actual authored fixture instead of copying walls/stations into the test.
@@ -153,5 +154,39 @@ test('authored exterior rock bands remain strictly beyond the game footprint',()
  }
  expect(triangles).toBeGreaterThan(500);
  cleanup();
+ expect(parent.children).toHaveLength(0);
+});
+
+test('reusable 3x2 service apron requires all six REAL free discovered cells',()=>{
+ const proposed={id:'prefab.industrial-apron-3x2' as const,
+  anchor:{x:2,y:4}};
+ const all=compileGroundVisualScene(input(allKnown),
+  {x:0,y:0,width:12,height:10},proposed);
+ expect(all.prefabs).toHaveLength(1);
+ expect(all.prefabs[0].footprint).toEqual([
+  '2,4','3,4','4,4','2,5','3,5','4,5',
+ ]);
+ for(const id of all.prefabs[0].footprint)expect(blocked.has(id)).toBe(false);
+ expect(prefabCatalog[proposed.id]).toMatchObject({
+  width:3,depth:2,clearance:'flush-floor',maxAboveFloor:.15,
+ });
+ const near=new Set(all.prefabs[0].footprint);
+ near.delete('3,5');
+ const hidden=compileGroundVisualScene(input(near),
+  {x:0,y:0,width:12,height:10},proposed);
+ expect(hidden.prefabs).toHaveLength(0);
+ const parent=new THREE.Group();
+ const release=addIndustrialApron3D(parent,2,4);
+ expect(parent.children).toHaveLength(1);
+ const group=parent.children[0] as THREE.Group;
+ expect(group.name).toBe('modular-prefab.industrial-apron-3x2');
+ expect(group.children.length).toBeGreaterThan(20);
+ for(const item of group.children){
+  expect(item).toBeInstanceOf(THREE.Mesh);
+  const part=item as THREE.Mesh;
+  const geo=part.geometry as THREE.BoxGeometry;
+  expect(part.position.y+geo.parameters.height/2).toBeLessThanOrEqual(.15);
+ }
+ release();
  expect(parent.children).toHaveLength(0);
 });
