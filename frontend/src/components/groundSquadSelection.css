@@ -216,3 +216,12 @@
 ) [data-testid="ground-south-industrial-wing"]{
   opacity:0;
 }
+
+/* Actual discovered blocked rock walls are owned by the world-space modular
+   environment only when WebGL has drawn successfully. No double box/rock.
+   Failed/disabled WebGL automatically restores the original SVG obstacle. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-modular-rock-proxy="true"]{
+  visibility:hidden;
+}
