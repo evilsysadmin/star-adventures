@@ -6,6 +6,7 @@ import {makeWorldTerrainTexture,TERRAIN_WORLD_WIDTH,TERRAIN_WORLD_HEIGHT}
 import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
  from './exteriorGeologicalTerraces';
 import {addIndustrialApron3D} from './IndustrialApron3D';
+import {addScienceCampus3D} from './ScienceCampus3D';
 
 // ONE existing orthographic canvas. The visual compiler never owns picking.
 // The terrain has world UVs rather than a repeated per-cell image: material
@@ -158,6 +159,11 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
   for(const placement of plan.prefabs){
    if(placement.assetId==='prefab.industrial-apron-3x2'){
     prefabDisposers.push(addIndustrialApron3D(root,
+     placement.anchor.x,placement.anchor.y));
+    continue;
+   }
+   if(placement.assetId==='prefab.science-campus-3x1'){
+    prefabDisposers.push(addScienceCampus3D(root,
      placement.anchor.x,placement.anchor.y));
     continue;
    }
