@@ -228,8 +228,12 @@ export function GroundSquadSelection({
   // Frame the *playable* surroundings, not almost the whole unknown board.
   // Keep the exact isometric projection/picking and separate complete overview.
   // Portrait retains enough lateral context to issue touch orders.
-  const cameraHeight = focused||sectorMode
-    ? 520
+  // Focused portrait follow was framed at 520 world units, leaving a
+  // conspicuous unoccupied band below the visible landing terrain on phones.
+  // A restrained 480-unit crop makes the *real* squad and floor more legible.
+  // Sector inspection retains 520; explicit full map remains un-cropped.
+  // Picking continues to use the actual SVG CTM; no world/grid shifts.
+  const cameraHeight = focused ? 480 : sectorMode ? 520
     : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
