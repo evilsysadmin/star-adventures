@@ -205,3 +205,14 @@
 ){
   opacity:0;
 }
+
+
+/* A published, checksum-verified authored south industrial shell replaces
+   the vector hangar on exactly the same real blocked wall footprint.
+   Never double-paint them. Unpublished, loading, broken or absent GLB means
+   this original SVG factory remains the fully playable visual fallback. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-authored-art-ready~="south-industrial-shell"]
+) [data-testid="ground-south-industrial-wing"]{
+  opacity:0;
+}
