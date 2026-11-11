@@ -45,6 +45,8 @@ for(const {width,height} of [
      controls:overlap(radio,controls),camera:overlap(radio,cam),
      names,officers,noOverflow:document.documentElement.scrollWidth<=innerWidth};
   });
+  // Preserve visual evidence even when a strict overlap assertion fails.
+  await page.screenshot({path:'test-results/away-desktop-radio-docked-'+width+'.png'});
   expect(view.top).toBeGreaterThan(300);
   expect(view.bottom).toBeLessThan(view.consoleTop-10);
   expect(view.right).toBeLessThanOrEqual(width+1);
@@ -56,7 +58,6 @@ for(const {width,height} of [
   expect(view.camera).toBe(false);
   expect(view.names.filter(n=>n.overlaps)).toEqual([]);
   expect(view.officers.filter(n=>n.overlaps)).toEqual([]);
-  await page.screenshot({path:'test-results/away-desktop-radio-docked-'+width+'.png'});
   // The dock never becomes an input interceptor: unchanged canonical board
   // still accepts a real command to a known free cell.
   await expect(page.getByTestId('ground-squad-board').locator('[data-cell-id]')).toHaveCount(216);
