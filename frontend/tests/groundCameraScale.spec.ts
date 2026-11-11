@@ -204,7 +204,9 @@ for(const width of [390,430]){
   await page.getByTestId('ground-camera-toggle').click();
   await expect(sectors).toHaveCount(0);
   const followed=await cameraMetrics(page);
-  expect(followed.height).toBe(520);
+  // Returning from the 520-unit sector inspector restores the intentionally
+  // closer 480-unit squad follow camera, not the sector framing.
+  expect(followed.height).toBe(480);
   await page.reload();
   await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','15');
   await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','5');
