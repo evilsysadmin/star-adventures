@@ -115,7 +115,7 @@ test('wide industrial and geological terrain uses only KNOWN canonical cells',()
   expect(allKnown.has(edge.blockedNeighbor)).toBe(true);
  }
  // Reuse real saves/exploration state as the only discovery authority.
- const onlyStart=new Set(['4,4','5,4','5,5','6,5','7,5','4,5']);
+ const onlyStart=new Set(['4,4','5,4','5,5','6,5','7,4','4,5']);
  const fog=compileGroundVisualScene(input(onlyStart),wide,prefab);
  expect(fog.tiles.map(p=>p.cellId).sort()).toEqual([...onlyStart].sort());
  expect(fog.rocks).toHaveLength(0);
