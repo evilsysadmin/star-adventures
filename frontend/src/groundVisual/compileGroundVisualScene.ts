@@ -1,5 +1,5 @@
 import type {TerrainTileId,EdgeTileId} from './tileCatalog';
-import type {PrefabId} from './prefabCatalog';
+import {prefabCatalog,type PrefabId} from './prefabCatalog';
 
 // Pure visual compiler: neither imports Three/React nor mutates game state.
 // Input coordinates: x=world X, y=world Z, y-up reserved for the 3D renderer.
@@ -87,13 +87,20 @@ export function compileGroundVisualScene(
  }
  if(requestedPrefab){
   const {id,anchor}=requestedPrefab;
-  // Only the single authored two-wide, flush-floor prototype is enabled.
-  // A later catalog may contain larger building footprints and anchors.
-  if(id==='prefab.recessed-service-trench-2x1'&&
-   drawable(anchor.x,anchor.y)&&drawable(anchor.x+1,anchor.y))
-   prefabs.push({kind:'prefab',assetId:id,anchor,
-    footprint:[groundCellId(anchor.x,anchor.y),
-     groundCellId(anchor.x+1,anchor.y)],rotation:0});
+  const definition=prefabCatalog[id];
+  // Every prefab uses its catalog footprint rather than bespoke hard-coded
+  // 2x1/2x2 rules. All required cells must already exist, be free and known.
+  // A missing/invalid catalog entry fails closed, never inventing geometry.
+  if(definition&&Number.isInteger(definition.width)&&
+    Number.isInteger(definition.depth)&&
+    definition.width>0&&definition.depth>0){
+   const footprint=Array.from({length:definition.depth},(_,dy)=>
+    Array.from({length:definition.width},(_,dx)=>
+     ({x:anchor.x+dx,y:anchor.y+dy}))).flat();
+   if(footprint.every(cell=>drawable(cell.x,cell.y)))
+    prefabs.push({kind:'prefab',assetId:id,anchor,
+     footprint:footprint.map(cell=>groundCellId(cell.x,cell.y)),rotation:0});
+  }
  }
  return {tiles,edges,prefabs};
 }
