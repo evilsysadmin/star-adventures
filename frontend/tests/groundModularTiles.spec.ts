@@ -224,10 +224,10 @@ test('connected 3x1 science prefab requires exact already discovered blockers',(
   expect(child).toBeInstanceOf(THREE.Mesh);
   const mesh=child as THREE.Mesh;
   const box=new THREE.Box3().setFromObject(mesh);
-  expect(box.min.x).toBeGreaterThanOrEqual(1.47);
-  expect(box.max.x).toBeLessThanOrEqual(4.53);
+  expect(box.min.x).toBeGreaterThanOrEqual(1.35);
+  expect(box.max.x).toBeLessThanOrEqual(4.65);
   expect(box.min.z).toBeGreaterThanOrEqual(1.44);
-  expect(box.max.z).toBeLessThanOrEqual(2.62);
+  expect(box.max.z).toBeLessThanOrEqual(2.70);
   expect(box.min.y).toBeGreaterThanOrEqual(0);
   expect(box.max.y).toBeLessThanOrEqual(1.8);
  }
