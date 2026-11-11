@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {tileCatalog,type VisualTileId} from './tileCatalog';
 import type {GroundVisualPlan,EdgeSide} from './compileGroundVisualScene';
+import {SURFACE_SIZE,makeGroundSurfacePixels,type SurfaceFamily} from './groundSurfacePatterns';
 
 // One scene graph, ONE existing WebGL canvas. Never create a second renderer,
 // camera, picking surface or render loop for modular terrain. Reuse materials
@@ -16,6 +17,20 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
  const root=new THREE.Group();
  root.name='modular-ground-visual-scene';
  const disposable:Array<{dispose:()=>void}>=[];
+ const surfaceTextures=new Map<SurfaceFamily,THREE.DataTexture>();
+ const textureFor=(family:SurfaceFamily)=>{
+  const cached=surfaceTextures.get(family);
+  if(cached)return cached;
+  const texture=new THREE.DataTexture(
+   makeGroundSurfacePixels(family),SURFACE_SIZE,SURFACE_SIZE,THREE.RGBAFormat);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.minFilter=THREE.LinearFilter;
+  texture.magFilter=THREE.LinearFilter;
+  texture.needsUpdate=true;
+  surfaceTextures.set(family,texture);
+  disposable.push(texture);
+  return texture;
+ };
  const floor=new THREE.PlaneGeometry(1,1);
  floor.rotateX(-Math.PI/2);
  const border=new THREE.BoxGeometry(.92,.025,.055);
@@ -28,7 +43,11 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
    :plan.edges.filter(x=>x.assetId===assetId);
   if(!placements.length)continue;
   const material=new THREE.MeshStandardMaterial({
-   ...definition.material,side:THREE.FrontSide,
+   ...definition.material,
+   // Four original lightweight textures shared by all tile variants.
+   // Instance counts, topology, fog and the existing pick layer stay identical.
+   map:definition.kind==='terrain'?textureFor(definition.surface):null,
+   side:THREE.FrontSide,
   });
   disposable.push(material);
   const mesh=new THREE.InstancedMesh(

@@ -75,3 +75,21 @@ against the agreed K-47 cinematic reference. If the coherent 3D hangar still
 looks like disconnected boxes or visually fights surrounding SVG, reject it,
 keep main unchanged and iterate the authored modular architecture rather than
 merging just because code/tests are green.
+
+## Shared semantic micro-surfaces (follow-up pilot)
+
+The six existing floor material variants now resolve to **four semantic surface
+families** (concrete, steel, mineral and dust). Original deterministic 64×64
+RGBA pixels are generated at runtime in one pure helper; Three.js creates at
+most one small DataTexture per actually used family. Both metal variants share
+the same texture, as do both concrete variants, preserving the six existing
+InstancedMesh batches and all canonical cell/fog/camera/interaction contracts.
+
+The textures add low-contrast grain, brushing and mineral variation. They do
+**not** generate new physical tiles, cracks, walls, doors, height levels or
+navigation, and do not fetch assets or copy any licensed image. Texture memory
+and material geometries are disposed when the pilot scene is torn down.
+The pure and Three scene lifecycle tests verify deterministic bytes, opacity,
+asset-family reuse and cleanup. Evaluate the actual Chromium screenshots at
+390 and 1280px before accepting: subtle material texture is not proof that
+the K-47 world now meets the cinematic art reference.
