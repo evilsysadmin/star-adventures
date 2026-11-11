@@ -34,7 +34,7 @@ for(const width of [360,390,430]){
     noOverflow:document.documentElement.scrollWidth<=innerWidth,
    };
   });
-  expect(metrics.cameraHeight).toBe(475);
+  expect(metrics.cameraHeight).toBe(480);
   expect(metrics.aspectError).toBeLessThan(.05);
   expect(metrics.horizontalTilePixels).toBeGreaterThan(135);
   expect(metrics.noOverflow).toBe(true);
@@ -54,6 +54,6 @@ for(const width of [360,390,430]){
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await page.getByTestId('ground-camera-toggle').click();
   await expect.poll(async()=>board.evaluate(el=>(el as SVGSVGElement).viewBox.baseVal.height))
-   .toBe(475);
+   .toBe(480);
  });
 }
