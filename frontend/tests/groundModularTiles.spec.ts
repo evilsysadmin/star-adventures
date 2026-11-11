@@ -69,7 +69,7 @@ test('unknown wall, unknown floor, invalid region and invalid prefab fail closed
  expect(edged.tiles.some(x=>blocked.has(x.cellId))).toBe(false);
  const invalid=compileGroundVisualScene(input(allKnown),
   {x:-1,y:4,width:4,height:3},prefab);
- expect(invalid).toEqual({tiles:[],edges:[],prefabs:[]});
+ expect(invalid).toEqual({tiles:[],edges:[],rocks:[],prefabs:[]});
  const occupiedPrefab=compileGroundVisualScene(input(allKnown),
   {x:3,y:5,width:4,height:3},{
    id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:7},
@@ -87,8 +87,40 @@ test('compiler is deterministic regardless of source ordering and catalog has re
  const one=compileGroundVisualScene(worldA,region,prefab);
  const two=compileGroundVisualScene(worldB,region,prefab);
  expect(two).toEqual(one);
- expect(Object.keys(tileCatalog)).toHaveLength(8);
+ expect(Object.keys(tileCatalog)).toHaveLength(13);
  expect(prefabCatalog['prefab.recessed-service-trench-2x1']).toMatchObject({
   width:2,depth:1,clearance:'flush-floor',
  });
+});
+
+test('wide industrial and geological terrain uses only KNOWN canonical cells',()=>{
+ const wide={x:0,y:0,width:12,height:10};
+ const plan=compileGroundVisualScene(input(allKnown),wide,prefab);
+ expect(plan.tiles.length).toBeGreaterThan(40);
+ expect(plan.tiles.length).toBeLessThan(120);
+ expect(plan.rocks.length).toBeGreaterThan(0);
+ expect(plan.tiles.some(p=>p.assetId==='floor.rock-bedded'||
+  p.assetId==='floor.rock-scree')).toBe(true);
+ expect(plan.tiles.some(p=>p.assetId==='floor.metal')).toBe(true);
+ expect(plan.edges.some(p=>p.assetId==='edge.platform-lip')).toBe(true);
+ expect(new Set(plan.tiles.map(p=>p.cellId)).size).toBe(plan.tiles.length);
+ for(const rock of plan.rocks){
+  expect(surface.walls.some(p=>key(p)===rock.cellId)).toBe(true);
+  expect(blocked.has(rock.cellId)).toBe(true);
+  expect(plan.tiles.some(tile=>tile.cellId===rock.cellId)).toBe(false);
+  expect(rock.material.startsWith('rock.')).toBe(true);
+ }
+ for(const edge of plan.edges){
+  expect(allKnown.has(edge.cellId)).toBe(true);
+  expect(allKnown.has(edge.blockedNeighbor)).toBe(true);
+ }
+ // Reuse real saves/exploration state as the only discovery authority.
+ const onlyStart=new Set(['4,4','5,4','5,5','6,5','7,5','4,5']);
+ const fog=compileGroundVisualScene(input(onlyStart),wide,prefab);
+ expect(fog.tiles.map(p=>p.cellId).sort()).toEqual([...onlyStart].sort());
+ expect(fog.rocks).toHaveLength(0);
+ expect(fog.edges).toHaveLength(0);
+ expect(fog.prefabs).toHaveLength(0);
+ expect(compileGroundVisualScene(input(allKnown),wide,prefab))
+  .toEqual(plan);
 });
