@@ -22,6 +22,33 @@ for(const width of [360,390,430,1280,1757]){
     await expect(rail).toBeVisible();
     await expect(dock).toBeInViewport();
     await expect(page.getByTestId('ground-current-notice')).toBeVisible();
+    if(width<=700){
+      const selection=page.getByTestId('ground-selection-status');
+      const notice=page.getByTestId('ground-current-notice');
+      await expect(selection).toHaveCSS('font-size','11px');
+      await expect(notice).toHaveCSS('font-size','11px');
+      await expect(notice).toHaveCSS('-webkit-line-clamp','2');
+      await expect(notice).toContainText('Selecciona un oficial');
+      const geometry=await page.evaluate(()=>{
+        const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
+        const info=rect('.ground-squad-event-strip');
+        const help=rect('.ground-squad-instructions');
+        const crew=rect('[data-testid="ground-crew-rail"]');
+        const dock=rect('.ground-squad-toolbar');
+        return {
+          statusHeight:info.height,
+          helpGap:info.top-help.bottom,
+          crewGap:crew.top-info.bottom,
+          toolbarGap:dock.top-crew.bottom,
+        };
+      });
+      expect(geometry.statusHeight).toBeGreaterThanOrEqual(31);
+      expect(geometry.statusHeight).toBeLessThanOrEqual(38);
+      expect(geometry.helpGap).toBeGreaterThanOrEqual(0);
+      expect(geometry.crewGap).toBeGreaterThanOrEqual(0);
+      expect(geometry.toolbarGap).toBeGreaterThanOrEqual(0);
+      await page.screenshot({path:'test-results/away-mobile-readable-status-'+width+'.png'});
+    }
     for(const id of ['venn','dorn','mira'])
       await expect(page.getByTestId('ground-select-'+id)).toHaveCount(1);
     await expect(rail).toContainText('Nara Venn');
