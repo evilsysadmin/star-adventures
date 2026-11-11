@@ -220,6 +220,9 @@ test('connected 3x1 science prefab requires exact already discovered blockers',(
  expect(wing.name).toBe('modular-prefab.science-campus-3x1');
  expect(wing.children.length).toBeGreaterThan(45);
  expect(wing.position.toArray()).toEqual([3,0,2]);
+ // Three.js lazily computes parent world transforms at render time; a
+ // pure Node geometry test must explicitly update the scene hierarchy.
+ root.updateMatrixWorld(true);
  for(const child of wing.children){
   expect(child).toBeInstanceOf(THREE.Mesh);
   const mesh=child as THREE.Mesh;
