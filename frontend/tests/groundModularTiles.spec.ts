@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
  from '../src/groundVisual/exteriorGeologicalTerraces';
 import {addIndustrialApron3D} from '../src/groundVisual/IndustrialApron3D';
+import {addScienceCampus3D} from '../src/groundVisual/ScienceCampus3D';
 
 // Playwright executes tests in Node ESM (no bare JSON import). Read the
 // actual authored fixture instead of copying walls/stations into the test.
@@ -189,4 +190,47 @@ test('reusable 3x2 service apron requires all six REAL free discovered cells',()
  }
  release();
  expect(parent.children).toHaveLength(0);
+});
+
+test('connected 3x1 science prefab requires exact already discovered blockers',()=>{
+ const region={x:0,y:0,width:12,height:10};
+ const apron={id:'prefab.industrial-apron-3x2' as const,anchor:{x:2,y:4}};
+ const science={id:'prefab.science-campus-3x1' as const,anchor:{x:2,y:2}};
+ const plan=compileGroundVisualScene(input(allKnown),region,[apron,science]);
+ expect(plan.prefabs).toHaveLength(2);
+ expect(plan.prefabs.map(p=>p.assetId)).toEqual([
+  'prefab.industrial-apron-3x2','prefab.science-campus-3x1',
+ ]);
+ expect(plan.prefabs[1].footprint).toEqual(['2,2','3,2','4,2']);
+ for(const id of plan.prefabs[1].footprint)expect(blocked.has(id)).toBe(true);
+ expect(prefabCatalog[science.id]).toMatchObject({
+  width:3,depth:1,clearance:'blocked-building',maxAboveFloor:1.8,
+ });
+ const hidden=new Set([...allKnown].filter(id=>id!=='4,2'));
+ const fogged=compileGroundVisualScene(input(hidden),region,[apron,science]);
+ expect(fogged.prefabs.map(p=>p.assetId)).toEqual([apron.id]);
+ const invalid=compileGroundVisualScene(input(allKnown),region,[
+  apron,{id:'prefab.science-campus-3x1',anchor:{x:3,y:3}},
+ ]);
+ expect(invalid.prefabs.map(p=>p.assetId)).toEqual([apron.id]);
+ const root=new THREE.Group();
+ const dispose=addScienceCampus3D(root,2,2);
+ expect(root.children).toHaveLength(1);
+ const wing=root.children[0] as THREE.Group;
+ expect(wing.name).toBe('modular-prefab.science-campus-3x1');
+ expect(wing.children.length).toBeGreaterThan(45);
+ expect(wing.position.toArray()).toEqual([3,0,2]);
+ for(const child of wing.children){
+  expect(child).toBeInstanceOf(THREE.Mesh);
+  const mesh=child as THREE.Mesh;
+  const box=new THREE.Box3().setFromObject(mesh);
+  expect(box.min.x).toBeGreaterThanOrEqual(1.47);
+  expect(box.max.x).toBeLessThanOrEqual(4.53);
+  expect(box.min.z).toBeGreaterThanOrEqual(1.44);
+  expect(box.max.z).toBeLessThanOrEqual(2.62);
+  expect(box.min.y).toBeGreaterThanOrEqual(0);
+  expect(box.max.y).toBeLessThanOrEqual(1.8);
+ }
+ dispose();
+ expect(root.children).toHaveLength(0);
 });
