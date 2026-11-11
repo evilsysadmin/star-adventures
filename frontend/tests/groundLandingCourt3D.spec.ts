@@ -21,6 +21,25 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-topology-valid','true');
   await expect(court).toHaveAttribute('visibility','visible');
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
+  await expect(court).toHaveAttribute('data-modular-region','3,4:4x3');
+  const modular=await board.evaluate(root=>{
+    const court=root.querySelector('[data-testid="ground-landing-court-3d"]');
+    const cells=(court?.getAttribute('data-modular-cell-ids')||'')
+      .split(' ').filter(Boolean);
+    return {
+      tiles:Number(court?.getAttribute('data-modular-tiles')),
+      edges:Number(court?.getAttribute('data-modular-edges')),
+      prefabs:Number(court?.getAttribute('data-modular-prefabs')),
+      realCells:cells.every(cell=>!!root.querySelector('[data-cell-id="'+cell+'"]')),
+      noUnknown:cells.every(cell=>!root.querySelector(
+       '[data-fog-cell="'+cell+'"][data-fog-state="unknown"]')),
+      unique:new Set(cells).size===cells.length,
+    };
+  });
+  expect(modular.tiles).toBeGreaterThanOrEqual(4);
+  expect(modular.tiles).toBeLessThanOrEqual(10);
+  expect(modular.prefabs).toBeLessThanOrEqual(1);
+  expect(modular.realCells&&modular.noUnknown&&modular.unique).toBe(true);
   // The existing solid SVG floor must actually uncover the 3D art, while
   // keeping the separately rendered mission/hatch decorations above it.
   await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
@@ -67,6 +86,7 @@ for(const width of [390,1280]){
   await expect(board.locator('[data-fog-cell="10,4"]'))
     .toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-industrial-pbr-court-'+width+'.png'});
+  await board.screenshot({path:'test-results/away-modular-terrain-pilot-'+width+'.png'});
 
   // A live move command still resolves against the exact canonical cell.
   await board.locator('[data-cell-id="5,4"]').click({button:'right'});
@@ -79,6 +99,8 @@ for(const width of [390,1280]){
   await expect(unit).toHaveAttribute('data-grid-y','4');
   await expect(page.getByTestId('ground-landing-court-3d'))
     .toHaveAttribute('data-renderer-state','ready',{timeout:20000});
+  expect(Number(await page.getByTestId('ground-landing-court-3d')
+    .getAttribute('data-modular-tiles'))).toBeGreaterThanOrEqual(modular.tiles);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
@@ -98,6 +120,8 @@ test('WebGL failure leaves the original entire SVG landing fully playable',async
  const board=page.getByTestId('ground-squad-board');
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','fallback');
+ // No WebGL means no new canvas layer, new picking target or blank terrain.
+ await expect(court).toHaveAttribute('data-modular-region','3,4:4x3');
  // The original SVG floor must remain fully legible if there is no WebGL.
  await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
    .not.toHaveCSS('opacity','0.08');
