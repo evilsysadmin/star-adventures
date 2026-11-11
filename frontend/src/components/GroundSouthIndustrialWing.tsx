@@ -39,6 +39,7 @@ function ConnectedSouthHangar({span,visible}:{span:SouthWingSpan;visible:Readonl
   data-footprint={span.cells.join(' ')}
   data-fog={allLit?'visible':'remembered'}
   data-render-class="single-continuous-industrial-hangar"
+  data-hangar-3d-eligible={allLit?'true':'false'}
   pointerEvents="none" aria-hidden="true"
   opacity={allLit?1:.36}>
   {/* One shadow across the entire authored, physically blocked frontage. */}
