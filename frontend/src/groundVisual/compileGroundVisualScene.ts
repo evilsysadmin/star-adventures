@@ -19,6 +19,7 @@ export type EdgePlacement={kind:'edge';assetId:EdgeTileId;
  cell:GridCell;cellId:string;blockedNeighbor:string;side:EdgeSide};
 export type RockPlacement={kind:'rock';cell:GridCell;cellId:string;
  material:'rock.bedrock'|'rock.fractured';variation:number};
+export type PrefabRequest={id:PrefabId;anchor:GridCell};
 export type PrefabPlacement={kind:'prefab';assetId:PrefabId;
  anchor:GridCell;footprint:readonly string[];rotation:0};
 export type GroundVisualPlan={
@@ -53,7 +54,7 @@ const geologicalWall=(x:number,y:number)=>
 
 export function compileGroundVisualScene(
  world:GroundVisualWorld,region:VisualRegion,
- requestedPrefab?:{id:PrefabId;anchor:GridCell},
+ requestedPrefab?:PrefabRequest|readonly PrefabRequest[],
 ):GroundVisualPlan{
  const tiles:TilePlacement[]=[],edges:EdgePlacement[]=[],
   rocks:RockPlacement[]=[],prefabs:PrefabPlacement[]=[];
@@ -111,17 +112,28 @@ export function compileGroundVisualScene(
    }
   }
  }
- if(requestedPrefab){
-  const {id,anchor}=requestedPrefab;
+ // Larger architectural prefabs may occupy canonical blocked cells,
+ // while floor prefabs require canonical FREE cells. Both need ALL cells
+ // inside this region and explored. Array support allows whole facilities
+ // to be compiled alongside terrain without ad-hoc render conditionals.
+ const requests:readonly PrefabRequest[]=requestedPrefab
+  ?('id' in requestedPrefab?[requestedPrefab]:requestedPrefab):[];
+ const claimed=new Set<string>();
+ for(const {id,anchor} of requests){
   const def=prefabCatalog[id];
-  if(def&&Number.isInteger(def.width)&&Number.isInteger(def.depth)&&
-    def.width>0&&def.depth>0){
-   const footprint=Array.from({length:def.depth},(_,dy)=>
-    Array.from({length:def.width},(_,dx)=>
-      ({x:anchor.x+dx,y:anchor.y+dy}))).flat();
-   if(footprint.every(p=>drawable(p.x,p.y)))
-    prefabs.push({kind:'prefab',assetId:id,anchor,
-     footprint:footprint.map(p=>groundCellId(p.x,p.y)),rotation:0});
+  if(!def||!Number.isInteger(def.width)||!Number.isInteger(def.depth)||
+    def.width<=0||def.depth<=0)continue;
+  const footprint=Array.from({length:def.depth},(_,dy)=>
+   Array.from({length:def.width},(_,dx)=>
+    ({x:anchor.x+dx,y:anchor.y+dy}))).flat();
+  const ids=footprint.map(p=>groundCellId(p.x,p.y));
+  if(footprint.every(p=>
+    inside(p.x,p.y,region)&&inWorld(p.x,p.y,world)&&known(p.x,p.y)&&
+    (def.clearance==='blocked-building'
+     ?blocked.has(groundCellId(p.x,p.y)):free(p.x,p.y)))&&
+    ids.every(cell=>!claimed.has(cell))){
+   prefabs.push({kind:'prefab',assetId:id,anchor,footprint:ids,rotation:0});
+   ids.forEach(cell=>claimed.add(cell));
   }
  }
  return {tiles,edges,rocks,prefabs};
