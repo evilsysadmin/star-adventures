@@ -866,7 +866,7 @@
 @media (min-width:1100px) and (min-height:740px){
   .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
   .mission-transmission{
-    top:auto;bottom:158px;right:13px;left:auto;
+    top:auto;bottom:202px;right:13px;left:auto;
     width:305px;max-width:calc(100% - 26px);
     max-height:min(214px,calc(100dvh - 350px));
   }
