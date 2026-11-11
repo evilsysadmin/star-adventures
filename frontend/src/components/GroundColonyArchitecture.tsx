@@ -472,6 +472,9 @@ export function GroundColonyStations({explored,visible,labelFrame}:Vision & {lab
      ? waypointRibbonShift(p.x,plaqueX,plaqueWidth,labelFrame)
      :0;
    const plaqueShift=(shift??0)/.78;
+   // When a specially offset plaque is pulled into a narrow camera,
+   // tether its arrow to the real station center, not the old offset point.
+   const pointerX=labelFrame&&shift!==null&&shift!==0?-plaqueX/.78:0;
    return <g key={object.id} data-testid={'ground-landmark-'+object.id}
      data-fog={inSight?'visible':known?'remembered':'unknown'}
      visibility={known?'visible':'hidden'} opacity={inSight?1:.34}
@@ -488,7 +491,9 @@ export function GroundColonyStations({explored,visible,labelFrame}:Vision & {lab
          stroke="#ebc775" strokeWidth="1.5"/>
        {/* The pointer tip remains attached to the real station even when
            only the panel slides away from a camera edge. */}
-       <path d={`M${plaqueShift-4} 6L0 12L${plaqueShift+4} 6`}
+       {pointerX!==0&&<path d={`M${plaqueShift} 6L${pointerX} 8`}
+         fill="none" stroke="#ebc775" strokeWidth=".9" />}
+       <path d={`M${pointerX-4} 6L${pointerX} 12L${pointerX+4} 6`}
          fill="#111c24" stroke="#ebc775" strokeWidth="1"/>
        <text x={plaqueShift} y="0" textAnchor="middle"
          className="ground-landmark-name">{caption}</text>
