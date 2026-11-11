@@ -1,11 +1,19 @@
 import {expect,test} from '@playwright/test';
-import world from '../../content/scenes/meridian.json';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import {compileGroundVisualScene,groundCellId} from
  '../src/groundVisual/compileGroundVisualScene';
 import {tileCatalog} from '../src/groundVisual/tileCatalog';
 import {prefabCatalog} from '../src/groundVisual/prefabCatalog';
 
-const surface=world.scenes.surface;
+// Playwright executes tests in Node ESM (no bare JSON import). Read the
+// actual authored fixture instead of copying walls/stations into the test.
+const surface=(JSON.parse(readFileSync(
+ fileURLToPath(new URL('../../content/scenes/meridian.json',import.meta.url)),
+ 'utf8')) as {scenes:{surface:{
+  width:number;height:number;walls:Array<{x:number;y:number}>;
+  objects:Array<{x:number;y:number}>
+ }}}).scenes.surface;
 const region={x:3,y:4,width:4,height:3};
 const prefab={id:'prefab.recessed-service-trench-2x1' as const,anchor:{x:3,y:5}};
 const key=(p:{x:number;y:number})=>groundCellId(p.x,p.y);
