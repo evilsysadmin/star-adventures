@@ -61,10 +61,13 @@ export function addIndustrialSpanHangars(
       material.foundation);
     place(group,'continuous-shell',center,.68,run.row,width-.08,.94,.84,
       material.shell);
-    place(group,'recessed-front-band',center,.83,run.row-.441,width-.13,.72,.028,
+    place(group,'recessed-front-band',center,.83,run.row+.441,width-.13,.72,.028,
       material.recess);
-    place(group,'lintel',center,1.13,run.row-.449,width-.05,.14,.063,
+    place(group,'lintel',center,1.13,run.row+.449,width-.05,.14,.063,
       material.support);
+    // The fixed orthographic camera looks from +X/+Z: service bays face +Z,
+    // toward the player. Keeping panels on the opposite side would leave
+    // the foreground as a blank wall.
     // Twin low roof pitches make one silhouette. No per-cell roof slabs.
     const near=place(group,'roof-pitch-near',center,1.274,run.row-.224,
       width,.12,.51,material.roof);
@@ -74,7 +77,7 @@ export function addIndustrialSpanHangars(
     far.rotation.x=.085;
     place(group,'roof-ridge',center,1.32,run.row,width,.11,.075,
       material.accent);
-    place(group,'roof-front-eave',center,1.22,run.row-.46,
+    place(group,'roof-front-eave',center,1.22,run.row+.46,
       width+.025,.065,.045,material.accent);
     place(group,'service-spine',center,1.365,run.row+.18,
       width-.18,.07,.095,material.support);
@@ -82,16 +85,16 @@ export function addIndustrialSpanHangars(
       // These panels are deliberately *recessed* in a shared structure.
       // They are closed industrial bays, not fictional traversable doors.
       const outer=x===run.start||x===run.end;
-      place(group,'bay-recess-'+x,x,.68,run.row-.468,.76,.64,.021,
+      place(group,'bay-recess-'+x,x,.68,run.row+.468,.76,.64,.021,
         material.recess,false);
-      place(group,'bay-panel-'+x,x,.675,run.row-.482,.64,.5,.014,
+      place(group,'bay-panel-'+x,x,.675,run.row+.482,.64,.5,.014,
         outer?material.support:material.glass,false);
-      place(group,'bay-horizontal-trim-'+x,x,.42,run.row-.493,.69,.045,.021,
+      place(group,'bay-horizontal-trim-'+x,x,.42,run.row+.493,.69,.045,.021,
         material.accent,false);
-      place(group,'bay-light-'+x,x,1.045,run.row-.486,.13,.055,.025,
+      place(group,'bay-light-'+x,x,1.045,run.row+.486,.13,.055,.025,
         material.lamp,false);
       if(x<run.end){
-        place(group,'shared-pier-'+x,x+.5,.69,run.row-.466,.12,.97,.12,
+        place(group,'shared-pier-'+x,x+.5,.69,run.row+.466,.12,.97,.12,
           material.support);
       }
     }
