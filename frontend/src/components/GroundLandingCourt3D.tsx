@@ -8,6 +8,8 @@ import {
   k47ArtManifestForRendering,
 } from './GroundK47AuthoredEnvironment';
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
+import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
+import {addGroundVisualScene3D} from '../groundVisual/GroundVisualScene3D';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -77,12 +79,13 @@ function courtTexture(){
   return texture;
 }
 
-function makeCourtSurface(){
+function makeCourtSurface(replaced:ReadonlySet<string>){
   const positions:number[]=[],uv:number[]=[],indices:number[]=[];
   const corners=(x:number,z:number)=>[
     [x-.5,z-.5],[x-.5,z+.5],[x+.5,z+.5],[x+.5,z-.5]
   ];
   for(const cell of courtCells){
+    if(replaced.has(id(cell.x,cell.z)))continue;
     const n=positions.length/3;
     for(const [x,z] of corners(cell.x,cell.z)){
       positions.push(x,.025,z);
@@ -98,7 +101,8 @@ function makeCourtSurface(){
   geometry.computeVertexNormals();
   return geometry;
 }
-function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>){
+function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
+  replaced:ReadonlySet<string>){
   const resources:Array<{dispose:()=>void}>=[];
   const texture=courtTexture();
   if(texture)resources.push(texture);
@@ -107,7 +111,7 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>){
     ...(texture?{map:texture}:{})
   });
   resources.push(material);
-  const geometry=makeCourtSurface();
+  const geometry=makeCourtSurface(replaced);
   resources.push(geometry);
   const floor=new THREE.Mesh(geometry,material);
   floor.name='industrial-court-continuous-floor';
@@ -185,12 +189,27 @@ export function GroundLandingCourt3D({explored}:Vision){
     .map(Number).filter(x=>!authoredSouth.has(x)).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
   // unrelated set churn never causes a redundant GLTF/CDN request.
+  // Pilot one small authored zone in the EXISTING WebGL scene. The compiler
+  // consumes only real walkability and explored cells, never renders hidden
+  // geometry and cannot affect gameplay picking or movement.
+  const modulePlan=compileGroundVisualScene({
+    width:surface.width,height:surface.height,
+    walls:surface.walls,objects:surface.objects,explored,
+  },{x:3,y:4,width:4,height:3},{
+    id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:5},
+  });
+  const moduleKey=[
+    modulePlan.tiles.map(p=>p.assetId+':'+p.cellId).join(' '),
+    modulePlan.edges.map(p=>p.cellId+':'+p.side+':'+p.blockedNeighbor).join(' '),
+    modulePlan.prefabs.map(p=>p.assetId+':'+p.footprint.join('+')).join(' '),
+  ].join('|');
   const artManifest=k47ArtManifestForRendering();
   const authoredKey=eligiblePublishedK47ArtIds(explored,artManifest).join(' ');
   useEffect(()=>{
     if(!active||!canvas.current)return;
     let renderer:THREE.WebGLRenderer|undefined;
     let disposeCourt:(()=>void)|undefined;
+    let disposeModular:(()=>void)|undefined;
     let disposeAuthored:(()=>void)|undefined;
     const abortArt=new AbortController();
     try{
@@ -205,7 +224,10 @@ export function GroundLandingCourt3D({explored}:Vision){
       renderer.shadowMap.enabled=true;
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const scene=new THREE.Scene();
-      disposeCourt=buildCourt(scene,new Set(pbrWallColumns.split(',').filter(Boolean).map(Number)));
+      disposeCourt=buildCourt(scene,
+        new Set(pbrWallColumns.split(',').filter(Boolean).map(Number)),
+        new Set(modulePlan.tiles.map(p=>p.cellId)));
+      disposeModular=addGroundVisualScene3D(scene,modulePlan);
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
       setState('ready');
@@ -234,6 +256,7 @@ export function GroundLandingCourt3D({explored}:Vision){
       // browsers or software-renderer failure. No faux "successful" art.
       abortArt.abort();
       disposeAuthored?.();
+      disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
       setArtState('fallback');
@@ -243,13 +266,19 @@ export function GroundLandingCourt3D({explored}:Vision){
     return ()=>{
       abortArt.abort();
       disposeAuthored?.();
+      disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,pbrWallColumns,authoredKey,artManifest]);
+  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
+    data-modular-region="3,4:4x3"
+    data-modular-tiles={modulePlan.tiles.length}
+    data-modular-edges={modulePlan.edges.length}
+    data-modular-prefabs={modulePlan.prefabs.length}
+    data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
     data-authored-art-slots={artManifest.slots.length}
