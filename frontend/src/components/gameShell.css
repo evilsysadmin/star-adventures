@@ -856,3 +856,18 @@
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
   .ground-squad-instructions{bottom:169px}
 }
+
+
+/* Desktop planetary landing: reserve the top-right skyline for actual
+   objective labels (SONDA / SOCORRO) instead of covering them with the radio.
+   Keep the real campaign brief and extraction/abandon CTA visible. Only
+   full-height desktop tactical stages get the bottom-right service berth;
+   bridge, mobile, shorter windows and the classic camera are unchanged. */
+@media (min-width:1100px) and (min-height:740px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission{
+    top:auto;bottom:202px;right:13px;left:auto;
+    width:305px;max-width:calc(100% - 26px);
+    max-height:min(214px,calc(100dvh - 350px));
+  }
+}

@@ -37,7 +37,10 @@ for(const width of [390,1280]){
       expect(toolbarRect.y).toBeGreaterThan(690);
       expect(consoleRect.x).toBeGreaterThan(toolbarRect.x+toolbarRect.width+10);
       expect(missionRect.x).toBeGreaterThan(940);
-      expect(missionRect.y).toBeLessThan(95);
+      // Desktop's real transmission now docks in the lower-right service
+      // berth, below the station titles and above the command console.
+      expect(missionRect.y).toBeGreaterThan(275);
+      expect(missionRect.y+missionRect.height).toBeLessThan(consoleRect.y-10);
       const portraits=await crew.locator('.ground-squad-crew-portrait').all();
       expect(portraits).toHaveLength(3);
       for(const portrait of portraits){
