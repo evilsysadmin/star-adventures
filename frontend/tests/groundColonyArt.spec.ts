@@ -44,6 +44,15 @@ for(const width of [390,1280]){
   await expect(venn).toHaveAttribute('data-grid-x','9');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveAttribute('data-fog','visible');
+  // The widened Three floor must genuinely SHOW THROUGH the old transparent
+  // plaza/yard paving on discovered cells. Far-east SVG and the no-WebGL
+  // fallback remain available; don't mistake an invisible 3D canvas for art.
+  await expect(page.getByTestId('ground-landing-court-3d'))
+    .toHaveAttribute('data-renderer-state','ready');
+  await expect(page.getByTestId('ground-yard-floor-9,4'))
+    .toHaveCSS('opacity','0.06');
+  await expect(page.getByTestId('ground-plaza-floor-9,4'))
+    .toHaveCSS('opacity','0.06');
   await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveAttribute('data-fog','visible');
   await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','4');
   await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(1);
