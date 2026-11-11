@@ -22,6 +22,7 @@ test('onscreen stations remain anchored and offscreen/invalid pins stay offscree
  expect(waypointRibbonShift(420,0,65,frame)).toBe(0);
  expect(waypointRibbonShift(290,0,65,frame)).toBeNull();
  expect(waypointRibbonShift(551,0,65,frame)).toBeNull();
+ expect(waypointRibbonShift(539,0,65,{left:280,width:260})).toBeNull();
  expect(waypointRibbonShift(420,0,600,frame)).toBeNull();
  expect(waypointRibbonShift(420,0,65,{left:0,width:0})).toBeNull();
  expect(waypointRibbonShift(NaN,0,65,frame)).toBeNull();
@@ -56,14 +57,16 @@ for(const width of [360,390,430]){
          passive:getComputedStyle(n).pointerEvents==='none'};
      });
   });
+  // Capture *before* any assertion: failure at a narrow edge still leaves
+  // the visual evidence needed to fix geometry instead of guessing.
+  await page.screenshot({path:'test-results/away-camera-ribbons-'+width+'.png'});
   expect(observed.length).toBeGreaterThan(0);
   for(const label of observed){
    expect(label.passive,label.id).toBe(true);
    expect(label.left,label.id+' left').toBeGreaterThanOrEqual(-1);
    expect(label.right,label.id+' right').toBeLessThanOrEqual(label.width+1);
   }
-  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
-  await page.screenshot({path:'test-results/away-camera-ribbons-'+width+'.png'});
+  await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
   await page.getByTestId('ground-camera-toggle').click();
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-waypoint-label-probe'))
