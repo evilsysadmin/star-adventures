@@ -11,7 +11,6 @@ export const K47_EXTERIOR_TERRACES:readonly Terrace[]=[
  {edge:'north',start:.7,length:10.7,depth:2.8},
  {edge:'south',start:.7,length:10.7,depth:2.45},
 ];
-const interpolate=(a:number,b:number,t:number)=>a+(b-a)*t;
 function geometryForTerrace({edge,start,length,depth}:Terrace){
  const across=6,along=26;
  const positions:number[]=[],colors:number[]=[],indices:number[]=[];
