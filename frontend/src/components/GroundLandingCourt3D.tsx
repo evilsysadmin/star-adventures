@@ -197,7 +197,7 @@ export function GroundLandingCourt3D({explored}:Vision){
     width:surface.width,height:surface.height,
     walls:surface.walls,objects:surface.objects,explored,
   },{x:0,y:0,width:12,height:10},{
-    id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:5},
+    id:'prefab.industrial-apron-3x2',anchor:{x:2,y:4},
   });
   const moduleKey=[
     modulePlan.tiles.map(p=>p.assetId+':'+p.cellId).join(' '),
@@ -283,6 +283,7 @@ export function GroundLandingCourt3D({explored}:Vision){
     data-modular-exterior-terraces={K47_EXTERIOR_TERRACES.length}
     data-modular-rock-cell-ids={modulePlan.rocks.map(p=>p.cellId).join(' ')}
     data-modular-prefabs={modulePlan.prefabs.length}
+    data-modular-prefab-ids={modulePlan.prefabs.map(p=>p.assetId).join(' ')}
     data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
