@@ -170,7 +170,7 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
   return ()=>resources.forEach(resource=>resource.dispose());
 }
 
-export function GroundLandingCourt3D({explored}:Vision){
+export function GroundLandingCourt3D({explored,visible}:Vision){
   const canvas=useRef<HTMLCanvasElement>(null);
   const [state,setState]=useState<'idle'|'ready'|'fallback'>('idle');
   const [artState,setArtState]=useState<'unpublished'|'loading'|'ready'|'fallback'>('unpublished');
