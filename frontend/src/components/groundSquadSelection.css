@@ -247,3 +247,13 @@
 ) [data-testid="ground-bay-central-hatch"][data-fog="visible"]{
   opacity:.42;
 }
+
+/* The one connected science-campus 3D prefab replaces its old SVG shell
+   only if ALL three blockers are known and the current WebGL frame has
+   rendered successfully. The ARCHIVO/SONDA terminal labels and actual
+   interaction remain in the independent mission layer. */
+[data-testid="ground-squad-board"]:has(
+ [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-modular-prefab-ids~="prefab.science-campus-3x1"]
+) [data-testid="ground-science-campus"]{
+ visibility:hidden;
+}
