@@ -41,6 +41,18 @@ for(const width of [360,390,430]){
     expect(expanded).not.toBeNull();
     expect(expanded!.width).toBeGreaterThan(collapsed!.width);
     expect(expanded!.x+expanded!.width).toBeLessThanOrEqual(width+1);
+    // The expanded brief must not occlude the operational camera or
+    // map/sector controls. A static screenshot alone missed this in v1.
+    for(const selector of ['[data-testid="ground-camera-toggle"]',
+                           '.ground-squad-viewbar']){
+      const control=await page.locator(selector).first().boundingBox();
+      expect(control,selector+' must remain in the viewport').not.toBeNull();
+      const horizontalOverlap=Math.min(expanded!.x+expanded!.width,control!.x+control!.width)-
+        Math.max(expanded!.x,control!.x);
+      const verticalOverlap=Math.min(expanded!.y+expanded!.height,control!.y+control!.height)-
+        Math.max(expanded!.y,control!.y);
+      expect(horizontalOverlap<=0||verticalOverlap<=0,selector+' is occluded').toBe(true);
+    }
     await page.screenshot({path:'test-results/away-brief-expanded-'+width+'.png'});
 
     await toggle.focus();
