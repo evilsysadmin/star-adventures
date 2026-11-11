@@ -10,6 +10,7 @@ import {
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
 import {addGroundVisualScene3D} from '../groundVisual/GroundVisualScene3D';
+import {K47_EXTERIOR_TERRACES} from '../groundVisual/exteriorGeologicalTerraces';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -279,6 +280,7 @@ export function GroundLandingCourt3D({explored}:Vision){
     data-modular-tiles={modulePlan.tiles.length}
     data-modular-edges={modulePlan.edges.length}
     data-modular-rocks={modulePlan.rocks.length}
+    data-modular-exterior-terraces={K47_EXTERIOR_TERRACES.length}
     data-modular-rock-cell-ids={modulePlan.rocks.map(p=>p.cellId).join(' ')}
     data-modular-prefabs={modulePlan.prefabs.length}
     data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
