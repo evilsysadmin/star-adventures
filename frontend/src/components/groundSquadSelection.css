@@ -3,7 +3,7 @@
 .ground-squad-viewport > svg{display:block;width:100%;height:auto;aspect-ratio:1120/550;touch-action:none;user-select:none;cursor:crosshair}
 /* Swap only fully visible blocked hangar spans AFTER the real 3D canvas
    has painted that exact visibility set. WebGL failure/remembered walls keep SVG. */
-.ground-squad-board:has([data-testid="ground-landing-court-3d"][data-hangar-ready="true"])
+[data-testid="ground-squad-board"]:has([data-testid="ground-landing-court-3d"][data-hangar-ready="true"])
   [data-testid="ground-south-industrial-wing"] [data-hangar-3d-eligible="true"]{
   visibility:hidden;
 }
