@@ -109,3 +109,24 @@ the map; it is disposed on renderer cleanup.
 Visual acceptance still requires actual 390/1280 screenshots after this
 addition, including whether the geological frame is visible, correctly
 behind the squad, non-blocking and not a new wall of beige cuboids.
+
+
+## Second visual correction: useful foreground architecture, not giant cliffs
+The first terrace screenshots passed CI but showed three visually poor,
+over-sized green mountains dominating the complete-map and follow camera.
+This candidate was **rejected** despite 6/6 passing jobs.
+
+The revised terrace shapes are much lower, narrower and darker (resembling
+eroded ground shoulders rather than walls). Most importantly, the first
+landing court now uses a **reusable 3×2 original steel service apron prefab**
+on x=2..4, y=4..5: one physically continuous low assembly with a recessed
+trench, 11 grating ribs, long structural rails, segmented service panels,
+inlaid safety strips and integrated low lights. It can appear only after
+all six canonical traversable cells have been discovered, and remains under
+the officers/mission overlays. The old 2×1 prefab remains in the catalog.
+There is no new path, false entrance, collision or gameplay schema.
+Tests validate both the prefab footprint and its low clearance ceiling.
+
+Visual gate remains exact-head Chrome 390/1280 before Ready/merge, including
+normal follow and full-map camera. The first 6/6 on the bad terrace version
+does NOT approve this corrected candidate.
