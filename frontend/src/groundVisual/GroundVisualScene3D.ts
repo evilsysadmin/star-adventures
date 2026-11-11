@@ -5,6 +5,7 @@ import {makeWorldTerrainTexture,TERRAIN_WORLD_WIDTH,TERRAIN_WORLD_HEIGHT}
  from './worldTerrainTexture';
 import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
  from './exteriorGeologicalTerraces';
+import {addIndustrialApron3D} from './IndustrialApron3D';
 
 // ONE existing orthographic canvas. The visual compiler never owns picking.
 // The terrain has world UVs rather than a repeated per-cell image: material
@@ -74,6 +75,7 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
  // landscape without drawing an unknown in-map terrain cell.
  const disposeTerraces=addExteriorGeologicalTerraces(root);
  const disposables:Array<{dispose:()=>void}>=[];
+ const prefabDisposers:Array<()=>void>=[];
  const texture=makeWorldTerrainTexture();
  if(texture)disposables.push(texture);
  const edgeGeometry=new THREE.BoxGeometry(.98,.083,.07);
@@ -154,6 +156,11 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
    color:0xb4a47f,metalness:.52,roughness:.69});
   disposables.push(trench,rail,pad,trim);
   for(const placement of plan.prefabs){
+   if(placement.assetId==='prefab.industrial-apron-3x2'){
+    prefabDisposers.push(addIndustrialApron3D(root,
+     placement.anchor.x,placement.anchor.y));
+    continue;
+   }
    const group=new THREE.Group();
    group.name='modular-'+placement.assetId;
    group.position.set(placement.anchor.x+.5,0,placement.anchor.y);
@@ -176,6 +183,7 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
  return ()=>{
   scene.remove(root);
   disposeTerraces();
+  for(const dispose of prefabDisposers)dispose();
   for(const resource of disposables)resource.dispose();
  };
 }
