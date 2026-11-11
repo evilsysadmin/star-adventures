@@ -216,3 +216,55 @@
 ) [data-testid="ground-south-industrial-wing"]{
   opacity:0;
 }
+
+/* Actual discovered blocked rock walls are owned by the world-space modular
+   environment only when WebGL has drawn successfully. No double box/rock.
+   Failed/disabled WebGL automatically restores the original SVG obstacle. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-modular-rock-proxy="true"]{
+  visibility:hidden;
+}
+
+/* The reusable Three terrain only becomes visible if the old opaque SVG
+   paving stops covering its actual 3D-replaced cells. Never hide unreplaced
+   far-eastern SVG floor or its separate route markings. Like the rescue bay,
+   both paving systems retain full SVG rollback when WebGL is not ready. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+) [data-modular-paving="true"]{
+  opacity:.06;
+}
+
+/* The new multi-cell 3D industrial apron owns the material under the beam
+   extraction hatch. Keep the authoritative hatch's symbolic geometry and
+   all its interaction untouched, but let the actual PBR service deck show
+   through instead of double-painting an opaque 2D plate. Only current,
+   visible hatch/verified-ready 3D receive this reduction. SVG returns
+   unchanged if WebGL is blocked, the prefab isn't discovered or fog darkens. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-modular-prefab-ids~="prefab.industrial-apron-3x2"]
+) [data-testid="ground-bay-central-hatch"][data-fog="visible"]{
+  opacity:.42;
+}
+
+/* The one connected science-campus 3D prefab replaces its old SVG shell
+   only if ALL three blockers are known and the current WebGL frame has
+   rendered successfully. The ARCHIVO/SONDA terminal labels and actual
+   interaction remain in the independent mission layer. */
+[data-testid="ground-squad-board"]:has(
+ [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-modular-prefab-ids~="prefab.science-campus-3x1"]
+) [data-testid="ground-science-campus"]{
+ visibility:hidden;
+}
+
+/* Archivo's old 70px-high painted SVG tower was above every 3D layer,
+   so simply replacing GroundScienceCampus barely changed visible pixels.
+   Its station, label, fog state and interaction MUST remain. Remove only
+   that obsolete tower's decorative volume after the genuine 3x1 blocked
+   science prefab is present AND WebGL is ready. Otherwise keep full SVG. */
+[data-testid="ground-squad-board"]:has(
+ [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-modular-prefab-ids~="prefab.science-campus-3x1"]
+) [data-testid="ground-landmark-volume-sensor-vault"]{
+ visibility:hidden;
+}

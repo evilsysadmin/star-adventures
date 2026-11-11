@@ -3,6 +3,7 @@ import {GroundMedicalFacility} from './GroundMedicalFacility';
 import {GroundProbeArray} from './GroundProbeArray';
 import {GroundSouthIndustrialWing} from './GroundSouthIndustrialWing';
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
+import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
 
 // Original isometric colony structures. Only canonical blocked wall / station
 // cells own physical buildings. Architecture is not a picking surface.
@@ -229,6 +230,13 @@ export function GroundColonyWalls({explored,visible}:Vision){
  const scienceKnown=scienceValid&&scienceFootprint.every(p=>explored.has(key(p.x,p.y)));
  const southSpans=southIndustrialSpans(explored,scene.walls);
  const southCovered=southIndustrialCoveredColumns(southSpans);
+ // The shared 3D renderer replaces a generic vector box ONLY where the
+ // current fully discovered wall has an actual compiled rock replacement.
+ // CSS keeps the vector box alive as a WebGL fallback.
+ const modularRocks=new Set(compileGroundVisualScene({
+  width:scene.width,height:scene.height,
+  walls:scene.walls,objects:scene.objects,explored,
+ },{x:0,y:0,width:12,height:10}).rocks.map(p=>p.cellId));
  const hasSouthWing=(x:number,y:number)=>y===7&&southCovered.has(x);
  return <g data-testid="ground-colony-walls" pointerEvents="none">
   <GroundScienceCampus known={scienceKnown} visible={visible}/>
@@ -243,6 +251,7 @@ export function GroundColonyWalls({explored,visible}:Vision){
      const warm=(p.x*7+p.y)%3===0;
      return <g key={xy} transform={`translate(${pos.x} ${pos.y})`}
        data-testid={'ground-architecture-wall-'+xy}
+       data-modular-rock-proxy={modularRocks.has(xy)?'true':'false'}
        data-fog={visible.has(xy)?'visible':'remembered'}
        opacity={visible.has(xy)?1:.3}>
        <ellipse cy="9" rx="37" ry="15" fill="#081b21" opacity=".72"/>
@@ -310,6 +319,8 @@ export function GroundColonyWalls({explored,visible}:Vision){
      const warm=(from.x+from.y)%3===0;
      const glass=warm?'#bda984':'#7fc4be';
      return <g key={id} data-testid={'ground-colony-roof-'+id}
+       data-modular-rock-proxy={modularRocks.has(key(from.x,from.y))||
+         modularRocks.has(key(to.x,to.y))?'true':'false'}
        data-fog={bothVisible?'visible':'remembered'}
        opacity={bothVisible?0.94:0.3}>
        <path d={fascia} fill="#23383e" stroke="#0e252f" strokeWidth="1.5"/>
@@ -469,7 +480,13 @@ export function GroundColonyStations({explored,visible}:Vision){
      visibility={known?'visible':'hidden'} opacity={inSight?1:.34}
      transform={`translate(${p.x} ${p.y})`}>
      <title>{object.label}</title>
-     <StationGeometry id={object.id}/>
+     {/* The sensor-vault SVG tower is a *visual* surrogate, not the real
+         mission terminal. A verified, fully known 3D science-campus can
+         replace its shape without removing this station/waypoint. */}
+     <g data-testid={'ground-landmark-volume-'+object.id}
+       pointerEvents="none" aria-hidden="true">
+       <StationGeometry id={object.id}/>
+     </g>
      {/* Grounded waypoints, visible only through the existing station fog.
          All labels are decorative and never intercept real picking. */}
      <g data-testid={'ground-waypoint-label-'+object.id}

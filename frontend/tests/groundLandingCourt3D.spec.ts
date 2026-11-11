@@ -21,7 +21,16 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-topology-valid','true');
   await expect(court).toHaveAttribute('visibility','visible');
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
-  await expect(court).toHaveAttribute('data-modular-region','3,4:4x3');
+  await expect(court).toHaveAttribute('data-modular-region','0,0:12x10');
+  await expect(court).toHaveAttribute('data-modular-exterior-terraces','3');
+  // More than one authored prefab may be known at the initial landing.
+  // The science facility must not cause this otherwise valid apron test
+  // to demand an outdated one-entry list.
+  await expect.poll(async()=>
+    (await court.getAttribute('data-modular-prefab-ids'))?.split(' ')
+      .includes('prefab.industrial-apron-3x2')).toBe(true);
+  await expect(board.getByTestId('ground-bay-central-hatch'))
+    .toHaveCSS('opacity','0.42');
   const modular=await board.evaluate(root=>{
     const court=root.querySelector('[data-testid="ground-landing-court-3d"]');
     const cells=(court?.getAttribute('data-modular-cell-ids')||'')
@@ -30,16 +39,31 @@ for(const width of [390,1280]){
       tiles:Number(court?.getAttribute('data-modular-tiles')),
       edges:Number(court?.getAttribute('data-modular-edges')),
       prefabs:Number(court?.getAttribute('data-modular-prefabs')),
+      rocks:Number(court?.getAttribute('data-modular-rocks')),
+      safeRocks:(court?.getAttribute('data-modular-rock-cell-ids')||'')
+       .split(' ').filter(Boolean).every(cell=>
+        !!root.querySelector('[data-cell-id="'+cell+'"]')&&
+        !root.querySelector('[data-fog-cell="'+cell+'"][data-fog-state="unknown"]')),
+
       realCells:cells.every(cell=>!!root.querySelector('[data-cell-id="'+cell+'"]')),
       noUnknown:cells.every(cell=>!root.querySelector(
        '[data-fog-cell="'+cell+'"][data-fog-state="unknown"]')),
       unique:new Set(cells).size===cells.length,
     };
   });
-  expect(modular.tiles).toBeGreaterThanOrEqual(4);
-  expect(modular.tiles).toBeLessThanOrEqual(10);
-  expect(modular.prefabs).toBeLessThanOrEqual(1);
-  expect(modular.realCells&&modular.noUnknown&&modular.unique).toBe(true);
+  expect(modular.tiles).toBeGreaterThan(12);
+  expect(modular.tiles).toBeLessThanOrEqual(100);
+  // Two mutually exclusive, canonical footprints can now coexist:
+  // the already-explored 3x2 floor apron and, when all three blockers
+  // are known, the 3x1 science building. Never count them as duplicates.
+  expect(modular.prefabs).toBeGreaterThanOrEqual(1);
+  expect(modular.prefabs).toBeLessThanOrEqual(2);
+  const prefabIds=(await court.getAttribute('data-modular-prefab-ids'))?.split(' ')??[];
+  expect(new Set(prefabIds).size).toBe(prefabIds.length);
+  expect(prefabIds).toContain('prefab.industrial-apron-3x2');
+  if(modular.prefabs===2)expect(prefabIds).toContain('prefab.science-campus-3x1');
+  expect(modular.realCells&&modular.noUnknown&&modular.unique&&
+    modular.safeRocks).toBe(true);
   // The existing solid SVG floor must actually uncover the 3D art, while
   // keeping the separately rendered mission/hatch decorations above it.
   await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
@@ -87,6 +111,7 @@ for(const width of [390,1280]){
     .toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-industrial-pbr-court-'+width+'.png'});
   await board.screenshot({path:'test-results/away-modular-terrain-pilot-'+width+'.png'});
+  await board.screenshot({path:'test-results/away-wide-terrain-and-rocks-'+width+'.png'});
 
   // A live move command still resolves against the exact canonical cell.
   await board.locator('[data-cell-id="5,4"]').click({button:'right'});
@@ -120,8 +145,10 @@ test('WebGL failure leaves the original entire SVG landing fully playable',async
  const board=page.getByTestId('ground-squad-board');
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','fallback');
+ await expect(board.getByTestId('ground-bay-central-hatch'))
+   .toHaveCSS('opacity','1');
  // No WebGL means no new canvas layer, new picking target or blank terrain.
- await expect(court).toHaveAttribute('data-modular-region','3,4:4x3');
+ await expect(court).toHaveAttribute('data-modular-region','0,0:12x10');
  // The original SVG floor must remain fully legible if there is no WebGL.
  await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
    .not.toHaveCSS('opacity','0.08');

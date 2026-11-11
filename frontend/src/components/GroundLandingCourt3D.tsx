@@ -10,6 +10,7 @@ import {
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
 import {addGroundVisualScene3D} from '../groundVisual/GroundVisualScene3D';
+import {K47_EXTERIOR_TERRACES} from '../groundVisual/exteriorGeologicalTerraces';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -195,12 +196,14 @@ export function GroundLandingCourt3D({explored}:Vision){
   const modulePlan=compileGroundVisualScene({
     width:surface.width,height:surface.height,
     walls:surface.walls,objects:surface.objects,explored,
-  },{x:3,y:4,width:4,height:3},{
-    id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:5},
-  });
+  },{x:0,y:0,width:12,height:10},[
+    {id:'prefab.industrial-apron-3x2',anchor:{x:2,y:4}},
+    {id:'prefab.science-campus-3x1',anchor:{x:2,y:2}},
+  ]);
   const moduleKey=[
     modulePlan.tiles.map(p=>p.assetId+':'+p.cellId).join(' '),
-    modulePlan.edges.map(p=>p.cellId+':'+p.side+':'+p.blockedNeighbor).join(' '),
+    modulePlan.edges.map(p=>p.assetId+':'+p.cellId+':'+p.side+':'+p.blockedNeighbor).join(' '),
+    modulePlan.rocks.map(p=>p.cellId+':'+p.material+':'+p.variation).join(' '),
     modulePlan.prefabs.map(p=>p.assetId+':'+p.footprint.join('+')).join(' '),
   ].join('|');
   const artManifest=k47ArtManifestForRendering();
@@ -274,10 +277,14 @@ export function GroundLandingCourt3D({explored}:Vision){
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
-    data-modular-region="3,4:4x3"
+    data-modular-region="0,0:12x10"
     data-modular-tiles={modulePlan.tiles.length}
     data-modular-edges={modulePlan.edges.length}
+    data-modular-rocks={modulePlan.rocks.length}
+    data-modular-exterior-terraces={K47_EXTERIOR_TERRACES.length}
+    data-modular-rock-cell-ids={modulePlan.rocks.map(p=>p.cellId).join(' ')}
     data-modular-prefabs={modulePlan.prefabs.length}
+    data-modular-prefab-ids={modulePlan.prefabs.map(p=>p.assetId).join(' ')}
     data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}

@@ -5,6 +5,11 @@ import {compileGroundVisualScene,groundCellId} from
  '../src/groundVisual/compileGroundVisualScene';
 import {tileCatalog} from '../src/groundVisual/tileCatalog';
 import {prefabCatalog} from '../src/groundVisual/prefabCatalog';
+import * as THREE from 'three';
+import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
+ from '../src/groundVisual/exteriorGeologicalTerraces';
+import {addIndustrialApron3D} from '../src/groundVisual/IndustrialApron3D';
+import {addScienceCampus3D} from '../src/groundVisual/ScienceCampus3D';
 
 // Playwright executes tests in Node ESM (no bare JSON import). Read the
 // actual authored fixture instead of copying walls/stations into the test.
@@ -69,7 +74,7 @@ test('unknown wall, unknown floor, invalid region and invalid prefab fail closed
  expect(edged.tiles.some(x=>blocked.has(x.cellId))).toBe(false);
  const invalid=compileGroundVisualScene(input(allKnown),
   {x:-1,y:4,width:4,height:3},prefab);
- expect(invalid).toEqual({tiles:[],edges:[],prefabs:[]});
+ expect(invalid).toEqual({tiles:[],edges:[],rocks:[],prefabs:[]});
  const occupiedPrefab=compileGroundVisualScene(input(allKnown),
   {x:3,y:5,width:4,height:3},{
    id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:7},
@@ -87,8 +92,148 @@ test('compiler is deterministic regardless of source ordering and catalog has re
  const one=compileGroundVisualScene(worldA,region,prefab);
  const two=compileGroundVisualScene(worldB,region,prefab);
  expect(two).toEqual(one);
- expect(Object.keys(tileCatalog)).toHaveLength(8);
+ expect(Object.keys(tileCatalog)).toHaveLength(13);
  expect(prefabCatalog['prefab.recessed-service-trench-2x1']).toMatchObject({
   width:2,depth:1,clearance:'flush-floor',
  });
+});
+
+test('wide industrial and geological terrain uses only KNOWN canonical cells',()=>{
+ const wide={x:0,y:0,width:12,height:10};
+ const plan=compileGroundVisualScene(input(allKnown),wide,prefab);
+ expect(plan.tiles.length).toBeGreaterThan(40);
+ expect(plan.tiles.length).toBeLessThan(120);
+ expect(plan.rocks.length).toBeGreaterThan(0);
+ expect(plan.tiles.some(p=>p.assetId==='floor.rock-bedded'||
+  p.assetId==='floor.rock-scree')).toBe(true);
+ expect(plan.tiles.some(p=>p.assetId==='floor.metal')).toBe(true);
+ expect(plan.edges.some(p=>p.assetId==='edge.platform-lip')).toBe(true);
+ expect(new Set(plan.tiles.map(p=>p.cellId)).size).toBe(plan.tiles.length);
+ for(const rock of plan.rocks){
+  expect(surface.walls.some(p=>key(p)===rock.cellId)).toBe(true);
+  expect(blocked.has(rock.cellId)).toBe(true);
+  expect(plan.tiles.some(tile=>tile.cellId===rock.cellId)).toBe(false);
+  expect(rock.material.startsWith('rock.')).toBe(true);
+ }
+ for(const edge of plan.edges){
+  expect(allKnown.has(edge.cellId)).toBe(true);
+  expect(allKnown.has(edge.blockedNeighbor)).toBe(true);
+ }
+ // Reuse real saves/exploration state as the only discovery authority.
+ const onlyStart=new Set(['4,4','5,4','5,5','6,5','7,4','4,5']);
+ const fog=compileGroundVisualScene(input(onlyStart),wide,prefab);
+ expect(fog.tiles.map(p=>p.cellId).sort()).toEqual([...onlyStart].sort());
+ expect(fog.rocks).toHaveLength(0);
+ expect(fog.edges).toHaveLength(0);
+ expect(fog.prefabs).toHaveLength(0);
+ expect(compileGroundVisualScene(input(allKnown),wide,prefab))
+  .toEqual(plan);
+});
+
+test('authored exterior rock bands remain strictly beyond the game footprint',()=>{
+ expect(K47_EXTERIOR_TERRACES.map(x=>x.edge)).toEqual([
+  'west','north','south',
+ ]);
+ const parent=new THREE.Group();
+ const cleanup=addExteriorGeologicalTerraces(parent);
+ expect(parent.children).toHaveLength(3);
+ let triangles=0;
+ for(const child of parent.children){
+  expect(child).toBeInstanceOf(THREE.Mesh);
+  const mesh=child as THREE.Mesh;
+  expect(mesh.name).toMatch(/^modular-exterior-terrace-/);
+  const pos=mesh.geometry.getAttribute('position') as THREE.BufferAttribute;
+  const idx=mesh.geometry.getIndex();
+  expect(pos.count).toBeGreaterThan(100);
+  expect(idx?.count).toBeGreaterThan(100);
+  triangles+=(idx?.count||0)/3;
+  for(let i=0;i<pos.count;i++){
+   const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+   expect(x<-.5||z<-.5||z>11.5).toBe(true);
+   expect(y).toBeGreaterThan(0);
+  }
+ }
+ expect(triangles).toBeGreaterThan(500);
+ cleanup();
+ expect(parent.children).toHaveLength(0);
+});
+
+test('reusable 3x2 service apron requires all six REAL free discovered cells',()=>{
+ const proposed={id:'prefab.industrial-apron-3x2' as const,
+  anchor:{x:2,y:4}};
+ const all=compileGroundVisualScene(input(allKnown),
+  {x:0,y:0,width:12,height:10},proposed);
+ expect(all.prefabs).toHaveLength(1);
+ expect(all.prefabs[0].footprint).toEqual([
+  '2,4','3,4','4,4','2,5','3,5','4,5',
+ ]);
+ for(const id of all.prefabs[0].footprint)expect(blocked.has(id)).toBe(false);
+ expect(prefabCatalog[proposed.id]).toMatchObject({
+  width:3,depth:2,clearance:'flush-floor',maxAboveFloor:.15,
+ });
+ const near=new Set(all.prefabs[0].footprint);
+ near.delete('3,5');
+ const hidden=compileGroundVisualScene(input(near),
+  {x:0,y:0,width:12,height:10},proposed);
+ expect(hidden.prefabs).toHaveLength(0);
+ const parent=new THREE.Group();
+ const release=addIndustrialApron3D(parent,2,4);
+ expect(parent.children).toHaveLength(1);
+ const group=parent.children[0] as THREE.Group;
+ expect(group.name).toBe('modular-prefab.industrial-apron-3x2');
+ expect(group.children.length).toBeGreaterThan(20);
+ for(const item of group.children){
+  expect(item).toBeInstanceOf(THREE.Mesh);
+  const part=item as THREE.Mesh;
+  const geo=part.geometry as THREE.BoxGeometry;
+  expect(part.position.y+geo.parameters.height/2).toBeLessThanOrEqual(.15);
+ }
+ release();
+ expect(parent.children).toHaveLength(0);
+});
+
+test('connected 3x1 science prefab requires exact already discovered blockers',()=>{
+ const region={x:0,y:0,width:12,height:10};
+ const apron={id:'prefab.industrial-apron-3x2' as const,anchor:{x:2,y:4}};
+ const science={id:'prefab.science-campus-3x1' as const,anchor:{x:2,y:2}};
+ const plan=compileGroundVisualScene(input(allKnown),region,[apron,science]);
+ expect(plan.prefabs).toHaveLength(2);
+ expect(plan.prefabs.map(p=>p.assetId)).toEqual([
+  'prefab.industrial-apron-3x2','prefab.science-campus-3x1',
+ ]);
+ expect(plan.prefabs[1].footprint).toEqual(['2,2','3,2','4,2']);
+ for(const id of plan.prefabs[1].footprint)expect(blocked.has(id)).toBe(true);
+ expect(prefabCatalog[science.id]).toMatchObject({
+  width:3,depth:1,clearance:'blocked-building',maxAboveFloor:1.8,
+ });
+ const hidden=new Set([...allKnown].filter(id=>id!=='4,2'));
+ const fogged=compileGroundVisualScene(input(hidden),region,[apron,science]);
+ expect(fogged.prefabs.map(p=>p.assetId)).toEqual([apron.id]);
+ const invalid=compileGroundVisualScene(input(allKnown),region,[
+  apron,{id:'prefab.science-campus-3x1',anchor:{x:3,y:3}},
+ ]);
+ expect(invalid.prefabs.map(p=>p.assetId)).toEqual([apron.id]);
+ const root=new THREE.Group();
+ const dispose=addScienceCampus3D(root,2,2);
+ expect(root.children).toHaveLength(1);
+ const wing=root.children[0] as THREE.Group;
+ expect(wing.name).toBe('modular-prefab.science-campus-3x1');
+ expect(wing.children.length).toBeGreaterThan(45);
+ expect(wing.position.toArray()).toEqual([3,0,2]);
+ // Three.js lazily computes parent world transforms at render time; a
+ // pure Node geometry test must explicitly update the scene hierarchy.
+ root.updateMatrixWorld(true);
+ for(const child of wing.children){
+  expect(child).toBeInstanceOf(THREE.Mesh);
+  const mesh=child as THREE.Mesh;
+  const box=new THREE.Box3().setFromObject(mesh);
+  expect(box.min.x).toBeGreaterThanOrEqual(1.35);
+  expect(box.max.x).toBeLessThanOrEqual(4.65);
+  expect(box.min.z).toBeGreaterThanOrEqual(1.44);
+  expect(box.max.z).toBeLessThanOrEqual(2.70);
+  expect(box.min.y).toBeGreaterThanOrEqual(0);
+  expect(box.max.y).toBeLessThanOrEqual(1.8);
+ }
+ dispose();
+ expect(root.children).toHaveLength(0);
 });
