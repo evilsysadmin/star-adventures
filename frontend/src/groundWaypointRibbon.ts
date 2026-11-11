@@ -4,7 +4,7 @@ export type LabelViewFrame={readonly left:number;readonly width:number};
 
 export function waypointRibbonShift(
  anchorX:number,desiredOffset:number,labelWidth:number,
- frame:LabelViewFrame,scale=.78,margin=8,
+ frame:LabelViewFrame,scale=.78,margin=16,
 ):number|null{
  if(![anchorX,desiredOffset,labelWidth,frame.left,frame.width,scale,margin]
    .every(Number.isFinite)||
