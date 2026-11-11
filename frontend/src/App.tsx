@@ -69,6 +69,8 @@ export function App() {
   const [mandate, setMandate] = useState<MandateState>(() => initialMandate.state);
   const [medicalNotice, setMedicalNotice] = useState<string | null>(null);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
+  // Presentation-only mobile surface disclosure; never changes campaign state.
+  const [missionBriefExpanded, setMissionBriefExpanded] = useState(false);
   const [coreNotice, setCoreNotice] = useState<string | null>(null);
   const rescueRun = session.actions.filter(action => action.type === 'restart').length;
   const [initialPerimeter] = useState(() => initialSession.restored
@@ -398,10 +400,16 @@ export function App() {
             <button type="button" className="bridge-status-manage" onClick={() => { setStatusOpen(false); if (crewRoster.current) crewRoster.current.open = true; game.setJournalOpen(true); }}>Gestionar tripulación <span aria-hidden="true">›</span></button>
             </div>
           </aside>}
-          <section className={`mission-transmission mission-transmission-${missionPhase}`} data-testid="mission-transmission" aria-label="Transmisión y progreso de la misión">
+          <section className={`mission-transmission mission-transmission-${missionPhase}`} data-testid="mission-transmission" data-brief-expanded={missionBriefExpanded ? "true" : "false"} aria-label="Transmisión y progreso de la misión">
             <div className="mission-transmission-top">
               <span className="mission-transmission-kicker"><span className="mission-transmission-beacon" aria-hidden="true" /> CANAL DE SERVICIO · PRIORIDAD ALTA</span>
               <span className="mission-transmission-phase" data-testid="mission-phase">{missionBeat.title}</span>
+              <button type="button" className="mission-brief-toggle"
+                data-testid="mission-brief-toggle" aria-expanded={missionBriefExpanded}
+                aria-label={missionBriefExpanded ? 'Contraer informe de misión' : 'Ampliar informe de misión'}
+                onClick={() => setMissionBriefExpanded(expanded => !expanded)}>
+                <span aria-hidden="true">{missionBriefExpanded ? '−' : '+'}</span>
+              </button>
             </div>
             <p className="mission-transmission-story">{missionBeat.story}</p>
             {fieldResolution && missionPhase !== 'debrief' && <p className="mission-transmission-optional" data-testid="field-resolution">{fieldResolution === 'truce'
