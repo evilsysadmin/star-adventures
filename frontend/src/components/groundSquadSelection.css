@@ -235,3 +235,15 @@
 ) [data-modular-paving="true"]{
   opacity:.06;
 }
+
+/* The new multi-cell 3D industrial apron owns the material under the beam
+   extraction hatch. Keep the authoritative hatch's symbolic geometry and
+   all its interaction untouched, but let the actual PBR service deck show
+   through instead of double-painting an opaque 2D plate. Only current,
+   visible hatch/verified-ready 3D receive this reduction. SVG returns
+   unchanged if WebGL is blocked, the prefab isn't discovered or fog darkens. */
+[data-testid="ground-squad-board"]:has(
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-modular-prefab-ids~="prefab.industrial-apron-3x2"]
+) [data-testid="ground-bay-central-hatch"][data-fog="visible"]{
+  opacity:.42;
+}
