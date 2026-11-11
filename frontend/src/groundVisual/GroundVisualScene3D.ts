@@ -3,6 +3,8 @@ import {tileCatalog,type TerrainTileId,type EdgeTileId} from './tileCatalog';
 import type {GroundVisualPlan,EdgeSide,TilePlacement} from './compileGroundVisualScene';
 import {makeWorldTerrainTexture,TERRAIN_WORLD_WIDTH,TERRAIN_WORLD_HEIGHT}
  from './worldTerrainTexture';
+import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
+ from './exteriorGeologicalTerraces';
 
 // ONE existing orthographic canvas. The visual compiler never owns picking.
 // The terrain has world UVs rather than a repeated per-cell image: material
@@ -68,6 +70,9 @@ function rockGeometry(){
 export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
  const root=new THREE.Group();
  root.name='modular-ground-visual-scene';
+ // These broad original off-map rock bands give the colony a surrounding
+ // landscape without drawing an unknown in-map terrain cell.
+ const disposeTerraces=addExteriorGeologicalTerraces(root);
  const disposables:Array<{dispose:()=>void}>=[];
  const texture=makeWorldTerrainTexture();
  if(texture)disposables.push(texture);
@@ -165,10 +170,12 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
  root.userData.tileCount=plan.tiles.length;
  root.userData.edgeCount=plan.edges.length;
  root.userData.rockCount=plan.rocks.length;
+ root.userData.exteriorTerraceCount=K47_EXTERIOR_TERRACES.length;
  root.userData.prefabCount=plan.prefabs.length;
  scene.add(root);
  return ()=>{
   scene.remove(root);
+  disposeTerraces();
   for(const resource of disposables)resource.dispose();
  };
 }
