@@ -66,6 +66,7 @@ export function GroundServiceYard({explored,visible}:Vision){
       {yard.filter(p=>explored.has(xy(p))).map(p=>{
         const k=xy(p),lit=visible.has(k);
         return <path key={k} data-testid={'ground-yard-floor-'+k}
+          data-modular-paving="true"
           data-fog={lit?'visible':'remembered'} d={base(p)}
           fill="url(#ground-yard-paving)" opacity={lit?1:.32}/>;
       })}
