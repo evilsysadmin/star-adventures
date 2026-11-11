@@ -483,8 +483,9 @@ export function GroundColonyStations({explored,visible,labelFrame}:Vision & {lab
      <StationGeometry id={object.id}/>
      {/* Grounded waypoints, visible only through the existing station fog.
          All labels are decorative and never intercept real picking. */}
-     {shift!==null&&<g data-testid={'ground-waypoint-label-'+object.id}
-       data-ribbon-shift={shift.toFixed(2)}
+     <g data-testid={'ground-waypoint-label-'+object.id}
+       data-ribbon-shift={(shift??0).toFixed(2)}
+       visibility={shift===null?'hidden':undefined}
        pointerEvents="none" transform={'translate('+plaqueX+' '+plaqueY+') scale(.78)'}>
        <rect x={plaqueShift-plaqueWidth/2} y="-14" width={plaqueWidth}
          height="20" rx="3" fill="#111c24" fillOpacity=".96"
@@ -497,7 +498,7 @@ export function GroundColonyStations({explored,visible,labelFrame}:Vision & {lab
          fill="#111c24" stroke="#ebc775" strokeWidth="1"/>
        <text x={plaqueShift} y="0" textAnchor="middle"
          className="ground-landmark-name">{caption}</text>
-     </g>}
+     </g>
    </g>;
   })}
  </g>;
