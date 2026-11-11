@@ -13,6 +13,6 @@ export const prefabCatalog:Readonly<Record<PrefabId,PrefabDefinition>>={
  // Original landing-court deck module; a shallow integrated 3x2 floor
  // assembly that can NEVER alter collision or occupy a blocked cell.
  'prefab.industrial-apron-3x2':{
-  width:3,depth:2,clearance:'flush-floor',maxAboveFloor:.12,
+  width:3,depth:2,clearance:'flush-floor',maxAboveFloor:.15,
  }
 };
