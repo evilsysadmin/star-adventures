@@ -5,6 +5,9 @@ import {compileGroundVisualScene,groundCellId} from
  '../src/groundVisual/compileGroundVisualScene';
 import {tileCatalog} from '../src/groundVisual/tileCatalog';
 import {prefabCatalog} from '../src/groundVisual/prefabCatalog';
+import * as THREE from 'three';
+import {addExteriorGeologicalTerraces,K47_EXTERIOR_TERRACES}
+ from '../src/groundVisual/exteriorGeologicalTerraces';
 
 // Playwright executes tests in Node ESM (no bare JSON import). Read the
 // actual authored fixture instead of copying walls/stations into the test.
@@ -123,4 +126,32 @@ test('wide industrial and geological terrain uses only KNOWN canonical cells',()
  expect(fog.prefabs).toHaveLength(0);
  expect(compileGroundVisualScene(input(allKnown),wide,prefab))
   .toEqual(plan);
+});
+
+test('authored exterior rock bands remain strictly beyond the game footprint',()=>{
+ expect(K47_EXTERIOR_TERRACES.map(x=>x.edge)).toEqual([
+  'west','north','south',
+ ]);
+ const parent=new THREE.Group();
+ const cleanup=addExteriorGeologicalTerraces(parent);
+ expect(parent.children).toHaveLength(3);
+ let triangles=0;
+ for(const child of parent.children){
+  expect(child).toBeInstanceOf(THREE.Mesh);
+  const mesh=child as THREE.Mesh;
+  expect(mesh.name).toMatch(/^modular-exterior-terrace-/);
+  const pos=mesh.geometry.getAttribute('position') as THREE.BufferAttribute;
+  const idx=mesh.geometry.getIndex();
+  expect(pos.count).toBeGreaterThan(100);
+  expect(idx?.count).toBeGreaterThan(100);
+  triangles+=(idx?.count||0)/3;
+  for(let i=0;i<pos.count;i++){
+   const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+   expect(x<-.5||z<-.5||z>11.5).toBe(true);
+   expect(y).toBeGreaterThan(0);
+  }
+ }
+ expect(triangles).toBeGreaterThan(500);
+ cleanup();
+ expect(parent.children).toHaveLength(0);
 });
