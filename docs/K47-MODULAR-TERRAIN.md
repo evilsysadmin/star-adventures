@@ -56,3 +56,22 @@ invalid geometry and no world mutation.
 
 **This is a playable foundation, not a claim that K-47 matches the cinematic
 mock yet.** No purchased/licensed art, published R2 objects or binary files.
+
+
+## Industrial architecture prefab experiment (Draft — visual gate pending)
+
+The next focused candidate builds each **fully visible** southern blocked-wall
+run as **one connected 3D hangar** inside the existing Three scene. Shared roof,
+recessed service bays, long fascia, roof machinery, shadow-casting structure
+and a bounded palette replace the corresponding SVG facade **only after** that
+exact scene has rendered. Remembered and undiscovered runs retain the original
+SVG; WebGL-denied clients retain every SVG span. The run geometry occupies only
+the verified canonical blocked row. No new cell, fictional entrance, gameplay
+path, camera, mission, CDN or collision is introduced.
+
+This is **not an approved art release**. The PR must remain Draft until exact-
+head CI passes and real Chromium screenshots at 390px and 1280px are inspected
+against the agreed K-47 cinematic reference. If the coherent 3D hangar still
+looks like disconnected boxes or visually fights surrounding SVG, reject it,
+keep main unchanged and iterate the authored modular architecture rather than
+merging just because code/tests are green.
