@@ -53,12 +53,12 @@ function rockGeometry(){
  for(let ring=0;ring<2;ring++){
   for(let i=0;i<n;i++){
    const a=ring*n+i,b=ring*n+(i+1)%n;
-   indices.push(a,b,b+n,a,b+n,a+n);
+   indices.push(a,b+n,b,a,a+n,b+n);
   }
  }
  const summit=pos.length/3;
  pos.push(.065,.99,-.04);
- for(let i=0;i<n;i++)indices.push(2*n+i,2*n+(i+1)%n,summit);
+ for(let i=0;i<n;i++)indices.push(2*n+i,summit,2*n+(i+1)%n);
  const geo=new THREE.BufferGeometry();
  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
  geo.setIndex(indices);
