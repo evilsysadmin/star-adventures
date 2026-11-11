@@ -51,7 +51,8 @@ for(const width of [360,390,430]){
         Math.max(expanded!.x,control!.x);
       const verticalOverlap=Math.min(expanded!.y+expanded!.height,control!.y+control!.height)-
         Math.max(expanded!.y,control!.y);
-      expect(horizontalOverlap<=0||verticalOverlap<=0,selector+' is occluded').toBe(true);
+      expect(horizontalOverlap<=0||verticalOverlap<=0,
+        selector+' is occluded: '+JSON.stringify({expanded,control})).toBe(true);
     }
     await page.screenshot({path:'test-results/away-brief-expanded-'+width+'.png'});
 
