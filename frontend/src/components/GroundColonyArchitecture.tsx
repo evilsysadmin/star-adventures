@@ -480,7 +480,13 @@ export function GroundColonyStations({explored,visible}:Vision){
      visibility={known?'visible':'hidden'} opacity={inSight?1:.34}
      transform={`translate(${p.x} ${p.y})`}>
      <title>{object.label}</title>
-     <StationGeometry id={object.id}/>
+     {/* The sensor-vault SVG tower is a *visual* surrogate, not the real
+         mission terminal. A verified, fully known 3D science-campus can
+         replace its shape without removing this station/waypoint. */}
+     <g data-testid={'ground-landmark-volume-'+object.id}
+       pointerEvents="none" aria-hidden="true">
+       <StationGeometry id={object.id}/>
+     </g>
      {/* Grounded waypoints, visible only through the existing station fog.
          All labels are decorative and never intercept real picking. */}
      <g data-testid={'ground-waypoint-label-'+object.id}
