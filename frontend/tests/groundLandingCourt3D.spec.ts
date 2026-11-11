@@ -105,6 +105,59 @@ for(const width of [390,1280]){
  });
 }
 
+for(const width of [390,1280]){
+ test('connected industrial 3D span does not duplicate SVG and survives F5 '+width,async({page})=>{
+  test.setTimeout(125_000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  const board=page.getByTestId('ground-squad-board');
+  const court=page.getByTestId('ground-landing-court-3d');
+  await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
+  await board.locator('[data-cell-id="5,6"]').click({button:'right'});
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','6');
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','idle',{timeout:26000});
+  await expect(court).toHaveAttribute('data-hangar-ready','true',{timeout:20000});
+  const eligible=board.locator('[data-testid^="ground-south-industrial-hangar-"][data-hangar-3d-eligible="true"]');
+  expect(await eligible.count()).toBeGreaterThan(0);
+  expect(Number(await court.getAttribute('data-hangar-count'))).toBe(await eligible.count());
+  await expect(eligible.first()).toHaveCSS('visibility','hidden');
+  // Visited-but-out-of-sight architecture must be a quiet memory, not
+  // a bright translucent duplicate floating over the active colony.
+  const rememberedArchitecture=board.locator(
+    '[data-testid="ground-colony-walls"] [data-fog="remembered"]');
+  expect(await rememberedArchitecture.count()).toBeGreaterThan(0);
+  await expect(rememberedArchitecture.first()).toHaveCSS('opacity','0.28');
+  await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
+  await board.screenshot({path:'test-results/away-3d-connected-hangar-'+width+'.png'});
+  await page.reload();
+  await expect(court).toHaveAttribute('data-hangar-ready','true',{timeout:20000});
+  await expect(eligible.first()).toHaveCSS('visibility','hidden');
+ });
+}
+
+test('WebGL-denied industrial hangar keeps canonical SVG frontage',async({page})=>{
+ test.setTimeout(100_000);
+ await page.setViewportSize({width:390,height:850});
+ await page.addInitScript(()=>{
+  const original=HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext=function(id,...args){
+   if(String(id).startsWith('webgl'))return null;
+   return (original as (...values:unknown[])=>unknown).call(this,id,...args);
+  } as typeof original;
+ });
+ await land(page);
+ const board=page.getByTestId('ground-squad-board');
+ const court=page.getByTestId('ground-landing-court-3d');
+ await board.locator('[data-cell-id="5,6"]').click({button:'right'});
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','6');
+ await expect(court).toHaveAttribute('data-renderer-state','fallback');
+ await expect(court).toHaveAttribute('data-hangar-ready','false');
+ const eligible=board.locator('[data-testid^="ground-south-industrial-hangar-"][data-hangar-3d-eligible="true"]');
+ expect(await eligible.count()).toBeGreaterThan(0);
+ await expect(eligible.first()).toHaveCSS('visibility','visible');
+ await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
+});
+
 test('WebGL failure leaves the original entire SVG landing fully playable',async({page})=>{
  test.setTimeout(100_000);
  await page.setViewportSize({width:390,height:850});

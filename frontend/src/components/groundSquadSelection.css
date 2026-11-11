@@ -1,6 +1,12 @@
 .ground-squad{background:#101b28;color:#d9e8e7;min-width:0}
 .ground-squad-viewport{position:relative;overflow:hidden;background:#172a32}
 .ground-squad-viewport > svg{display:block;width:100%;height:auto;aspect-ratio:1120/550;touch-action:none;user-select:none;cursor:crosshair}
+/* Swap only fully visible blocked hangar spans AFTER the real 3D canvas
+   has painted that exact visibility set. WebGL failure/remembered walls keep SVG. */
+[data-testid="ground-squad-board"]:has([data-testid="ground-landing-court-3d"][data-hangar-ready="true"])
+  [data-testid="ground-south-industrial-wing"] [data-hangar-3d-eligible="true"]{
+  visibility:hidden;
+}
 .ground-object-label{font:700 14px sans-serif;fill:#e7d4ac;paint-order:stroke;stroke:#182e35;stroke-width:3px}
 .ground-unit{cursor:pointer}
 .ground-unit.is-selected{filter:drop-shadow(0 0 6px #c4dfab88)}
@@ -143,6 +149,12 @@
    than transparent wireframe debris. Unknown cells remain fully shrouded.
    Paint properties only: no heavy CSS filters per tile, no pointer changes. */
 [data-testid="ground-squad-board"] [data-fog="remembered"]{opacity:.68}
+/* Distant remembered *architecture* must remain a dim silhouette, not a
+   second translucent building painted over the active 3D scene. Keep the
+   walkable remembered tiles, route decals and mission indicators at their
+   existing opacity; this only affects passive SVG walls, roofs and facades. */
+[data-testid="ground-squad-board"] [data-testid="ground-colony-walls"]
+  [data-fog="remembered"]{opacity:.28}
 
 /* The fully mapped 18×12 colony cannot fill a portrait display without
    cropping or distorting it. Offer deliberate, touch-friendly zoomed sectors

@@ -10,6 +10,7 @@ import {
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
 import {addGroundVisualScene3D} from '../groundVisual/GroundVisualScene3D';
+import {addIndustrialSpanHangars} from '../groundVisual/IndustrialSpanHangar3D';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -169,11 +170,12 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
   return ()=>resources.forEach(resource=>resource.dispose());
 }
 
-export function GroundLandingCourt3D({explored}:Vision){
+export function GroundLandingCourt3D({explored,visible}:Vision){
   const canvas=useRef<HTMLCanvasElement>(null);
   const [state,setState]=useState<'idle'|'ready'|'fallback'>('idle');
   const [artState,setArtState]=useState<'unpublished'|'loading'|'ready'|'fallback'>('unpublished');
   const [loadedArtIds,setLoadedArtIds]=useState('');
+  const [renderedHangarKey,setRenderedHangarKey]=useState<string|null>(null);
   const active=topologyValid&&courtCells.some(p=>explored.has(id(p.x,p.z)));
   // Roofs and utility boxes project ABOVE their ground cell's fog silhouette.
   // Only real discovered walls may ever enter the Three scene. Rebuild the
@@ -185,6 +187,9 @@ export function GroundLandingCourt3D({explored}:Vision){
   // double-building silhouette. Gameplay, floor and fog remain untouched.
   const authoredSouth=southIndustrialCoveredColumns(
     southIndustrialSpans(explored,surface.walls));
+  const visibleHangarSpans=southIndustrialSpans(explored,surface.walls)
+    .filter(span=>span.cells.every(cell=>visible.has(cell)));
+  const hangarKey=visibleHangarSpans.map(span=>span.start+'-'+span.end).join('|');
   const pbrWallColumns=knownWalls.split(',').filter(Boolean)
     .map(Number).filter(x=>!authoredSouth.has(x)).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
@@ -210,6 +215,7 @@ export function GroundLandingCourt3D({explored}:Vision){
     let renderer:THREE.WebGLRenderer|undefined;
     let disposeCourt:(()=>void)|undefined;
     let disposeModular:(()=>void)|undefined;
+    let disposeHangars:(()=>void)|undefined;
     let disposeAuthored:(()=>void)|undefined;
     const abortArt=new AbortController();
     try{
@@ -228,8 +234,11 @@ export function GroundLandingCourt3D({explored}:Vision){
         new Set(pbrWallColumns.split(',').filter(Boolean).map(Number)),
         new Set(modulePlan.tiles.map(p=>p.cellId)));
       disposeModular=addGroundVisualScene3D(scene,modulePlan);
+      disposeHangars=addIndustrialSpanHangars(scene,
+        visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})));
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
+      setRenderedHangarKey(hangarKey);
       setState('ready');
       // This fetches NOTHING until an R2 object is explicitly published and
       // all of the asset's actual blocked cells are known to the squad.
@@ -256,6 +265,7 @@ export function GroundLandingCourt3D({explored}:Vision){
       // browsers or software-renderer failure. No faux "successful" art.
       abortArt.abort();
       disposeAuthored?.();
+      disposeHangars?.();
       disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
@@ -266,11 +276,12 @@ export function GroundLandingCourt3D({explored}:Vision){
     return ()=>{
       abortArt.abort();
       disposeAuthored?.();
+      disposeHangars?.();
       disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest]);
+  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
@@ -281,6 +292,9 @@ export function GroundLandingCourt3D({explored}:Vision){
     data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
+    data-hangar-count={visibleHangarSpans.length}
+    data-hangar-ready={state==='ready'&&visibleHangarSpans.length>0&&
+      renderedHangarKey===hangarKey?'true':'false'}
     data-authored-art-slots={artManifest.slots.length}
     data-published-art-slots={artManifest.slots.filter(slot=>slot.status==='published').length}
     data-authored-art-state={artState}
