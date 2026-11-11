@@ -53,7 +53,15 @@ for(const width of [390,1280]){
   });
   expect(modular.tiles).toBeGreaterThan(12);
   expect(modular.tiles).toBeLessThanOrEqual(100);
-  expect(modular.prefabs).toBeLessThanOrEqual(1);
+  // Two mutually exclusive, canonical footprints can now coexist:
+  // the already-explored 3x2 floor apron and, when all three blockers
+  // are known, the 3x1 science building. Never count them as duplicates.
+  expect(modular.prefabs).toBeGreaterThanOrEqual(1);
+  expect(modular.prefabs).toBeLessThanOrEqual(2);
+  const prefabIds=(await court.getAttribute('data-modular-prefab-ids'))?.split(' ')??[];
+  expect(new Set(prefabIds).size).toBe(prefabIds.length);
+  expect(prefabIds).toContain('prefab.industrial-apron-3x2');
+  if(modular.prefabs===2)expect(prefabIds).toContain('prefab.science-campus-3x1');
   expect(modular.realCells&&modular.noUnknown&&modular.unique&&
     modular.safeRocks).toBe(true);
   // The existing solid SVG floor must actually uncover the 3D art, while
