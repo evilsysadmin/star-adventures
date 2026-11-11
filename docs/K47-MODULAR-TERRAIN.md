@@ -130,3 +130,30 @@ Tests validate both the prefab footprint and its low clearance ceiling.
 Visual gate remains exact-head Chrome 390/1280 before Ready/merge, including
 normal follow and full-map camera. The first 6/6 on the bad terrace version
 does NOT approve this corrected candidate.
+
+ 
+## Architectural visual slice after terrain comparison
+
+The corrected geology and 3×2 service apron alone still yield a modest
+change in real gameplay screenshots; the remaining visual bottleneck is the
+legacy SVG science wing and large block silhouettes. This iteration adds
+an original modular **science-campus-3x1** prefab covering precisely the
+authoritative blockers (sensor-vault 2,2; wall 3,2; probe 4,2).
+
+The reusable compiler now accepts a list of requested prefabs, with a
+`clearance` contract: `flush-floor` pieces require every cell to be free
+and known, while `blocked-building` pieces require every cell to be a
+genuine existing obstacle and known. Both require their entire footprint
+inside the visual region. Neither changes the map, objectives or camera.
+
+The 3D science prefabrication includes one shared plinth/canopy, recessed
+laboratory glazing, structural ribs, rooftop optical receiver, utility
+machinery and restrained embedded lighting. The old SVG science wing is
+hidden **only** when the new prefab is discovered and the existing WebGL
+renderer has drawn successfully. It automatically reappears on GPU failure.
+Archive/Sonda mission terminals, waypoint labels and actions stay in the
+separate station layer above fog and the new art.
+
+The PR remains Draft until exact-head 6/6 CI and *actual follow/overview*
+390/1280 visual comparisons. This is the first real modular-architecture
+migration, not proof of complete mock parity.
