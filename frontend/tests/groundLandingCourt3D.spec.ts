@@ -23,8 +23,12 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
   await expect(court).toHaveAttribute('data-modular-region','0,0:12x10');
   await expect(court).toHaveAttribute('data-modular-exterior-terraces','3');
-  await expect(court).toHaveAttribute('data-modular-prefab-ids',
-   'prefab.industrial-apron-3x2');
+  // More than one authored prefab may be known at the initial landing.
+  // The science facility must not cause this otherwise valid apron test
+  // to demand an outdated one-entry list.
+  await expect.poll(async()=>
+    (await court.getAttribute('data-modular-prefab-ids'))?.split(' ')
+      .includes('prefab.industrial-apron-3x2')).toBe(true);
   await expect(board.getByTestId('ground-bay-central-hatch'))
     .toHaveCSS('opacity','0.42');
   const modular=await board.evaluate(root=>{
