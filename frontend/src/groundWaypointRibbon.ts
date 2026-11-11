@@ -12,7 +12,10 @@ export function waypointRibbonShift(
  const right=frame.left+frame.width;
  // An objective offscreen must NEVER have its label dragged onscreen;
  // the world station stays at its real coordinate and fog keeps authority.
- if(anchorX<frame.left||anchorX>right)return null;
+ // Suppress edge fragments if even the real pointer tip cannot fit.
+ // In the focused 390px camera a station ~4px offscreen must NOT drag its
+ // plaque into view or leave a dangling arrow on the viewport boundary.
+ if(anchorX<frame.left+margin||anchorX>right-margin)return null;
  const halfWidth=labelWidth*scale/2;
  const minimum=frame.left+halfWidth+margin;
  const maximum=right-halfWidth-margin;
