@@ -88,3 +88,24 @@ Acceptance requires Chrome at 390/1280, canonical 216 pick cells, complete
 fog and F5 journeys, and an actual screenshot comparison demonstrating
 meaningful visual improvement. If the scene still reads like disconnected
 panels or introduces false cliffs, **keep Draft and iterate**.
+
+
+## Visual review finding and exterior-landscape follow-up
+The early Chrome capture of the expanded floor still looked too close to
+the old scene (~4–5% changed pixels in the default follow-camera view).
+That *candidate was rejected*: bigger material coverage alone did not
+achieve the approved cinematic terrain goal.
+
+The follow-up therefore adds three original broad continuous terrain bands
+as **real Three.js geology**, not repeated 1×1 rock blocks: west wall,
+north ridge and southern exposed edge. This decorative geological frame
+exists strictly OUTSIDE map x=0..17/z=0..11, cannot reveal an unknown
+game-cell, and shares the current orthographic renderer and physically
+lit industrial/rock palette. The rocks generated from the compiler remain
+restricted to actual known blocked in-map walls. The terrain-band geometry
+is deterministic, reusable and has tests proving every vertex lies outside
+the map; it is disposed on renderer cleanup.
+
+Visual acceptance still requires actual 390/1280 screenshots after this
+addition, including whether the geological frame is visible, correctly
+behind the squad, non-blocking and not a new wall of beige cuboids.
