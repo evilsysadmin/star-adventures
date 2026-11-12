@@ -33,6 +33,10 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-wild-sector-scenery')).toBeVisible();
   await expect(page.getByTestId('ground-camera-toggle')).toHaveAttribute('aria-pressed','true');
   await page.getByTestId('ground-camera-toggle').click();
+  // Portrait map inspection starts in a readable known sector. For this
+  // all-world navigation/landmark contract, explicitly choose the real
+  // uncropped map just as a player can with the visible sector picker.
+  if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await board.screenshot({path:'test-results/ground-expanded-all-'+width+'.png'});
   await clickCell(page,9,4);
