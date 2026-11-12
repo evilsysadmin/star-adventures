@@ -8,8 +8,8 @@ async function reveal(page:Page){
  const board=page.getByTestId('ground-squad-board');
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:25000});
- await board.locator('[data-cell-id="4,4"]').click({button:'right'});
- await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','4');
+ await board.locator('[data-cell-id="2,4"]').click({button:'right'});
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','2');
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
  return board;
 }
