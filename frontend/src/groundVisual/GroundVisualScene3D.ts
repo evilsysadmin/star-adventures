@@ -12,6 +12,35 @@ const edgePose:Record<EdgeSide,{dx:number;dz:number;rotation:number}>={
  south:{dx:0,dz:.455,rotation:0},
  west:{dx:-.455,dz:0,rotation:Math.PI/2},
 };
+// This is a *visual* world atlas, not a second spatial or walkability grid.
+// The stable 16-cell atlas never renormalizes as fog unveils nearby cells.
+// For the current K-47 6x4 court it supplies unbroken, shared material UVs.
+export const GROUND_ATLAS_SPAN=16;
+export function createWorldAlignedTerrainGeometry(
+ tiles:ReadonlyArray<{readonly cell:{readonly x:number;readonly y:number}}>,
+):THREE.BufferGeometry{
+ const position:number[]=[],uv:number[]=[],index:number[]=[];
+ for(const {cell} of tiles){
+  const base=position.length/3;
+  const corners=[
+   [cell.x-.5,cell.y-.5],
+   [cell.x-.5,cell.y+.5],
+   [cell.x+.5,cell.y+.5],
+   [cell.x+.5,cell.y-.5],
+  ];
+  for(const [x,z] of corners){
+   position.push(x,.042,z);
+   uv.push((x+.5)/GROUND_ATLAS_SPAN,(z+.5)/GROUND_ATLAS_SPAN);
+  }
+  index.push(base,base+1,base+2,base,base+2,base+3);
+ }
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(position,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+ geometry.setIndex(index);
+ geometry.computeVertexNormals();
+ return geometry;
+}
 const tileIds=(Object.keys(tileCatalog) as VisualTileId[]);
 export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
  const root=new THREE.Group();
@@ -31,10 +60,8 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
   disposable.push(texture);
   return texture;
  };
- const floor=new THREE.PlaneGeometry(1,1);
- floor.rotateX(-Math.PI/2);
  const border=new THREE.BoxGeometry(.92,.025,.055);
- disposable.push(floor,border);
+ disposable.push(border);
  const dummy=new THREE.Object3D();
  for(const assetId of tileIds){
   const definition=tileCatalog[assetId];
@@ -50,21 +77,30 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
    side:THREE.FrontSide,
   });
   disposable.push(material);
-  const mesh=new THREE.InstancedMesh(
-   definition.kind==='terrain'?floor:border,material,placements.length);
+  if(definition.kind==='terrain'){
+   // A shared UV atlas removes the per-cell 0..1 pattern reset and its
+   // high-frequency checkerboard, while the canonical compiler still owns
+   // exactly which explored, walkable cells are present.
+   const tiles=plan.tiles.filter(x=>x.assetId===assetId);
+   const geometry=createWorldAlignedTerrainGeometry(tiles);
+   disposable.push(geometry);
+   const mesh=new THREE.Mesh(geometry,material);
+   mesh.name='modular-'+assetId;
+   mesh.receiveShadow=true;
+   mesh.castShadow=false;
+   root.add(mesh);
+   continue;
+  }
+  const edgePlacements=plan.edges.filter(x=>x.assetId===assetId);
+  const mesh=new THREE.InstancedMesh(border,material,edgePlacements.length);
   mesh.name='modular-'+assetId;
   mesh.receiveShadow=true;
   mesh.castShadow=false;
-  placements.forEach((placement,index)=>{
-   if(placement.kind==='tile'){
-    dummy.position.set(placement.cell.x,.042,placement.cell.y);
-    dummy.rotation.set(0,placement.rotation*Math.PI/2,0);
-   }else{
-    const pose=edgePose[placement.side];
-    dummy.position.set(
-     placement.cell.x+pose.dx,.062,placement.cell.y+pose.dz);
-    dummy.rotation.set(0,pose.rotation,0);
-   }
+  edgePlacements.forEach((placement,index)=>{
+   const pose=edgePose[placement.side];
+   dummy.position.set(
+    placement.cell.x+pose.dx,.062,placement.cell.y+pose.dz);
+   dummy.rotation.set(0,pose.rotation,0);
    dummy.scale.set(1,1,1);
    dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
