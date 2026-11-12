@@ -113,3 +113,13 @@ needs properly authored architectural/terrain prefabs and real reviewed GLBs.
 Keep the PR Draft until the actual Playwright 390/1280 captures have been
 reviewed for seams, legibility, visual density and correct layering, and the
 exact-head CI is green. Preserve the previous modular slice as a rollback.
+
+## K-47 replacement science wing — visual candidate
+The existing 3D landing renderer can now paint a single, textured, connected
+industrial science facility on the three known, visible blocked/occupied
+cells 2,2 / 3,2 / 4,2. The original SVG version is suppressed only after
+that scene renders and is retained for fog memory and WebGL failure. The
+facade consists of original reusable bays, seals, glazing, common roof,
+roof equipment and industrial lamps. No new navigation, mission, camera,
+renderer or R2 requests. The user-approved mock is still the visual target;
+this is an intermediate art experiment, NOT a claim of cinematic parity.

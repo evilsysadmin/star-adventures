@@ -228,3 +228,8 @@
 ) [data-testid="ground-south-industrial-wing"]{
   opacity:0;
 }
+
+/* The original science SVG disappears only after the already-owned Three
+   renderer has painted the genuinely visible blocked research footprint. */
+[data-testid="ground-squad-board"]:has([data-testid="ground-landing-court-3d"][data-science-wing-ready="true"])
+ [data-testid="ground-science-campus"]{visibility:hidden}

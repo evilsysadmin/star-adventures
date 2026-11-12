@@ -11,6 +11,7 @@ import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouth
 import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
 import {addGroundVisualScene3D} from '../groundVisual/GroundVisualScene3D';
 import {addIndustrialSpanHangars} from '../groundVisual/IndustrialSpanHangar3D';
+import {addScienceWing3D,SCIENCE_CELLS} from '../groundVisual/ScienceWing3D';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -203,6 +204,10 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
   },{x:2,y:3,width:6,height:4},{
     id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:5},
   });
+  const scienceTopology=surface.walls.some(p=>p.x===3&&p.y===2)&&
+    surface.objects.some(p=>p.id==='sensor-vault'&&p.x===2&&p.y===2)&&
+    surface.objects.some(p=>p.id==='probe'&&p.x===4&&p.y===2);
+  const scienceVisible=scienceTopology&&SCIENCE_CELLS.every(cell=>visible.has(cell));
   const moduleKey=[
     modulePlan.tiles.map(p=>p.assetId+':'+p.cellId).join(' '),
     modulePlan.edges.map(p=>p.cellId+':'+p.side+':'+p.blockedNeighbor).join(' '),
@@ -216,6 +221,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
     let disposeCourt:(()=>void)|undefined;
     let disposeModular:(()=>void)|undefined;
     let disposeHangars:(()=>void)|undefined;
+    let disposeScience:(()=>void)|undefined;
     let disposeAuthored:(()=>void)|undefined;
     const abortArt=new AbortController();
     try{
@@ -236,6 +242,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       disposeModular=addGroundVisualScene3D(scene,modulePlan);
       disposeHangars=addIndustrialSpanHangars(scene,
         visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})));
+      if(scienceVisible)disposeScience=addScienceWing3D(scene);
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
       setRenderedHangarKey(hangarKey);
@@ -266,6 +273,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       abortArt.abort();
       disposeAuthored?.();
       disposeHangars?.();
+      disposeScience?.();
       disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
@@ -277,11 +285,12 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       abortArt.abort();
       disposeAuthored?.();
       disposeHangars?.();
+      disposeScience?.();
       disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey]);
+  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey,scienceVisible]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
@@ -292,6 +301,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
     data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
+    data-science-wing-ready={scienceVisible&&state==='ready'?'true':'false'}
     data-hangar-count={visibleHangarSpans.length}
     data-hangar-ready={state==='ready'&&visibleHangarSpans.length>0&&
       renderedHangarKey===hangarKey?'true':'false'}
