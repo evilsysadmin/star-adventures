@@ -3,7 +3,11 @@ on:
   pull_request:
     paths:
       - "scripts/author_k47_south.py"
+      - "scripts/author_k47_archive.py"
       - "frontend/tests/k47SouthArtCandidate.spec.ts"
+      - "frontend/tests/k47ArchiveArtCandidate.spec.ts"
+      - "frontend/src/k47EnvironmentAssets.ts"
+      - "frontend/tests/k47EnvironmentAssets.test.mjs"
       - ".github/workflows/k47-art-candidate.yml"
       - "docs/K47-MODULAR-TERRAIN.md"
   workflow_dispatch:
@@ -58,10 +62,41 @@ jobs:
           assert bounds[0][1]>=-.4 and bounds[1][1]<=5
           print("K47_CANDIDATE_GLB_VERIFIED",meta["sha256"])
           PY
+      - name: Build original Archive GLB from source
+        run: python scripts/author_k47_archive.py frontend/tests/fixtures/k47-archive-candidate.glb
+      - name: Verify original Archive model checksum, provenance and exterior bounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json,struct
+          p=Path('frontend/tests/fixtures/k47-archive-candidate.glb')
+          body=p.read_bytes()
+          meta=json.loads(p.with_suffix('.json').read_text())
+          magic,version,length=struct.unpack_from('<III',body)
+          assert (magic,version,length)==(0x46546c67,2,len(body))
+          n,kind=struct.unpack_from('<II',body,12)
+          assert kind==0x4e4f534a and n%4==0
+          info=json.loads(body[20:20+n])
+          assert info['asset']['version']=='2.0'
+          assert not info.get('extensionsRequired')
+          assert all('uri' not in item for item in info.get('images',[]))
+          assert all('uri' not in item for item in info.get('buffers',[]))
+          assert meta['sha256']==hashlib.sha256(body).hexdigest()
+          assert meta['id']=='west-archive-shell' and meta['license']=='original'
+          assert meta['authored_elements']>=85 and meta['materials']>=8
+          assert len(body)<=4*1024*1024
+          lo,hi=meta['bounds']
+          assert lo[0]>=-3.3 and hi[0]<=.56
+          assert lo[2]>=-1.56 and hi[2]<=1.56
+          assert lo[1]>=-.4 and hi[1]<=5
+          print('K47_ARCHIVE_CANDIDATE_VERIFIED',meta['sha256'])
+          PY
       - name: Install game frontend
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Test actual playable game with authored GLB at 390/1280
-        run: npm run test:e2e --prefix frontend -- tests/k47SouthArtCandidate.spec.ts
+        run: npm run test:e2e --prefix frontend -- tests/k47SouthArtCandidate.spec.ts tests/k47ArchiveArtCandidate.spec.ts
       - name: Upload original candidate and actual browser screenshot evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -72,4 +107,6 @@ jobs:
           path: |
             frontend/tests/fixtures/k47-south-candidate.glb
             frontend/tests/fixtures/k47-south-candidate.json
+            frontend/tests/fixtures/k47-archive-candidate.glb
+            frontend/tests/fixtures/k47-archive-candidate.json
             frontend/test-results/k47-south-candidate-*.png
