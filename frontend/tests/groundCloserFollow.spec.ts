@@ -51,6 +51,10 @@ for(const width of [360,390,430]){
   await page.reload();
   await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','2');
   await page.getByTestId('ground-camera-toggle').click();
+  await expect(page.getByTestId('ground-map-sector')).toHaveValue('west');
+  await expect.poll(async()=>board.evaluate(el=>(el as SVGSVGElement).viewBox.baseVal.height))
+   .toBe(520);
+  await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await page.getByTestId('ground-camera-toggle').click();
   await expect.poll(async()=>board.evaluate(el=>(el as SVGSVGElement).viewBox.baseVal.height))
