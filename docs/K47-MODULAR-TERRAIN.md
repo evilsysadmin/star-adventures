@@ -113,3 +113,24 @@ needs properly authored architectural/terrain prefabs and real reviewed GLBs.
 Keep the PR Draft until the actual Playwright 390/1280 captures have been
 reviewed for seams, legibility, visual density and correct layering, and the
 exact-head CI is green. Preserve the previous modular slice as a rollback.
+
+## Authored industrial GLB source — November 2026 candidate
+
+The visual target is still the approved cinematic K-47 mock, not a passing
+CI check. We now have an **actual modeled PBR asset source**:
+scripts/author_k47_south.py. It generates the whole 5-cell south industrial
+frontage as a coherent model: multiple profiled roof masses, weathered
+self-contained material images, 4 service bays, braces, piping, machine
+clusters, exhausts, lights and a signal mast. No external licensed artwork.
+
+The dedicated workflow k47-art-candidate.yml builds the self-contained GLB
+in ephemeral CI with pinned dependencies. It checks actual GLB 2.0 structure,
+embedded images, hash, 4 MiB budget, and footprint, and serves the exact
+candidate in the **existing real game canvas** using the test-only manifest
+plus a Playwright intercepted immutable URL. Screenshots at 390px/1280px,
+the binary and SHA provenance are retained as reviewable artifacts.
+
+**No GLB binaries in Git, no fake published manifest, no R2 upload.** Keep the
+SVG/PBR fallback until a human-inspected side-by-side of actual live-game
+screenshots shows meaningful progress. The final source asset should be
+published in content-addressed R2 by infrastructure, never by this game repo.
