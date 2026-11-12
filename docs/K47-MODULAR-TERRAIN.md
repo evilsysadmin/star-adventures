@@ -28,7 +28,7 @@ objects and fog continue to work and remain the rollback if WebGL fails.
   remount/route change.
 
 ## Scoped pilot and rollback
-Only the **3..6 × 4..6** part of the landing court is compiled into modular
+The first pilot covered only **3..6 × 4..6** of the landing court with modular
 3D terrain. The unknown, occupied or out-of-region squares are excluded.
 Just the revealed pilot floor fragment is removed from the older continuous
 court mesh to avoid Z-fighting and double-painting. Other tiles, structures,
@@ -93,3 +93,23 @@ The pure and Three scene lifecycle tests verify deterministic bytes, opacity,
 asset-family reuse and cleanup. Evaluate the actual Chromium screenshots at
 390 and 1280px before accepting: subtle material texture is not proof that
 the K-47 world now meets the cinematic art reference.
+
+
+## Coherent landing-court expansion (Draft — visual gate pending)
+
+The next visual iteration expands modular coverage to **x=2..7, row=3..6**,
+comprising **21 genuinely walkable cells** of the authored 6×4 court.
+The three blocked mission/transition cells remain owned by the authoritative
+world, with no false doors or new routes. Only explored modular squares replace
+their matching legacy floor polygons. Their PBR variants now use subtle 2×2
+wear clusters and quarter-turn orientation of existing texture maps (industrial
+brushed steel keeps one direction), so repetition is reduced **without** new
+textures, draw-call families or a second WebGL renderer. Under unexplored fog,
+the original court and original SVG fallback remain available.
+
+This is **not** approval of a complete cinematic K-47 environment. A 6×4
+paving expansion alone cannot match the full reference; the 18×12 colony still
+needs properly authored architectural/terrain prefabs and real reviewed GLBs.
+Keep the PR Draft until the actual Playwright 390/1280 captures have been
+reviewed for seams, legibility, visual density and correct layering, and the
+exact-head CI is green. Preserve the previous modular slice as a rollback.

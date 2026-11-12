@@ -14,7 +14,7 @@ const surface=(JSON.parse(readFileSync(
   width:number;height:number;walls:Array<{x:number;y:number}>;
   objects:Array<{x:number;y:number}>
  }}}).scenes.surface;
-const region={x:3,y:4,width:4,height:3};
+const region={x:2,y:3,width:6,height:4};
 const prefab={id:'prefab.recessed-service-trench-2x1' as const,anchor:{x:3,y:5}};
 const key=(p:{x:number;y:number})=>groundCellId(p.x,p.y);
 const blocked=new Set([...surface.walls,...surface.objects].map(key));
@@ -28,8 +28,13 @@ const allKnown=new Set(Array.from({length:surface.height},(_,y)=>
 test('compiler reuses real K-47 map, never creates phantom walkability or mission cells',()=>{
  const before=JSON.stringify(surface);
  const plan=compileGroundVisualScene(input(allKnown),region,prefab);
- expect(plan.tiles.length).toBeGreaterThanOrEqual(8);
- expect(plan.tiles.length).toBeLessThanOrEqual(12);
+ // 24 floor coordinates, with three actual mission stations/transition
+ // cells excluded by the canonical scene, not by decorative art rules.
+ expect(plan.tiles).toHaveLength(21);
+ const expectedCells=Array.from({length:4},(_,dy)=>
+  Array.from({length:6},(_,dx)=>groundCellId(2+dx,3+dy))).flat()
+  .filter(cell=>!blocked.has(cell)).sort();
+ expect(plan.tiles.map(p=>p.cellId).sort()).toEqual(expectedCells);
  expect(new Set(plan.tiles.map(x=>x.cellId)).size).toBe(plan.tiles.length);
  expect(plan.prefabs).toHaveLength(1);
  expect(plan.prefabs[0].footprint).toEqual(['3,5','4,5']);
@@ -37,10 +42,13 @@ test('compiler reuses real K-47 map, never creates phantom walkability or missio
   expect(placement.kind).toBe('tile');
   expect(placement.assetId in tileCatalog).toBe(true);
   expect(placement.cellId).toBe(key(placement.cell));
-  expect(placement.cell.x).toBeGreaterThanOrEqual(3);
-  expect(placement.cell.x).toBeLessThanOrEqual(6);
-  expect(placement.cell.y).toBeGreaterThanOrEqual(4);
+  expect(placement.cell.x).toBeGreaterThanOrEqual(2);
+  expect(placement.cell.x).toBeLessThanOrEqual(7);
+  expect(placement.cell.y).toBeGreaterThanOrEqual(3);
   expect(placement.cell.y).toBeLessThanOrEqual(6);
+  expect([0,1,2,3]).toContain(placement.rotation);
+  if(placement.assetId.startsWith('floor.metal'))
+   expect(placement.rotation).toBe(0);
   expect(blocked.has(placement.cellId)).toBe(false);
  }
  for(const edge of plan.edges){
@@ -75,6 +83,18 @@ test('unknown wall, unknown floor, invalid region and invalid prefab fail closed
    id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:7},
   });
  expect(occupiedPrefab.prefabs).toHaveLength(0);
+});
+
+test('expanded court never discloses floor beyond the explored frontier',()=>{
+ const frontier=new Set(['2,3','3,3','4,3','3,4','4,4','3,5']);
+ const plan=compileGroundVisualScene(input(frontier),region,prefab);
+ expect(plan.tiles.map(p=>p.cellId).sort()).toEqual([...frontier].sort());
+ expect(plan.edges).toEqual([]);
+ expect(plan.prefabs).toEqual([]);
+ const full=compileGroundVisualScene(input(allKnown),region,prefab);
+ for(const tile of plan.tiles){
+  expect(full.tiles.find(other=>other.cellId===tile.cellId)).toEqual(tile);
+ }
 });
 
 test('compiler is deterministic regardless of source ordering and catalog has reusable pieces',()=>{

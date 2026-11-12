@@ -194,13 +194,13 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
     .map(Number).filter(x=>!authoredSouth.has(x)).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
   // unrelated set churn never causes a redundant GLTF/CDN request.
-  // Pilot one small authored zone in the EXISTING WebGL scene. The compiler
-  // consumes only real walkability and explored cells, never renders hidden
-  // geometry and cannot affect gameplay picking or movement.
+  // Expand the existing modular pilot over the complete 6x4 landing court.
+  // This replaces ONLY already explored, actually walkable floor cells;
+  // canonical blocked stations, fog, picking and camera stay authoritative.
   const modulePlan=compileGroundVisualScene({
     width:surface.width,height:surface.height,
     walls:surface.walls,objects:surface.objects,explored,
-  },{x:3,y:4,width:4,height:3},{
+  },{x:2,y:3,width:6,height:4},{
     id:'prefab.recessed-service-trench-2x1',anchor:{x:3,y:5},
   });
   const moduleKey=[
@@ -285,7 +285,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
-    data-modular-region="3,4:4x3"
+    data-modular-region="2,3:6x4"
     data-modular-tiles={modulePlan.tiles.length}
     data-modular-edges={modulePlan.edges.length}
     data-modular-prefabs={modulePlan.prefabs.length}
