@@ -622,6 +622,10 @@ export function GroundSquadSelection({
           const callSign=unit.name.split(' ')[0];
           const plateWidth=Math.max(36,callSign.length*7.5+18);
           const plateY=artReady||showWalk?-69:-40;
+          // Only on actual desktop-sized SVG stages, keep names readable but
+          // demote their dark plaques relative to the characters and terrain.
+          // Selection rings and the 36x57 real hit targets remain unchanged.
+          const plateScale=viewportSize.width>=1100&&viewportSize.height>=600?.88:1;
           return <g key={unit.id} data-testid={'ground-unit-' + unit.id}
             data-officer-id={unit.id} data-proj-x={point.x} data-proj-y={point.y}
             data-grid-x={Math.round(unit.gridX)} data-grid-y={Math.round(unit.gridY)}
@@ -683,12 +687,15 @@ export function GroundSquadSelection({
             <g data-testid={'ground-officer-nameplate-'+unit.id}
               className="ground-officer-nameplate" pointerEvents="none"
               transform={'translate(0 '+plateY+')'}>
-              <rect x={-plateWidth/2} y="-12" width={plateWidth} height="17" rx="3"
-                fill="#0b1e2a" fillOpacity=".95"
-                stroke={active?'#f0ca80':'#659aad'} strokeWidth="1"/>
-              <path d="M-3.5 5L0 9L3.5 5" fill="#0b1e2a"
-                stroke={active?'#f0ca80':'#659aad'} strokeWidth=".8"/>
-              <text y="0" textAnchor="middle" className="ground-unit-name">{callSign}</text>
+              <g data-testid={'ground-officer-nameplate-art-'+unit.id}
+                transform={'scale('+plateScale+')'}>
+                <rect x={-plateWidth/2} y="-12" width={plateWidth} height="17" rx="3"
+                  fill="#0b1e2a" fillOpacity={plateScale<1?.88:.95}
+                  stroke={active?'#f0ca80':'#659aad'} strokeWidth="1"/>
+                <path d="M-3.5 5L0 9L3.5 5" fill="#0b1e2a"
+                  stroke={active?'#f0ca80':'#659aad'} strokeWidth=".8"/>
+                <text y="0" textAnchor="middle" className="ground-unit-name">{callSign}</text>
+              </g>
             </g>
           </g>;
         })}
