@@ -1,4 +1,18 @@
 import {test,expect} from '@playwright/test';
+import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+const manifest=JSON.parse(readFileSync(new URL('../src/assets/r2-assets-manifest.json',import.meta.url),'utf8'));
+
+const female=manifest.assets['starAdventures.tactical.officerFemaleWalk4V1'];
+test('R2 serves the exact immutable 24-frame female atlas, not a 404 or wrong upload',async({request})=>{
+ const response=await request.get(female.url,{timeout:30000});
+ expect(response.ok(),'R2 CDN asset must be publicly readable').toBe(true);
+ const bytes=await response.body();
+ expect(bytes.length).toBe(female.bytes);
+ expect(createHash('sha256').update(bytes).digest('hex')).toBe(female.sha256);
+ expect(bytes.subarray(0,4).toString()).toBe('RIFF');
+ expect(bytes.subarray(8,12).toString()).toBe('WEBP');
+});
 for(const width of [390,1280]){
  test(`four walking directions follow real tactical movement at ${width}px`,async({page})=>{
   test.setTimeout(95000);
@@ -8,6 +22,7 @@ for(const width of [390,1280]){
   await page.getByTestId('scenario-play-combat').click();
   const canvas=page.getByTestId('scenario-render-canvas');
   await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute('data-walk4-officer-ready','2',{timeout:30000});
   await page.getByTestId('scenario-accessible-grid').locator('summary').click();
   for(const [index,cell,direction] of [
    [0,'2:1','east'],[1,'2:2','south'],[2,'1:2','west'],[3,'1:1','north']
@@ -17,12 +32,11 @@ for(const width of [390,1280]){
    await expect(page.getByTestId('scenario-move')).toBeEnabled();
    await page.getByTestId('scenario-move').click();
    await expect(canvas).toHaveAttribute('data-sprite-direction-science',direction);
+   await expect(canvas).toHaveAttribute('data-squad-walk-atlas','four-views');
    await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:15000});
    await expect(page.getByTestId('scenario-unit-science')).toContainText(cell);
   }
-  // R2 has no 4-view file yet; keep existing V1 until new art is uploaded.
-  await expect(canvas).toHaveAttribute('data-squad-walk-atlas','legacy');
-  await canvas.screenshot({path:`test-results/four-view-fallback-${width}.png`});
+  await canvas.screenshot({path:`test-results/four-view-female-actual-r2-${width}.png`});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }
