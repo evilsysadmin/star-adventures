@@ -51,6 +51,9 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landmark-sensor-vault')).toHaveCount(1);
   await expect(page.getByTestId('ground-landmark-probe')).toHaveCount(1);
   await board.screenshot({path:'test-results/k47-archive-candidate-'+width+'.png'});
+  await page.getByTestId('ground-camera-toggle').click();
+  await board.screenshot({path:'test-results/k47-archive-overview-candidate-'+width+'.png'});
+  await page.getByTestId('ground-camera-toggle').click();
   await page.reload();
   await expect(court).toHaveAttribute('data-authored-art-ready','west-archive-shell',
      {timeout:35000});
@@ -78,6 +81,9 @@ for(const width of [390,1280]){
       .toHaveAttribute('data-authored-art-state','unpublished');
     await originalBoard.screenshot({
       path:'test-results/k47-archive-baseline-'+width+'.png'});
+    await baseline.getByTestId('ground-camera-toggle').click();
+    await originalBoard.screenshot({
+      path:'test-results/k47-archive-overview-baseline-'+width+'.png'});
   }finally{await baselineContext.close();}
  });
 }
