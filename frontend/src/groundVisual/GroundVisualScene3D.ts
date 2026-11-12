@@ -5,7 +5,7 @@ import {SURFACE_SIZE,makeGroundSurfacePixels,type SurfaceFamily} from './groundS
 
 // One scene graph, ONE existing WebGL canvas. Never create a second renderer,
 // camera, picking surface or render loop for modular terrain. Reuse materials
-// and batch by tile ID with InstancedMesh (flat slabs, not 1x1 cubes).
+// and batch floor geometry by material. Only real-wall edges stay instanced.
 const edgePose:Record<EdgeSide,{dx:number;dz:number;rotation:number}>={
  north:{dx:0,dz:-.455,rotation:0},
  east:{dx:.455,dz:0,rotation:Math.PI/2},
@@ -71,8 +71,8 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
   if(!placements.length)continue;
   const material=new THREE.MeshStandardMaterial({
    ...definition.material,
-   // Four original lightweight textures shared by all tile variants.
-   // Instance counts, topology, fog and the existing pick layer stay identical.
+   // Four original material families, continuous over the world rather than
+   // resetting at each tile; visibility and picking remain authoritative.
    map:definition.kind==='terrain'?textureFor(definition.surface):null,
    side:THREE.FrontSide,
   });
