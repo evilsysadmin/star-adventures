@@ -65,10 +65,10 @@ jobs:
                   # Inspect actual curved rooftop triangles, never source text.
                   import io,trimesh
                   model=trimesh.load(io.BytesIO(data),file_type='glb',force='scene')
-                  roof=[v for k,v in model.geometry.items() if k=='k47-east-roof']
-                  assert len(roof)==1 and len(roof[0].faces)>400
-                  assert meta['authored_elements']>180
-                  print('VERIFIED_CONCAVE_RESEARCH_DISH',len(roof[0].faces))
+                  panel=[v for k,v in model.geometry.items() if k=='k47-east-panel']
+                  assert len(panel)==1 and len(panel[0].faces)>750
+                  assert meta['authored_elements']>175
+                  print('VERIFIED_CONCAVE_RESEARCH_DISH',len(panel[0].faces))
               print('VERIFIED_ORIGINAL_K47_MODEL',expected,len(data))
           PY
       - name: Install frontend

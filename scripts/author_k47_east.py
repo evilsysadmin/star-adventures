@@ -30,7 +30,7 @@ def add_research_dish(builder):
     rings=8
     def point(rad,theta):
         return center+rad*(np.cos(theta)*tangent+np.sin(theta)*bitangent)+(
-            -.15*(1-(rad/radius)**2))*axis
+            -.23*(1-(rad/radius)**2))*axis
     vertices=[point(0,0)]
     for row in range(1,rings+1):
         rad=radius*row/rings
@@ -45,20 +45,20 @@ def add_research_dish(builder):
         for i in range(segments):
             j=(i+1)%segments
             faces.extend(([a+i,b+i,b+j],[a+i,b+j,a+j]))
-    builder.add('roof',trimesh.Trimesh(
+    builder.add('panel',trimesh.Trimesh(
         vertices=np.asarray(vertices),faces=np.asarray(faces),process=False))
     for i in range(segments):
         theta=2*np.pi*i/segments
         edge=point(radius,theta)
         following=point(radius,2*np.pi*((i+1)%segments)/segments)
         builder.brace('brass',edge,following)
-        if i%4==0:
-            builder.brace('rib',center-.14*axis,edge)
+        if i%8==0:
+            builder.brace('rib',center-.22*axis,edge)
     builder.box('rib',0,3.29,.53,.34,.18,.29)
     builder.box('brass',0,3.49,.53,.38,.09,.17)
     for x in (-.17,.17):
         builder.brace('rib',(x,3.52,.53),(x*.63,3.83,.53))
-    builder.brace('rib',center-.13*axis,center+.20*axis)
+    builder.brace('rib',center-.21*axis,center+.20*axis)
     feed=center+.20*axis
     builder.box('orange',float(feed[0]),float(feed[1]),
                 float(feed[2]),.09,.055,.09)
