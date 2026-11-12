@@ -1,0 +1,40 @@
+name: K-47 surface · quick before-after browser gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/groundVisual/GroundVisualScene3D.ts"
+      - "frontend/src/groundVisual/groundSurfacePatterns.ts"
+      - "frontend/src/groundVisual/tileCatalog.ts"
+      - "frontend/tests/groundMaterialAtlas.spec.ts"
+      - "frontend/tests/groundWorldSurfaceVisual.spec.ts"
+      - ".github/workflows/k47-surface-visual.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  surface-visual:
+    name: K-47 atlas world-UV · playable A/B (390 + 1280)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install game frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Verify Chrome
+        run: google-chrome --version
+      - name: Prove material continuity and same-route before-after
+        run: npm run test:e2e --prefix frontend -- tests/groundMaterialAtlas.spec.ts tests/groundWorldSurfaceVisual.spec.ts
+      - name: Upload real K-47 scene visual comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-surface-before-after-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: frontend/test-results/k47-world-atlas-*.png
