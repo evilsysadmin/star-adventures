@@ -128,11 +128,18 @@ for(const width of [390,430]){
   const squad=page.getByTestId('ground-unit-venn');
   await expect(page.getByTestId('ground-map-sector')).toHaveCount(0);
   await page.getByTestId('ground-camera-toggle').click();
-  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
 
   const sectors=page.getByTestId('ground-map-sector');
   await expect(sectors).toBeVisible();
-  await expect(sectors).toHaveValue('all');
+  await expect(sectors).toHaveValue('west');
+  await expect(board).not.toHaveAttribute('viewBox','-72 0 1280 640');
+  await board.screenshot({path:'test-results/away-sector-default-'+width+'.png'});
+
+  // The all-map choice remains one explicit tap away with exact old frame,
+  // complete fog and all 216 canonical selectable cells.
+  await sectors.selectOption('all');
+  await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
   await board.screenshot({path:'test-results/away-overview-portrait-'+width+'.png'});
 
   // Unknown regions cannot masquerade as an empty/broken viewport.

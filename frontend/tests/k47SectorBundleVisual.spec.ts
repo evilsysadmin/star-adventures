@@ -83,6 +83,12 @@ for(const width of [390,1280])test('three original GLBs after authentic K-47 exp
  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
  await board.screenshot({path:'test-results/k47-full-sector-after-follow-'+width+'.png'});
  await page.getByTestId('ground-camera-toggle').click();
+ if(width<=520){
+  await page.getByTestId('ground-map-sector').selectOption('west');
+  await board.screenshot({path:'test-results/k47-full-sector-after-west-'+width+'.png'});
+  await page.getByTestId('ground-map-sector').selectOption('all');
+ }
+ await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
  await board.screenshot({path:'test-results/k47-full-sector-after-overview-'+width+'.png'});
  await page.reload();
  await expect(court).toHaveAttribute('data-authored-art-ready',
@@ -95,6 +101,12 @@ for(const width of [390,1280])test('three original GLBs after authentic K-47 exp
    .toHaveAttribute('data-authored-art-state','unpublished');
   await oldBoard.screenshot({path:'test-results/k47-full-sector-before-follow-'+width+'.png'});
   await baseline.getByTestId('ground-camera-toggle').click();
+   if(width<=520){
+    await baseline.getByTestId('ground-map-sector').selectOption('west');
+    await oldBoard.screenshot({path:'test-results/k47-full-sector-before-west-'+width+'.png'});
+    await baseline.getByTestId('ground-map-sector').selectOption('all');
+   }
+   await expect(oldBoard).toHaveAttribute('viewBox','-72 0 1280 640');
   await oldBoard.screenshot({path:'test-results/k47-full-sector-before-overview-'+width+'.png'});
   await expect(oldBoard.locator('[data-cell-id]')).toHaveCount(216);
  }finally{await original.close();}

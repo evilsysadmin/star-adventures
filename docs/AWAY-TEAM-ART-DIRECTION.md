@@ -58,3 +58,15 @@ Conversely flat decals, cables, wear marks and lights are explicitly passable.
 Do not mistake a prettier grid, a full-screen poster or CSS-only shading for
 completion of this target. Review actual Chrome screenshots and click-to-tile
 tests at 390 and 1280 px on the exact PR SHA before merging.
+
+## Portrait inspection defaults to the already-mapped western sector
+
+On narrow screens, the previously uncropped whole-map preview shrank the real
+away team into a narrow strip. The existing `Examinar mapa` camera control now
+opens the real western base sector (the only known region on landing) at an
+inspectable scale, while the visible `Todo el mapa` picker option preserves
+the precise 18×12 full frame and all fog/picking. This is pure camera framing:
+no terrain, objects, mission state, discovery, officer sprites or save schema
+change. Desktop continues to open the whole map as before. E2E at 390/430
+checks the default sector, explicit full-map escape hatch, touch commands,
+fog and F5, plus existing close-follow controls.

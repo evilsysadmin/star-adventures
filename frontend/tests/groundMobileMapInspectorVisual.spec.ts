@@ -1,0 +1,50 @@
+import {expect,test} from '@playwright/test';
+test.use({storageState:{cookies:[],origins:[]}});
+for(const width of [390,430])test('real mobile K-47 map opens readable western sector, with true full map available '+width,async({page})=>{
+ test.setTimeout(80000);
+ await page.setViewportSize({width,height:850});
+ await page.goto('/');
+ await expect(page.getByTestId('captain-controls')).toBeVisible({timeout:25000});
+ await page.getByTestId('captain-transport').click({timeout:25000});
+ await page.getByTestId('transport-confirm').click();
+ const board=page.getByTestId('ground-squad-board');
+ const venn=page.getByTestId('ground-unit-venn');
+ await expect(board).toBeVisible();
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+ const unknown=await board.locator('[data-fog-state="unknown"]').count();
+ const start=[await venn.getAttribute('data-grid-x'),await venn.getAttribute('data-grid-y')];
+ const toggle=page.getByTestId('ground-camera-toggle');
+ await expect(toggle).toHaveText('Examinar mapa');
+ await toggle.click();
+ const picker=page.getByTestId('ground-map-sector');
+ await expect(picker).toHaveValue('west');
+ const focused=await board.evaluate(node=>{
+  const svg=node as SVGSVGElement,v=svg.viewBox.baseVal;
+  const r=svg.getBoundingClientRect();
+  return {width:v.width,height:v.height,scale:r.width/v.width,
+   aspectError:Math.abs(v.width/v.height-r.width/r.height)};
+ });
+ expect(focused.width).toBeLessThan(400);
+ expect(focused.height).toBe(520);
+ expect(focused.aspectError).toBeLessThan(.08);
+ await board.screenshot({path:'test-results/k47-mobile-inspector-sector-'+width+'.png'});
+ await picker.selectOption('all');
+ await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+ const all=await board.evaluate(node=>{
+  const svg=node as SVGSVGElement;return svg.getBoundingClientRect().width/svg.viewBox.baseVal.width;
+ });
+ expect(focused.scale/all).toBeGreaterThan(2.6);
+ expect(await board.locator('[data-fog-state="unknown"]').count()).toBe(unknown);
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+ await board.screenshot({path:'test-results/k47-mobile-inspector-full-'+width+'.png'});
+ await expect(venn).toHaveAttribute('data-grid-x',start[0]!);
+ await expect(venn).toHaveAttribute('data-grid-y',start[1]!);
+ await picker.selectOption('west');
+ await board.locator('[data-cell-id="2,4"]').click({button:'right'});
+ await expect(venn).toHaveAttribute('data-grid-x','2');
+ await expect(venn).toHaveAttribute('data-grid-y','4');
+ await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
+ await page.reload();
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','2');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
