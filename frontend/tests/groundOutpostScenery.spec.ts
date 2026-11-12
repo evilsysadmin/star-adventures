@@ -86,7 +86,7 @@ for(const width of [390,1280]){
    });
    expect(collides).toEqual([false,false]);
    await page.getByTestId('ground-camera-toggle').click();
-   await expect(page.getByTestId('ground-camera-toggle')).toHaveText('Mapa completo');
+   await expect(page.getByTestId('ground-camera-toggle')).toHaveText('Examinar mapa');
   }
   // Artwork is non-interactive: pointer-driven officer selection is unchanged.
   await page.getByTestId('ground-unit-dorn').click();

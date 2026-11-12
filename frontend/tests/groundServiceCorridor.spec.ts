@@ -49,6 +49,7 @@ for(const width of [390,1280]){
   await board.screenshot({path:'test-results/away-connected-corridor-initial-'+width+'.png'});
 
   await page.getByTestId('ground-camera-toggle').click();
+  if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await walk(page,9,4);
   await expect(page.getByTestId('ground-service-floor-9,4'))
@@ -87,6 +88,7 @@ for(const width of [390,1280]){
     .toHaveAttribute('aria-pressed','true');
   await board.screenshot({path:'test-results/away-connected-corridor-follow-'+width+'.png'});
   await page.getByTestId('ground-camera-toggle').click();
+  if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(page.getByTestId('ground-camera-toggle'))
     .toHaveAttribute('aria-pressed','false');
 
