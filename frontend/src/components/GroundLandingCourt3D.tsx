@@ -11,6 +11,7 @@ import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouth
 import {compileGroundVisualScene} from '../groundVisual/compileGroundVisualScene';
 import {addGroundVisualScene3D} from '../groundVisual/GroundVisualScene3D';
 import {addIndustrialSpanHangars} from '../groundVisual/IndustrialSpanHangar3D';
+import {addK47ExteriorGeology3D,OUTER_GEOMETRY_VERSION} from '../groundVisual/ExteriorGeology3D';
 
 // PBR industrial landing court: one authored, contiguous environment slice.
 // The THREE scene and SVG game use the *same exact* grid projection/camera.
@@ -216,6 +217,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
     let disposeCourt:(()=>void)|undefined;
     let disposeModular:(()=>void)|undefined;
     let disposeHangars:(()=>void)|undefined;
+    let disposeExterior:(()=>void)|undefined;
     let disposeAuthored:(()=>void)|undefined;
     const abortArt=new AbortController();
     try{
@@ -230,6 +232,11 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       renderer.shadowMap.enabled=true;
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const scene=new THREE.Scene();
+      // Shared WebGL layer: outside world only, behind the real terrain and
+      // authoritative SVG fog. Never becomes a pick/collision target.
+      const exteriorEnabled=!import.meta.env.DEV||
+        (window as typeof window & {__k47DisableExteriorArt?:boolean}).__k47DisableExteriorArt!==true;
+      if(exteriorEnabled)disposeExterior=addK47ExteriorGeology3D(scene);
       disposeCourt=buildCourt(scene,
         new Set(pbrWallColumns.split(',').filter(Boolean).map(Number)),
         new Set(modulePlan.tiles.map(p=>p.cellId)));
@@ -266,6 +273,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       abortArt.abort();
       disposeAuthored?.();
       disposeHangars?.();
+      disposeExterior?.();
       disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
@@ -277,6 +285,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       abortArt.abort();
       disposeAuthored?.();
       disposeHangars?.();
+      disposeExterior?.();
       disposeModular?.();
       disposeCourt?.();
       renderer?.dispose();
@@ -284,6 +293,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
   },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
+    data-exterior-geology-version={OUTER_GEOMETRY_VERSION}
     data-painted-cells={courtCells.length}
     data-modular-region="2,3:6x4"
     data-modular-tiles={modulePlan.tiles.length}

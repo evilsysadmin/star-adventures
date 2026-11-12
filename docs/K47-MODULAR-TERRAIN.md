@@ -134,3 +134,19 @@ the binary and SHA provenance are retained as reviewable artifacts.
 SVG/PBR fallback until a human-inspected side-by-side of actual live-game
 screenshots shows meaningful progress. The final source asset should be
 published in content-addressed R2 by infrastructure, never by this game repo.
+
+## World-first non-playable exterior geology (K-47 candidate)
+The existing 18x12 colony appeared as a floating island in empty space,
+particularly in full overview. ExteriorGeology3D adds an original seeded
+four-strip canyon rim (north/east/south/west) using one 256px embedded
+deterministic basalt-shale texture and shared instanced rock geometry in
+the **existing** WebGL renderer. It never creates gameplay positions,
+stations, doors, portals, elevated routes, or picking targets. Every new
+mesh vertex and every instanced rock centre must be at least 0.55 tiles
+**outside** canonical world bounds; this is atmospheric out-of-world land,
+not publication of unexplored navigable cells. The same actual SVG
+exploration fog and camera remain authoritative. A missing WebGL renderer
+automatically leaves the existing SVG planet backdrop unchanged.
+Screenshot gate: compare after/before in an independent browser context
+with identical actual squad travel, full overview at 390/1280; do not merge
+unless it visibly solves the blank-world composition without hiding units.
