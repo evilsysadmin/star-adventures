@@ -134,3 +134,6 @@ the binary and SHA provenance are retained as reviewable artifacts.
 SVG/PBR fallback until a human-inspected side-by-side of actual live-game
 screenshots shows meaningful progress. The final source asset should be
 published in content-addressed R2 by infrastructure, never by this game repo.
+
+## Full visible industrial deck A/B candidate
+The current rescue-bay SVG floor uses a full-strength desaturated industrial surface, shared 240x120 world-aligned macro plates and welded joints every three actual world tiles. Each polygon is clipped to the REAL explored/visible walkable cells, with remembered cells dimmed. This avoids the hidden 3D atlas from rejected #280 and the imperceptible patina from rejected #283. No new walkability, fog, station, camera, mission or collision changes. Actual 390/1280 Chromium A/B must be visually reviewed prior to any merge.

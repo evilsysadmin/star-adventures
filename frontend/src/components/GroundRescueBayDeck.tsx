@@ -39,10 +39,14 @@ const polygon=(p:Cell)=>{
 };
 
 export function GroundRescueBayDeck({explored,visible}:Vision){
+  // A/B testing only: shipping builds cannot disable the new surface.
+  const industrial=!import.meta.env.DEV||typeof window==='undefined'||
+    (window as typeof window&{__k47LegacyIndustrialFloor?:boolean})
+      .__k47LegacyIndustrialFloor!==true;
   const hatchKnown=centerCells.every(k=>explored.has(k)&&roomIds.has(k));
   const hatchVisible=centerCells.every(k=>visible.has(k));
   const center=at(2.5,4.5);
-  return <g data-testid="ground-rescue-bay" pointerEvents="none"
+  return <g data-testid="ground-rescue-bay" data-bay-floor-visual={industrial?"industrial-v2":"legacy"} pointerEvents="none"
     aria-hidden="true">
     <defs>
       {/* One surface-wide gradient, not 24 separate tile gradients. */}
@@ -52,16 +56,85 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
         <stop offset=".48" stopColor="#465f61"/>
         <stop offset="1" stopColor="#29454e"/>
       </linearGradient>
+      <linearGradient id="ground-bay-connected-steel" gradientUnits="userSpaceOnUse"
+        x1="245" y1="155" x2="675" y2="425">
+        <stop stopColor="#92816d"/>
+        <stop offset=".32" stopColor="#67665b"/>
+        <stop offset=".7" stopColor="#4d5b57"/>
+        <stop offset="1" stopColor="#30474a"/>
+      </linearGradient>
+      {/* Four-square industrial modules; the pattern shares one world-space
+          origin instead of restarting at every logical game cell. */}
+      <pattern id="ground-bay-industrial-plates" patternUnits="userSpaceOnUse"
+        width="240" height="120">
+        <path d="M0 0H240V120H0Z" fill="#243f42" fillOpacity=".10"/>
+        <path d="M0 0L240 0 186 120 0 120Z" fill="#b1a187" fillOpacity=".15"/>
+        <path d="M-5 36L54 21 126 29 183 16 252 41
+                 M-4 86L54 76 105 89 160 72 250 83"
+          fill="none" stroke="#142f35" strokeWidth="9" strokeOpacity=".24"/>
+        <path d="M-5 39L54 24 126 32 183 19 252 44
+                 M-4 90L54 80 105 93 160 76 250 87"
+          fill="none" stroke="#c8aa80" strokeWidth="2.4" strokeOpacity=".53"/>
+        <path d="M33 0L15 120M209 0L225 120"
+          stroke="#22363a" strokeWidth="5" strokeOpacity=".49"/>
+        <path d="M36 0L18 120M212 0L228 120"
+          stroke="#c4b59a" strokeWidth="1.4" strokeOpacity=".58"/>
+        <path d="M67 56l37 -4m-24 38l32 -8m45-27l23 2m-164 58l25 -4"
+          stroke="#d6c6a4" strokeWidth="3" strokeOpacity=".5"/>
+        <g fill="#20383b" fillOpacity=".72">
+          <circle cx="14" cy="12" r="3.5"/><circle cx="222" cy="13" r="3.5"/>
+          <circle cx="64" cy="104" r="3.2"/><circle cx="179" cy="101" r="3.4"/>
+        </g>
+        <g fill="#d0b58a" fillOpacity=".8">
+          <circle cx="13" cy="11" r="1.5"/><circle cx="221" cy="12" r="1.5"/>
+          <circle cx="63" cy="103" r="1.4"/><circle cx="178" cy="100" r="1.4"/>
+        </g>
+      </pattern>
+      {/* Real LOS is authoritative; unknown cells never enter these clips. */}
+      <clipPath id="ground-bay-visible-panels">
+        {room.filter(p=>visible.has(id(p.x,p.y))).map(p=>
+          <path key={id(p.x,p.y)} d={polygon(p)}/>)}
+      </clipPath>
+      <clipPath id="ground-bay-remembered-panels">
+        {room.filter(p=>explored.has(id(p.x,p.y))&&!visible.has(id(p.x,p.y))).map(p=>
+          <path key={id(p.x,p.y)} d={polygon(p)}/>)}
+      </clipPath>
     </defs>
     <g data-testid="ground-bay-continuous-floor">
       {room.filter(p=>explored.has(id(p.x,p.y))).map(p=>{
         const k=id(p.x,p.y),current=visible.has(k);
         return <path key={k} data-testid={'ground-bay-floor-'+k}
           data-fog={current?'visible':'remembered'}
-          d={polygon(p)} fill="url(#ground-bay-deck-gradient)"
+          d={polygon(p)} fill={industrial
+            ? "url(#ground-bay-connected-steel)" : "url(#ground-bay-deck-gradient)"}
           opacity={current?1:.33}/>;
       })}
     </g>
+    {/* The patterned industrial floor is a *real, prominent* replacement
+        rather than tiny low-alpha wear hidden behind the old deck. The
+        same drawing is clipped twice to true visible/remembered game cells. */}
+    {industrial&&<g data-testid="ground-bay-industrial-skin" pointerEvents="none">
+      <path d="M160 105H745V490H160Z" fill="url(#ground-bay-industrial-plates)"
+        clipPath="url(#ground-bay-visible-panels)" opacity=".93"/>
+      <path d="M160 105H745V490H160Z" fill="url(#ground-bay-industrial-plates)"
+        clipPath="url(#ground-bay-remembered-panels)" opacity=".28"/>
+      {/* Coarse plate welds every three WORLD tiles, never 1x1 squares.
+          Neither lines nor rivets become movement/interaction objects. */}
+      {room.filter(p=>(p.x===2||p.x===5)&&
+        roomIds.has(id(p.x+1,p.y))&&explored.has(id(p.x,p.y))&&
+        explored.has(id(p.x+1,p.y))).map(p=>{
+          const c=at(p.x,p.y),known=visible.has(id(p.x,p.y))&&
+            visible.has(id(p.x+1,p.y));
+          return <g key={'joint-'+id(p.x,p.y)}
+            data-testid={'ground-bay-plate-weld-'+id(p.x,p.y)}
+            opacity={known?.9:.28}>
+            <path d={'M'+(c.x+40)+' '+c.y+'L'+c.x+' '+(c.y+20)}
+              stroke="#1d3237" strokeWidth="5.5" fill="none"/>
+            <path d={'M'+(c.x+38)+' '+(c.y+1)+'L'+(c.x-2)+' '+(c.y+21)}
+              stroke="#c9b492" strokeWidth="1.7" fill="none"/>
+          </g>;
+      })}
+    </g>}
     {/* A single large room-scale hatch, visibly spanning four canonical
         walkable cells rather than repeating one marker on each floor tile.
         Its center lies below the officers, and it never accepts input. */}

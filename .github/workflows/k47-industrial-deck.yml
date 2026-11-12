@@ -1,0 +1,33 @@
+name: K-47 industrial deck · actual-play visual gate
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundRescueBayDeck.tsx"
+      - "frontend/tests/k47IndustrialDeckVisual.spec.ts"
+      - ".github/workflows/k47-industrial-deck.yml"
+permissions:
+  contents: read
+jobs:
+  industrial-deck:
+    name: Visible rescue-bay 390/1280 A/B Chrome
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Compare genuine identical mission before/after
+        run: npm run test:e2e --prefix frontend -- tests/k47IndustrialDeckVisual.spec.ts
+      - name: Upload original Chromium A/B
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-industrial-deck-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: frontend/test-results/k47-industrial-deck-*.png
