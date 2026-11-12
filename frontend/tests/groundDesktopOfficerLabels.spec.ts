@@ -22,7 +22,7 @@ for(const {width,height} of [
   const desktop=width>=1100;
   for(const id of ['venn','dorn','mira']){
    const visual=page.getByTestId('ground-officer-nameplate-art-'+id);
-   await expect(visual).toHaveAttribute('transform',desktop?'scale(0.88)':'scale(1)');
+   await expect(visual).toHaveAttribute('transform',desktop?(id==='venn'?'scale(0.91)':'scale(0.8)'):'scale(1)');
    await expect(visual.locator('text')).toBeVisible();
    const size=await page.getByTestId('ground-officer-hit-'+id).evaluate(e=>{
     const b=(e as SVGGraphicsElement).getBBox();
@@ -36,12 +36,18 @@ for(const {width,height} of [
   // in the one canonical crew rail. No duplicate DOM controls.
   await page.getByTestId('ground-officer-hit-dorn').click();
   await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed','true');
+  // Emphasis follows selection state only on desktop, never alters any
+  // geometry in the canonical officer hit rect or mobile identity.
+  await expect(page.getByTestId('ground-officer-nameplate-art-dorn'))
+    .toHaveAttribute('transform',desktop?'scale(0.91)':'scale(1)');
+  await expect(page.getByTestId('ground-officer-nameplate-art-venn'))
+    .toHaveAttribute('transform',desktop?'scale(0.8)':'scale(1)');
   await page.getByTestId('ground-officer-hit-venn').click();
   await expect(page.getByTestId('ground-select-venn')).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('ground-select-mira')).toHaveCount(1);
   await page.reload();
   await expect(board).toBeVisible();
   await expect(page.getByTestId('ground-officer-nameplate-art-venn'))
-    .toHaveAttribute('transform',desktop?'scale(0.88)':'scale(1)');
+    .toHaveAttribute('transform',desktop?'scale(0.91)':'scale(1)');
  });
 }
