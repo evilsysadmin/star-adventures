@@ -154,3 +154,29 @@ walkable x>=1. Its existing 3D presentation stays as fallback until
 the candidate passes real checksum/GLB/fog gates and renders successfully.
 The original deterministic PBR source is reviewed in Chromium at 390/1280;
 no staging, production manifest or R2 publication occurs in this PR.
+
+## Unified 3-building K-47 environment candidate — strict visual gate
+
+The three existing original R2-ready asset slots now have deterministic
+**source** candidates built from one pinned material vocabulary: southern
+industrial frontage, large west Archive envelope and east science utilities.
+All three GLBs must pass self-contained glTF 2.0, license, checksum, exact
+blocked-footprint and size validation. No model may add a door, walkable tile
+or mission objective.
+
+The candidate comparison is in the ACTUAL game, with normal squad clicks
+discovering all real wall cells. Chromium captures the full sector and follow
+camera at 390px and 1280px, compares against the same real mission without
+art, and checks F5, mission markers, 216 pick targets and SVG rollback. This
+does NOT publish assets to R2 or staging; it is a visual acceptance experiment.
+The work only passes when the entire colony demonstrably improves toward the
+approved environment-led reference, not from passing binary validation alone.
+
+## Science wing: original parabolic observatory receiver
+The next visual candidate replaces the previous science rooftop mast with an
+actual concave, multi-ring 32-segment triangulated dish, radial braces, a
+feed, and a separate rear beacon. It uses only original geometry and shared
+authored PBR materials; CI inspects the emitted GLB rooftop triangles and
+footprint. The dish is NOT a mission object, scanner interaction, doorway,
+or new navigable space. Publish only if actual 390px/1280px game screenshots
+materially improve without blocking the officers.
