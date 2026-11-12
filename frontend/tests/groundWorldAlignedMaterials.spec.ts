@@ -58,8 +58,8 @@ test('semantic families reuse one real texture and batch flat terrain by materia
  const second=root.children[1] as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;
  expect(first.isMesh).toBe(true);
  expect(second.isMesh).toBe(true);
- expect(first.isInstancedMesh).not.toBe(true);
- expect(second.isInstancedMesh).not.toBe(true);
+ expect(first).not.toBeInstanceOf(THREE.InstancedMesh);
+ expect(second).not.toBeInstanceOf(THREE.InstancedMesh);
  expect(first.material.map).toBe(second.material.map);
  expect(first.geometry.getAttribute('uv').count).toBe(4);
  dispose();
