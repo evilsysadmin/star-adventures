@@ -172,7 +172,8 @@ export function GroundSquadSelection({
     typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches);
   const [followSquad, setFollowSquad] = useState(true);
   // Optional, camera-only inspection of a wide colony on portrait screens.
-  // "Mapa completo" stays genuinely complete; sector views are explicit.
+  // Portrait opens a useful already-known sector close-up; the complete
+  // uncropped map stays explicitly selectable from the visible map picker.
   const [overviewSector,setOverviewSector]=useState<'all'|'west'|'center'|'east'>('all');
   // The tactical SVG must match the actual, flex-sized viewport aspect.
   // Otherwise xMidYMid letterboxes the entire scene on wide desktop displays,
@@ -432,8 +433,12 @@ export function GroundSquadSelection({
       <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO'
         : sectorMode ? 'SECTOR '+overviewSector.toUpperCase() : 'MAPA COMPLETO'}{realtime?' · LIBRE BETA':''}</span>
       <button type="button" data-testid="ground-camera-toggle" aria-pressed={followSquad}
-        onClick={() => { setFollowSquad(value => !value);setOverviewSector('all'); }}>
-        {followSquad ? 'Mapa completo' : 'Seguir equipo'}
+        onClick={() => {
+          const enteringMap=followSquad;
+          setFollowSquad(!enteringMap);
+          setOverviewSector(enteringMap&&compact?'west':'all');
+        }}>
+        {followSquad ? compact ? 'Examinar mapa' : 'Mapa completo' : 'Seguir equipo'}
       </button>
       {compact&&!followSquad&&<label className="ground-squad-sector-picker">
         <span>Examinar</span>

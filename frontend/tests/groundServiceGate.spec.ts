@@ -31,6 +31,10 @@ for(const width of [390,1280]){
   for(const tile of ['8,4','8,5','8,6','8,7','9,6'])
    await expect(board.locator('[data-cell-id="'+tile+'"]')).toHaveCount(1);
   await page.getByTestId('ground-camera-toggle').click();
+  // Portrait map inspection starts in a readable known sector. For this
+  // all-world navigation/landmark contract, explicitly choose the real
+  // uncropped map just as a player can with the visible sector picker.
+  if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   const unknown=await board.locator('[data-fog-state="unknown"]').count();
   expect(unknown).toBeGreaterThan(0);

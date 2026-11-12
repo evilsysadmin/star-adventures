@@ -41,6 +41,7 @@ for(const width of [390,1280]){
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-pressed','true');
     await page.getByTestId('ground-camera-toggle').click(); // whole map for distant order
+    if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
     await clickGround(page,9,4);
     await expect(officer).toHaveAttribute('data-walk-phase','moving');
     await expect(page.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','unknown');
@@ -58,6 +59,7 @@ for(const width of [390,1280]){
       path:'test-results/away-realtime-follow-'+width+'.png',
     });
     await page.getByTestId('ground-camera-toggle').click();
+    if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
     await page.getByTestId('ground-squad-board').screenshot({
       path:'test-results/away-realtime-moving-'+width+'.png',
     });
@@ -90,6 +92,7 @@ for(const width of [390,1280]){
     // F5 restores the close follow camera: use overview for a distant
     // group target, rather than clicking an offscreen point.
     await page.getByTestId('ground-camera-toggle').click();
+    if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
     await expect(page.getByTestId('ground-camera-toggle'))
       .toHaveAttribute('aria-pressed','false');
     // Group movement remains explicitly unavailable until collision avoidance.

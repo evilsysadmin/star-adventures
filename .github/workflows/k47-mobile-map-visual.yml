@@ -1,0 +1,36 @@
+name: K-47 mobile inspector · real screenshot gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundSquadSelection.tsx"
+      - "frontend/tests/groundMobileMapInspectorVisual.spec.ts"
+      - ".github/workflows/k47-mobile-map-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-map:
+    name: Mobile K-47 readable sector vs whole-map A/B
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Test real 390 and 430 K-47 camera/commands with screenshot evidence
+        run: npm run test:e2e --prefix frontend -- tests/groundMobileMapInspectorVisual.spec.ts
+      - name: Upload exact-game inspector comparison screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-mobile-inspector-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: frontend/test-results/k47-mobile-inspector-*.png

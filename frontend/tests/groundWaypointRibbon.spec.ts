@@ -68,6 +68,7 @@ for(const width of [360,390,430]){
   }
   await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
   await page.getByTestId('ground-camera-toggle').click();
+  if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await expect(page.getByTestId('ground-waypoint-label-probe'))
     .toHaveAttribute('transform','translate(76 -45) scale(.78)');

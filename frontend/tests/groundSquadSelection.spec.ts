@@ -24,6 +24,7 @@ for (const width of [390, 1280]) {
       const board = page.getByTestId('ground-squad-board');
       await expect(board).not.toHaveAttribute('viewBox', '-72 0 1280 640');
       await page.getByTestId('ground-camera-toggle').click();
+      if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
       await expect(board).toHaveAttribute('viewBox', '-72 0 1280 640');
       await page.getByTestId('ground-camera-toggle').click();
       await expect(board).not.toHaveAttribute('viewBox', '-72 0 1280 640');

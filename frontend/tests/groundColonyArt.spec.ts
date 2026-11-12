@@ -38,6 +38,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveCount(0);
   await expect(page.getByTestId('ground-cargo-10,2')).toHaveCount(0);
   await page.getByTestId('ground-camera-toggle').click();
+  if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await board.screenshot({path:'test-results/away-colony-initial-'+width+'.png'});
   await orderCell(page,9,4);
   const venn=page.getByTestId('ground-unit-venn');

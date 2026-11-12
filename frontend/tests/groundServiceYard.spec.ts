@@ -46,6 +46,7 @@ for(const width of [390,1280]){
     await board.screenshot({path:'test-results/away-workyard-initial-'+width+'.png'});
 
     await page.getByTestId('ground-camera-toggle').click();
+    if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
     await walk(page,10,4);
     await expect(page.getByTestId('ground-yard-floor-10,4'))
       .toHaveAttribute('data-fog','visible');
