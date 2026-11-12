@@ -89,6 +89,42 @@ class Factory:
         self.add(kind,trimesh.Trimesh(vertices=points,
              faces=[[0,2,1],[3,4,5],[0,1,4],[0,4,3],
                     [1,2,5],[1,5,4],[2,0,3],[2,3,5]],process=False))
+    def industrial_sawtooth_roof(self,x0,x1,z_half,low,rise,bays=3):
+        """One physically sloped roof per bay and glazed clerestory at each crest.
+
+        World-space dimensions are in the canonical factory pre-export units.
+        Each roof covers the already blocked wall strip, never the playable
+        yard. The mesh is built as actual large facets instead of box stacks.
+        """
+        width=(x1-x0)/bays
+        for k in range(bays):
+            left=x0+k*width+.016
+            right=x0+(k+1)*width-.018
+            upper=low+rise*(.9 if k==1 else 1.)
+            vertices=np.asarray([
+                [left,low,-z_half], [left,low,z_half],
+                [right,upper,-z_half], [right,upper,z_half]
+            ],dtype=float)
+            roof=trimesh.Trimesh(vertices=vertices,
+                                 faces=[[0,1,2],[1,3,2]],process=False)
+            self.add("roof",roof)
+            # Raised glazing makes each repeating sawtooth a functional
+            # clerestory, rather than a tiny seam in a flat roof.
+            crest=(upper+low)/2
+            self.box("rubber",right-.018,crest,0,.032,upper-low-.07,
+                     z_half*1.80)
+            self.box("glass",right+.006,crest,0,.018,upper-low-.13,
+                     z_half*1.54)
+            self.box("brass",right+.02,upper+.004,0,.036,.055,z_half*2)
+            self.box("rib",left+.014,low+.015,0,.052,.075,z_half*2)
+            for side in (-1,1):
+                self.brace("rib",(left,low,side*z_half),
+                           (right,upper,side*z_half))
+            # Two broad perpendicular braces, visible at ordinary zoom.
+            for z in (-z_half*.58,z_half*.58):
+                self.brace("brass",(left,low+.028,z),
+                           (right,upper+.028,z))
+
     def build(self,path):
         scene=trimesh.Scene()
         for name,parts in self.meshes.items():
@@ -130,13 +166,10 @@ def design():
         ("rib",(0,1.11,-.407,4.7,1.60,.065)),
         ("rubber",(0,1.03,.401,4.50,1.11,.055))]:
         b.box(kind,*values)
-    # Three asymmetric faceted roof masses with true thickness.
-    b.wedge("roof",[(-2.43,2.16,-.46),(-.80,2.61,-.46),(-.80,2.32,-.03),
-                   (-2.43,2.23,-.46),(-.80,2.68,-.46),(-.80,2.39,-.03)])
-    b.wedge("roof",[(-.90,2.60,-.46),(.95,2.96,-.46),(.95,2.70,-.03),
-                   (-.90,2.67,-.46),(.95,3.03,-.46),(.95,2.77,-.03)])
-    b.wedge("roof",[(.81,2.37,-.46),(2.43,2.48,-.46),(2.43,2.20,-.03),
-                   (.81,2.44,-.46),(2.43,2.55,-.46),(2.43,2.27,-.03)])
+    # Full-length original sawtooth industrial roof, with physically
+    # pitched metal sheets and large clerestory lights across ALL five
+    # blocked frontage cells. No new route, door or playable platform.
+    b.industrial_sawtooth_roof(-2.38,2.38,.42,2.58,.57,bays=3)
     b.box("brass",0,2.26,.449,4.93,.12,.08)
     b.box("rib",0,2.42,-.449,4.8,.075,.07)
     for x,w,glazed in [(-1.69,.90,False),(-.55,.72,True),
