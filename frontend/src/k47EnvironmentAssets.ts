@@ -59,6 +59,10 @@ export function validateAuthoredSlots(manifest:ArtManifest,world:AuthoredWorld){
         'art footprint must be a unique real blocked cell: '+key);
       own.add(key);usedCells.add(key);
     }
+    // The archive's exterior volume is allowed only with these real west-wall cells.
+    if(slot.id==='west-archive-shell')
+      assert(own.size===3&&['0,3','0,4','0,5'].every(cell=>own.has(cell)),
+        'west archive scenic envelope requires exact blocked frontage');
     const [x,y,z]=slot.anchor;
     assert(slot.anchor.length===3&&slot.anchor.every(Number.isFinite),
       'invalid anchor');
@@ -150,7 +154,9 @@ export function assertModelWithinFootprint(
     max:{x:number;y:number;z:number}},
 ){
   const xs=slot.footprint.map(c=>c[0]),zs=slot.footprint.map(c=>c[1]);
-  const lowX=Math.min(...xs)-.5,highX=Math.max(...xs)+.5;
+  // Extend only the canonical Archive WEST into empty non-world geometry.
+  const lowX=slot.id==='west-archive-shell'?-3.3:Math.min(...xs)-.5;
+  const highX=Math.max(...xs)+.5;
   const lowZ=Math.min(...zs)-.5,highZ=Math.max(...zs)+.5;
   const epsilon=.06;
   assert([bounds.min.x,bounds.min.y,bounds.min.z,
