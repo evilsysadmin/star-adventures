@@ -1,7 +1,8 @@
-// Original, deterministic micro-surface detail for the reusable K-47 tiles.
+// Original, deterministic world-scale texture detail for reusable K-47 tiles.
 // Pure pixels: no Three, RNG state, image requests or gameplay dependencies.
-// All variants retain one shared material/texture per semantic surface family.
-export const SURFACE_SIZE=64;
+// Each semantic material family has ONE texture shared across all variants.
+// The renderer assigns world-space UVs so stains never restart per grid cell.
+export const SURFACE_SIZE=256;
 export type SurfaceFamily='concrete'|'steel'|'mineral'|'dust';
 export const surfaceFamilies:readonly SurfaceFamily[]=
  ['concrete','steel','mineral','dust'] as const;
@@ -13,23 +14,32 @@ const clamp=(value:number)=>Math.max(0,Math.min(255,Math.round(value)));
 export function makeGroundSurfacePixels(family:SurfaceFamily):Uint8Array{
  const bytes=new Uint8Array(SURFACE_SIZE*SURFACE_SIZE*4);
  let seed=seeds[family];
+ const phase=(seed%997)/997*Math.PI*2;
  for(let y=0;y<SURFACE_SIZE;y++)for(let x=0;x<SURFACE_SIZE;x++){
   seed=(Math.imul(seed,1664525)+1013904223)>>>0;
-  // Soft value noise, not random bright squares or fake tiles/collision.
-  const grain=(seed>>>27)-16;
-  let relief=0;
+  // Four broad, asymmetric fields cover MANY tiles. Fine noise only gives
+  // grain; it never draws an obvious one-square repeated border.
+  const grain=((seed>>>25)-64)*.21;
+  const broad=7*Math.sin(x*.029+y*.012+phase)+
+   6*Math.sin(x*.011-y*.041+phase*.7)+
+   5*Math.cos(x*.056-y*.025+phase*1.3);
+  const sweep=Math.sin(y*.052+x*.017+Math.sin(x*.022+phase)*1.7);
+  let wear=0;
   if(family==='steel'){
-   // Faint directional brushing and restrained panel stamping.
-   relief=(y%12===0?-5:0)+(x%23===0?3:0);
+   // Brushing and a few long oxidized fabrication sweeps.
+   wear=3*Math.sin(y*.44+x*.012)+
+    (sweep>.87?-9:0);
   }else if(family==='concrete'){
-   relief=(x*7+y*13)%71===0?-11:0;
+   wear=(sweep>.91?-10:0)+
+    4*Math.sin(x*.07+Math.sin(y*.018)*2);
   }else if(family==='mineral'){
-   relief=(seed&127)===0?-14:0;
+   wear=5*Math.sin(x*.086-y*.043+phase)+
+    (sweep<-.92?-8:0);
   }else{
-   // Broad, low-contrast dust drifts, no checkerboard grout.
-   relief=Math.sin(x*.12+y*.08)*5;
+   wear=8*Math.sin(x*.020+y*.017+phase)+
+    4*Math.cos(y*.062-x*.012);
   }
-  const v=clamp(232+grain*.55+relief);
+  const v=clamp(218+grain+broad+wear);
   const index=(y*SURFACE_SIZE+x)*4;
   bytes[index]=v;
   bytes[index+1]=clamp(v+(family==='dust'?3:1));
