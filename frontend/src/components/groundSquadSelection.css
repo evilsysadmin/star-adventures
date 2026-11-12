@@ -233,3 +233,16 @@
    volume; missing CDN, undiscovered cells or no WebGL preserve fallback. */
 [data-testid="ground-squad-board"]:has([data-testid="ground-landing-court-3d"][data-authored-art-ready~="west-archive-shell"])
  [data-testid="ground-archive-volume-3d"]{visibility:hidden}
+
+/* A VERIFIED and genuinely explored east utilities GLB supersedes the
+   blocked SVG science-facility shell. Never suppress this fallback when
+   asset bytes/geometry fail, when WebGL fails, or before LOS discovery. */
+[data-testid="ground-squad-board"]:has(
+ [data-testid="ground-landing-court-3d"][data-authored-art-ready~="east-utilities-shell"]
+) :is(
+ [data-testid="ground-architecture-wall-8,1"],
+ [data-testid="ground-architecture-wall-8,2"],
+ [data-testid="ground-architecture-wall-8,3"],
+ [data-testid="ground-colony-roof-8,1-to-8,2"],
+ [data-testid="ground-colony-roof-8,2-to-8,3"]
+){opacity:0}
