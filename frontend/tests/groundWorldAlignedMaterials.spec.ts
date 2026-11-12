@@ -72,7 +72,11 @@ test('large-scale textures stay deterministic, original and opaque',()=>{
   const b=makeGroundSurfacePixels(family);
   expect(a).toEqual(b);
   expect(a).toHaveLength(SURFACE_SIZE*SURFACE_SIZE*4);
-  for(let index=3;index<a.length;index+=4)expect(a[index]).toBe(255);
+  let opaque=true;
+  for(let index=3;index<a.length;index+=4){
+   if(a[index]!==255){opaque=false;break;}
+  }
+  expect(opaque).toBe(true);
   // Not a single flat paint color or a 64px pattern copied four times.
   expect(a.slice(0,256)).not.toEqual(a.slice(256*64*4,256*64*4+256));
  }
