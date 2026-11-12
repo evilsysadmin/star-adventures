@@ -28,7 +28,7 @@ def material_map(kind):
     speckle=rng.normal(0,1,(256,256))
     x,y=np.meshgrid(np.arange(256),np.arange(256))
     grain=small*32+broad*29+speckle*8+3*np.sin(x*.14+y*.02)
-    base={"shell":[139,145,131],"roof":[104,119,113],
+    base={"shell":[139,145,131],"roof":[152,164,155],
           "basalt":[75,72,71],"panel":[85,104,109]}[kind]
     rust=np.maximum(0,-broad-.12)*30 if kind in ("shell","roof") \
          else np.zeros((256,256))
@@ -93,6 +93,9 @@ class Factory:
         scene=trimesh.Scene()
         for name,parts in self.meshes.items():
             mesh=trimesh.util.concatenate(parts)
+            # Deliberately cut the roof projection back near gameplay actors;
+            # overhead mass must not swallow the entire playable courtyard.
+            mesh.vertices[:,1]*=.70
             x,y,z=mesh.vertices.T
             mesh.visual=TextureVisuals(
                 uv=np.column_stack(((x*.39+z*.61)%1,(y*.33+z*.18)%1)),
@@ -128,12 +131,12 @@ def design():
         ("rubber",(0,1.03,.401,4.50,1.11,.055))]:
         b.box(kind,*values)
     # Three asymmetric faceted roof masses with true thickness.
-    b.wedge("roof",[(-2.43,2.16,-.46),(-.80,2.61,-.46),(-.80,2.32,.45),
-                   (-2.43,2.23,-.46),(-.80,2.68,-.46),(-.80,2.39,.45)])
-    b.wedge("roof",[(-.90,2.60,-.46),(.95,2.96,-.46),(.95,2.70,.45),
-                   (-.90,2.67,-.46),(.95,3.03,-.46),(.95,2.77,.45)])
-    b.wedge("roof",[(.81,2.37,-.46),(2.43,2.48,-.46),(2.43,2.20,.45),
-                   (.81,2.44,-.46),(2.43,2.55,-.46),(2.43,2.27,.45)])
+    b.wedge("roof",[(-2.43,2.16,-.46),(-.80,2.61,-.46),(-.80,2.32,-.03),
+                   (-2.43,2.23,-.46),(-.80,2.68,-.46),(-.80,2.39,-.03)])
+    b.wedge("roof",[(-.90,2.60,-.46),(.95,2.96,-.46),(.95,2.70,-.03),
+                   (-.90,2.67,-.46),(.95,3.03,-.46),(.95,2.77,-.03)])
+    b.wedge("roof",[(.81,2.37,-.46),(2.43,2.48,-.46),(2.43,2.20,-.03),
+                   (.81,2.44,-.46),(2.43,2.55,-.46),(2.43,2.27,-.03)])
     b.box("brass",0,2.26,.449,4.93,.12,.08)
     b.box("rib",0,2.42,-.449,4.8,.075,.07)
     for x,w,glazed in [(-1.69,.90,False),(-.55,.72,True),
