@@ -134,3 +134,23 @@ the binary and SHA provenance are retained as reviewable artifacts.
 SVG/PBR fallback until a human-inspected side-by-side of actual live-game
 screenshots shows meaningful progress. The final source asset should be
 published in content-addressed R2 by infrastructure, never by this game repo.
+
+
+## Continuous world-space modular ground — Draft visual study
+
+The 6x4 playable landing court currently samples its 64px material detail from
+UV 0..1 **in every tile**; even original reusable tile variants create a small
+repeating checkerboard which distracts from a connected industrial location.
+The new candidate uses 256px deterministic broad weathering for each of the
+same four semantic material families and combines each floor material into
+one indexed geometry batch. Every vertex UV follows the same fixed
+world-coordinate atlas (16 canonical ground units), independently of the
+number or order of cells discovered. Wall/service edges remain instanced.
+No second scene renderer, authored mission geometry, asset download, new tile,
+walkability, camera, hit-test surface, save change or fog override is added.
+
+This candidate **must remain Draft** until same-route 390/1280 Chromium screenshots
+show the large-scale material reads coherently in the real K-47 mission and
+does not lose detail or officer legibility. A green build or a valid shared-UV
+unit test alone is **not** a mock-parity success. If ineffective, reject it
+rather than publishing a nominal art upgrade.
