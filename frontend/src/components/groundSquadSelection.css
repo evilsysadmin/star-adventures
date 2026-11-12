@@ -228,3 +228,8 @@
 ) [data-testid="ground-south-industrial-wing"]{
   opacity:0;
 }
+
+/* Only a real, hash-verified archive GLB replaces the old separate WebGL
+   volume; missing CDN, undiscovered cells or no WebGL preserve fallback. */
+[data-testid="ground-squad-board"]:has([data-testid="ground-landing-court-3d"][data-authored-art-ready~="west-archive-shell"])
+ [data-testid="ground-archive-volume-3d"]{visibility:hidden}

@@ -145,3 +145,12 @@ An invalid preview is ignored; a missing, corrupt or out-of-bounds GLB retains
 the original playable scenery. The shipped manifest remains `unpublished`
 until Infra proves an actual immutable, authorized R2 upload. This preview
 hook is **not** a new asset source, bypass or network publishing mechanism.
+
+## West archive exterior envelope — visual candidate, not a shipped asset
+A continuous original 3D Archive may occupy the **non-world space west of x=0**
+while its blocked frontage remains EXACTLY (0,3), (0,4), (0,5).
+Bounds: x=-3.3..0.56, z=2.5..5.5, y=-0.4..5. No spill into
+walkable x>=1. Its existing 3D presentation stays as fallback until
+the candidate passes real checksum/GLB/fog gates and renders successfully.
+The original deterministic PBR source is reviewed in Chromium at 390/1280;
+no staging, production manifest or R2 publication occurs in this PR.
