@@ -16,6 +16,53 @@ from author_k47_south import Factory
 BOUND_LO=np.asarray([-.56,-.4,-1.56])
 BOUND_HI=np.asarray([.56,5.0,1.56])
 
+
+def add_research_dish(builder):
+    """Concave triangulated original observatory dish on blocked science roof."""
+    axis=np.asarray([.48,.74,.46],dtype=float)
+    axis/=np.linalg.norm(axis)
+    tangent=np.asarray([axis[2],0,-axis[0]])
+    tangent/=np.linalg.norm(tangent)
+    bitangent=np.cross(axis,tangent)
+    center=np.asarray([0.,4.02,.53])
+    radius=.43
+    segments=32
+    rings=8
+    def point(rad,theta):
+        return center+rad*(np.cos(theta)*tangent+np.sin(theta)*bitangent)+(
+            -.15*(1-(rad/radius)**2))*axis
+    vertices=[point(0,0)]
+    for row in range(1,rings+1):
+        rad=radius*row/rings
+        for i in range(segments):
+            vertices.append(point(rad,2*np.pi*i/segments))
+    faces=[]
+    for i in range(segments):
+        faces.append([0,1+i,1+(i+1)%segments])
+    for row in range(1,rings):
+        a=1+(row-1)*segments
+        b=1+row*segments
+        for i in range(segments):
+            j=(i+1)%segments
+            faces.extend(([a+i,b+i,b+j],[a+i,b+j,a+j]))
+    builder.add('roof',trimesh.Trimesh(
+        vertices=np.asarray(vertices),faces=np.asarray(faces),process=False))
+    for i in range(segments):
+        theta=2*np.pi*i/segments
+        edge=point(radius,theta)
+        following=point(radius,2*np.pi*((i+1)%segments)/segments)
+        builder.brace('brass',edge,following)
+        if i%4==0:
+            builder.brace('rib',center-.14*axis,edge)
+    builder.box('rib',0,3.29,.53,.34,.18,.29)
+    builder.box('brass',0,3.49,.53,.38,.09,.17)
+    for x in (-.17,.17):
+        builder.brace('rib',(x,3.52,.53),(x*.63,3.83,.53))
+    builder.brace('rib',center-.13*axis,center+.20*axis)
+    feed=center+.20*axis
+    builder.box('orange',float(feed[0]),float(feed[1]),
+                float(feed[2]),.09,.055,.09)
+
 def design():
     b=Factory()
     # Single continuous occupied 1x3 engineering volume; doors are sealed.
@@ -68,11 +115,12 @@ def design():
     for z in [-1.16,-.38,.42,1.14]:
         b.box('rib',0,2.89,z,.65,.08,.055)
         b.box('brass',0,2.94,z,.55,.048,.05)
-    # Tall antenna gives the science wing its own distinctive silhouette.
-    b.pipe('rib',0,3.48,.66,.057,1.19)
-    b.box('brass',0,3.80,.66,.72,.06,.04)
-    b.box('white',0,3.99,.66,.45,.07,.07)
-    b.pipe('red',0,4.12,.66,.095,.14)
+    # One recognizable articulated survey instrument replaces the boxy mast.
+    add_research_dish(b)
+    # Separate narrow navigation beacon at the rear; no new interaction.
+    b.pipe('rib',0,3.36,-1.12,.042,.76)
+    b.box('white',0,3.72,-1.12,.28,.045,.06)
+    b.pipe('red',0,3.81,-1.12,.070,.11)
     return b
 
 def export(builder,out):

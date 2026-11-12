@@ -171,3 +171,12 @@ art, and checks F5, mission markers, 216 pick targets and SVG rollback. This
 does NOT publish assets to R2 or staging; it is a visual acceptance experiment.
 The work only passes when the entire colony demonstrably improves toward the
 approved environment-led reference, not from passing binary validation alone.
+
+## Science wing: original parabolic observatory receiver
+The next visual candidate replaces the previous science rooftop mast with an
+actual concave, multi-ring 32-segment triangulated dish, radial braces, a
+feed, and a separate rear beacon. It uses only original geometry and shared
+authored PBR materials; CI inspects the emitted GLB rooftop triangles and
+footprint. The dish is NOT a mission object, scanner interaction, doorway,
+or new navigable space. Publish only if actual 390px/1280px game screenshots
+materially improve without blocking the officers.
