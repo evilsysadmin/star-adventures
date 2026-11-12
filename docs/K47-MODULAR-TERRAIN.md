@@ -134,3 +134,6 @@ the binary and SHA provenance are retained as reviewable artifacts.
 SVG/PBR fallback until a human-inspected side-by-side of actual live-game
 screenshots shows meaningful progress. The final source asset should be
 published in content-addressed R2 by infrastructure, never by this game repo.
+
+## Seamless real-world courtyard material candidate
+The original four shared textures expand from 64 to 256 pixels with deterministic coarse wear, fine grit and normal maps. Revealed 6x4 terrain geometry uses continuous world-space UVs, flowing across tile boundaries. Only original walkable explored cells receive meshes. Existing edges remain instanced; camera, fog, picking, objectives and F5 do not change. The DEV-only legacy comparison captures actual 390/1280 game before/after; no binary assets, R2, new network or deploy. A screenshot verdict is mandatory before merge.
