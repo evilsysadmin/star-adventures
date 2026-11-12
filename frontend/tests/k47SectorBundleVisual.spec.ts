@@ -23,8 +23,24 @@ async function openGame(page:Page){
 }
 async function walk(page:Page,cell:string){
  const board=page.getByTestId('ground-squad-board');
- await board.locator('[data-cell-id="'+cell+'"]').click({button:'right'});
  const [x,y]=cell.split(',');
+ if(Number(x)>=7){
+  // Real accessible keyboard move avoids the on-screen mission transmission
+  // panel that can cover the eastern click target in both tested viewports.
+  // The same normal selected officer must actually walk the saved map.
+  const venn=page.getByTestId('ground-unit-venn');
+  const fromX=Number(await venn.getAttribute('data-grid-x'));
+  const fromY=Number(await venn.getAttribute('data-grid-y'));
+  await page.getByTestId('ground-move-mode').click();
+  await board.focus();
+  for(let i=fromX;i<Number(x);i++)await page.keyboard.press('ArrowRight');
+  for(let i=fromX;i>Number(x);i--)await page.keyboard.press('ArrowLeft');
+  for(let i=fromY;i<Number(y);i++)await page.keyboard.press('ArrowDown');
+  for(let i=fromY;i>Number(y);i--)await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
+ }else{
+  await board.locator('[data-cell-id="'+cell+'"]').click({button:'right'});
+ }
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x',x,{timeout:35000});
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y',y,{timeout:35000});
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
@@ -56,7 +72,7 @@ for(const width of [390,1280])test('three original GLBs after authentic K-47 exp
  const board=await openGame(page),court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-published-art-slots','3');
  // No test-only fog reveal: all facilities unlock via actual squad movement.
- for(const target of ['1,4','5,6','8,4'])await walk(page,target);
+ for(const target of ['1,4','5,6','7,3','7,2','7,1','7,3'])await walk(page,target);
  await expect(court).toHaveAttribute('data-authored-art-ready',
   'south-industrial-shell west-archive-shell east-utilities-shell',{timeout:40000});
  await expect(court).toHaveAttribute('data-authored-art-state','ready');
@@ -74,7 +90,7 @@ for(const width of [390,1280])test('three original GLBs after authentic K-47 exp
  const original=await browser.newContext({viewport:{width,height:850}});
  try{
   const baseline=await original.newPage(),oldBoard=await openGame(baseline);
-  for(const target of ['1,4','5,6','8,4'])await walk(baseline,target);
+  for(const target of ['1,4','5,6','7,3','7,2','7,1','7,3'])await walk(baseline,target);
   await expect(baseline.getByTestId('ground-landing-court-3d'))
    .toHaveAttribute('data-authored-art-state','unpublished');
   await oldBoard.screenshot({path:'test-results/k47-full-sector-before-follow-'+width+'.png'});
