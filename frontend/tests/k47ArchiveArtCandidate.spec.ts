@@ -7,7 +7,7 @@ const fixture=fileURLToPath(new URL('./fixtures/k47-archive-candidate.glb',impor
 test.skip(!existsSync(fixture),'Only the dedicated K-47 art workflow builds the original candidate');
 
 for(const width of [390,1280]){
- test('actual Archive GLB replaces background volume only after real exploration '+width,async({page})=>{
+ test('actual Archive GLB replaces background volume only after real exploration '+width,async({page,browser})=>{
   test.setTimeout(135000);
   await page.setViewportSize({width,height:850});
   const body=readFileSync(fixture);
@@ -58,5 +58,26 @@ for(const width of [390,1280]){
     .toHaveCSS('visibility','hidden');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
     .toBe(true);
+  // Exact before/after parity: an independent, unauthored browser context
+  // uses the SAME physical squad move and framing, never a fabricated reveal.
+  const baselineContext=await browser.newContext({viewport:{width,height:850}});
+  try{
+    const baseline=await baselineContext.newPage();
+    await baseline.goto('/');
+    await expect(baseline.getByTestId('captain-controls'))
+      .toBeVisible({timeout:25000});
+    await baseline.getByTestId('captain-transport').click({timeout:25000});
+    await baseline.getByTestId('transport-confirm').click();
+    const originalBoard=baseline.getByTestId('ground-squad-board');
+    await originalBoard.locator('[data-cell-id="1,4"]').click({button:'right'});
+    await expect(baseline.getByTestId('ground-unit-venn'))
+      .toHaveAttribute('data-grid-x','1');
+    await expect(baseline.getByTestId('ground-unit-venn'))
+      .toHaveAttribute('data-walk-phase','idle',{timeout:30000});
+    await expect(baseline.getByTestId('ground-landing-court-3d'))
+      .toHaveAttribute('data-authored-art-state','unpublished');
+    await originalBoard.screenshot({
+      path:'test-results/k47-archive-baseline-'+width+'.png'});
+  }finally{await baselineContext.close();}
  });
 }
