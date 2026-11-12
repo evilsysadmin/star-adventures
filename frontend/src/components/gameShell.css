@@ -871,3 +871,16 @@
     max-height:min(214px,calc(100dvh - 350px));
   }
 }
+
+
+/* Compact-height DESKTOP landing (e.g. a 1828x832 screenshot with the
+   browser zoomed to ~125%, yielding a ~1462x666 CSS viewport). This is
+   still the desktop squad rail, but the tall K-47 stage media query cannot
+   apply. Dock the real radio below the skyline, leaving both the station
+   labels and the original bridge/mobile/classic interfaces untouched. */
+@media (min-width:1100px) and (min-height:600px) and (max-height:739px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission{
+    top:auto;bottom:140px;left:auto;right:14px;
+  }
+}
