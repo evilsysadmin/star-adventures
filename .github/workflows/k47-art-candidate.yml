@@ -112,3 +112,5 @@ jobs:
             frontend/test-results/k47-south-candidate-*.png
             frontend/test-results/k47-archive-candidate-*.png
             frontend/test-results/k47-archive-baseline-*.png
+            frontend/test-results/k47-archive-overview-candidate-*.png
+            frontend/test-results/k47-archive-overview-baseline-*.png
