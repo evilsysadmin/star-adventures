@@ -111,3 +111,4 @@ jobs:
             frontend/tests/fixtures/k47-archive-candidate.json
             frontend/test-results/k47-south-candidate-*.png
             frontend/test-results/k47-archive-candidate-*.png
+            frontend/test-results/k47-archive-baseline-*.png
