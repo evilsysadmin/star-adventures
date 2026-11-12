@@ -59,6 +59,9 @@ for(const width of [390,1280]){
    // point of tracking an officer. In explicit FULL MAP every named landmark
    // must remain on screen and none of the neighbouring signs may overlap.
    await page.getByTestId('ground-camera-toggle').click();
+   // On phones the inspector initially zooms the known west sector; this
+   // actual full-world landmark/clipping proof explicitly selects all cells.
+   await page.getByTestId('ground-map-sector').selectOption('all');
    await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
    expect(await board.locator('[data-fog-state="unknown"]').count()).toBe(initiallyUnknown);
    const clipping=await page.evaluate(()=>{
