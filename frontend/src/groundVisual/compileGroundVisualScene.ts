@@ -14,7 +14,7 @@ export type VisualRegion={readonly x:number;readonly y:number;
  readonly width:number;readonly height:number};
 export type EdgeSide='north'|'east'|'south'|'west';
 export type TilePlacement={kind:'tile';assetId:TerrainTileId;
- cell:GridCell;cellId:string;rotation:0};
+ cell:GridCell;cellId:string;rotation:0|1|2|3};
 export type EdgePlacement={kind:'edge';assetId:EdgeTileId;
  cell:GridCell;cellId:string;blockedNeighbor:string;side:EdgeSide};
 export type PrefabPlacement={kind:'prefab';assetId:PrefabId;
@@ -64,17 +64,24 @@ export function compileGroundVisualScene(
    const cell={x,y},cellId=groundCellId(x,y);
    // Materials vary across coherent areas, never alternating bright
    // checkerboard tiles. The deterministic rare wear variant is subtle.
-   const h=variant(x,y);
+   // Author the broader court as quiet 2x2 wear patches, not a random
+   // checkerboard of unrelated materials per square.
+   const h=variant(Math.floor(x/2),Math.floor(y/2));
+   const detail=variant(x,y);
    let assetId:TerrainTileId=x>=region.x+Math.ceil(region.width/2)
     ?(h%6===0?'floor.metal-weathered':'floor.metal')
     :(h%7===0?'floor.concrete-worn':'floor.concrete');
-   if(y===region.y+region.height-1&&h%4===0)
+   if(y===region.y+region.height-1&&detail%4===0)
     assetId='floor.sand-dust';
    // Genuine blocked-neighbor transitions, never unknown geography.
    const knownWall=sides.some(side=>walls.has(groundCellId(x+side.dx,y+side.dy))&&
     world.explored.has(groundCellId(x+side.dx,y+side.dy)));
-   if(knownWall&&h%3===0)assetId='floor.rock-transition';
-   tiles.push({kind:'tile',assetId,cell,cellId,rotation:0});
+   if(knownWall&&detail%3===0)assetId='floor.rock-transition';
+   // Rotating the existing square micro-surface gives spatial variety
+   // without creating textures, meshes, or new paint batches. Brushed
+   // steel stays aligned with the industrial building front.
+   const rotation=(assetId.startsWith('floor.metal')?0:detail%4) as 0|1|2|3;
+   tiles.push({kind:'tile',assetId,cell,cellId,rotation});
    for(const {side,dx,dy} of sides){
     const neighbor=groundCellId(x+dx,y+dy);
     if(!blocked.has(neighbor)||!world.explored.has(neighbor))continue;

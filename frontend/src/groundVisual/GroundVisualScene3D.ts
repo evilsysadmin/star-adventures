@@ -58,7 +58,7 @@ export function addGroundVisualScene3D(scene:THREE.Scene,plan:GroundVisualPlan){
   placements.forEach((placement,index)=>{
    if(placement.kind==='tile'){
     dummy.position.set(placement.cell.x,.042,placement.cell.y);
-    dummy.rotation.set(0,0,0);
+    dummy.rotation.set(0,placement.rotation*Math.PI/2,0);
    }else{
     const pose=edgePose[placement.side];
     dummy.position.set(

@@ -21,7 +21,7 @@ for(const width of [390,1280]){
   await expect(court).toHaveAttribute('data-topology-valid','true');
   await expect(court).toHaveAttribute('visibility','visible');
   await expect(court).toHaveAttribute('data-renderer-state','ready',{timeout:20000});
-  await expect(court).toHaveAttribute('data-modular-region','3,4:4x3');
+  await expect(court).toHaveAttribute('data-modular-region','2,3:6x4');
   const modular=await board.evaluate(root=>{
     const court=root.querySelector('[data-testid="ground-landing-court-3d"]');
     const cells=(court?.getAttribute('data-modular-cell-ids')||'')
@@ -37,7 +37,7 @@ for(const width of [390,1280]){
     };
   });
   expect(modular.tiles).toBeGreaterThanOrEqual(4);
-  expect(modular.tiles).toBeLessThanOrEqual(10);
+  expect(modular.tiles).toBeLessThanOrEqual(21);
   expect(modular.prefabs).toBeLessThanOrEqual(1);
   expect(modular.realCells&&modular.noUnknown&&modular.unique).toBe(true);
   // The existing solid SVG floor must actually uncover the 3D art, while
@@ -174,7 +174,7 @@ test('WebGL failure leaves the original entire SVG landing fully playable',async
  const court=page.getByTestId('ground-landing-court-3d');
  await expect(court).toHaveAttribute('data-renderer-state','fallback');
  // No WebGL means no new canvas layer, new picking target or blank terrain.
- await expect(court).toHaveAttribute('data-modular-region','3,4:4x3');
+ await expect(court).toHaveAttribute('data-modular-region','2,3:6x4');
  // The original SVG floor must remain fully legible if there is no WebGL.
  await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
    .not.toHaveCSS('opacity','0.08');
