@@ -134,3 +134,16 @@ the binary and SHA provenance are retained as reviewable artifacts.
 SVG/PBR fallback until a human-inspected side-by-side of actual live-game
 screenshots shows meaningful progress. The final source asset should be
 published in content-addressed R2 by infrastructure, never by this game repo.
+
+## Visible rescue-bay industrial patina candidate (PR art gate)
+The previous #280 world-UV texture experiment failed visual acceptance because
+its texture sat below the opaque real SVG rescue-bay deck. This pass affects
+the REAL authored deck layer instead: one 244x172 world-space macro patina
+pattern is clipped to the very same explored 6x4 room-cell paths. Irregular
+weathering, hairline scratches and restrained safety-paint traces are
+purely scenic, don't add traversable tiles or new fake objects, and respect
+the existing per-cell visible/remembered fog. The source remains a
+deterministic original SVG vector, with zero binary asset downloads.
+Browser QA at 390/1280 saves identical real-squad after/before screenshots
+via a development-only legacy switch. This change must be rejected if the
+visible gain is negligible or reads as artificial patterned noise.

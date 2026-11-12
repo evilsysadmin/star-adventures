@@ -39,10 +39,14 @@ const polygon=(p:Cell)=>{
 };
 
 export function GroundRescueBayDeck({explored,visible}:Vision){
+  // A/B-only switch is allowed in the Vite development build. Real releases
+  // always use the original, world-aligned authored weathering.
+  const wearEnabled=!import.meta.env.DEV||typeof window==='undefined'||
+    (window as typeof window&{__k47LegacyBayFloor?:boolean}).__k47LegacyBayFloor!==true;
   const hatchKnown=centerCells.every(k=>explored.has(k)&&roomIds.has(k));
   const hatchVisible=centerCells.every(k=>visible.has(k));
   const center=at(2.5,4.5);
-  return <g data-testid="ground-rescue-bay" pointerEvents="none"
+  return <g data-testid="ground-rescue-bay" data-visible-deck-wear={wearEnabled?"k47-v1":"legacy"} pointerEvents="none"
     aria-hidden="true">
     <defs>
       {/* One surface-wide gradient, not 24 separate tile gradients. */}
@@ -52,14 +56,46 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
         <stop offset=".48" stopColor="#465f61"/>
         <stop offset="1" stopColor="#29454e"/>
       </linearGradient>
+      {/* 244x172 board-space patina, not a 1x1-cell repeating tile. All
+          fragments use this SAME world-coordinate surface under fog. */}
+      <pattern id="ground-bay-industrial-wear" patternUnits="userSpaceOnUse"
+        width="244" height="172">
+        <path d="M-12 40L42 16 96 30 119 19 174 41 248 16 266 28
+                 251 82 196 89 158 74 98 110 43 91 -12 107Z"
+          fill="#192b2e" opacity=".19"/>
+        <path d="M4 126Q37 116 65 130T139 119T211 137L251 124"
+          fill="none" stroke="#be9870" strokeWidth="8" strokeOpacity=".095"/>
+        <path d="M-10 36L58 62 131 50 188 74 248 52
+                 M15 147L69 136 111 151 166 133 245 151"
+          fill="none" stroke="#a8aea0" strokeOpacity=".20" strokeWidth="2.4"/>
+        <path d="M31 49L48 53M93 23L107 26M135 112L156 116M199 29L219 31
+                 M18 86L30 91M170 145L190 141"
+          fill="none" stroke="#263c3d" strokeOpacity=".48" strokeWidth="3.1"/>
+        <path d="M53 42L57 44M159 27L167 30M89 141L98 139
+                 M209 112L219 107M17 136L24 134"
+          fill="none" stroke="#d2ba86" strokeOpacity=".33" strokeWidth="2"/>
+        <g fill="#10262c" opacity=".48">
+          <circle cx="23" cy="61" r="2.3"/><circle cx="227" cy="93" r="2"/>
+          <circle cx="163" cy="152" r="2.5"/><circle cx="86" cy="89" r="1.8"/>
+        </g>
+        <g fill="#c6b58d" opacity=".40">
+          <circle cx="25" cy="59" r=".85"/><circle cx="229" cy="91" r=".8"/>
+          <circle cx="165" cy="150" r=".9"/><circle cx="88" cy="87" r=".8"/>
+        </g>
+      </pattern>
     </defs>
     <g data-testid="ground-bay-continuous-floor">
       {room.filter(p=>explored.has(id(p.x,p.y))).map(p=>{
         const k=id(p.x,p.y),current=visible.has(k);
-        return <path key={k} data-testid={'ground-bay-floor-'+k}
-          data-fog={current?'visible':'remembered'}
-          d={polygon(p)} fill="url(#ground-bay-deck-gradient)"
-          opacity={current?1:.33}/>;
+        return <g key={k}>
+          <path data-testid={'ground-bay-floor-'+k}
+            data-fog={current?'visible':'remembered'}
+            d={polygon(p)} fill="url(#ground-bay-deck-gradient)"
+            opacity={current?1:.33}/>
+          {wearEnabled&&<path d={polygon(p)}
+            fill="url(#ground-bay-industrial-wear)"
+            opacity={current?1:.33}/>}
+        </g>;
       })}
     </g>
     {/* A single large room-scale hatch, visibly spanning four canonical
