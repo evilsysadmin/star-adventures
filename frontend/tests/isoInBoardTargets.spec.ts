@@ -38,7 +38,7 @@ for (const width of [360, 390, 1280]) {
   await shell.screenshot({path:`test-results/board-targets-blocked-${width}.png`});
   const grid=page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
-  for (const cell of ['3:7','5:6']) {
+  for (const cell of ['4:5','6:5']) {
    await page.getByRole('button',{name:'Casilla '+cell,exact:true}).click();
    await page.getByTestId('scenario-move').click();
   }

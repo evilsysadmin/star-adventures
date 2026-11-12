@@ -1,6 +1,6 @@
 // Independent authored sandbox missions: pure state, no WebGL, network, RNG or saves.
 // Existing 8×8 tactical-training contract remains authoritative for the legacy POC.
-export type ScenarioId = 'relay' | 'derelict' | 'evacuation';
+export type ScenarioId = 'relay' | 'derelict' | 'evacuation' | 'frontier';
 export type SquadId = 'science' | 'security' | 'medic';
 export type ScenarioHostile = Readonly<{
   id: 'aegis' | 'veil'; label: string; cell: string;
@@ -53,6 +53,15 @@ export const SCENARIOS: Readonly<Record<ScenarioId,Scenario>> = Object.freeze({
   start:{science:'1:1',security:'1:3',medic:'2:1'},
   hostiles:[{id:'aegis',label:'Incursor Aegis',cell:'7:7'},{id:'veil',label:'Agente Velo',cell:'8:5'}],
   sensor:'7:1',console:null,survivor:'8:7',extraction:'9:9',
+ },
+ frontier:{
+  id:'frontier',label:'Puesto de frontera',size:12,
+  briefing:'Investiga la señal, reactiva el puesto y rescata a la exploradora antes de evacuar.',
+  walls:[...wall(5,[0,1,2,3,4,6,7,8]),'8:3','9:3','10:3'],
+  cover:['2:3','3:6','4:9','7:2','7:7','9:6','10:9'],
+  start:{science:'1:1',security:'1:3',medic:'2:1'},
+  hostiles:[{id:'aegis',label:'Incursor Aegis',cell:'7:6'},{id:'veil',label:'Agente Velo',cell:'10:7'}],
+  sensor:'8:1',console:'10:5',survivor:'9:9',extraction:'11:11',
  },
 });
 const point=(value:string,size:number):{x:number;y:number}|null=>{

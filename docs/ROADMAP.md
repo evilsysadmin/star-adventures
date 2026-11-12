@@ -8,6 +8,8 @@ The user wants the *planetary desembarco* to behave as an elevated/isometric squ
 
 Ship incremental vertical slices: selection on the real view → individual/group routing with formation → role interactions and campaign saves → contact/turn-based transition and extraction → full mobile/desktop and F5 validation. Do not replace the currently playable first-person surface until those are proven. Existing tactical picking/orthographic camera safety gates remain mandatory.
 
+For the planetary tactical scenario and subsequent iterations, see [AWAY-TEAM-TRIBUTE-ROADMAP.md](AWAY-TEAM-TRIBUTE-ROADMAP.md).
+
 ## Product pivot — Section 31, two lives aboard the Meridian (2026-10-22)
 
 **Approved narrative direction, not yet a shipped feature:** the USS Meridian is *publicly* an ordinary Starfleet exploration / relief ship, while the captain secretly receives Section 31 instructions. The ship must carry out legitimate official missions, not merely use them as empty cover; covert assignments create conflicting responsibilities, evidence, risk to civilians, crew suspicion and pressure from a handler. The player can comply, negotiate or refuse. See [DUAL-MANDATE.md](DUAL-MANDATE.md) and the revised [PRODUCT.md](PRODUCT.md).

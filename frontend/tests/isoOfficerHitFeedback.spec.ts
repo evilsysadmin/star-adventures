@@ -18,8 +18,8 @@ for (const width of [390, 1280]) {
   // The subsequent enemy retaliation must not snap any wounded sprite right.
   const orders:CombatReplayAction[]=[
    {type:'move',officer:'science',cell:'0:1'},
-   {type:'move',officer:'security',cell:'0:4'},
-   {type:'move',officer:'medic',cell:'0:7'},
+   {type:'move',officer:'security',cell:'0:3'},
+   {type:'move',officer:'medic',cell:'1:1'},
   ];
   const grid=page.getByTestId('scenario-accessible-grid');
   await grid.locator('summary').click();
@@ -33,13 +33,13 @@ for (const width of [390, 1280]) {
    await expect(canvas).toHaveAttribute('data-sprite-facing-'+order.officer,'left');
   }
   const commands:CombatReplayAction[]=[...orders];
-  let state=replayCombatCommands('relay',commands);
+  let state=replayCombatCommands('frontier',commands);
   while(commands.length<orders.length+60 && state.combat.encounter.hits.length===0){
    commands.push({type:'end-turn'});
-   state=replayCombatCommands('relay',commands);
+   state=replayCombatCommands('frontier',commands);
   }
   const hits=state.combat.encounter.hits;
-  expect(hits.length,'relay encounter must have a real enemy retaliation').toBeGreaterThan(0);
+  expect(hits.length,'frontier encounter must have a real enemy retaliation').toBeGreaterThan(0);
   for(const command of commands.slice(orders.length)){
    expect(command.type).toBe('end-turn');
    await page.getByTestId('scenario-end-turn').click();

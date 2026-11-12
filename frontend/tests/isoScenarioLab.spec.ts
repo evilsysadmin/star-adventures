@@ -60,7 +60,7 @@ async function clickBoard(page:Page,id:string,size:8|10|12,focus?:string) {
  const camera=focus?(()=>{
    const [x,y]=focus.split(':').map(Number);
    return createIsoDetailCamera(b.width/b.height,{col:x,row:y},1.75,size);
- })():createIsoCamera(b.width/b.height,size);
+ })():createIsoCamera(b.width/b.height,size,3.18);
  const p=projectCell({id,col,row},camera,
    {left:b.x,top:b.y,width:b.width,height:b.height},size);
  expect(p.x).toBeGreaterThan(b.x+1);
@@ -71,13 +71,12 @@ async function clickBoard(page:Page,id:string,size:8|10|12,focus?:string) {
  await expect(page.getByTestId('scenario-selected')).toHaveText(id);
 }
 
-test('12×12 derelict scene raycasts every one of 144 cells at mobile width',async({page})=>{
+test('12×12 frontier scene raycasts every one of 144 cells at mobile width',async({page})=>{
  test.setTimeout(95_000);
  await openMissions(page,390);
- await page.getByTestId('scenario-tab-derelict').click();
  await expect(page.getByTestId('scenario-camera-mode')).toContainText('12 × 12');
  for(const cell of cells(12))await clickBoard(page,cell.id,12);
- await page.screenshot({path:'test-results/scenario-derelict-12x12-mobile-390.png',fullPage:true});
+ await page.screenshot({path:'test-results/scenario-frontier-12x12-mobile-390.png',fullPage:true});
  await page.getByTestId('scenario-focus-toggle').click();
  await clickBoard(page,'10:11',12,'11:11');
  await expect(page.getByTestId('scenario-camera-mode')).toContainText('Detalle de casilla');
@@ -86,15 +85,13 @@ test('12×12 derelict scene raycasts every one of 144 cells at mobile width',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test('10×10 relay scene raycasts all 100 cells at desktop size; scenario switching resets safely',async({page})=>{
+test('12×12 frontier scene raycasts all cells at desktop size; restarting resets safely',async({page})=>{
  test.setTimeout(80_000);
  await openMissions(page,1280);
- for(const cell of cells(10))await clickBoard(page,cell.id,10);
- await page.screenshot({path:'test-results/scenario-relay-10x10-desktop-1280.png',fullPage:true});
- await page.getByTestId('scenario-tab-evacuation').click();
- await expect(page.getByTestId('scenario-name')).toContainText('Evacuación');
- await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
- await page.getByTestId('scenario-tab-relay').click();
+ for(const cell of cells(12))await clickBoard(page,cell.id,12);
+ await page.screenshot({path:'test-results/scenario-frontier-12x12-desktop-1280.png',fullPage:true});
+ await page.getByTestId('scenario-restart').click();
+ await page.getByTestId('scenario-restart-confirm').click();
  await expect(page.getByTestId('scenario-unit-science')).toContainText('1:1');
  await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
  await page.getByTestId('tactical-view-current').click();
@@ -105,7 +102,7 @@ test('10×10 relay scene raycasts all 100 cells at desktop size; scenario switch
 
 test('mission orders consume AP, reject blocked cells and stage long travel safely',async({page})=>{
  await openMissions(page,390);
- await clickBoard(page,'2:1',10);
+ await clickBoard(page,'1:2',12);
  await expect(page.getByTestId('scenario-move')).toBeEnabled();
  // Watch the transient motion before issuing the order. On a busy CI runner,
  // the entire 320ms walk may finish before Playwright's next locator poll.
@@ -121,21 +118,21 @@ test('mission orders consume AP, reject blocked cells and stage long travel safe
   observer.observe(element,{attributes:true,attributeFilter:['data-squad-moving']});
  });
  await page.getByTestId('scenario-move').click();
- await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+ await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
  await expect(canvas).toHaveAttribute('data-test-saw-squad-motion','1');
  await expect(canvas).toHaveAttribute('data-test-motion-from','1:1');
- await expect(canvas).toHaveAttribute('data-test-motion-to','2:1');
+ await expect(canvas).toHaveAttribute('data-test-motion-to','1:2');
  await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:3_000});
  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
  await page.screenshot({path:'test-results/scenario-squad-arrived-390.png',fullPage:true});
- await clickBoard(page,'4:1',10);
+ await clickBoard(page,'5:3',12);
  await expect(page.getByTestId('scenario-move')).toBeDisabled();
  // A far extraction tile is now reachable through validated stages;
  // previewing it still spends no AP and never teleports the squad.
- await clickBoard(page,'9:9',10);
+ await clickBoard(page,'11:11',12);
  await expect(page.getByTestId('scenario-move')).toBeEnabled();
- await expect(page.getByTestId('scenario-move')).toContainText('Avanzar 5 casillas hacia 9:9');
- await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+ await expect(page.getByTestId('scenario-move')).toContainText('Avanzar 5 casillas hacia 11:11');
+ await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
  await expect(page.getByTestId('scenario-scan')).toBeDisabled();
  await page.getByTestId('scenario-end-turn').click();
@@ -147,16 +144,15 @@ test('mission orders consume AP, reject blocked cells and stage long travel safe
 
 // Mirror the pure authoritative state while issuing every order through the UI.
 // Completing a scenario here is impossible via fake button text or direct state injection.
-test('evacuation scenario can actually be completed by science, medic and extraction orders',async({page})=>{
+test('frontier scenario can actually be completed by science, security, medic and extraction orders',async({page})=>{
  test.setTimeout(115_000);
  await openMissions(page,390);
- await page.getByTestId('scenario-tab-evacuation').click();
- const def=SCENARIOS.evacuation;
- let state=createMission('evacuation');
+ const def=SCENARIOS.frontier;
+ let state=createMission('frontier');
  const grid=page.getByTestId('scenario-accessible-grid');
  await grid.locator('summary').click();
  const pick=async(id:string)=>{
-  await page.getByRole('button',{name:`Casilla ${id}`}).click();
+  await page.getByRole('button',{name:`Casilla ${id}`,exact:true}).click();
   await expect(page.getByTestId('scenario-selected')).toHaveText(id);
  };
  const officer=async(id:SquadId)=>page.getByTestId(`scenario-unit-${id}`).click();
@@ -200,6 +196,8 @@ test('evacuation scenario can actually be completed by science, medic and extrac
  await go('science',def.sensor,2);
  await perform({type:'scan',officer:'science'},'scenario-scan');
  await expect(page.getByTestId('scenario-objectives')).toContainText('Analizar señal');
+ await go('security',def.console!,1);
+ await perform({type:'operate',officer:'security'},'scenario-operate');
  await go('medic',def.survivor!,1);
  await perform({type:'rescue',officer:'medic'},'scenario-rescue');
  await go('science',def.extraction,0);
@@ -207,9 +205,9 @@ test('evacuation scenario can actually be completed by science, medic and extrac
  await expect(page.getByTestId('scenario-success')).toContainText('Misión completada');
  await expect(page.getByTestId('scenario-ap')).toContainText(`${state.ap} / 3`);
  await expect(page.getByTestId('scenario-notice')).toContainText('Extracción confirmada');
- await expect(page.getByTestId('scenario-debrief')).toContainText('Evacuación en el cañón');
+ await expect(page.getByTestId('scenario-debrief')).toContainText('Puesto de frontera');
  await expect(page.getByTestId('scenario-debrief-metrics')).toContainText(`Ronda ${state.round}`);
- await expect(page.getByTestId('scenario-record-evacuation')).toContainText('Evacuación en el cañón');
+ await expect(page.getByTestId('scenario-record-frontier')).toContainText('Puesto de frontera');
  await page.screenshot({path:'test-results/scenario-evacuation-real-victory-390.png',fullPage:true});
  await page.setViewportSize({width:1280,height:850});
  await page.screenshot({path:'test-results/scenario-verified-debrief-desktop-1280.png',fullPage:true});
@@ -223,13 +221,13 @@ test('evacuation scenario can actually be completed by science, medic and extrac
  await page.getByTestId('scenario-mode-advanced').locator('summary').click();
  await page.getByTestId('scenario-training-toggle').click();
  await expect(page.getByTestId('scenario-debrief')).toContainText('Superviviente rescatada');
- await expect(page.getByTestId('scenario-record-evacuation')).toContainText(`Ronda ${state.round}`);
+ await expect(page.getByTestId('scenario-record-frontier')).toContainText(`Ronda ${state.round}`);
  await page.getByTestId('scenario-retry').click();
  await expect(page.getByTestId('scenario-turn')).toContainText('Ronda 1');
  await expect(page.getByTestId('scenario-debrief')).toHaveCount(0);
- await expect(page.getByTestId('scenario-record-evacuation')).toContainText('Evacuación en el cañón');
+ await expect(page.getByTestId('scenario-record-frontier')).toContainText('Puesto de frontera');
  await page.getByTestId('scenario-training-records').locator('summary').click();
- await expect(page.getByTestId('scenario-record-evacuation')).toBeVisible();
+ await expect(page.getByTestId('scenario-record-frontier')).toBeVisible();
  await page.screenshot({path:'test-results/scenario-personal-best-after-retry-mobile-390.png',fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
@@ -239,12 +237,11 @@ test('touch controls and a resized 12×12 camera preserve the same logical selec
  const page=await context.newPage();
  try{
   await openMissions(page,390);
-  await page.getByTestId('scenario-tab-derelict').tap();
   const canvas=page.getByTestId('scenario-render-canvas');
   await canvas.scrollIntoViewIfNeeded();
   await page.setViewportSize({width:430,height:900});
   const b=(await canvas.boundingBox())!;
-  const p=projectCell({id:'11:11',col:11,row:11},createIsoCamera(b.width/b.height,12),
+  const p=projectCell({id:'11:11',col:11,row:11},createIsoCamera(b.width/b.height,12,3.18),
    {left:b.x,top:b.y,width:b.width,height:b.height},12);
   await page.touchscreen.tap(p.x,p.y);
   await expect(page.getByTestId('scenario-selected')).toHaveText('11:11');

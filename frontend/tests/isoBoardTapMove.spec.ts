@@ -9,8 +9,8 @@ async function pick(page: Page, id: string) {
  await canvas.scrollIntoViewIfNeeded();
  const box = (await canvas.boundingBox())!;
  const [col,row] = id.split(':').map(Number);
- const point = projectCell({id,col,row},createIsoCamera(box.width/box.height,10,3.18),
-  {left:box.x,top:box.y,width:box.width,height:box.height},10);
+ const point = projectCell({id,col,row},createIsoCamera(box.width/box.height,12,3.18),
+  {left:box.x,top:box.y,width:box.width,height:box.height},12);
  await page.mouse.click(point.x,point.y);
  await expect(page.getByTestId('scenario-selected')).toHaveText(id);
 }
@@ -32,18 +32,18 @@ for (const width of [390,1280]) {
   await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
   await expect(page.getByTestId('scenario-unit-science')).toContainText('1:1');
 
-  await pick(page,'2:1');
+  await pick(page,'1:2');
   await expect(page.getByTestId('scenario-route')).toContainText('Ruta: 1 casillas');
   await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
   await canvas.screenshot({path:`test-results/board-tap-move-preview-${width}.png`});
-  await pick(page,'2:1');
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await pick(page,'1:2');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
   await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:5000});
   await canvas.screenshot({path:`test-results/board-tap-move-arrived-${width}.png`});
 
   // Third tap at the new occupied location cannot repeat the move.
-  await pick(page,'2:1');
+  await pick(page,'1:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
@@ -56,10 +56,10 @@ test('double-tap move also uses real combat replay rules without firing',async({
  await page.getByTestId('scenario-play-combat').click();
  const canvas = page.getByTestId('scenario-render-canvas');
  await expect(page.getByTestId('scenario-fire-guide')).toContainText('casilla libre');
- await pick(page,'2:1');
+ await pick(page,'1:2');
  await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
- await pick(page,'2:1');
- await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+ await pick(page,'1:2');
+ await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
  await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
  await expect(canvas).not.toHaveAttribute('data-shot-sequence',/./);
  await canvas.screenshot({path:'test-results/board-tap-move-combat-390.png'});
@@ -74,14 +74,14 @@ test('real touch: first tap aims at destination, second moves without scrolling 
   const canvas=page.getByTestId('scenario-render-canvas');
   await canvas.scrollIntoViewIfNeeded();
   const box=(await canvas.boundingBox())!;
-  const point=projectCell({id:'2:1',col:2,row:1},
-   createIsoCamera(box.width/box.height,10,3.18),
-   {left:box.x,top:box.y,width:box.width,height:box.height},10);
+  const point=projectCell({id:'1:2',col:1,row:2},
+   createIsoCamera(box.width/box.height,12,3.18),
+   {left:box.x,top:box.y,width:box.width,height:box.height},12);
   await page.touchscreen.tap(point.x,point.y);
-  await expect(page.getByTestId('scenario-selected')).toHaveText('2:1');
+  await expect(page.getByTestId('scenario-selected')).toHaveText('1:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('3 / 3');
   await page.touchscreen.tap(point.x,point.y);
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
   await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:5000});
   await canvas.screenshot({path:'test-results/board-touch-move-390.png'});
@@ -108,9 +108,9 @@ for (const width of [390,1280]) {
   });
   expect(layout.rosterBottom).toBeLessThanOrEqual(layout.boardTop+1);
   await page.getByTestId('scenario-unit-science').click();
-  await pick(page,'2:1');
-  await pick(page,'2:1');
-  await expect(page.getByTestId('scenario-unit-science')).toContainText('2:1');
+  await pick(page,'1:2');
+  await pick(page,'1:2');
+  await expect(page.getByTestId('scenario-unit-science')).toContainText('1:2');
   await expect(page.getByTestId('scenario-ap')).toContainText('2 / 3');
   await expect(canvas).toHaveAttribute('data-squad-moving','0',{timeout:5000});
   await page.screenshot({path:`test-results/crew-before-board-${width}.png`,fullPage:true});

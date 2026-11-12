@@ -11,7 +11,7 @@ for (const width of [390, 1280]) {
   await page.getByTestId('scenario-mode-advanced').locator('summary').click();
   await page.getByTestId('scenario-hostile-toggle').click();
   const canvas = page.getByTestId('scenario-render-canvas');
-  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('6:6');
+  await expect(page.getByTestId('scenario-hostile-aegis')).toContainText('7:6');
   await canvas.evaluate(element => {
    const observer = new MutationObserver(() => {
     const moving = Number(element.getAttribute('data-hostile-moving') ?? '0');
@@ -33,7 +33,7 @@ for (const width of [390, 1280]) {
   await expect(canvas).toHaveAttribute('data-test-saw-hostile-motion', '1');
   await expect(canvas).toHaveAttribute('data-test-first-hostile-frame', '0');
   await expect(canvas).toHaveAttribute('data-hostile-moving', '0', { timeout: 4_000 });
-  await expect(page.getByTestId('scenario-hostile-aegis')).not.toContainText('6:6');
+  await expect(page.getByTestId('scenario-hostile-aegis')).not.toContainText('7:6');
   await page.screenshot({
    path: `test-results/hostile-first-render-${width}.png`, fullPage: true,
   });
