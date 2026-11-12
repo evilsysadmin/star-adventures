@@ -63,11 +63,11 @@ export function addScienceWing3D(scene:THREE.Scene){
   // All bays are SEALED; the real stations retain their original commands.
   box('bay-deep-recess-'+x,x,1.015,2.454,.70,.86,.027,mat.dark);
   box('bay-pane-'+x,x,1.025,2.472,.57,.69,.020,x===3?mat.wall:mat.glass);
-  box('bay-sill-'+x,x,.61,2.49,.75,.06,.025,mat.brass);
-  box('bay-lintel-'+x,x,1.465,2.49,.79,.07,.024,mat.frame);
-  box('bay-center-mullion-'+x,x,1.04,2.494,.047,.74,.016,mat.dark);
+  box('bay-sill-'+x,x,.61,2.48,.75,.06,.025,mat.brass);
+  box('bay-lintel-'+x,x,1.465,2.48,.79,.07,.024,mat.frame);
+  box('bay-center-mullion-'+x,x,1.04,2.482,.047,.74,.016,mat.dark);
   for(const y of [.82,1.19])
-   box('bay-transom-'+x+'-'+y,x,y,2.497,.62,.022,.014,mat.frame);
+   box('bay-transom-'+x+'-'+y,x,y,2.484,.62,.022,.014,mat.frame);
   box('bay-amber-light-'+x,x,1.58,2.47,.26,.065,.035,mat.lamp);
   if(x<4){
    box('structural-pier-'+x,x+.5,1.05,2.43,.115,1.28,.09,mat.frame);
