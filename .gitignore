@@ -6,3 +6,7 @@ test-results/
 .env.*
 !.env.example
 .DS_Store
+
+# Generated authoring art, never stored in Git.
+frontend/tests/fixtures/k47-south-candidate.glb
+frontend/tests/fixtures/k47-south-candidate.json

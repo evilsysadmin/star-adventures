@@ -1,0 +1,75 @@
+name: K-47 authored GLB · candidate art visual gate
+on:
+  pull_request:
+    paths:
+      - "scripts/author_k47_south.py"
+      - "frontend/tests/k47SouthArtCandidate.spec.ts"
+      - ".github/workflows/k47-art-candidate.yml"
+      - "docs/K47-MODULAR-TERRAIN.md"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  art-candidate:
+    name: Original GLB + actual Chromium preview (no R2 publication)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned original asset toolchain
+        run: python -m pip install --disable-pip-version-check --no-cache-dir numpy==2.3.5 Pillow==12.0.0 trimesh==4.11.1
+      - name: Generate original embedded PBR GLB candidate
+        run: python scripts/author_k47_south.py frontend/tests/fixtures/k47-south-candidate.glb
+      - name: Verify GLB structure, provenance, exact hash and blocked footprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,struct
+          from pathlib import Path
+          p=Path("frontend/tests/fixtures/k47-south-candidate.glb")
+          b=p.read_bytes()
+          meta=json.loads(p.with_suffix(".json").read_text())
+          assert 32<len(b)<=4*1024*1024
+          magic,version,length=struct.unpack_from("<III",b)
+          assert magic==0x46546c67 and version==2 and length==len(b)
+          n,kind=struct.unpack_from("<II",b,12)
+          assert kind==0x4e4f534a and n%4==0
+          info=json.loads(b[20:20+n])
+          assert info["asset"]["version"]=="2.0"
+          assert not info.get("extensionsRequired")
+          assert all("uri" not in value for value in info.get("images",[]))
+          assert all("uri" not in value for value in info.get("buffers",[]))
+          assert len(info.get("meshes",[]))>=8
+          assert meta["sha256"]==hashlib.sha256(b).hexdigest()
+          assert meta["id"]=="south-industrial-shell"
+          assert meta["materials"]>=8 and meta["authored_elements"]>=90
+          bounds=meta["bounds"]
+          assert bounds[0][0]>=-2.56 and bounds[1][0]<=2.56
+          assert bounds[0][2]>=-.56 and bounds[1][2]<=.56
+          assert bounds[0][1]>=-.4 and bounds[1][1]<=5
+          print("K47_CANDIDATE_GLB_VERIFIED",meta["sha256"])
+          PY
+      - name: Install game frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Test actual playable game with authored GLB at 390/1280
+        run: npm run test:e2e --prefix frontend -- tests/k47SouthArtCandidate.spec.ts
+      - name: Upload original candidate and actual browser screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-original-hangar-candidate-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            frontend/tests/fixtures/k47-south-candidate.glb
+            frontend/tests/fixtures/k47-south-candidate.json
+            frontend/test-results/k47-south-candidate-*.png
