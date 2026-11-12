@@ -129,3 +129,18 @@ test('real SHA-256 verifies exact embedded GLB bytes and rejects mutation',async
   const unpub=clone().slots[0];
   await assert.rejects(verifyPublishedGLBBytes(unpub,model),/unpublished/);
 });
+
+test('only canonical west archive may extend into off-map exterior terrain',()=>{
+ const west=clone().slots.find(slot=>slot.id==='west-archive-shell');
+ assert.ok(west);
+ const exterior={min:{x:-3.21,y:0,z:2.55},max:{x:.49,y:3.5,z:5.46}};
+ assert.doesNotThrow(()=>assertModelWithinFootprint(west,exterior));
+ assert.throws(()=>assertModelWithinFootprint(west,{...exterior,
+   max:{...exterior.max,x:.65}}),/playable\/hidden/);
+ const unauthorized=clone();
+ unauthorized.slots[1].footprint=[[0,2],[0,3],[0,4]];
+ assert.throws(()=>validateAuthoredSlots(unauthorized,world),/scenic envelope/);
+ const other=clone().slots.find(slot=>slot.id==='south-industrial-shell');
+ assert.ok(other);
+ assert.throws(()=>assertModelWithinFootprint(other,exterior),/playable\/hidden/);
+});
