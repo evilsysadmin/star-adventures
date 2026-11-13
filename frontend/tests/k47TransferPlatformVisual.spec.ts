@@ -42,8 +42,8 @@ for(const width of [390,1280]){
    await expect(platform.getByTestId('ground-bay-machinery-hub')).toHaveCount(1);
    await expect(platform.getByTestId('ground-bay-deck-safety-markings')).toHaveCount(1);
    const result=await board.evaluate(node=>{
-    const original=node.querySelector('[data-testid="ground-bay-central-hatch"]')
-      as SVGGraphicsElement;
+    const original=node.querySelector('[data-testid="ground-bay-central-hatch"]');
+    if(!(original instanceof SVGGraphicsElement))throw new Error('Missing deck');
     const bounds=original.getBBox();
     return {
      realCells:node.querySelectorAll('[data-cell-id]').length,
