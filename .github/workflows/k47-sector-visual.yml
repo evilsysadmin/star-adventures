@@ -7,7 +7,18 @@ on:
       - "scripts/author_k47_east.py"
       - "scripts/author_k47_south.py"
       - "frontend/tests/k47SectorBundleVisual.spec.ts"
+      - "scripts/k47_publication_candidate.py"
+      - "tests/test_k47_publication_candidate.py"
       - "frontend/src/components/groundSquadSelection.css"
+      - ".github/workflows/k47-sector-visual.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/author_k47_archive.py"
+      - "scripts/author_k47_east.py"
+      - "scripts/author_k47_south.py"
+      - "scripts/k47_publication_candidate.py"
+      - "tests/test_k47_publication_candidate.py"
       - ".github/workflows/k47-sector-visual.yml"
   workflow_dispatch:
 
@@ -29,6 +40,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Verify immutable candidate pack cannot accept tampering
+        run: python3 -S -m unittest discover -s tests -p 'test_k47_publication_candidate.py' -v
       - name: Install pinned original art dependencies
         run: python -m pip install --disable-pip-version-check --no-cache-dir numpy==2.3.5 Pillow==12.0.0 trimesh==4.11.1
       - name: Generate all three original bounded GLB candidates
@@ -75,14 +88,24 @@ jobs:
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Test complete actual landing mission with original multi-building art
         run: npm run test:e2e --prefix frontend -- tests/k47SectorBundleVisual.spec.ts
+      - name: Stage checksum-pinned original GLB bundle (no R2 writes)
+        if: success()
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python scripts/k47_publication_candidate.py \
+            --source-sha "$SOURCE_SHA" \
+            --fixtures frontend/tests/fixtures \
+            --output frontend/k47-art-candidate
       - name: Upload actual before/after screenshots and original models
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: k47-three-building-sector-${{ github.sha }}
-          retention-days: 14
+          retention-days: 30
           if-no-files-found: warn
           path: |
+            frontend/k47-art-candidate/
             frontend/test-results/k47-full-sector-*.png
             frontend/tests/fixtures/k47-south-candidate.glb
             frontend/tests/fixtures/k47-south-candidate.json
