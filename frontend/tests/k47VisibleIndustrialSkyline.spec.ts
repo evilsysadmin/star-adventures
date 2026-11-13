@@ -43,12 +43,16 @@ for(const width of [390,1280]){
    const board=await land(page);
    const skyline=page.getByTestId('ground-industrial-skyline');
    await expect(skyline).toHaveCount(1);
-   const groups=skyline.locator('[data-architectural-form="connected-glazed-research-industrial-gallery"]');
-   await expect(groups.first()).toHaveAttribute('data-footprint',/5,7.*6,7/);
-   await expect(groups.first().getByTestId('ground-industrial-skyline-window')).toHaveCount(4);
-   await expect(groups.first().getByTestId('ground-industrial-skyline-roof-plant'))
+   const group=skyline.locator(
+    '[data-architectural-form="connected-glazed-research-industrial-gallery"]'+
+    '[data-footprint~="5,7"][data-footprint~="6,7"]');
+   await expect(group).toHaveCount(1);
+   const footprint=(await group.getAttribute('data-footprint'))!.split(' ');
+   await expect(group.getByTestId('ground-industrial-skyline-window'))
+     .toHaveCount(footprint.length*2);
+   await expect(group.getByTestId('ground-industrial-skyline-roof-plant'))
      .toHaveCount(1);
-   const volume=await groups.first().evaluate(node=>{
+   const volume=await group.evaluate(node=>{
     const group=node as SVGGraphicsElement;
     const bounds=group.getBBox();
     return {
