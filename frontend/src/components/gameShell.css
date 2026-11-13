@@ -716,24 +716,35 @@
     background:linear-gradient(#524221,#392b16);
     border-color:#f6bd4b;color:#ffe3a4;
   }
+  /* A two-line command receipt instead of an 830x112px empty console.
+     Keep the full live selection and order text (and its DOM/ARIA IDs), but
+     reclaim the central lower map for the actual original K-47 buildings.
+     This is deliberately desktop-only; phone touch targets never change. */
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip{
-    bottom:13px;left:440px;right:14px;transform:none;width:auto;
-    max-width:none;min-height:112px;display:flex;
-    flex-direction:column;align-items:flex-start;justify-content:center;
-    gap:7px;padding:12px 17px;border:2px solid #5c7784;
+    bottom:13px;left:auto;right:14px;transform:none;
+    width:min(540px,calc(100% - 470px));max-width:none;
+    min-height:70px;max-height:86px;display:grid;
+    grid-template-columns:145px minmax(0,1fr);grid-template-rows:auto auto;
+    align-items:center;align-content:center;justify-content:stretch;
+    gap:3px 10px;padding:8px 12px;border:2px solid #5c7784;
     border-top:3px solid #b0a98d;border-radius:4px;
     background:linear-gradient(#132936ec,#081722f4);
     box-shadow:0 0 0 3px #06111a,0 12px 36px #000b;
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip::before{
-    content:'ESTADO DEL EQUIPO';color:#e8ca82;
-    font:800 11px ui-monospace,monospace;letter-spacing:.12em;
+    grid-column:1;grid-row:1;content:'ESTADO DEL EQUIPO';color:#e8ca82;
+    font:800 10px ui-monospace,monospace;letter-spacing:.07em;
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-event-strip .ground-squad-status{
-    font-size:12px;color:#8dd4e4;
+    grid-column:2;grid-row:1;min-width:0;padding:0;
+    font-size:11px;color:#8dd4e4;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-notice-current{
-    font-size:12px;max-width:100%;white-space:normal;
+    grid-column:1/-1;grid-row:2;min-width:0;margin:0;
+    font-size:11px;line-height:1.3;max-width:100%;white-space:normal;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    overflow:hidden;
   }
 }
 
