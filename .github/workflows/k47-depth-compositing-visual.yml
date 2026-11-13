@@ -6,6 +6,8 @@ on:
       - "frontend/src/components/GroundSquadSelection.tsx"
       - "frontend/src/components/GroundRescueBayDeck.tsx"
       - "frontend/src/components/GroundColonyDressing.tsx"
+      - "frontend/src/components/GroundLandingCourt3D.tsx"
+      - "frontend/src/components/groundSquadSelection.css"
       - "frontend/tests/groundLandingCourt3D.spec.ts"
       - "frontend/tests/k47DepthCompositionVisual.spec.ts"
       - ".github/workflows/k47-depth-compositing-visual.yml"
