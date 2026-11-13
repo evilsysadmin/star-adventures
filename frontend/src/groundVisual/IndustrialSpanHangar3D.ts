@@ -12,10 +12,12 @@ export type IndustrialSpanRun={
 export function addIndustrialSpanHangars(
   scene:THREE.Scene,
   runs:ReadonlyArray<IndustrialSpanRun>,
+  options:{legacyRoof?:boolean}={},
 ){
   const root=new THREE.Group();
   root.name='modular-industrial-span-hangars';
   const boxGeometry=new THREE.BoxGeometry(1,1,1);
+  const cylinderGeometry=new THREE.CylinderGeometry(1,1,1,12);
   // Small original repeatable metal-weathering texture; no external or copied art.
   // One shared atlas and geometry serve every span, with bounded GPU cleanup.
   const pixels=new Uint8Array(64*64*4);
@@ -62,6 +64,16 @@ export function addIndustrialSpanHangars(
       color:0xffd49c,emissive:0xf1ac62,emissiveIntensity:2.25,
       metalness:.08,roughness:.4,
     }),
+    atriumGlass:new THREE.MeshStandardMaterial({
+      color:0x84b6ad,emissive:0x22545d,emissiveIntensity:.48,
+      metalness:.3,roughness:.36,
+    }),
+    darkSteel:new THREE.MeshStandardMaterial({
+      color:0x182f3a,metalness:.67,roughness:.66,
+    }),
+    roofCopper:new THREE.MeshStandardMaterial({
+      color:0xa29476,metalness:.64,roughness:.54,
+    }),
   };
   const place=(group:THREE.Group,name:string,
     x:number,y:number,z:number,w:number,h:number,d:number,
@@ -71,6 +83,18 @@ export function addIndustrialSpanHangars(
     mesh.position.set(x,y,z);
     mesh.scale.set(w,h,d);
     mesh.castShadow=shadow;
+    mesh.receiveShadow=true;
+    group.add(mesh);
+    return mesh;
+  };
+  const pipe=(group:THREE.Group,name:string,
+    x:number,y:number,z:number,radius:number,height:number,
+    mat:THREE.Material)=>{
+    const mesh=new THREE.Mesh(cylinderGeometry,mat);
+    mesh.name=name;
+    mesh.position.set(x,y,z);
+    mesh.scale.set(radius,height,radius);
+    mesh.castShadow=true;
     mesh.receiveShadow=true;
     group.add(mesh);
     return mesh;
@@ -121,6 +145,78 @@ export function addIndustrialSpanHangars(
       Math.max(.65,width-.9),.022,.19,material.support,false);
     place(group,'skylight-glazing',center,1.364,run.row-.11,
       Math.max(.58,width-1.04),.014,.13,material.glass,false);
+    // The original one-storey shed has almost no skyline in the *real*
+    // default follow camera. The connected research/engineering gallery is a
+    // reusable second storey, not a stack of one-tile houses. All components
+    // stay inside the same verified blocked span (x +/- .49, z +/- .49).
+    // The switch is DEV-only and exists for real gameplay A/B screenshots.
+    if(!options.legacyRoof && count>=2){
+      const top=2.075;
+      const glassWidth=width-.23;
+      const crownWidth=width-.08;
+      // Dark continuous upper hull: the lower roof remains as a foundation,
+      // with one raised panoramic gallery that can be recognised on phones.
+      place(group,'gallery-rear-bulkhead',center,1.69,run.row-.365,
+        glassWidth,.67,.09,material.darkSteel);
+      place(group,'gallery-side-left',run.start-.41,1.66,run.row-.10,
+        .10,.67,.52,material.support);
+      place(group,'gallery-side-right',run.end+.41,1.66,run.row-.10,
+        .10,.67,.52,material.support);
+      place(group,'gallery-front-window',center,1.70,run.row+.181,
+        glassWidth,.53,.055,material.atriumGlass,false);
+      // A heavy oversailing but non-walkable roof replaces the flat top
+      // silhouette; the whole eave remains on existing blocked ground.
+      const roof=place(group,'gallery-weathered-roof',center,top,
+        run.row-.08,crownWidth,.17,.76,material.roof);
+      roof.rotation.x=-.055;
+      place(group,'gallery-top-spine',center,2.18,run.row-.21,
+        crownWidth-.09,.10,.14,material.darkSteel);
+      place(group,'gallery-front-copper-eave',center,2.08,run.row+.297,
+        crownWidth,.062,.095,material.roofCopper);
+      place(group,'gallery-front-shadow-band',center,1.956,run.row+.222,
+        glassWidth,.095,.064,material.darkSteel);
+      // Structural mullions run from bottom to roof, not glowing stickers.
+      for(let i=1;i<count*2;i++){
+        const x=run.start-.5+i*.5;
+        place(group,'gallery-glass-mullion-'+i,x,1.70,run.row+.223,
+          .052,.61,.075,material.support);
+        if(i%2===0)place(group,'gallery-mullion-collar-'+i,
+          x,1.44,run.row+.242,.13,.06,.09,material.roofCopper,false);
+      }
+      // A continuous upper command rail and inset top lights visually
+      // connect the glazing with the existing lower cargo-door bays.
+      place(group,'gallery-service-rail',center,1.36,run.row+.252,
+        glassWidth,.10,.12,material.roofCopper);
+      place(group,'gallery-shadow-sill',center,1.32,run.row+.285,
+        glassWidth,.035,.10,material.darkSteel);
+      for(const x of [run.start+.16,run.end-.16]){
+        place(group,'gallery-lamp-sconce-'+x,x,1.915,run.row+.267,
+          .19,.065,.065,material.lamp,false);
+      }
+      // Asymmetric industrial exhaust tower and cooling stack make a real
+      // multi-height silhouette without covering another playable tile.
+      const towerX=run.start+.22;
+      place(group,'gallery-exhaust-foundation',towerX,2.20,run.row-.27,
+        .36,.12,.32,material.support);
+      pipe(group,'gallery-exhaust-stack',towerX,2.52,run.row-.27,
+        .113,.58,material.darkSteel);
+      pipe(group,'gallery-exhaust-collar',towerX,2.81,run.row-.27,
+        .158,.095,material.roofCopper);
+      const ventX=run.end-.24;
+      place(group,'gallery-cooling-base',ventX,2.19,run.row-.27,
+        .37,.14,.36,material.support);
+      place(group,'gallery-cooling-body',ventX,2.40,run.row-.27,
+        .29,.31,.29,material.shell);
+      place(group,'gallery-cooling-top',ventX,2.575,run.row-.27,
+        .39,.07,.39,material.roofCopper);
+      for(let i=0;i<3;i++){
+        place(group,'gallery-cooling-louvre-'+i,ventX,
+          2.31+i*.085,run.row-.111,.32,.035,.017,
+          material.darkSteel,false);
+      }
+      group.userData.artStyle='tiered-glazed-engineering-hall';
+      group.userData.verifiedBlockedSpan=run.end-run.start+1;
+    }
     place(group,'end-cap-left',run.start-.446,.72,run.row+.01,
       .095,1.03,.88,material.support);
     place(group,'end-cap-right',run.end+.446,.72,run.row+.01,
@@ -174,6 +270,7 @@ export function addIndustrialSpanHangars(
   return ()=>{
     scene.remove(root);
     boxGeometry.dispose();
+    cylinderGeometry.dispose();
     weather.dispose();
     Object.values(material).forEach(item=>item.dispose());
   };
