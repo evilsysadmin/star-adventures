@@ -1,0 +1,37 @@
+name: K-47 industrial gallery · corrected-depth visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/groundVisual/IndustrialSpanHangar3D.ts"
+      - "frontend/src/components/GroundLandingCourt3D.tsx"
+      - "frontend/tests/k47TieredHangarDepthVisual.spec.ts"
+      - ".github/workflows/k47-tiered-hangar-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  visible-hangar:
+    name: Actual K-47 hangar · Chromium A/B at 390 and 1280
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Real arrival and genuine near-hangar walk, reload and A/B capture
+        run: npm run test:e2e --prefix frontend -- tests/k47TieredHangarVisual.spec.ts
+      - name: Upload both styles for mandatory visual inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-after-depth-industrial-gallery-${{ github.sha }}
+          path: frontend/test-results/k47-hangar-*.png
+          if-no-files-found: warn
+          retention-days: 14
