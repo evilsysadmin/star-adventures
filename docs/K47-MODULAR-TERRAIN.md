@@ -191,3 +191,18 @@ is mandatory**: if the PBR floor overpaints important corridors, the
 hangar hides squad silhouettes, or the composition is not closer to the
 approved mock, close the PR without merge. The source art slots remain
 unpublished until independently reviewed.
+
+### Actual-pass correction: SVG owns floor; WebGL owns architecture
+
+The first depth-order A/B exposed an opaque three-dimensional court surface
+overpainting important SVG floor/route details and darkening the squad's
+foreground. The candidate therefore uses **architecture-only WebGL** when
+the canvas is in its elevated layer: the same renderer still paints the
+existing south hangar, fallback PBR wall blocks and verified authored GLBs
+when published, but skips rendering the old 3D floor and modular pilot.
+The SVG remains the only visual ground surface and can keep its approved
+transfer machine and corridor art. The legacy comparison path preserves the
+old 3D floor as-is. Expose `data-floor-visual-source='svg'` and zero rendered
+PBR floor cells in the modern composition; do not falsely report previously
+compiled tiles as painted. An explicit 3D floor pass can be reconsidered
+only with a proper dual-depth rendering/compositing contract.
