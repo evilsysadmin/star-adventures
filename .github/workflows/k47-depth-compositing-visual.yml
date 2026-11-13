@@ -10,6 +10,7 @@ on:
       - "frontend/src/groundVisual/IndustrialSpanHangar3D.ts"
       - "frontend/src/components/groundSquadSelection.css"
       - "frontend/tests/groundLandingCourt3D.spec.ts"
+      - "frontend/tests/groundRescueBayDeck.spec.ts"
       - "frontend/tests/k47DepthCompositionVisual.spec.ts"
       - ".github/workflows/k47-depth-compositing-visual.yml"
 
@@ -31,7 +32,7 @@ jobs:
       - name: Install frontend
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Verify same-route real game, old/new, fog, picking, F5 and WebGL fallback
-        run: npm run test:e2e --prefix frontend -- tests/k47DepthCompositionVisual.spec.ts
+        run: npm run test:e2e --prefix frontend -- tests/k47DepthCompositionVisual.spec.ts tests/groundRescueBayDeck.spec.ts
       - name: Upload exact-game A/B screenshots for visual QA
         if: always()
         uses: actions/upload-artifact@v4
