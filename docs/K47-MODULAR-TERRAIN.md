@@ -161,3 +161,29 @@ state, camera or input. The exact-route Chromium A/B spec records old/new
 candidate style. The dedicated visual workflow keeps these screenshots as
 review artifacts. Inspect at actual mobile display size; if visually weak,
 visually noisy or masking crew feet/waypoints, reject without merging.
+
+
+## Tiered south industrial hall — visible 3D candidate
+
+After the 4-cell foreground transfer platform shipped via #288, the next
+meaningful architecture target is the **existing south factory/hangar** in the
+normal follow camera. Its low original 3D roof is still indistinct at typical
+play zoom. On any fully visible connected run of 2+ real blocked south wall
+cells, the shared WebGL renderer now proposes one **two-storey factory** with
+a broad glazed engineering gallery, structural mullions, overhanging weathered
+roof, continuous bronze service rail, an asymmetric exhaust stack and a
+roof-mounted cooling unit. The geometry is a reusable run-based prefab.
+Every vertex stays over the existing blocked cells; no fabricated passable
+canopy, controls, walls, doors, NPCs, pathing or mission interactions.
+
+The original lower hangar persists as a fallback. Only a complete
+visibility-safe span enters the WebGL renderer, and the original SVG art is
+hidden only after the first successful frame. WebGL-disabled devices retain
+their SVG as before. The DEV-only `window.__k47LegacyIndustrialHangar`
+flag switches only the extra roof/gallery off for same-route Chromium A/B;
+production always uses the tiered style. The new visual gate captures
+immediate landing **and** a genuine move to 5,6 in **390/1280px** follow
+views, verifies 216 original tile pick targets and saved officer state after
+F5. A green build does not prove quality: visually inspect both widths and
+decline to merge if the factory blocks officers, reduces usable viewport or
+the difference remains trivial.
