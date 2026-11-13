@@ -103,21 +103,26 @@ function makeCourtSurface(replaced:ReadonlySet<string>){
   return geometry;
 }
 function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
-  replaced:ReadonlySet<string>){
+  replaced:ReadonlySet<string>,architectureOnly=false){
   const resources:Array<{dispose:()=>void}>=[];
-  const texture=courtTexture();
-  if(texture)resources.push(texture);
-  const material=new THREE.MeshStandardMaterial({
-    color:0xcac7b5,metalness:.11,roughness:.99,
-    ...(texture?{map:texture}:{})
-  });
-  resources.push(material);
-  const geometry=makeCourtSurface(replaced);
-  resources.push(geometry);
-  const floor=new THREE.Mesh(geometry,material);
-  floor.name='industrial-court-continuous-floor';
-  floor.receiveShadow=true;
-  scene.add(floor);
+  // In the elevated architecture pass, genuine SVG floor dressing remains
+  // authoritative visual underlay. Painting a *second* opaque 3D floor over
+  // it created the dark apron artefact caught in the exact-game A/B.
+  if(!architectureOnly){
+    const texture=courtTexture();
+    if(texture)resources.push(texture);
+    const material=new THREE.MeshStandardMaterial({
+      color:0xcac7b5,metalness:.11,roughness:.99,
+      ...(texture?{map:texture}:{})
+    });
+    resources.push(material);
+    const geometry=makeCourtSurface(replaced);
+    resources.push(geometry);
+    const floor=new THREE.Mesh(geometry,material);
+    floor.name='industrial-court-continuous-floor';
+    floor.receiveShadow=true;
+    scene.add(floor);
+  }
   const makeMat=(color:number,metalness=.55,roughness=.75)=>
     new THREE.MeshStandardMaterial({color,metalness,roughness});
   const metal=makeMat(0x596765,.72,.53);
@@ -143,7 +148,7 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
   }
   // Industrial seams and embedded service conduits are flush with the
   // original *walkable* floor. They never form new collision geometry.
-  for(const [x,z] of [[3,4],[4,4],[5,5],[6,5],[3,6],[5,6]]){
+  if(!architectureOnly)for(const [x,z] of [[3,4],[4,4],[5,5],[6,5],[3,6],[5,6]]){
     if(occupied.has(id(x,z)))continue;
     box('court-drain-'+x+'-'+z,x,.031,z,.63,.015,.08,rubber);
     box('court-drain-edge-'+x+'-'+z,x,.041,z-.067,.66,.017,.02,bronze);
@@ -170,7 +175,8 @@ function buildCourt(scene:THREE.Scene,knownWallColumns:ReadonlySet<number>,
   return ()=>resources.forEach(resource=>resource.dispose());
 }
 
-export function GroundLandingCourt3D({explored,visible}:Vision){
+export function GroundLandingCourt3D({explored,visible,architectureOnly=false}:
+ Vision & {architectureOnly?:boolean}){
   const canvas=useRef<HTMLCanvasElement>(null);
   const [state,setState]=useState<'idle'|'ready'|'fallback'>('idle');
   const [artState,setArtState]=useState<'unpublished'|'loading'|'ready'|'fallback'>('unpublished');
@@ -232,8 +238,10 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       const scene=new THREE.Scene();
       disposeCourt=buildCourt(scene,
         new Set(pbrWallColumns.split(',').filter(Boolean).map(Number)),
-        new Set(modulePlan.tiles.map(p=>p.cellId)));
-      disposeModular=addGroundVisualScene3D(scene,modulePlan);
+        new Set(modulePlan.tiles.map(p=>p.cellId)),architectureOnly);
+      // The existing authored building renderer is the ONLY foreground
+      // WebGL layer. SVG still owns the floor once lifted above decoration.
+      if(!architectureOnly)disposeModular=addGroundVisualScene3D(scene,modulePlan);
       disposeHangars=addIndustrialSpanHangars(scene,
         visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})));
       const camera=makeGroundArchiveCamera();
@@ -281,15 +289,16 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey]);
+  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey,architectureOnly]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
-    data-painted-cells={courtCells.length}
+    data-painted-cells={architectureOnly?0:courtCells.length}
+    data-floor-visual-source={architectureOnly?'svg':'webgl'}
     data-modular-region="2,3:6x4"
-    data-modular-tiles={modulePlan.tiles.length}
-    data-modular-edges={modulePlan.edges.length}
-    data-modular-prefabs={modulePlan.prefabs.length}
-    data-modular-cell-ids={modulePlan.tiles.map(p=>p.cellId).join(' ')}
+    data-modular-tiles={architectureOnly?0:modulePlan.tiles.length}
+    data-modular-edges={architectureOnly?0:modulePlan.edges.length}
+    data-modular-prefabs={architectureOnly?0:modulePlan.prefabs.length}
+    data-modular-cell-ids={architectureOnly?'':modulePlan.tiles.map(p=>p.cellId).join(' ')}
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
     data-hangar-count={visibleHangarSpans.length}
