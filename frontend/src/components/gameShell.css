@@ -458,7 +458,9 @@
     padding:4px;gap:3px;
   }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button{
-    min-height:42px;padding:3px 2px;font-size:10px;line-height:1.2;
+    /* Real Chromium showed 42px targets; preserve the compact dock but
+       meet the 44px minimum without altering game input or button count. */
+    min-height:44px;padding:3px 2px;font-size:10px;line-height:1.2;
     overflow-wrap:normal;
   }
   /* A small camera button fits the left margin below the radio panel.
