@@ -39,7 +39,7 @@ for(const {width,height} of [{width:1280,height:850},{width:1757,height:800}]){
      selectionText:selection.textContent?.trim()||'',
      noticeText:notice.textContent?.trim()||'',
      noticeHeight:notice.getBoundingClientRect().height,
-     fullStyle:getComputedStyle(full as unknown as Element).display};
+     fullStyle:getComputedStyle(document.querySelector('.ground-squad-event-strip')!).display};
   });
   expect(before.fullStyle).toBe('grid');
   expect(before.width).toBeLessThanOrEqual(555);
