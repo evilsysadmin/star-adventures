@@ -161,3 +161,31 @@ state, camera or input. The exact-route Chromium A/B spec records old/new
 candidate style. The dedicated visual workflow keeps these screenshots as
 review artifacts. Inspect at actual mobile display size; if visually weak,
 visually noisy or masking crew feet/waypoints, reject without merging.
+
+
+## Foreground south gallery: correct compositing owner (A/B candidate)
+
+The proposed #289 taller WebGL roof was **rejected** after actual
+390/1280px landing/follow A/B: it became a shadowy strip, because the same
+WebGL court canvas is placed **under** the later SVG ground decoration.
+Making a mesh taller does not fix a compositor order problem, and changing
+the canvas order would obscure the playable walkway, decals and transfer
+platform. Do not publish #289 or move the entire WebGL court.
+
+Instead, the new **original, reusable run-based industrial upper gallery**
+is authored in `GroundIndustrialSkyline` and painted by the already-existing
+`GroundColonyWalls` architecture layer (after the ground dressing). Its
+connected glass façade, parapet, roof, service exhaust and light rail share
+only the original known continuous south blocked-wall span. The lower 3D
+hangar remains active underneath and the SVG fallback still works without
+WebGL; fog memory renders the new upper architecture dim, unknown cells
+remain hidden. No extra canvas, new route, fake roof walkability, game state,
+camera or input surface.
+
+The DEV-only `window.__k47LegacyIndustrialSkyline` flag disables just the
+new gallery so that real browser sessions capture old/new at the same
+immediate-landing follow camera and after a genuine move to 5,6. Tests
+must also assert 216 canonical ground pick cells, real revealed blocked
+footprint, 390/1280 responsive viewport and F5 restoration. Inspect both
+actual screenshot pairs before merging; reject if it masks officers, reads
+as flat cardboard or is too subtle compared with the mock.
