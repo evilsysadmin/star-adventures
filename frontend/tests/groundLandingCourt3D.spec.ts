@@ -50,6 +50,7 @@ for(const width of [390,1280]){
     const tile=root.querySelector('polygon[data-cell-id]');
     const fog=root.querySelector('[data-testid="ground-fog-layer"]');
     const decorations=root.querySelector('[data-testid="ground-colony-floor"]');
+    const platform=root.querySelector('[data-testid="ground-bay-platform-overlay"]');
     return {
       cells:root.querySelectorAll('polygon[data-cell-id]').length,
       courtCells:Number(court?.getAttribute('data-painted-cells')),
@@ -63,8 +64,10 @@ for(const width of [390,1280]){
         Boolean(tile.compareDocumentPosition(court)&Node.DOCUMENT_POSITION_FOLLOWING),
       belowGroundFog:!!court&&!!fog&&
         Boolean(court.compareDocumentPosition(fog)&Node.DOCUMENT_POSITION_FOLLOWING),
-      belowDecorations:!!court&&!!decorations&&
-        Boolean(court.compareDocumentPosition(decorations)&Node.DOCUMENT_POSITION_FOLLOWING),
+      aboveDecorations:!!court&&!!decorations&&
+        Boolean(decorations.compareDocumentPosition(court)&Node.DOCUMENT_POSITION_FOLLOWING),
+      belowPlatform:!!court&&!!platform&&
+        Boolean(court.compareDocumentPosition(platform)&Node.DOCUMENT_POSITION_FOLLOWING),
     };
   });
   const wallReveal=await board.evaluate(root=>{
@@ -82,7 +85,8 @@ for(const width of [390,1280]){
   expect(structure.courtCells).toBeGreaterThan(14);
   expect(structure.canvasSize).toEqual(['1120','550']);
   expect(structure.passive&&structure.hiddenFromAssistive&&structure.noInputTargets).toBe(true);
-  expect(structure.onTopOfRealTiles&&structure.belowGroundFog&&structure.belowDecorations).toBe(true);
+  expect(structure.onTopOfRealTiles&&structure.belowGroundFog&&
+    structure.aboveDecorations&&structure.belowPlatform).toBe(true);
   await expect(board.locator('[data-fog-cell="10,4"]'))
     .toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-industrial-pbr-court-'+width+'.png'});
