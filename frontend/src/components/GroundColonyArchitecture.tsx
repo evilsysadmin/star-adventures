@@ -2,6 +2,7 @@ import world from '../../../content/scenes/meridian.json';
 import {GroundMedicalFacility} from './GroundMedicalFacility';
 import {GroundProbeArray} from './GroundProbeArray';
 import {GroundSouthIndustrialWing} from './GroundSouthIndustrialWing';
+import {GroundIndustrialSkyline} from './GroundIndustrialSkyline';
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 import {waypointRibbonShift,type LabelViewFrame} from '../groundWaypointRibbon';
 
@@ -229,11 +230,18 @@ export function GroundColonyWalls({explored,visible}:Vision){
  const warehouseKnown=warehouseValid&&warehouseFootprint.every(p=>explored.has(key(p.x,p.y)));
  const scienceKnown=scienceValid&&scienceFootprint.every(p=>explored.has(key(p.x,p.y)));
  const southSpans=southIndustrialSpans(explored,scene.walls);
+ // Rendered in the *visible* SVG architecture layer, above floor decals.
+ // This opt-out exists for exact-route dev screenshot A/B only.
+ const legacySkyline=import.meta.env.DEV&&typeof window!=='undefined'&&
+   Boolean((window as typeof window&{__k47LegacyIndustrialSkyline?:boolean})
+     .__k47LegacyIndustrialSkyline);
  const southCovered=southIndustrialCoveredColumns(southSpans);
  const hasSouthWing=(x:number,y:number)=>y===7&&southCovered.has(x);
  return <g data-testid="ground-colony-walls" pointerEvents="none">
   <GroundScienceCampus known={scienceKnown} visible={visible}/>
   <GroundSouthIndustrialWing spans={southSpans} visible={visible}/>
+  {!legacySkyline&&<GroundIndustrialSkyline spans={southSpans} visible={visible}/>}
+
   {builtCells.filter(p=>explored.has(key(p.x,p.y))&&
     (!scienceKnown||p.x!==3||p.y!==2)&&
     !hasSouthWing(p.x,p.y)&&
