@@ -1,0 +1,36 @@
+name: K-47 transfer apron · real-game before-after visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundRescueBayDeck.tsx"
+      - "frontend/tests/k47TransferPlatformVisual.spec.ts"
+      - ".github/workflows/k47-transfer-platform-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  apron-visual:
+    name: K-47 4-cell apron · 390/1280 Chromium A/B follow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Real game old/new A/B at 390 and 1280, movement and F5
+        run: npm run test:e2e --prefix frontend -- tests/k47TransferPlatformVisual.spec.ts
+      - name: Upload both cameras and both states for honest visual QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-visible-transfer-apron-${{ github.sha }}
+          path: frontend/test-results/k47-transfer-*.png
+          if-no-files-found: warn
+          retention-days: 14
