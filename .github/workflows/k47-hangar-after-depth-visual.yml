@@ -6,7 +6,7 @@ on:
       - "frontend/src/groundVisual/IndustrialSpanHangar3D.ts"
       - "frontend/src/components/GroundLandingCourt3D.tsx"
       - "frontend/tests/k47TieredHangarDepthVisual.spec.ts"
-      - ".github/workflows/k47-tiered-hangar-visual.yml"
+      - ".github/workflows/k47-hangar-after-depth-visual.yml"
 
 permissions:
   contents: read
@@ -26,7 +26,7 @@ jobs:
       - name: Install frontend
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Real arrival and genuine near-hangar walk, reload and A/B capture
-        run: npm run test:e2e --prefix frontend -- tests/k47TieredHangarVisual.spec.ts
+        run: npm run test:e2e --prefix frontend -- tests/k47TieredHangarDepthVisual.spec.ts
       - name: Upload both styles for mandatory visual inspection
         if: always()
         uses: actions/upload-artifact@v4
