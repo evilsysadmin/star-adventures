@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   desktop-command:
-    name: Real 1280/1757 desktop and unchanged 390 mobile command HUD
+    name: Real 1280/1757 desktop and 44px-touch 390 mobile command HUD
     runs-on: ubuntu-24.04
     timeout-minutes: 14
     steps:
@@ -33,6 +33,6 @@ jobs:
           name: k47-desktop-compact-command-${{ github.sha }}
           path: |
             frontend/test-results/k47-desktop-compact-command-*.png
-            frontend/test-results/k47-mobile-unchanged-command-390.png
+            frontend/test-results/k47-mobile-touch44-command-390.png
           if-no-files-found: warn
           retention-days: 14
