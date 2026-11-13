@@ -1,0 +1,37 @@
+name: K-47 contiguous court macro-plating · visual A/B
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundIndustrialApron.tsx"
+      - "frontend/src/components/GroundRescueBayDeck.tsx"
+      - "frontend/tests/k47IndustrialMacroApron.spec.ts"
+      - ".github/workflows/k47-macro-apron-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  yard-visual:
+    name: Real K-47 continuous court · 390/1280 Chrome A/B
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Exact-route arrival and movement screenshots plus input/fog checks
+        run: npm run test:e2e --prefix frontend -- tests/k47IndustrialMacroApron.spec.ts
+      - name: Upload A/B captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-contiguous-court-art-${{ github.sha }}
+          path: frontend/test-results/k47-macro-apron-*.png
+          if-no-files-found: warn
+          retention-days: 14
