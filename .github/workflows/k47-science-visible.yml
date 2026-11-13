@@ -1,0 +1,37 @@
+name: K-47 science campus · actual game visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundScienceCampus.tsx"
+      - "frontend/src/components/GroundColonyArchitecture.tsx"
+      - "frontend/tests/groundScienceCampus.spec.ts"
+      - ".github/workflows/k47-science-visible.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  science-campus:
+    name: Research superstructure · real 390/1280 Chromium mission
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Run real K-47 exploration, viewport and F5
+        run: npm run test:e2e --prefix frontend -- tests/groundScienceCampus.spec.ts
+      - name: Upload screenshots for mandatory human visual comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-research-superstructure-${{ github.sha }}
+          path: frontend/test-results/*.png
+          if-no-files-found: warn
+          retention-days: 14
