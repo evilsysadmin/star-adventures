@@ -11,15 +11,13 @@ on:
       - "tests/test_k47_publication_candidate.py"
       - "frontend/src/components/groundSquadSelection.css"
       - ".github/workflows/k47-sector-visual.yml"
+  # Infra's immutable-art publisher admits only the CURRENT source main
+  # SHA, with BOTH green source CI and this exact SHA's real-play art gate.
+  # A UI-only main merge must therefore generate its own verified handoff,
+  # even if none of the original Blender/GLB builders changed.
+  # Keep pull_request path-scoped to avoid costly duplicate visual reviews.
   push:
     branches: [main]
-    paths:
-      - "scripts/author_k47_archive.py"
-      - "scripts/author_k47_east.py"
-      - "scripts/author_k47_south.py"
-      - "scripts/k47_publication_candidate.py"
-      - "tests/test_k47_publication_candidate.py"
-      - ".github/workflows/k47-sector-visual.yml"
   workflow_dispatch:
 
 permissions:
