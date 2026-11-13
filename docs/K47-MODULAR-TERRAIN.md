@@ -206,3 +206,9 @@ old 3D floor as-is. Expose `data-floor-visual-source='svg'` and zero rendered
 PBR floor cells in the modern composition; do not falsely report previously
 compiled tiles as painted. An explicit 3D floor pass can be reconsidered
 only with a proper dual-depth rendering/compositing contract.
+
+The WebGL-only foreground building exposed an overly dark front-band material
+which had previously been hidden under the SVG floor. The validated candidate
+therefore lifts the existing physical hangar plinth, supports, shutters and
+front recess into a restrained weathered metal range. This does not change
+a single vertex, enemy encounter, shadow ownership or selectable tile.
