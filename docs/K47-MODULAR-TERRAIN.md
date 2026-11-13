@@ -161,3 +161,33 @@ state, camera or input. The exact-route Chromium A/B spec records old/new
 candidate style. The dedicated visual workflow keeps these screenshots as
 review artifacts. Inspect at actual mobile display size; if visually weak,
 visually noisy or masking crew feet/waypoints, reject without merging.
+
+
+## Single-canvas depth compositing experiment (after rejected art studies)
+
+Real 390/1280 Chromium captures rejected #289, #290 and #291. #289's
+three-dimensional hangar was buried under the later SVG floor dressing;
+#290 raised an SVG roof that then visually overlapped officers; #291 covered
+the ground in distracting painted arcs instead of solving depth. A superior
+architecture starts with correct layer ownership and a real before/after
+test—not more procedural geometry.
+
+This candidate preserves the **same** WebGL renderer and physical 18x12
+world, but places the single environment canvas **after** the existing
+`GroundColonyFloor` visual foundation. `GroundRescueBayDeck` separates
+into an underlay (existing verified free floor cells, wall skirting and
+material definitions) and an overlay (the approved four-cell transport
+machinery from #288) with exactly one instance of each. The court goes
+between them, and fog, mission stations and squad remain above all of them.
+This prevents the 3D hangar being flattened by SVG ground paint without
+introducing another canvas or making the 3D geometry a picking surface.
+
+A DEV-only `__k47LegacyDepthOrder` switch renders the exact old
+composition for real gameplay screenshots. The dedicated Chromium workflow
+captures arrival and an authentic move to 5,6, in 390/1280 follow views,
+and validates the actual sibling order, original 216 pick targets, fog,
+F5 continuity and WebGL-denied floor/platform fallback. **Visual acceptance
+is mandatory**: if the PBR floor overpaints important corridors, the
+hangar hides squad silhouettes, or the composition is not closer to the
+approved mock, close the PR without merge. The source art slots remain
+unpublished until independently reviewed.
