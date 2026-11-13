@@ -40,9 +40,17 @@ for(const width of [390,1280]){
       .__k47LegacyDepthOrder=true;
    });
    const oldBoard=await land(old);
+   await expect(old.getByTestId('ground-landing-court-3d'))
+     .toHaveAttribute('data-floor-visual-source','webgl');
    await expect(oldBoard.getByTestId('ground-bay-platform-overlay')).toHaveCount(0);
    await oldBoard.screenshot({path:'test-results/k47-depth-before-landing-'+width+'.png'});
    const board=await land(page);
+   await expect(page.getByTestId('ground-landing-court-3d'))
+     .toHaveAttribute('data-floor-visual-source','svg');
+   await expect(page.getByTestId('ground-landing-court-3d'))
+     .toHaveAttribute('data-painted-cells','0');
+   await expect(page.getByTestId('ground-bay-floor-4,5'))
+     .not.toHaveCSS('opacity','0.08');
    const root=page.getByTestId('ground-squad-board');
    await expect(root.getByTestId('ground-bay-platform-overlay')).toHaveCount(1);
    await expect(root.getByTestId('ground-rescue-bay')).toHaveCount(1);
