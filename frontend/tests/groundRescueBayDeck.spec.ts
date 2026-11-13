@@ -25,12 +25,16 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-bay-floor-11,7')).toHaveCount(0);
   const hatch=page.getByTestId('ground-bay-central-hatch');
   await expect(hatch).toHaveAttribute('data-fog','visible');
-  const layout=await bay.evaluate(node=>{
-    const stage=node as SVGGraphicsElement;
-    const panel=stage.querySelector('[data-testid="ground-bay-central-hatch"]') as SVGGraphicsElement;
-    const shape=panel.getBBox();
+  // The physical room is still one floor, but its approved transfer
+  // platform now paints after the 3D environment and is a sibling of the
+  // room underlay. Assert the platform itself, not a stale child selector.
+  const overlay=page.getByTestId('ground-bay-platform-overlay');
+  await expect(overlay).toHaveCount(1);
+  const layout=await hatch.evaluate(node=>{
+    const shape=(node as SVGGraphicsElement).getBBox();
+    const stage=node.closest('[data-testid="ground-bay-platform-overlay"]');
     return {width:shape.width,height:shape.height,
-      pointerEvents:getComputedStyle(stage).pointerEvents};
+      pointerEvents:stage?getComputedStyle(stage).pointerEvents:'missing'};
   });
   expect(layout.width).toBeGreaterThan(145);
   expect(layout.height).toBeGreaterThan(65);

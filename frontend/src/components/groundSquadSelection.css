@@ -192,7 +192,7 @@
    handrails remain SVG above it. The untouched SVG floor remains the fallback
    when WebGL cannot initialize (or the sector has not yet been discovered). */
 [data-testid="ground-squad-board"]:has(
-  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"]
+  [data-testid="ground-landing-court-3d"][data-renderer-state="ready"][data-floor-visual-source="webgl"]
 ) [data-testid="ground-bay-continuous-floor"] [data-testid^="ground-bay-floor-"]{
   opacity:.08;
 }

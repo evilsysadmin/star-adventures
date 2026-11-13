@@ -40,7 +40,7 @@ export function addIndustrialSpanHangars(
   weather.repeat.set(3,1);
   weather.needsUpdate=true;
   const material={
-    foundation:new THREE.MeshStandardMaterial({color:0x273941,metalness:.35,roughness:.91}),
+    foundation:new THREE.MeshStandardMaterial({color:0x526662,metalness:.31,roughness:.87}),
     shell:new THREE.MeshStandardMaterial({
       color:0x89968a,map:weather,metalness:.32,roughness:.84,
       emissive:0x102329,emissiveIntensity:.1,
@@ -48,9 +48,10 @@ export function addIndustrialSpanHangars(
     roof:new THREE.MeshStandardMaterial({
       color:0x59736f,map:weather,metalness:.45,roughness:.78,
     }),
-    support:new THREE.MeshStandardMaterial({color:0x28434c,metalness:.52,roughness:.75}),
-    recess:new THREE.MeshStandardMaterial({color:0x172d38,metalness:.25,roughness:.92}),
-    shutter:new THREE.MeshStandardMaterial({color:0x607b78,metalness:.38,roughness:.79}),
+    support:new THREE.MeshStandardMaterial({color:0x456269,metalness:.48,roughness:.74}),
+    recess:new THREE.MeshStandardMaterial({color:0x3b5a60,metalness:.24,roughness:.88,
+      emissive:0x19343a,emissiveIntensity:.14}),
+    shutter:new THREE.MeshStandardMaterial({color:0x758e87,metalness:.34,roughness:.81}),
     glass:new THREE.MeshStandardMaterial({
       color:0x4b8990,emissive:0x18545e,emissiveIntensity:1.1,
       metalness:.24,roughness:.44,

@@ -6,6 +6,7 @@ import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostSc
 import { GroundColonyWalls, GroundColonyStations } from './GroundColonyArchitecture';
 import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing';
 import { GroundLandingCourt3D } from './GroundLandingCourt3D';
+import { GroundRescueBayDeck } from './GroundRescueBayDeck';
 import { groundSurfaceFrame } from '../groundSurfaceFrame';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
@@ -428,6 +429,11 @@ export function GroundSquadSelection({
     height: Math.abs(marquee.start.y - marquee.end.y),
   } : undefined;
 
+  // A/B fallback is development-only and contains exactly the old draw order.
+  // This changes paint ownership, never the canonical grid, LOS or controls.
+  const legacyDepthOrder=import.meta.env.DEV && typeof window!=='undefined' &&
+    Boolean((window as typeof window&{__k47LegacyDepthOrder?:boolean})
+      .__k47LegacyDepthOrder);
   return <div className="ground-squad" data-testid="ground-squad-selection">
     {<div className="ground-squad-viewbar">
       <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO'
@@ -523,11 +529,22 @@ export function GroundSquadSelection({
           points={tileShape(cell.x, cell.y)}
           fill={floorMaterial(cell)}
           stroke="#b4c4ae" strokeOpacity=".025" strokeWidth=".8" />)}
-        {/* The original 3D environment shares the EXACT canonical SVG
-            projection and sits beneath gameplay decals and the authoritative
-            fog; WebGL may fail without changing the playable board. */}
-        <GroundLandingCourt3D explored={displayedFog.explored} visible={displayedFog.visible} />
-        <GroundColonyFloor explored={displayedFog.explored} visible={displayedFog.visible} />
+        {/* One canonical WebGL environment canvas. The old stacking order is
+            available ONLY for genuine browser A/B, never as a second canvas. */}
+        {legacyDepthOrder&&<GroundLandingCourt3D
+          explored={displayedFog.explored} visible={displayedFog.visible}/>}
+        <GroundColonyFloor explored={displayedFog.explored}
+          visible={displayedFog.visible} separatePlatform={!legacyDepthOrder}/>
+        {/* In production, composed 3D buildings now paint AFTER ground
+            dressing. The irreplaceable four-cell transfer deck paints above
+            the 3D floor, while fog, stations and officers remain uppermost.
+            WebGL fallback still leaves the complete floor and deck intact. */}
+        {!legacyDepthOrder&&<>
+          <GroundLandingCourt3D explored={displayedFog.explored}
+            visible={displayedFog.visible} architectureOnly/>
+          <GroundRescueBayDeck explored={displayedFog.explored}
+            visible={displayedFog.visible} layer="overlay"/>
+        </>}
         {/* Optional world-space 3D volume: the SVG tiles/units remain authoritative,
             and the original vector architecture remains a graphics fallback. */}
         <GroundArchiveVolume3D explored={displayedFog.explored} visible={displayedFog.visible} />

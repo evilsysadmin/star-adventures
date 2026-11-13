@@ -11,7 +11,7 @@ async function land(page:Page){
 }
 
 for(const width of [390,1280]){
- test('original textured 3D arrival court respects the real iso grid and fog '+width,async({page})=>{
+ test('3D architecture over real SVG court respects the iso grid and fog '+width,async({page})=>{
   test.setTimeout(125_000);
   page.setDefaultTimeout(18_000);
   await page.setViewportSize({width,height:850});
@@ -36,20 +36,22 @@ for(const width of [390,1280]){
       unique:new Set(cells).size===cells.length,
     };
   });
-  expect(modular.tiles).toBeGreaterThanOrEqual(4);
-  expect(modular.tiles).toBeLessThanOrEqual(21);
-  expect(modular.prefabs).toBeLessThanOrEqual(1);
+  expect(modular.tiles).toBe(0);
+  expect(modular.edges).toBe(0);
+  expect(modular.prefabs).toBe(0);
+  await expect(court).toHaveAttribute('data-floor-visual-source','svg');
   expect(modular.realCells&&modular.noUnknown&&modular.unique).toBe(true);
-  // The existing solid SVG floor must actually uncover the 3D art, while
-  // keeping the separately rendered mission/hatch decorations above it.
+  // Production now renders only elevated WebGL architecture at this layer.
+  // The SVG floor and the four-cell transfer platform stay fully legible.
   await expect(board.locator('[data-testid^="ground-bay-floor-"]').first())
-    .toHaveCSS('opacity','0.08');
+    .not.toHaveCSS('opacity','0.08');
   const structure=await board.evaluate(root=>{
     const court=root.querySelector('[data-testid="ground-landing-court-3d"]');
     const canvas=court?.querySelector('canvas');
     const tile=root.querySelector('polygon[data-cell-id]');
     const fog=root.querySelector('[data-testid="ground-fog-layer"]');
     const decorations=root.querySelector('[data-testid="ground-colony-floor"]');
+    const platform=root.querySelector('[data-testid="ground-bay-platform-overlay"]');
     return {
       cells:root.querySelectorAll('polygon[data-cell-id]').length,
       courtCells:Number(court?.getAttribute('data-painted-cells')),
@@ -63,8 +65,10 @@ for(const width of [390,1280]){
         Boolean(tile.compareDocumentPosition(court)&Node.DOCUMENT_POSITION_FOLLOWING),
       belowGroundFog:!!court&&!!fog&&
         Boolean(court.compareDocumentPosition(fog)&Node.DOCUMENT_POSITION_FOLLOWING),
-      belowDecorations:!!court&&!!decorations&&
-        Boolean(court.compareDocumentPosition(decorations)&Node.DOCUMENT_POSITION_FOLLOWING),
+      aboveDecorations:!!court&&!!decorations&&
+        Boolean(decorations.compareDocumentPosition(court)&Node.DOCUMENT_POSITION_FOLLOWING),
+      belowPlatform:!!court&&!!platform&&
+        Boolean(court.compareDocumentPosition(platform)&Node.DOCUMENT_POSITION_FOLLOWING),
     };
   });
   const wallReveal=await board.evaluate(root=>{
@@ -79,10 +83,11 @@ for(const width of [390,1280]){
   expect(wallReveal.columns.every(x=>[3,4,5,6,7].includes(x))).toBe(true);
   expect(wallReveal.leaking).toEqual([]);
   expect(structure.cells).toBe(216);
-  expect(structure.courtCells).toBeGreaterThan(14);
+  expect(structure.courtCells).toBe(0);
   expect(structure.canvasSize).toEqual(['1120','550']);
   expect(structure.passive&&structure.hiddenFromAssistive&&structure.noInputTargets).toBe(true);
-  expect(structure.onTopOfRealTiles&&structure.belowGroundFog&&structure.belowDecorations).toBe(true);
+  expect(structure.onTopOfRealTiles&&structure.belowGroundFog&&
+    structure.aboveDecorations&&structure.belowPlatform).toBe(true);
   await expect(board.locator('[data-fog-cell="10,4"]'))
     .toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-industrial-pbr-court-'+width+'.png'});
@@ -100,7 +105,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-landing-court-3d'))
     .toHaveAttribute('data-renderer-state','ready',{timeout:20000});
   expect(Number(await page.getByTestId('ground-landing-court-3d')
-    .getAttribute('data-modular-tiles'))).toBeGreaterThanOrEqual(modular.tiles);
+    .getAttribute('data-modular-tiles'))).toBe(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  });
 }

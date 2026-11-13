@@ -161,3 +161,54 @@ state, camera or input. The exact-route Chromium A/B spec records old/new
 candidate style. The dedicated visual workflow keeps these screenshots as
 review artifacts. Inspect at actual mobile display size; if visually weak,
 visually noisy or masking crew feet/waypoints, reject without merging.
+
+
+## Single-canvas depth compositing experiment (after rejected art studies)
+
+Real 390/1280 Chromium captures rejected #289, #290 and #291. #289's
+three-dimensional hangar was buried under the later SVG floor dressing;
+#290 raised an SVG roof that then visually overlapped officers; #291 covered
+the ground in distracting painted arcs instead of solving depth. A superior
+architecture starts with correct layer ownership and a real before/after
+test—not more procedural geometry.
+
+This candidate preserves the **same** WebGL renderer and physical 18x12
+world, but places the single environment canvas **after** the existing
+`GroundColonyFloor` visual foundation. `GroundRescueBayDeck` separates
+into an underlay (existing verified free floor cells, wall skirting and
+material definitions) and an overlay (the approved four-cell transport
+machinery from #288) with exactly one instance of each. The court goes
+between them, and fog, mission stations and squad remain above all of them.
+This prevents the 3D hangar being flattened by SVG ground paint without
+introducing another canvas or making the 3D geometry a picking surface.
+
+A DEV-only `__k47LegacyDepthOrder` switch renders the exact old
+composition for real gameplay screenshots. The dedicated Chromium workflow
+captures arrival and an authentic move to 5,6, in 390/1280 follow views,
+and validates the actual sibling order, original 216 pick targets, fog,
+F5 continuity and WebGL-denied floor/platform fallback. **Visual acceptance
+is mandatory**: if the PBR floor overpaints important corridors, the
+hangar hides squad silhouettes, or the composition is not closer to the
+approved mock, close the PR without merge. The source art slots remain
+unpublished until independently reviewed.
+
+### Actual-pass correction: SVG owns floor; WebGL owns architecture
+
+The first depth-order A/B exposed an opaque three-dimensional court surface
+overpainting important SVG floor/route details and darkening the squad's
+foreground. The candidate therefore uses **architecture-only WebGL** when
+the canvas is in its elevated layer: the same renderer still paints the
+existing south hangar, fallback PBR wall blocks and verified authored GLBs
+when published, but skips rendering the old 3D floor and modular pilot.
+The SVG remains the only visual ground surface and can keep its approved
+transfer machine and corridor art. The legacy comparison path preserves the
+old 3D floor as-is. Expose `data-floor-visual-source='svg'` and zero rendered
+PBR floor cells in the modern composition; do not falsely report previously
+compiled tiles as painted. An explicit 3D floor pass can be reconsidered
+only with a proper dual-depth rendering/compositing contract.
+
+The WebGL-only foreground building exposed an overly dark front-band material
+which had previously been hidden under the SVG floor. The validated candidate
+therefore lifts the existing physical hangar plinth, supports, shutters and
+front recess into a restrained weathered metal range. This does not change
+a single vertex, enemy encounter, shadow ownership or selectable tile.
