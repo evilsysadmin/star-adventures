@@ -12,14 +12,11 @@ on:
       - "frontend/src/components/groundSquadSelection.css"
       - ".github/workflows/k47-sector-visual.yml"
   push:
+    # Infra admits ONLY the current game main SHA *with* this exact-SHA
+    # visual artifact. A CSS/UX/gameplay-only merge must not strand the
+    # immutable GLB release handoff behind an obsolete source commit.
+    # PRs remain path-filtered; only trusted main pushes always get proof.
     branches: [main]
-    paths:
-      - "scripts/author_k47_archive.py"
-      - "scripts/author_k47_east.py"
-      - "scripts/author_k47_south.py"
-      - "scripts/k47_publication_candidate.py"
-      - "tests/test_k47_publication_candidate.py"
-      - ".github/workflows/k47-sector-visual.yml"
   workflow_dispatch:
 
 permissions:
