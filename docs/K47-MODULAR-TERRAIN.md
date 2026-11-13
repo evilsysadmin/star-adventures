@@ -134,3 +134,30 @@ the binary and SHA provenance are retained as reviewable artifacts.
 SVG/PBR fallback until a human-inspected side-by-side of actual live-game
 screenshots shows meaningful progress. The final source asset should be
 published in content-addressed R2 by infrastructure, never by this game repo.
+
+
+## Four-cell landing transfer platform — actual viewport A/B
+
+Prior science superstructure experiment #287 passed browser tests but was
+**rejected without merge**: the 3-cell tower was mostly outside the actual
+phone follow camera, behind the command/mission overlays. The rejected
+256px world-aligned microtexture experiment #286 also failed perceptual
+review. Adding asset complexity without an obvious visible game improvement
+is NOT progress.
+
+The next candidate replaces **the existing 2x2 central transfer hatch**, a
+truly visible object under the playable crew, with a continuous industrial
+fabrication: cast-steel bevel, large shared panel geometry, a recessed
+machinery hub, substantial safety markings and large weathered plate details.
+It uses no image download, extra GLB, fake station, synthetic collision or
+second canvas, and never changes the four authoritative original walkable
+cells. No doorway or access through a blocked wall is implied.
+
+A local development-only `__k47LegacyLandingPlatform` flag switches just
+the decoration back to its pre-change drawing, without changing fog, game
+state, camera or input. The exact-route Chromium A/B spec records old/new
+**default follow views** at 390 and 1280, plus real full-map views, checks all
+216 real hit targets and genuine movement/F5. Production always uses the
+candidate style. The dedicated visual workflow keeps these screenshots as
+review artifacts. Inspect at actual mobile display size; if visually weak,
+visually noisy or masking crew feet/waypoints, reject without merging.
