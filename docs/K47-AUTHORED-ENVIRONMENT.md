@@ -214,3 +214,30 @@ the published manifest only after the public CDN proves the exact bytes.
 **No green CI result means the human approves the artwork.** This artifact
 is a safe delivery candidate; visually reject it if the approved mock,
 crew readability or wide landing yard are not met.
+
+
+## Release liveness: produce a complete handoff for EVERY main SHA
+
+ShadowOps Infra's immutable art publisher intentionally refuses a source
+art artifact whose `sourceSha` is not **current** Star Adventures `main`,
+even if the three GLB binary hashes are unchanged. A narrow
+`push.paths` filter on the original-art workflow made ordinary UI or
+mission improvements silently invalidate the last valid publication
+candidate: source CI was green but the newly current source SHA had no
+art artifact and could never pass Infra's independent discovery gate.
+
+The source **PR trigger remains narrowly filtered** to K-47 art,
+tests and workflow changes. The **push-to-main trigger runs for every
+main commit**, producing the 3 verified original binaries, checksum-pinned
+same-SHA candidate/receipt and the genuine 390/1280 Chromium screenshots
+needed by Infra. It does not publish R2 or mark assets active. Original
+GLBs have content-addressed names, so an unchanged model legitimately
+retains its stable immutable URL even when the source receipt's SHA
+changes. Infra still independently requires BOTH completed green source
+CI and completed green K-47 art workflow for the EXACT current main SHA,
+plus reviewed artwork and manual protected R2 publication.
+
+This intentionally trades one bounded art validation job per main merge
+for eliminating stale-artifact release deadlocks and manual source
+rebuilds. A missing/failed art job must block publication, not allow
+fallback to an older source's receipt.
