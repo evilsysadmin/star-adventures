@@ -214,3 +214,23 @@ the published manifest only after the public CDN proves the exact bytes.
 **No green CI result means the human approves the artwork.** This artifact
 is a safe delivery candidate; visually reject it if the approved mock,
 crew readability or wide landing yard are not met.
+
+## Exact-main release-admission continuity
+
+The ShadowOps Infra original-GLB publisher intentionally admits **only the
+current Star Adventures `main` SHA**, which must have successful, distinct
+source CI **and** `K-47 unified architecture · full-sector visual gate`
+`push` runs, plus an unexpired `k47-three-building-sector-<SHA>` artifact.
+This blocks stale content and prevents an unreviewed game revision from being
+paired with an older art/build receipt.
+
+Until K-47 originals are publicly uploaded and activated, the full-sector
+workflow therefore runs on **every push to `main`**, including unrelated
+UI/game changes. Pull requests remain path-filtered: a normal K-47 UI PR is
+reviewed with its own targeted browser tests, while only a merged SHA
+produces the immutable source-art handoff that Infra may admit. This is a
+deliberate CI-compute tradeoff to preserve reliable current-head admission.
+Do not fix a stale handoff by weakening Infra's exact-SHA rule, spoofing
+an artifact source receipt, publishing from a PR, or pointing the live
+manifest at still-404 CDN URLs. R2 publication remains separately manual,
+staging-approved and proven by the read-only CDN probe before activation.
