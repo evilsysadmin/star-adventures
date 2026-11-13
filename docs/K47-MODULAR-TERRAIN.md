@@ -161,3 +161,31 @@ state, camera or input. The exact-route Chromium A/B spec records old/new
 candidate style. The dedicated visual workflow keeps these screenshots as
 review artifacts. Inspect at actual mobile display size; if visually weak,
 visually noisy or masking crew feet/waypoints, reject without merging.
+
+
+## Connected low-profile courtyard (visual study)
+
+Two experimental tall hangar superstructures, #289 and #290, were reviewed
+via **actual mobile and desktop screenshots** and rejected: #289 rendered
+below the later SVG floor so it was almost invisible/dark; #290 drew above
+the floor but its south-perimeter façade overlapped the actual crew. The
+correct product response is NOT to fake additional tall geometry on the
+foreground blocked boundary.
+
+This candidate focuses on **one real walkable 6×4 landing court**. A reusable
+`GroundIndustrialApron` paints large plates, flush service trenches,
+restrained safety markings and multi-cell material seams at a shared
+world scale, with exact SVG clip masks assembled from **already explored,
+genuinely unblocked** cells. Visible/remembered fragments use distinct masks,
+unexplored cells remain absent; the real 2×2 machinery hatch remains painted
+above the new apron, as do mission markers and officers. All 216 gameplay
+picking diamonds, route rules, fog, station identities, F5 saves and the
+single original WebGL canvas remain unchanged. No external art is imported.
+
+A DEV-only `__k47LegacyIndustrialApron` comparison disables only the
+new low-profile art. Dedicated Chromium tests capture same-route
+before/after at 390 and 1280 in normal follow camera, verify each painted
+cell is a real explored walkable tile and no new input surface exists,
+then walk a real officer and reload. Close without merge if the screenshot
+result appears busy, creates false route cues or does not visibly approach
+the approved original K-47 reference.
