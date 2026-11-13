@@ -180,3 +180,28 @@ authored PBR materials; CI inspects the emitted GLB rooftop triangles and
 footprint. The dish is NOT a mission object, scanner interaction, doorway,
 or new navigable space. Publish only if actual 390px/1280px game screenshots
 materially improve without blocking the officers.
+
+
+## K-47 science wing: visible original vector architecture candidate
+
+The shared Archive/Sonda frontage at blocked 2,2 + 3,2 + 4,2 is **already
+visible SVG in the actual game**, unlike the three experimental GLB slots which
+remain unpublished. This focused visual candidate replaces the old low
+flat-roofed campus in the same drawn layer with a single large connected
+industrial research superstructure: deeper continuous glazed façade, five
+semantically reusable window bays, multi-height roof atrium, standing seams,
+service pipes and asymmetric sealed rooftop machinery. No R2 or GLB
+publication is claimed, and no asset is loaded from a new host.
+
+The module is passive (pointer-events none), fog-gated only after all three
+real footprint cells have been explored, and never creates a walkable roof,
+new station, mission label, collision or nav destination. The original
+science terminals/labels stay in their existing independently tested layer.
+
+Use the dedicated k47-science-visible workflow and the real
+groundScienceCampus Chromium journey to review **390 and 1280px actual mission
+screenshots** before merging any art change. Verify no top-frame clipping,
+correct crew scale/legibility, the original 216 picking cells, and state
+continuity after F5. If the visual difference is imperceptible or still
+looks like miniature cardboard buildings, **do not merge it**. A passing CI
+run only confirms the source works, not that it matches the approved mock.
