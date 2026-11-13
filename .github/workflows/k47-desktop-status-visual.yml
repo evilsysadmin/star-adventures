@@ -5,6 +5,7 @@ on:
     paths:
       - "frontend/src/components/gameShell.css"
       - "frontend/tests/k47DesktopStatusVisual.spec.ts"
+      - "frontend/tests/groundSquadIndividual.spec.ts"
       - ".github/workflows/k47-desktop-status-visual.yml"
 
 permissions:
@@ -25,7 +26,7 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Check real landing, 216 pick targets, movement, HUD bounds and F5
-        run: npm run test:e2e --prefix frontend -- tests/k47DesktopStatusVisual.spec.ts
+        run: npm run test:e2e --prefix frontend -- tests/k47DesktopStatusVisual.spec.ts tests/groundSquadIndividual.spec.ts
       - name: Preserve exact browser screenshots for visual approval
         if: always()
         uses: actions/upload-artifact@v4
