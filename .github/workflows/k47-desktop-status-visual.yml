@@ -1,0 +1,38 @@
+name: K-47 desktop compact command · real gameplay visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/gameShell.css"
+      - "frontend/tests/k47DesktopStatusVisual.spec.ts"
+      - ".github/workflows/k47-desktop-status-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-command:
+    name: Real 1280/1757 desktop and unchanged 390 mobile command HUD
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Check real landing, 216 pick targets, movement, HUD bounds and F5
+        run: npm run test:e2e --prefix frontend -- tests/k47DesktopStatusVisual.spec.ts
+      - name: Preserve exact browser screenshots for visual approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-desktop-compact-command-${{ github.sha }}
+          path: |
+            frontend/test-results/k47-desktop-compact-command-*.png
+            frontend/test-results/k47-mobile-unchanged-command-390.png
+          if-no-files-found: warn
+          retention-days: 14
