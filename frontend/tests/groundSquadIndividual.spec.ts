@@ -61,6 +61,11 @@ for (const width of [390, 1280]) {
     await expect(dorn).toHaveAttribute('data-grid-y','4');
     await expect(venn).toHaveAttribute('data-grid-x','3');
     await expect(mira).toHaveAttribute('data-grid-x','5');
+    // Follow-camera geometry continues to animate after the grid coordinate
+    // changes. A projected pointer order during that transition may land on
+    // the next tile: wait for the actual completed walk before probing the
+    // occupied cell, never add arbitrary timeouts or skip collision checks.
+    await expect(dorn).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
     await clickGround(page,3,5);
     await expect(page.getByTestId('ground-move-status')).toContainText('ocupada');
     await expect(dorn).toHaveAttribute('data-grid-y','4');
