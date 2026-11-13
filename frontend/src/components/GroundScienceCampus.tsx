@@ -36,7 +36,7 @@ export function GroundScienceCampus({known,visible}:Props){
  const lit=footprint.every(cell=>visible.has(cell));
  const start=at(2,2),end=at(4,2);
  // The building's floor is unchanged. Projected height is decorative only.
- const height=76;
+ const height=64;
  const a=point(start.x,start.y-20-height);
  const b=point(end.x+40,end.y-height);
  const c=point(end.x,end.y+20-height);
@@ -45,8 +45,8 @@ export function GroundScienceCampus({known,visible}:Props){
  const back=(t:number,drop=0)=>add(mix(a,b,t),0,drop);
  const segment=(l:number,r:number,top:number,bottom:number)=>shape([
   front(l,top),front(r,top),front(r,bottom),front(l,bottom)]);
- const upper={a:add(mix(a,b,.20),0,-48),b:add(mix(a,b,.77),0,-48),
-  c:add(mix(d,c,.77),0,-48),d:add(mix(d,c,.20),0,-48)};
+ const upper={a:add(mix(a,b,.20),0,-38),b:add(mix(a,b,.77),0,-38),
+  c:add(mix(d,c,.77),0,-38),d:add(mix(d,c,.20),0,-38)};
  const upperBase={a:mix(a,b,.20),b:mix(a,b,.77),
   c:mix(d,c,.77),d:mix(d,c,.20)};
  const tierTop=shape([upper.a,upper.b,upper.c,upper.d]);
@@ -85,9 +85,9 @@ export function GroundScienceCampus({known,visible}:Props){
        on every grid tile. No false stair or new accessible rooftop. */}
    <path d={shape([add(d,-5,65),add(c,6,65),add(b,6,66),add(a,-5,66)])}
      fill="#0b1f27" opacity=".58"/>
-   <path d={shape([b,c,add(c,0,76),add(b,0,76)])}
+   <path d={shape([b,c,add(c,0,64),add(b,0,64)])}
      fill="#1b3742" stroke="#0b2630" strokeWidth="2.5"/>
-   <path d={shape([d,c,add(c,0,76),add(d,0,76)])}
+   <path d={shape([d,c,add(c,0,64),add(d,0,64)])}
      fill="url(#k47-science-facade)" stroke="#152f38" strokeWidth="2.8"/>
    <path d={segment(0,1,58,66)} fill="#172d36"/>
    <path d={segment(0,1,68,74)} fill="#a99170"/>
