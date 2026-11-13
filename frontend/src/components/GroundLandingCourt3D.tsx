@@ -196,6 +196,10 @@ export function GroundLandingCourt3D({explored,visible,architectureOnly=false}:
   const visibleHangarSpans=southIndustrialSpans(explored,surface.walls)
     .filter(span=>span.cells.every(cell=>visible.has(cell)));
   const hangarKey=visibleHangarSpans.map(span=>span.start+'-'+span.end).join('|');
+  // A/B ONLY on the actual dev game; never alters squad physics or fog.
+  const legacyHangar=import.meta.env.DEV&&typeof window!=='undefined'&&
+    Boolean((window as typeof window&{__k47LegacyIndustrialHangar?:boolean})
+      .__k47LegacyIndustrialHangar);
   const pbrWallColumns=knownWalls.split(',').filter(Boolean)
     .map(Number).filter(x=>!authoredSouth.has(x)).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
@@ -243,7 +247,8 @@ export function GroundLandingCourt3D({explored,visible,architectureOnly=false}:
       // WebGL layer. SVG still owns the floor once lifted above decoration.
       if(!architectureOnly)disposeModular=addGroundVisualScene3D(scene,modulePlan);
       disposeHangars=addIndustrialSpanHangars(scene,
-        visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})));
+        visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})),
+        {legacyRoof:legacyHangar});
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
       setRenderedHangarKey(hangarKey);
@@ -289,7 +294,7 @@ export function GroundLandingCourt3D({explored,visible,architectureOnly=false}:
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey,architectureOnly]);
+  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey,architectureOnly,legacyHangar]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={architectureOnly?0:courtCells.length}
@@ -302,6 +307,7 @@ export function GroundLandingCourt3D({explored,visible,architectureOnly=false}:
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
     data-hangar-count={visibleHangarSpans.length}
+    data-industrial-art-style={legacyHangar?'single-storey-legacy':'lower-profile-glazed-industrial-gallery'}
     data-hangar-ready={state==='ready'&&visibleHangarSpans.length>0&&
       renderedHangarKey===hangarKey?'true':'false'}
     data-authored-art-slots={artManifest.slots.length}
