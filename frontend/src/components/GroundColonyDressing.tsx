@@ -46,7 +46,8 @@ const corridorRims=cells.filter(p=>p.x<9&&p.y<8&&!blocked.has(key(p.x,p.y)))
 type Vision={explored:ReadonlySet<string>;visible:ReadonlySet<string>};
 const fade=(visible:ReadonlySet<string>,id:string)=>visible.has(id)?1:.34;
 
-export function GroundColonyFloor({explored,visible}:Vision){
+export function GroundColonyFloor({explored,visible,separatePlatform=false}:
+ Vision & {separatePlatform?:boolean}){
  return <g data-testid="ground-colony-floor" pointerEvents="none">
   {cells.filter(p=>!blocked.has(key(p.x,p.y))&&explored.has(key(p.x,p.y))).map(cell=>{
    const id=key(cell.x,cell.y),p=project(cell.x,cell.y);
@@ -80,7 +81,8 @@ export function GroundColonyFloor({explored,visible}:Vision){
   {/* The first connected room footprint is the floor beneath route and
        obstacle dressing, never a second source of movement geometry. */}
   <GroundColonyWidePlaza explored={explored} visible={visible}/>
-  <GroundRescueBayDeck explored={explored} visible={visible}/>
+  <GroundRescueBayDeck explored={explored} visible={visible}
+     layer={separatePlatform?'underlay':'full'}/>
   {/* The exterior apron continues the real service-gate topology; the
        corridor stays above it so the gateway threshold remains legible. */}
   <GroundServiceYard explored={explored} visible={visible}/>
