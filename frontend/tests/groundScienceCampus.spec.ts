@@ -35,6 +35,34 @@ for(const width of [390,1280]){
 
   await expect(wing).toHaveAttribute('data-footprint','2,2 3,2 4,2');
   await expect(wing).toHaveAttribute('data-fog','visible');
+
+  await expect(wing).toHaveAttribute('data-render-class','k47-research-superstructure');
+  await expect(wing.getByTestId('ground-science-upper-atrium')).toHaveCount(1);
+  await expect(wing.getByTestId('ground-science-roof-plant')).toHaveCount(1);
+  await expect(wing.getByTestId('ground-science-glazed-bay')).toHaveCount(5);
+  // Test actual painted scale, not just the existence of a new decorative node.
+  const volume=await wing.evaluate(node=>{
+    const root=node as SVGGraphicsElement;
+    const outer=root.getBBox();
+    const upper=root.querySelector('[data-testid="ground-science-upper-atrium"]') as SVGGraphicsElement;
+    const roof=upper.getBBox();
+    return {
+      wide:outer.width>=155,
+      tall:outer.height>=135,
+      atriumWide:roof.width>=65,
+      atriumTall:roof.height>=65,
+      passive:getComputedStyle(root).pointerEvents==='none',
+      noPhantomCells:root.querySelectorAll('[data-cell-id],[data-officer-id]').length===0,
+    };
+  });
+  expect(volume).toEqual({
+    wide:true,tall:true,atriumWide:true,atriumTall:true,
+    passive:true,noPhantomCells:true,
+  });
+  // Screenshot the actual mission with a true, discovered science sector.
+  // This is not a separately invented image or a new fake game board.
+  await board.screenshot({path:'test-results/k47-science-superstructure-'+width+'.png'});
+
   await expect(wing).toHaveAttribute('pointer-events','none');
   await expect(page.getByTestId('ground-architecture-wall-3,2')).toHaveCount(0);
   for(const id of ['2,2','3,2','4,2']){
