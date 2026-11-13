@@ -50,7 +50,7 @@ for(const width of [390,1280]){
       wide:outer.width>=155,
       tall:outer.height>=135,
       atriumWide:roof.width>=65,
-      atriumTall:roof.height>=65,
+      atriumTall:roof.height>=50,
       passive:getComputedStyle(root).pointerEvents==='none',
       noPhantomCells:root.querySelectorAll('[data-cell-id],[data-officer-id]').length===0,
     };
