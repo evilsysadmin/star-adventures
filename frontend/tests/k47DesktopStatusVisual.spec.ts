@@ -73,7 +73,7 @@ for(const {width,height} of [{width:1280,height:850},{width:1757,height:800}]){
  });
 }
 
-test('K-47 mobile still has original thumb-sized commands and feedback',async({page})=>{
+test('K-47 mobile command hit targets reach 44px without HUD overlap',async({page})=>{
  test.setTimeout(100000);
  await page.setViewportSize({width:390,height:850});
  const board=await land(page);
@@ -93,6 +93,6 @@ test('K-47 mobile still has original thumb-sized commands and feedback',async({p
  await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
  await board.locator('[data-cell-id="5,6"]').click({button:'right'});
  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','6',{timeout:30000});
- await page.screenshot({path:'test-results/k47-mobile-unchanged-command-390.png'});
+ await page.screenshot({path:'test-results/k47-mobile-touch44-command-390.png'});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
