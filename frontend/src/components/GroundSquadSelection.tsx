@@ -541,7 +541,7 @@ export function GroundSquadSelection({
             WebGL fallback still leaves the complete floor and deck intact. */}
         {!legacyDepthOrder&&<>
           <GroundLandingCourt3D explored={displayedFog.explored}
-            visible={displayedFog.visible}/>
+            visible={displayedFog.visible} architectureOnly/>
           <GroundRescueBayDeck explored={displayedFog.explored}
             visible={displayedFog.visible} layer="overlay"/>
         </>}
