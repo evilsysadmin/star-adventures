@@ -1,4 +1,5 @@
 import world from '../../../content/scenes/meridian.json';
+import {GroundIndustrialApron} from './GroundIndustrialApron';
 
 // First connected interior footprint. The visual bay only covers real
 // walkable cells from the authored scene: it cannot invent walls, stations,
@@ -42,6 +43,11 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
   const hatchKnown=centerCells.every(k=>explored.has(k)&&roomIds.has(k));
   const hatchVisible=centerCells.every(k=>visible.has(k));
   const center=at(2.5,4.5);
+  // Exact-route DEV-only A/B switch. Production always uses the complete
+  // original industrial apron. Never changes the mission or visibility data.
+  const legacyApron=import.meta.env.DEV&&typeof window!=='undefined'&&
+    Boolean((window as typeof window&{__k47LegacyIndustrialApron?:boolean})
+      .__k47LegacyIndustrialApron);
   // A/B preview is strictly local development; production always renders
   // the authored platform. It never affects game state or tile picking.
   const legacyPreview=import.meta.env.DEV && typeof window!=='undefined' &&
@@ -90,6 +96,10 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
           opacity={current?1:.33}/>;
       })}
     </g>
+    {/* Multi-cell industrial fabrication lives ON the known, actually free
+        floor, beneath original machinery, routes, stations and officers. */}
+    {!legacyApron&&<GroundIndustrialApron cells={room}
+      explored={explored} visible={visible}/>}
     {/* A single large room-scale hatch, visibly spanning four canonical
         walkable cells rather than repeating one marker on each floor tile.
         Its center lies below the officers, and it never accepts input. */}
