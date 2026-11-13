@@ -2,6 +2,7 @@ import world from '../../../content/scenes/meridian.json';
 import {GroundMedicalFacility} from './GroundMedicalFacility';
 import {GroundProbeArray} from './GroundProbeArray';
 import {GroundSouthIndustrialWing} from './GroundSouthIndustrialWing';
+import {GroundScienceCampus} from './GroundScienceCampus';
 import {southIndustrialSpans,southIndustrialCoveredColumns} from '../groundSouthIndustrialSpans';
 import {waypointRibbonShift,type LabelViewFrame} from '../groundWaypointRibbon';
 
@@ -147,84 +148,6 @@ function GroundWarehouseBlock({known,visible}:{
    These three real blocked cells already exist; the two playable mission
    terminals retain all their IDs/actions and are drawn on top. Nothing
    here creates a path, a door, or a second mission interaction. */
-function GroundScienceCampus({known,visible}:{
- known:boolean;visible:ReadonlySet<string>;
-}){
- if(!known)return null;
- const start=at(2,2),end=at(4,2),lit=scienceFootprint.every(p=>
-   visible.has(key(p.x,p.y)));
- const a={x:start.x,y:start.y-82};
- const b={x:end.x+40,y:end.y-62};
- const c={x:end.x,y:end.y-42};
- const d={x:start.x-40,y:start.y-62};
- const path=(pts:Array<{x:number;y:number}>)=>
-   pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ')+'Z';
- const front=(u:number,v:number,top:number,bottom:number)=>
-   path([u,v,v,u].map((t,i)=>({
-     x:d.x+(c.x-d.x)*t,
-     y:d.y+(c.y-d.y)*t+(i<2?top:bottom),
-   })));
- return <g data-testid="ground-science-campus"
-   data-footprint="2,2 3,2 4,2"
-   data-fog={lit?'visible':'remembered'}
-   opacity={lit?1:.68} pointerEvents="none" aria-hidden="true">
-   <defs>
-     <linearGradient id="ground-science-campus-cladding" x1="0" y1="0" x2="1" y2="1">
-       <stop stopColor="#61777a"/>
-       <stop offset=".55" stopColor="#354f56"/>
-       <stop offset="1" stopColor="#223943"/>
-     </linearGradient>
-     <linearGradient id="ground-science-campus-roof" x1="0" y1="0" x2="0" y2="1">
-       <stop stopColor="#91a397"/>
-       <stop offset=".6" stopColor="#647b75"/>
-       <stop offset="1" stopColor="#3c5958"/>
-     </linearGradient>
-   </defs>
-   <path d={path([
-      {x:d.x-3,y:d.y+58},{x:c.x+4,y:c.y+58},
-      {x:b.x+4,y:b.y+58},{x:a.x-3,y:a.y+58},
-    ])} fill="#091f27" opacity=".65"/>
-   {/* One tall connected facade across Archive and Sonda, at precisely
-       the canonical obstacle frontage. No facade touches a free tile. */}
-   <path d={path([d,c,{x:c.x,y:c.y+59},{x:d.x,y:d.y+59}])}
-     fill="url(#ground-science-campus-cladding)" stroke="#162e37"
-     strokeWidth="2.5"/>
-   <path d={path([b,c,{x:c.x,y:c.y+59},{x:b.x,y:b.y+59}])}
-     fill="#263e47" stroke="#172f38" strokeWidth="2"/>
-   <path d={front(.08,.94,9,36)} fill="#152f3a" stroke="#88a5a0" strokeWidth="1.8"/>
-   {[.14,.42,.70].map((u,i)=><g key={i}>
-     <path d={front(u,u+.16,13,32)}
-       fill={i===1?'#6bb3b5':'#77a4a2'} stroke="#183941" strokeWidth="1.3"/>
-     <path d={front(u+.075,u+.084,13,32)}
-       fill="#173b47"/>
-     <path d={front(u,u+.16,36,39)} fill="#d6b77f"/>
-   </g>)}
-   <path d={front(0,1,48,53)} fill="#182f38"/>
-   {/* Shared roof / eave makes the two terminal modules read as a facility.
-       The stations stay individually clickable and fog-gated above it. */}
-   <path d={path([a,b,c,d])} fill="url(#ground-science-campus-roof)"
-     stroke="#b9c7b2" strokeWidth="2.6"/>
-   <path d={'M'+(a.x+8)+' '+(a.y+10)+'L'+(b.x+8)+' '+(b.y+10)}
-     stroke="#203d48" strokeWidth="7" fill="none"/>
-   <path d={'M'+(d.x+7)+' '+(d.y-5)+'L'+(c.x+7)+' '+(c.y-5)}
-     stroke="#e4bb7c" strokeWidth="2.8" fill="none"/>
-   {[.23,.48,.73].map((t,i)=>{
-     const x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
-     return <g key={i}>
-       <path d={'M'+(x-9)+' '+(y+12)+'l12 -6 18 9 -12 6Z'}
-         fill="#263e44" stroke="#acb7a5" strokeWidth="1.2"/>
-       <path d={'M'+(x+2)+' '+(y+10)+'l8 4'}
-         stroke="#d7c292" strokeWidth="1.4"/>
-     </g>;
-   })}
-   <path d={'M'+d.x+' '+d.y+'L'+c.x+' '+c.y}
-     stroke="#e2c58a" strokeWidth="3.5" fill="none"/>
-   <circle cx={d.x+9} cy={d.y+12} r="3.6" fill="#efb16d"/>
-   <circle cx={c.x-9} cy={c.y+12} r="3.6" fill="#efb16d"/>
-   <title>Ala científica compartida de Archivo y Sonda</title>
- </g>;
-}
-
 export function GroundColonyWalls({explored,visible}:Vision){
  const warehouseKnown=warehouseValid&&warehouseFootprint.every(p=>explored.has(key(p.x,p.y)));
  const scienceKnown=scienceValid&&scienceFootprint.every(p=>explored.has(key(p.x,p.y)));
