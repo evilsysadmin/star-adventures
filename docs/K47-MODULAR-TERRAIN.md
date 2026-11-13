@@ -212,3 +212,28 @@ which had previously been hidden under the SVG floor. The validated candidate
 therefore lifts the existing physical hangar plinth, supports, shutters and
 front recess into a restrained weathered metal range. This does not change
 a single vertex, enemy encounter, shadow ownership or selectable tile.
+
+
+## Post-depth industrial gallery: controlled visual retry
+
+#289's original tall south hangar failed visual QA because the entire
+environment WebGL canvas was underneath the later SVG ground dressing.
+The compositor correction #292 (merged and green) now paints *only* 3D
+architecture above the SVG floor and below the squad. It is therefore
+appropriate to RETRY an original upper industrial glass gallery in that
+new real depth order—without re-merging #289 or modifying the approved
+floor. This candidate is shorter, approximately 1.83 world units at the
+roof rather than 2.075, with smaller stacks and lower glazing to keep a
+grounded silhouette. All new geometry remains over the existing verified
+row-7 blocked wall run.
+
+No new R2 asset, source of collision, station, mission action, tile,
+renderer, input plane or first-person route is introduced. The existing
+one-storey structure remains a real development comparison under
+`__k47LegacyIndustrialHangar`, while production sees the gallery.
+Same-route Chrome A/B at 390/1280 captures landing and genuine squad
+movement to (5,6) after the compositor correction. No merge on CI alone:
+review the *actual* default-follow screenshots, check crew occlusion,
+visible structure scale and reference fidelity. Reject if it again reads
+as a featureless bar. The previously approved WebGL-denied SVG fallback
+must remain operational.
