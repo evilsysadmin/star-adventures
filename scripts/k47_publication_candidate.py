@@ -122,7 +122,8 @@ def validate_source(meta: dict, blob: bytes, slot: tuple) -> dict:
 def assemble(fixtures: Path, output: Path, source_sha: str) -> dict:
     require(bool(SHA.fullmatch(source_sha)), "full 40-character source SHA required")
     require(fixtures.is_dir() and not fixtures.is_symlink(), "fixtures directory missing")
-    require(not output.exists(), "output directory must not already exist")
+    require(not output.exists() and not output.is_symlink(),
+            "output directory must not already exist")
     entries = []
     staged: list[tuple[str, bytes]] = []
     total = 0
@@ -145,6 +146,7 @@ def assemble(fixtures: Path, output: Path, source_sha: str) -> dict:
         total += len(blob)
     require(len(staged) == MAX_GLBS and total <= MAX_PACK, "wrong candidate pack budget")
     manifest = {"schemaVersion": 1, "scene": "meridian.surface", "slots": entries}
+    manifest_payload = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
     checksums = [{
         "key": "assets/" + key,
         "sha256": entry["asset"]["sha256"],
@@ -157,9 +159,7 @@ def assemble(fixtures: Path, output: Path, source_sha: str) -> dict:
         "modelCount": MAX_GLBS,
         "bytes": total,
         "sha256sums": checksums,
-        "manifestSha256": hashlib.sha256(
-            (json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
-            .encode("utf-8")).hexdigest(),
+        "manifestSha256": hashlib.sha256(manifest_payload.encode("utf-8")).hexdigest(),
         "published": False,
         "visualAcceptance": "review Chrome 390/1280 actual mission screenshots before any R2 write",
     }
@@ -168,7 +168,7 @@ def assemble(fixtures: Path, output: Path, source_sha: str) -> dict:
         for name, data in staged:
             (output / "assets" / name).write_bytes(data)
         (output / "manifest.candidate.json").write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            manifest_payload, encoding="utf-8")
         (output / "receipt.json").write_text(
             json.dumps(receipt, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     except OSError:
