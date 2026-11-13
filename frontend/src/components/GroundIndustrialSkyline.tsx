@@ -21,8 +21,8 @@ const polygon=(list:ReadonlyArray<Point>)=>
 const path=(list:ReadonlyArray<Point>)=>
  list.map((v,i)=>(i?'L':'M')+v.x.toFixed(2)+' '+v.y.toFixed(2)).join(' ');
 
-function VisibleIndustrialGallery({span}:{
- span:SouthWingSpan;
+function VisibleIndustrialGallery({span,lit}:{
+ span:SouthWingSpan;lit:boolean;
 }){
  // This slab sits directly on the original real run of blocked cells.
  // The original 51px lower roof is preserved; nothing projects across a
@@ -44,6 +44,8 @@ function VisibleIndustrialGallery({span}:{
  return <g data-testid={'ground-industrial-skyline-'+span.start+'-to-'+span.end}
    data-architectural-form="connected-glazed-research-industrial-gallery"
    data-footprint={span.cells.join(' ')}
+   data-fog={lit?'visible':'remembered'}
+   opacity={lit?1:.28}
    pointerEvents="none" aria-hidden="true">
    {/* Strong end return and one continuous panelled upper front. */}
    <path d={polygon([B,C,c,b])}
@@ -138,10 +140,11 @@ function VisibleIndustrialGallery({span}:{
 }
 
 export function GroundIndustrialSkyline({spans,visible}:Props){
- const ready=spans.filter(span=>span.end>span.start&&
-   span.cells.every(cell=>visible.has(cell)));
+ const known=spans.filter(span=>span.end>span.start);
+ const lit=(span:SouthWingSpan)=>span.cells.every(cell=>visible.has(cell));
  return <g data-testid="ground-industrial-skyline"
-   data-visible-spans={ready.length}
+   data-known-spans={known.length}
+   data-visible-spans={known.filter(lit).length}
    pointerEvents="none" aria-hidden="true">
   <defs>
    <linearGradient id="k47-upper-industrial-front" x1=".1" y1="0" x2=".4" y2="1">
@@ -165,6 +168,7 @@ export function GroundIndustrialSkyline({spans,visible}:Props){
      <stop offset="1" stopColor="#fdd093" stopOpacity="0"/>
    </radialGradient>
   </defs>
-  {ready.map(span=><VisibleIndustrialGallery key={span.start} span={span}/>)}
+  {known.map(span=><VisibleIndustrialGallery key={span.start}
+    span={span} lit={lit(span)}/>)}
  </g>;
 }
