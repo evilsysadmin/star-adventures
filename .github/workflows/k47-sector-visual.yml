@@ -96,7 +96,7 @@ jobs:
           python scripts/k47_publication_candidate.py \
             --source-sha "$SOURCE_SHA" \
             --fixtures frontend/tests/fixtures \
-            --output k47-art-candidate
+            --output frontend/k47-art-candidate
       - name: Upload actual before/after screenshots and original models
         if: always()
         uses: actions/upload-artifact@v4
@@ -105,7 +105,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
           path: |
-            k47-art-candidate/
+            frontend/k47-art-candidate/
             frontend/test-results/k47-full-sector-*.png
             frontend/tests/fixtures/k47-south-candidate.glb
             frontend/tests/fixtures/k47-south-candidate.json
