@@ -1,0 +1,39 @@
+name: K-47 depth compositing · single canvas visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundSquadSelection.tsx"
+      - "frontend/src/components/GroundRescueBayDeck.tsx"
+      - "frontend/src/components/GroundColonyDressing.tsx"
+      - "frontend/tests/groundLandingCourt3D.spec.ts"
+      - "frontend/tests/k47DepthCompositionVisual.spec.ts"
+      - ".github/workflows/k47-depth-compositing-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  depth-visual:
+    name: K-47 canvas order A/B · mobile 390 and desktop 1280
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Verify same-route real game, old/new, fog, picking, F5 and WebGL fallback
+        run: npm run test:e2e --prefix frontend -- tests/k47DepthCompositionVisual.spec.ts
+      - name: Upload exact-game A/B screenshots for visual QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-depth-compositing-${{ github.sha }}
+          path: frontend/test-results/k47-depth-*.png
+          if-no-files-found: warn
+          retention-days: 14
