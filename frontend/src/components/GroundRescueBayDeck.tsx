@@ -38,7 +38,9 @@ const polygon=(p:Cell)=>{
     'L'+c.x+' '+(c.y+20)+'L'+(c.x-40)+' '+c.y+'Z';
 };
 
-export function GroundRescueBayDeck({explored,visible}:Vision){
+export function GroundRescueBayDeck({explored,visible,layer='full'}:Vision & {
+  layer?:'full'|'underlay'|'overlay';
+}){
   const hatchKnown=centerCells.every(k=>explored.has(k)&&roomIds.has(k));
   const hatchVisible=centerCells.every(k=>visible.has(k));
   const center=at(2.5,4.5);
@@ -47,9 +49,10 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
   const legacyPreview=import.meta.env.DEV && typeof window!=='undefined' &&
     Boolean((window as typeof window&{__k47LegacyLandingPlatform?:boolean})
       .__k47LegacyLandingPlatform);
-  return <g data-testid="ground-rescue-bay" pointerEvents="none"
+  return <g data-testid={layer==='overlay'?'ground-bay-platform-overlay':'ground-rescue-bay'}
+    data-render-layer={layer} pointerEvents="none"
     aria-hidden="true">
-    <defs>
+    {layer!=='overlay'&&<defs>
       {/* One surface-wide gradient, not 24 separate tile gradients. */}
       <linearGradient id="ground-bay-deck-gradient" gradientUnits="userSpaceOnUse"
         x1="245" y1="160" x2="690" y2="450">
@@ -80,8 +83,8 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
         <path d="M3 35l8 -2M47 17l13 2M35 49l10 -1"
           stroke="#e1bc8f" strokeWidth="1.4" fill="none" opacity=".15"/>
       </pattern>
-    </defs>
-    <g data-testid="ground-bay-continuous-floor">
+    </defs>}
+    {layer!=='overlay'&&<g data-testid="ground-bay-continuous-floor">
       {room.filter(p=>explored.has(id(p.x,p.y))).map(p=>{
         const k=id(p.x,p.y),current=visible.has(k);
         return <path key={k} data-testid={'ground-bay-floor-'+k}
@@ -89,11 +92,11 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
           d={polygon(p)} fill="url(#ground-bay-deck-gradient)"
           opacity={current?1:.33}/>;
       })}
-    </g>
+    </g>}
     {/* A single large room-scale hatch, visibly spanning four canonical
         walkable cells rather than repeating one marker on each floor tile.
         Its center lies below the officers, and it never accepts input. */}
-    {hatchKnown&&<g data-testid="ground-bay-central-hatch"
+    {layer!=='underlay'&&hatchKnown&&<g data-testid="ground-bay-central-hatch"
       data-visual-version={legacyPreview?'legacy':'connected-industrial-transfer-platform'}
       data-fog={hatchVisible?'visible':'remembered'}
       transform={'translate('+center.x+' '+center.y+')'}
@@ -183,7 +186,7 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
     {/* Low skirting and a short rear glass bulkhead follow ONLY existing
         wall neighbors. Unknown neighbors stay hidden, keeping fog truthful.
         No wall or collision is added to a walkable cell. */}
-    <g data-testid="ground-bay-actual-wall-faces">
+    {layer!=='overlay'&&<g data-testid="ground-bay-actual-wall-faces">
       {wallFaces.filter(({p,neighbor})=>
         explored.has(id(p.x,p.y))&&explored.has(neighbor)).map(({p,edge,neighbor})=>{
         const pos=at(p.x,p.y),k=id(p.x,p.y);
@@ -209,6 +212,6 @@ export function GroundRescueBayDeck({explored,visible}:Vision){
             strokeWidth="1.8" opacity=".87"/>
         </g>;
       })}
-    </g>
+    </g>}
   </g>;
 }
