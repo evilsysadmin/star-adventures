@@ -180,3 +180,37 @@ authored PBR materials; CI inspects the emitted GLB rooftop triangles and
 footprint. The dish is NOT a mission object, scanner interaction, doorway,
 or new navigable space. Publish only if actual 390px/1280px game screenshots
 materially improve without blocking the officers.
+
+
+## Approved-asset handoff (still NOT a publication)
+
+The original three-building source already produces **visible real-game
+A/B** screenshots; the public runtime manifest remains deliberately
+`unpublished` until the CDN objects exist and are independently verified.
+The `K-47 unified architecture · full-sector visual gate` workflow now
+runs on source PRs and on matching main pushes. After completing authentic
+Chromium walking/fog/F5 at **390 and 1280 px**, it stages a bounded immutable
+`k47-art-candidate/` bundle, with:
+
+- `assets/<logical-id>-<sha16>.glb`: exactly 3 actual original self-contained
+  GLB 2.0 binaries built from pinned generator and material dependencies.
+- `manifest.candidate.json`: the three correct real blocker footprints,
+  original provenance, byte length, full SHA-256 and planned immutable R2
+  URLs. The `published` fields here are **candidate data only**.
+- `receipt.json`: exact source SHA and a second byte/hash index. The receipt
+  says `published: false` and is not an R2 authorization by itself.
+- `k47-full-sector-*.png`: genuine before/after follow and overview
+  screenshots, never mock images or unverified public deployment claims.
+
+The independent preflight rejects missing, renamed, oversized, external-URI,
+bad-checksum, badly sourced or out-of-footprint models **before writing** the
+bundle. It never uses network credentials or mutates the production manifest.
+The source artifact is retained for 30 days. Infra must pin a completed
+successful **main** source workflow run, independently verify the artifact
+and both viewport captures, publish only immutable content-addressed keys,
+verify real HTTPS/CORS/bytes, and obtain a separate source PR to enable
+the published manifest only after the public CDN proves the exact bytes.
+
+**No green CI result means the human approves the artwork.** This artifact
+is a safe delivery candidate; visually reject it if the approved mock,
+crew readability or wide landing yard are not met.
