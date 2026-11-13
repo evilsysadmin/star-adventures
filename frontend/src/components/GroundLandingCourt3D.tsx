@@ -190,6 +190,12 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
   const visibleHangarSpans=southIndustrialSpans(explored,surface.walls)
     .filter(span=>span.cells.every(cell=>visible.has(cell)));
   const hangarKey=visibleHangarSpans.map(span=>span.start+'-'+span.end).join('|');
+  // A/B compare actual play at the same camera position in development only.
+  // Production always draws the authored two-storey gallery. This flag never
+  // touches pathfinding, fog, authored station data or input targets.
+  const legacyHangar=import.meta.env.DEV&&typeof window!=='undefined'&&
+    Boolean((window as typeof window&{__k47LegacyIndustrialHangar?:boolean})
+      .__k47LegacyIndustrialHangar);
   const pbrWallColumns=knownWalls.split(',').filter(Boolean)
     .map(Number).filter(x=>!authoredSouth.has(x)).join(',');
   // Adding an entirely discovered authored building triggers a repaint, but
@@ -235,7 +241,8 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
         new Set(modulePlan.tiles.map(p=>p.cellId)));
       disposeModular=addGroundVisualScene3D(scene,modulePlan);
       disposeHangars=addIndustrialSpanHangars(scene,
-        visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})));
+        visibleHangarSpans.map(span=>({start:span.start,end:span.end,row:7})),
+        {legacyRoof:legacyHangar});
       const camera=makeGroundArchiveCamera();
       renderer.render(scene,camera);
       setRenderedHangarKey(hangarKey);
@@ -281,7 +288,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
       disposeCourt?.();
       renderer?.dispose();
     };
-  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey]);
+  },[active,knownWalls,pbrWallColumns,moduleKey,authoredKey,artManifest,hangarKey,legacyHangar]);
   return <foreignObject data-testid="ground-landing-court-3d"
     data-topology-valid={topologyValid?'true':'false'}
     data-painted-cells={courtCells.length}
@@ -293,6 +300,7 @@ export function GroundLandingCourt3D({explored,visible}:Vision){
     data-discovered-wall-columns={knownWalls}
     data-pbr-wall-fallback-columns={pbrWallColumns}
     data-hangar-count={visibleHangarSpans.length}
+    data-industrial-art-style={legacyHangar?'single-storey-legacy':'tiered-glazed-engineering-hall'}
     data-hangar-ready={state==='ready'&&visibleHangarSpans.length>0&&
       renderedHangarKey===hangarKey?'true':'false'}
     data-authored-art-slots={artManifest.slots.length}
