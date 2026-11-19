@@ -49,8 +49,10 @@ jobs:
       # New specs receive a fallback weight and are assigned automatically.
       - name: Browser journey, keyboard and mobile widths (shard 1/5)
         run: node scripts/run-browser-shard.mjs 1/5
+      # Visual evidence is mandatory for PR review and failed browser jobs.
+      # Infra rebuilds exact main SHA; successful main runs need no duplicate PNG archive.
       - name: Upload browser screenshots and lockfile
-        if: always()
+        if: ${{ always() && (github.event_name == 'pull_request' || failure()) }}
         uses: actions/upload-artifact@v4
         with:
           name: star-adventures-react-visual-${{ github.sha }}
@@ -82,8 +84,9 @@ jobs:
         run: google-chrome --version
       - name: Browser journey, keyboard and mobile widths (shard ${{ matrix.shard }}/5)
         run: node scripts/run-browser-shard.mjs ${{ matrix.shard }}/5
+      # Keep failed-shard diagnostics and PR screenshots, not five green-main archives.
       - name: Upload browser screenshots
-        if: always()
+        if: ${{ always() && (github.event_name == 'pull_request' || failure()) }}
         uses: actions/upload-artifact@v4
         with:
           name: star-adventures-react-visual-part${{ matrix.shard }}-${{ github.sha }}
