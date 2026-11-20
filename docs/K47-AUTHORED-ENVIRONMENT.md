@@ -83,7 +83,7 @@ containing:
 
 ```json
 {
-  "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/<logical-id>-<sha16>.glb",
+  "url": "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/<logical-id>-<sha16>.glb",
   "sha256": "<real full SHA-256>",
   "bytes": 123456,
   "license": "original",
