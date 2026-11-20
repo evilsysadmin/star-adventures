@@ -67,7 +67,8 @@ export function GroundServiceYard({explored,visible}:Vision){
         const k=xy(p),lit=visible.has(k);
         return <path key={k} data-testid={'ground-yard-floor-'+k}
           data-fog={lit?'visible':'remembered'} d={base(p)}
-          fill="url(#ground-yard-paving)" opacity={lit?1:.32}/>;
+          fill="url(#ground-yard-paving)" fillOpacity=".16"
+          opacity={lit?1:.32}/>;
       })}
     </g>
     {/* Worn twin-lane service stripes run across only real accessible
