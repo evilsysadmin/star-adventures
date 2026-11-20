@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 test.use({storageState:{cookies:[],origins:[]}});
 const root=fileURLToPath(new URL('./fixtures/',import.meta.url));
-const base='https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/';
+const base='https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/';
 const configs=[
  {id:'south-industrial-shell',file:'k47-south-candidate.glb',footprint:[[3,7],[4,7],[5,7],[6,7],[7,7]],anchor:[5,0,7]},
  {id:'west-archive-shell',file:'k47-archive-candidate.glb',footprint:[[0,3],[0,4],[0,5]],anchor:[0,0,4]},
