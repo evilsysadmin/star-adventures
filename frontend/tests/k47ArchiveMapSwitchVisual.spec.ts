@@ -70,7 +70,7 @@ test('desktop follow retains ARCHIVO plaque below real toolbar without moving it
  expect(toolbar).not.toBeNull();
  // Capture the actual scene BEFORE strict overlap assertions, so any
  // failure preserves the offending plaque and control positions.
- await page.screenshot({path:'test-results/k47-archive-plaque-safe-follow-1280.png'});
+ await page.screenshot({path:'test-results/k47-archive-map-switch-safe-follow-1280.png'});
  const shift=Number(await objective.getAttribute('data-ribbon-y-shift'));
  expect(shift).toBeGreaterThan(0);
  expect(label!.y).toBeGreaterThan(toolbar!.y+toolbar!.height+8);
