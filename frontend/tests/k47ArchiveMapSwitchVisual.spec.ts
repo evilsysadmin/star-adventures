@@ -65,17 +65,25 @@ test('desktop follow retains ARCHIVO plaque below real toolbar without moving it
  await expect(station).toBeVisible();
  const label=await objective.boundingBox();
  const toolbar=await page.locator('.game-toolbar').boundingBox();
- const controls=await page.locator('.firstperson-top').boundingBox();
+ const controls=await page.locator('.firstperson-top button').all();
  expect(label).not.toBeNull();
  expect(toolbar).not.toBeNull();
- expect(controls).not.toBeNull();
+ // Capture the actual scene BEFORE strict overlap assertions, so any
+ // failure preserves the offending plaque and control positions.
+ await page.screenshot({path:'test-results/k47-archive-plaque-safe-follow-1280.png'});
  const shift=Number(await objective.getAttribute('data-ribbon-y-shift'));
  expect(shift).toBeGreaterThan(0);
  expect(label!.y).toBeGreaterThan(toolbar!.y+toolbar!.height+8);
- expect(overlap(label!,controls!)).toBe(false);
+ // The .firstperson-top layout box can span noninteractive empty space.
+ // Validate actual on-screen buttons, not its rectangular flex footprint.
+ for(const control of controls){
+  const rect=await control.boundingBox();
+  if(rect)expect(overlap(label!,rect),
+    'archive plaque overlaps '+(await control.textContent())+
+    ': '+JSON.stringify({label,rect})).toBe(false);
+ }
  await expect(page.getByTestId('ground-waypoint-leader-sensor-vault')).toHaveCount(1);
  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
- await page.screenshot({path:'test-results/k47-archive-plaque-safe-follow-1280.png'});
  // Examining the actual whole map is not a HUD pin: every landmark returns
  // to its original world-positioned plaque, without vertical offset.
  await page.getByTestId('ground-camera-toggle').click();
