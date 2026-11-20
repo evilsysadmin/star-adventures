@@ -63,6 +63,31 @@ export function GroundColonyWidePlaza({explored,visible}:Vision){
         <path d="M3 27l9 -3M25 5l6 -2" fill="none"
           stroke="#b6b7a0" strokeWidth="1" opacity=".17"/>
       </pattern>
+      {/* World-space patina is clipped by the ACTUAL explored, free apron.
+          Separate visible/remembered clips keep material ageing from
+          disclosing unknown terrain or lighting remembered ground as live. */}
+      <radialGradient id="ground-plaza-dust-patina">
+        <stop stopColor="#d4b98d" stopOpacity=".31"/>
+        <stop offset=".54" stopColor="#a99978" stopOpacity=".14"/>
+        <stop offset="1" stopColor="#a99978" stopOpacity="0"/>
+      </radialGradient>
+      <radialGradient id="ground-plaza-oil-patina">
+        <stop stopColor="#102c35" stopOpacity=".35"/>
+        <stop offset=".64" stopColor="#19373b" stopOpacity=".13"/>
+        <stop offset="1" stopColor="#19373b" stopOpacity="0"/>
+      </radialGradient>
+      <clipPath id="ground-plaza-patina-visible" clipPathUnits="userSpaceOnUse"
+        data-testid="ground-plaza-patina-clip-visible">
+        {apron.filter(p=>explored.has(key(p.x,p.y))&&visible.has(key(p.x,p.y)))
+          .map(p=><path key={key(p.x,p.y)} data-patina-cell={key(p.x,p.y)}
+            d={tile(p.x,p.y)}/>)}
+      </clipPath>
+      <clipPath id="ground-plaza-patina-remembered" clipPathUnits="userSpaceOnUse"
+        data-testid="ground-plaza-patina-clip-remembered">
+        {apron.filter(p=>explored.has(key(p.x,p.y))&&!visible.has(key(p.x,p.y)))
+          .map(p=><path key={key(p.x,p.y)} data-patina-cell={key(p.x,p.y)}
+            d={tile(p.x,p.y)}/>)}
+      </clipPath>
     </defs>
     {/* Connected underfoot floor: every visible fragment is an authored free
         tile; adjacent fragments share the same world-space material, not
@@ -82,6 +107,29 @@ export function GroundColonyWidePlaza({explored,visible}:Vision){
             r="2" fill="#cdb892" opacity=".45"/>}
         </g>;
       })}
+    </g>
+    {/* A few long, non-repeating deposits cross multiple real paving slabs.
+        Clipping makes these one continuous MATERIAL, not painted tile decals
+        or fat service pipes. No geometry, path, floor ownership or picking
+        changes; the same weather is much dimmer in explored memory. */}
+    <g data-testid="ground-plaza-world-patina" pointerEvents="none">
+      {(['visible','remembered'] as const).map(fog=><g key={fog}
+        data-testid={'ground-plaza-patina-'+fog} data-fog={fog}
+        clipPath={'url(#ground-plaza-patina-'+fog+')'}
+        opacity={fog==='visible'?1:.32}>
+        <ellipse cx="690" cy="340" rx="225" ry="66"
+          transform="rotate(22 690 340)" fill="url(#ground-plaza-dust-patina)"/>
+        <ellipse cx="870" cy="445" rx="170" ry="58"
+          transform="rotate(22 870 445)" fill="url(#ground-plaza-oil-patina)"/>
+        <ellipse cx="690" cy="477" rx="187" ry="49"
+          transform="rotate(-18 690 477)" fill="url(#ground-plaza-dust-patina)"/>
+        <path d="M610 321Q757 352 943 468"
+          fill="none" stroke="#c4b48f" strokeOpacity=".19"
+          strokeWidth="2" strokeDasharray="38 28"/>
+        <path d="M562 428Q706 440 834 504"
+          fill="none" stroke="#152d33" strokeOpacity=".23"
+          strokeWidth="3" strokeDasharray="45 20"/>
+      </g>)}
     </g>
     {/* The paving's weathered contact with authentic natural terrain.
         These short, subdued seams soften an abrupt square-grid cutoff;
