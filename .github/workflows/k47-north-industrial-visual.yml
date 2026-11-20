@@ -1,0 +1,38 @@
+name: K-47 north perimeter · real industrial visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundNorthIndustrialRetainingWall.tsx"
+      - "frontend/src/components/GroundColonyDressing.tsx"
+      - "frontend/tests/k47NorthIndustrialRetainingVisual.spec.ts"
+      - ".github/workflows/k47-north-industrial-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  north-wall:
+    name: Real blocked-row industrial A/B · Chromium 390/1280 + F5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Walk to real blocked northern wall, compare exact-frame A/B
+        run: npm run test:e2e --prefix frontend -- tests/k47NorthIndustrialRetainingVisual.spec.ts
+      - name: Preserve Chrome screenshots of real gameplay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-north-industrial-ab-${{ github.sha }}
+          path: |
+            frontend/test-results/k47-north-industrial-*.png
+          if-no-files-found: warn
+          retention-days: 14
