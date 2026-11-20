@@ -52,8 +52,9 @@ for(const width of [390,1280]){
   if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
   await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
   await walk(page,9,4);
-  await expect(page.getByTestId('ground-service-floor-9,4'))
-    .toHaveAttribute('data-fog','visible');
+  const corridorFloor=page.getByTestId('ground-service-floor-9,4');
+  await expect(corridorFloor).toHaveAttribute('data-fog','visible');
+  await expect(corridorFloor).toHaveAttribute('fill-opacity','0.16');
   const serviceInlay=page.getByTestId('ground-service-conduit-8,4-to-9,4');
   await expect(serviceInlay).toHaveAttribute('data-fog','visible');
   await expect(serviceInlay.locator('path').first()).toHaveAttribute('stroke-width','18');
