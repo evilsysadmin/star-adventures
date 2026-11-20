@@ -122,7 +122,7 @@ def design():
     # into a continuous mass. Preserve the parabolic dish and the rear
     # beacon as separate distinguishable instruments.
     b.box('shell', 0, 2.96, -.70, .70, .28, 1.02)
-    b.box('roof', 0, 3.14, -.70, .77, .10, 1.12)
+    b.box('panel', 0, 3.14, -.70, .77, .10, 1.12)
     for z in (-1.12, -.90, -.68, -.46):
         b.box('rib', 0, 3.20, z, .73, .026, .036)
     b.box('rubber', 0, 2.99, -.17, .56, .14, .025)
