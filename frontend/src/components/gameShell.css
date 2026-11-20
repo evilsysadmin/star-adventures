@@ -905,3 +905,90 @@
     top:auto;bottom:140px;left:auto;right:14px;
   }
 }
+
+
+/* K-47 desktop: the objective is useful at a glance; the long radio log
+   belongs behind the SAME real disclosure already working on mobile.
+   Reclaim the previously opaque right-side scenery without losing any
+   story, progress, rescue/abandon controls or accessibility semantics.
+   Scope is strictly immersive surface + squad; bridge/classic untouched. */
+@media(min-width:701px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission{
+    max-height:122px;overflow:hidden;
+    padding:8px 10px;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission-top{
+    display:grid;grid-template-columns:minmax(0,1fr) 44px;
+    align-items:center;column-gap:7px;row-gap:3px;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission-kicker{
+    grid-column:1/-1;grid-row:1;font-size:7px;line-height:1.2;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission-phase{
+    grid-column:1;grid-row:2;font-size:11px;line-height:1.2;
+    letter-spacing:.035em;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-brief-toggle{
+    display:grid;grid-column:2;grid-row:2;place-items:center;
+    min-width:44px;width:44px;height:44px;padding:0;
+    border:1px solid #83a4a3;border-radius:4px;
+    background:#22404b;color:#f4d698;
+    font:700 22px/1 'Space Grotesk',sans-serif;cursor:pointer;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-brief-toggle:focus-visible{
+    outline:2px solid #ffe0a3;outline-offset:2px;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="false"] .mission-transmission-story,
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="false"] .mission-transmission-route,
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="false"] .mission-abandon{
+    display:none;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="false"] .mission-transmission-next{
+    display:-webkit-box;-webkit-box-orient:vertical;
+    -webkit-line-clamp:2;overflow:hidden;
+    margin:3px 0 0;font-size:10px;line-height:1.35;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="true"]{
+    width:min(320px,calc(100% - 28px));
+    max-height:min(320px,calc(100% - 180px));
+    overflow-y:auto;padding:10px 12px;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="true"] .mission-transmission-story{
+    display:block;font-size:11px;line-height:1.4;margin:7px 0;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="true"] .mission-transmission-next{
+    display:block;-webkit-line-clamp:unset;overflow:visible;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="true"] .mission-transmission-route{
+    display:flex;
+  }
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="true"] .mission-abandon{
+    display:block;
+  }
+}
+
+
+/* Exception to compact disclosure: a previously abandoned rescue has an
+   immediate, real extraction/return action. Never clip it or hide it behind
+   an additional click when restoring a saved mission on desktop. */
+@media(min-width:701px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="false"]:has([data-testid="abandoned-return"]){
+    max-height:min(186px,calc(100% - 180px));
+  }
+}
