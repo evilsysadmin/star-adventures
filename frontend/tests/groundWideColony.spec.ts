@@ -47,6 +47,24 @@ for(const width of [390,1280]){
   await orderCell(page,15,5);
   await expect(page.getByTestId('ground-plaza-floor-15,5'))
     .toHaveAttribute('data-fog','visible');
+  // Terrain contact paint is earned through actual player exploration.
+  // Its edges must end in real, adjacent, walkable non-campus squares.
+  const contact=page.getByTestId('ground-plaza-earth-contacts');
+  const seams=await contact.locator('[data-natural-cell]').evaluateAll(nodes=>
+    nodes.map(n=>({
+      from:n.getAttribute('data-from-cell'),
+      to:n.getAttribute('data-natural-cell'),
+      fog:n.getAttribute('data-fog'),
+    })));
+  expect(seams.length).toBeGreaterThan(0);
+  const canonical=new Set([
+    '9,3:9,2','11,3:11,2','13,3:13,2','7,4:7,3',
+    '7,6:6,6','7,8:6,8','9,10:8,10',
+  ]);
+  for(const seam of seams){
+    expect(canonical.has(seam.from+':'+seam.to)).toBe(true);
+    expect(['visible','remembered']).toContain(seam.fog);
+  }
   // Three adjacent canonical obstacles become ONE explored industrial bay.
   // No separate box-art remains, while the original blocked cell IDs exist.
   const hangar=page.getByTestId('ground-colony-industrial-bay');
