@@ -54,8 +54,10 @@ for(const width of [390,1280]){
   await walk(page,9,4);
   await expect(page.getByTestId('ground-service-floor-9,4'))
     .toHaveAttribute('data-fog','visible');
-  await expect(page.getByTestId('ground-service-conduit-8,4-to-9,4'))
-    .toHaveAttribute('data-fog','visible');
+  const serviceInlay=page.getByTestId('ground-service-conduit-8,4-to-9,4');
+  await expect(serviceInlay).toHaveAttribute('data-fog','visible');
+  await expect(serviceInlay.locator('path').first()).toHaveAttribute('stroke-width','18');
+  await expect(serviceInlay.locator('path').first()).toHaveAttribute('stroke-linecap','butt');
   // The tall glazing belongs to existing wall 8:3, never a fictitious wall
   // in the walkable gateway square 8:4.
   const wall=page.getByTestId('ground-service-wall-8,4-north');
