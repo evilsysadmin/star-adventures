@@ -981,3 +981,14 @@
     display:block;
   }
 }
+
+
+/* Exception to compact disclosure: a previously abandoned rescue has an
+   immediate, real extraction/return action. Never clip it or hide it behind
+   an additional click when restoring a saved mission on desktop. */
+@media(min-width:701px){
+  .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-squad)
+  .mission-transmission[data-brief-expanded="false"]:has([data-testid="abandoned-return"]){
+    max-height:min(186px,calc(100% - 180px));
+  }
+}
