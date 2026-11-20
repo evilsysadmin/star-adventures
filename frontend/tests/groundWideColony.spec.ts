@@ -30,6 +30,10 @@ for(const width of [390,1280]){
   const board=page.getByTestId('ground-squad-board');
   await expect(board).toBeVisible();
   await expect(page.getByTestId('ground-plaza-floor-15,5')).toHaveCount(0);
+  await expect(page.getByTestId('ground-plaza-patina-clip-visible')
+    .locator('[data-patina-cell="15,5"]')).toHaveCount(0);
+  await expect(page.getByTestId('ground-plaza-patina-clip-remembered')
+    .locator('[data-patina-cell="15,5"]')).toHaveCount(0);
   for(const id of ['12,4','12,6','15,5','16,8']){
    await expect(board.locator('[data-cell-id="'+id+'"]')).toHaveCount(1);
   }
@@ -47,6 +51,30 @@ for(const width of [390,1280]){
   await orderCell(page,15,5);
   await expect(page.getByTestId('ground-plaza-floor-15,5'))
     .toHaveAttribute('data-fog','visible');
+  // The large-scale patina is painted as shared world-space material, but
+  // its real SVG clipping geometry must match ONLY the explored free cells,
+  // independently for visible and remembered fog. No unknown terrain leaks.
+  const patina=page.getByTestId('ground-plaza-world-patina');
+  await expect(patina).toHaveAttribute('pointer-events','none');
+  for(const fog of ['visible','remembered'] as const){
+    await expect(page.getByTestId('ground-plaza-patina-'+fog))
+      .toHaveAttribute('clip-path','url(#ground-plaza-patina-'+fog+')');
+  }
+  const coverage=await board.evaluate(root=>{
+    const floors=Array.from(root.querySelectorAll('[data-testid^="ground-plaza-floor-"]'));
+    return (['visible','remembered'] as const).map(fog=>({
+      fog,
+      floors:floors.filter(el=>el.getAttribute('data-fog')===fog)
+        .map(el=>el.getAttribute('data-testid')!.slice('ground-plaza-floor-'.length)).sort(),
+      clipped:Array.from(root.querySelectorAll(
+        '[data-testid="ground-plaza-patina-clip-'+fog+'"] [data-patina-cell]'))
+        .map(el=>el.getAttribute('data-patina-cell')).sort(),
+    }));
+  });
+  expect(coverage.some(({floors})=>floors.length>0)).toBe(true);
+  for(const phase of coverage)expect(phase.clipped).toEqual(phase.floors);
+  await expect(page.getByTestId('ground-plaza-patina-clip-visible')
+    .locator('[data-patina-cell="15,5"]')).toHaveCount(1);
   // Terrain contact paint is earned through actual player exploration.
   // Its edges must end in real, adjacent, walkable non-campus squares.
   const contact=page.getByTestId('ground-plaza-earth-contacts');
@@ -89,7 +117,10 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-unit-venn'))
     .toHaveAttribute('data-grid-y','5');
   await expect(page.getByTestId('ground-plaza-floor-15,5'))
-    .toHaveAttribute('data-fog','visible');  await expect(page.getByTestId('ground-colony-industrial-bay')).toHaveCount(1);
+    .toHaveAttribute('data-fog','visible');
+  await expect(page.getByTestId('ground-plaza-patina-clip-visible')
+    .locator('[data-patina-cell="15,5"]')).toHaveCount(1);
+  await expect(page.getByTestId('ground-colony-industrial-bay')).toHaveCount(1);
 
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
     .toBe(true);
