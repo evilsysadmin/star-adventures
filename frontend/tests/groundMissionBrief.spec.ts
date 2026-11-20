@@ -67,7 +67,7 @@ for(const width of [360,390,430]){
   });
 }
 
-test('desktop surface and mobile bridge keep the full mission controls',async({page})=>{
+test('mobile bridge remains full; desktop surface reveals real actions on request',async({page})=>{
   test.setTimeout(100_000);
   await page.setViewportSize({width:390,height:850});
   await page.goto('/');
@@ -75,7 +75,17 @@ test('desktop surface and mobile bridge keep the full mission controls',async({p
   await expect(page.getByTestId('mission-abandon')).toBeVisible();
   await page.setViewportSize({width:1280,height:850});
   await land(page);
-  await expect(page.getByTestId('mission-brief-toggle')).toBeHidden();
-  await expect(page.getByTestId('mission-abandon')).toBeVisible();
+  const radio=page.getByTestId('mission-transmission');
+  const toggle=page.getByTestId('mission-brief-toggle');
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+  await expect(radio.locator('.mission-transmission-story')).toBeHidden();
+  await expect(page.getByTestId('mission-abandon')).toBeHidden();
   await expect(page.getByTestId('mission-next')).toContainText('puesto de socorro');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded','true');
+  await expect(page.getByTestId('mission-abandon')).toBeVisible();
+  await expect(radio.locator('.mission-transmission-story')).toBeVisible();
+  await toggle.click();
+  await expect(page.getByTestId('mission-abandon')).toBeHidden();
 });
