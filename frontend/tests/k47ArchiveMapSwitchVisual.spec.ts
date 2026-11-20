@@ -71,7 +71,7 @@ test('desktop follow retains ARCHIVO plaque below real toolbar without moving it
  expect(controls).not.toBeNull();
  const shift=Number(await objective.getAttribute('data-ribbon-y-shift'));
  expect(shift).toBeGreaterThan(0);
- expect(label!.top).toBeGreaterThan(toolbar!.bottom+8);
+ expect(label!.y).toBeGreaterThan(toolbar!.y+toolbar!.height+8);
  expect(overlap(label!,controls!)).toBe(false);
  await expect(page.getByTestId('ground-waypoint-leader-sensor-vault')).toHaveCount(1);
  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
