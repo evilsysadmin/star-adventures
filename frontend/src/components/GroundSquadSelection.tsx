@@ -230,13 +230,16 @@ export function GroundSquadSelection({
   // Frame the *playable* surroundings, not almost the whole unknown board.
   // Keep the exact isometric projection/picking and separate complete overview.
   // Portrait retains enough lateral context to issue touch orders.
-  // Focused portrait follow was framed at 520 world units, leaving a
-  // conspicuous unoccupied band below the visible landing terrain on phones.
-  // A restrained 480-unit crop makes the *real* squad and floor more legible.
-  // Sector inspection retains 520; explicit full map remains un-cropped.
-  // Picking continues to use the actual SVG CTM; no world/grid shifts.
+  // Portrait follow retains its proven 480-world-unit crop. The previous
+  // desktop framing capped at 410 (typically 330-380), making officers
+  // oversized and showing too few real neighboring routes/buildings.
+  // Give desktop follows a calmer, wider context: 430-480 world units,
+  // while preserving exactly the same tile projection, CTM picking, LOS,
+  // canonical 216-cell map and the explicit uncropped overview.
+  // This changes only camera framing; neither world art nor hit targets.
   const cameraHeight = focused ? 480 : sectorMode ? 520
-    : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
+    : compact ? Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)))
+      : Math.max(430, Math.min(480, Math.round(viewportSize.height / 1.8)));
   const cameraWidth = Math.round(cameraHeight * aspect);
   const cameraX = cameraWidth >= fullWidth
     ? fullFrame.left+Math.round((fullWidth-cameraWidth)/2)
