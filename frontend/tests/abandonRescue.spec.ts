@@ -26,14 +26,14 @@ for (const width of [390, 1280]) {
     await page.getByTestId('captain-transport').click();
     await page.getByTestId('transport-confirm').click();
     await expect(page.getByTestId('explore-area')).toContainText('Superficie');
-    // On phones, consequential actions live in the explicitly expanded
-    // mission brief, not under a clipped 100px floating scroll box.
-    if (width === 390) {
-      const brief = page.getByTestId('mission-brief-toggle');
-      await expect(brief).toHaveAttribute('aria-expanded', 'false');
-      await brief.click();
-      await expect(brief).toHaveAttribute('aria-expanded', 'true');
-    }
+    // On both phones and desktop, destructive rescue actions live in the
+    // explicitly expanded service brief, never clipped or silently removed.
+    const brief = page.getByTestId('mission-brief-toggle');
+    await expect(brief).toBeVisible();
+    await expect(brief).toHaveAttribute('aria-expanded', 'false');
+    await brief.click();
+    await expect(brief).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByTestId('mission-abandon')).toBeVisible();
     await page.getByTestId('mission-abandon').click();
     await expect(page.getByRole('group', { name: 'Confirmar abandono del rescate' })).toContainText('regresará al puente');
     await page.getByTestId('mission-abandon-confirm').click();
