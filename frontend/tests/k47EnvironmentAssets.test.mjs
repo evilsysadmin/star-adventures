@@ -73,7 +73,7 @@ test('only immutable content-addressed R2 GLBs with license/provenance pass',()=
     'https://evil.example/art.glb',
     'https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
     'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
-    'http://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
+    'http://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
     'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb?x=1',
     'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-bbbbbbbbbbbbbbbb.glb',
   ]){
