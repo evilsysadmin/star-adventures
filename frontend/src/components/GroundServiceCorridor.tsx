@@ -64,7 +64,7 @@ export function GroundServiceCorridor({explored,visible}:Vision){
         <path key={xy(p)} data-testid={'ground-service-floor-'+xy(p)}
           data-fog={visible.has(xy(p))?'visible':'remembered'}
           d={tilePath(p)}
-          fill="url(#ground-corridor-floor-light)" fillOpacity=".16"
+          fill="url(#ground-corridor-floor-light)" fillOpacity={0.16}
           opacity={visible.has(xy(p))?1:.32}/>)}
     </g>
     {/* Recessed service-lane inlay: this is a thin, flush architectural
