@@ -476,7 +476,7 @@ export function GroundColonyStations({explored,visible,labelFrame,verticalFrame}
    const verticalShift=verticalFrame&&Number.isFinite(verticalFrame.top)&&
      Number.isFinite(verticalFrame.height)&&verticalFrame.height>0&&
      p.y>=verticalFrame.top&&p.y<=verticalFrame.top+verticalFrame.height
-     ? Math.max(0,verticalFrame.top+verticalFrame.height*.115+11-(p.y+plaqueY))
+     ? Math.max(0,verticalFrame.top+verticalFrame.height*.18+11-(p.y+plaqueY))
      :0;
    // Move the painted plaque within the visible mobile camera, never its
    // world anchor, original station geometry, discovery status or picking.
