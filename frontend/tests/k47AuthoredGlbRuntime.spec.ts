@@ -45,7 +45,7 @@ function testGLB(){
 }
 function publishedManifest(body:Buffer){
   const sha256=createHash('sha256').update(body).digest('hex');
-  const url='https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb';
+  const url='https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb';
   const slot={
     id:'south-industrial-shell',
     footprint:[[3,7],[4,7],[5,7],[6,7],[7,7]],
@@ -185,7 +185,7 @@ test('invalid dev art preview is ignored instead of blanking the landing',async(
    (window as typeof window & {__k47ArtPreviewManifest?:unknown})
      .__k47ArtPreviewManifest=value;
  },manifest);
- await page.route('**/star-adventures/environment/*.glb',route=>
+ await page.route('**/environment/*.glb',route=>
    route.abort('failed'));
  await page.goto('/');
  await page.getByTestId('captain-transport').click();

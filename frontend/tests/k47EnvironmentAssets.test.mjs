@@ -19,7 +19,7 @@ function published(){
   const sha256='a'.repeat(64);
   slot.status='published';
   slot.asset={
-    url:'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb',
+    url:'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb',
     sha256,bytes:1024,license:'original',
     source:'ShadowOps K-47 authored PBR environment kit',
   };
@@ -72,9 +72,10 @@ test('only immutable content-addressed R2 GLBs with license/provenance pass',()=
   for(const url of [
     'https://evil.example/art.glb',
     'https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
-    'http://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
-    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb?x=1',
-    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-bbbbbbbbbbbbbbbb.glb',
+    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
+    'http://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb',
+    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-aaaaaaaaaaaaaaaa.glb?x=1',
+    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-bbbbbbbbbbbbbbbb.glb',
   ]){
     const m=published();m.slots[0].asset.url=url;
     assert.throws(()=>validateAuthoredSlots(m,world),/origin|content-addressed/);
@@ -114,7 +115,7 @@ test('real SHA-256 verifies exact embedded GLB bytes and rejects mutation',async
   const m=published();m.slots[0].asset.sha256=sha256;
   m.slots[0].asset.bytes=model.byteLength;
   m.slots[0].asset.url=
-    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb';
+    'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-'+sha256.slice(0,16)+'.glb';
   assert.doesNotThrow(()=>validateAuthoredSlots(m,world));
   await assert.doesNotReject(verifyPublishedGLBBytes(m.slots[0],model));
   const wrong=new Uint8Array(model.slice(0));

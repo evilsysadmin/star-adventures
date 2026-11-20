@@ -15,7 +15,7 @@ for(const width of [390,1280]){
   await page.setViewportSize({width,height:850});
   const body=readFileSync(fixture);
   const sha=createHash('sha256').update(body).digest('hex');
-  const url='https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/south-industrial-shell-'+sha.slice(0,16)+'.glb';
+  const url='https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-'+sha.slice(0,16)+'.glb';
   const manifest={
    schemaVersion:1,scene:'meridian.surface',
    slots:[{

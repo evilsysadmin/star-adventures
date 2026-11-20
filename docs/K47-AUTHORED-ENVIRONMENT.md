@@ -70,7 +70,7 @@ separate SVG/DOM objects.
 ## Content-addressed delivery — infrastructure owns R2
 
 The GLB is uploaded by the infrastructure owner to R2 using a name of the form
-`star-adventures/environment/<logical-id>-<first-16-hex-sha256>.glb`.
+`environment/<logical-id>-<first-16-hex-sha256>.glb` (inside bucket `star-adventures`).
 
 For a local **original/licensed** file:
 ```sh
@@ -83,7 +83,7 @@ containing:
 
 ```json
 {
-  "url": "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/<logical-id>-<sha16>.glb",
+  "url": "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/<logical-id>-<sha16>.glb",
   "sha256": "<real full SHA-256>",
   "bytes": 123456,
   "license": "original",
