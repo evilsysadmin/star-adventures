@@ -11,8 +11,9 @@ procedural Three.js cliff ribbons still looked like a small schematic diorama
 
 **Do not call this loader an art overhaul.** It only makes it possible to
 replace the current placeholder geometry with *real original authored models*
-without throwing away the existing squad and mission systems. Its three slots
-are deliberately `unpublished` until qualifying binary assets exist.
+without throwing away the existing squad and mission systems. The three slots were initially
+`unpublished`; production activation is gated on an independent, SHA-pinned
+public-R2 integrity/CORS check and authentic 390/1280 Chromium gameplay.
 
 ## Canonical frame
 
@@ -142,11 +143,13 @@ tests pass. Reload after movement to verify there is no model or save mismatch.
 Use `frontend/tests/k47AuthoredGlbRuntime.spec.ts` as the working reference.
 
 An invalid preview is ignored; a missing, corrupt or out-of-bounds GLB retains
-the original playable scenery. The shipped manifest remains `unpublished`
-until Infra proves an actual immutable, authorized R2 upload. This preview
+the original playable scenery. The shipped manifest can be `published` **only**
+after Infra proves exact original public GLB bytes, HTTPS, MIME and CORS;
+missing optional immutable Cache-Control is an operator-accepted advisory.
+This preview
 hook is **not** a new asset source, bypass or network publishing mechanism.
 
-## West archive exterior envelope — visual candidate, not a shipped asset
+## West archive exterior envelope — visual candidate history
 A continuous original 3D Archive may occupy the **non-world space west of x=0**
 while its blocked frontage remains EXACTLY (0,3), (0,4), (0,5).
 Bounds: x=-3.3..0.56, z=2.5..5.5, y=-0.4..5. No spill into
@@ -187,6 +190,12 @@ materially improve without blocking the officers.
 The original three-building source already produces **visible real-game
 A/B** screenshots; the public runtime manifest remains deliberately
 `unpublished` until the CDN objects exist and are independently verified.
+For activation PR #304, the read-only Infra workflow on source
+`981a8e23d0ca9a4e1b9dff9a4939cb01a9a42f26` reported
+`K47_PUBLIC_CDN_BYTES_VERIFIED` for 3/3 exact original GLBs with valid
+staging CORS and MIME. It reported `K47_PUBLIC_CACHE_ADVISORY` for all three;
+this is intentionally non-blocking. The candidate manifest remains a staging
+receipt, while the **runtime** manifest pins the 3 published objects.
 The `K-47 unified architecture · full-sector visual gate` workflow now
 runs on source PRs and on matching main pushes. After completing authentic
 Chromium walking/fog/F5 at **390 and 1280 px**, it stages a bounded immutable
