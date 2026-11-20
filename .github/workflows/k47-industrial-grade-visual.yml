@@ -1,0 +1,37 @@
+name: K-47 industrial tonal grade · exact-frame browser A/B
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/groundSquadSelection.css"
+      - "frontend/tests/groundLandingCourt3D.spec.ts"
+      - ".github/workflows/k47-industrial-grade-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  industrial-grade:
+    name: Real 390/1280 original WebGL vs tonal integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Test actual game/camera/fog and capture exact-frame WebGL grade
+        run: npm run test:e2e --prefix frontend -- tests/groundLandingCourt3D.spec.ts
+      - name: Preserve the real browser screenshot A/B
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-webgl-tonal-grade-${{ github.sha }}
+          path: |
+            frontend/test-results/k47-webgl-tonal-*.png
+          if-no-files-found: warn
+          retention-days: 14
