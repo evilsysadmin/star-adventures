@@ -26,11 +26,21 @@ const route=[
 
 type Vision={explored:ReadonlySet<string>;visible:ReadonlySet<string>};
 const apronEdges=[
-  {dx:0,dy:-1,a:[0,-20],b:[40,0]},
-  {dx:1,dy:0,a:[40,0],b:[0,20]},
-  {dx:0,dy:1,a:[0,20],b:[-40,0]},
-  {dx:-1,dy:0,a:[-40,0],b:[0,-20]},
+  {dx:0,dy:-1,a:[0,-20],b:[40,0],name:'north'},
+  {dx:1,dy:0,a:[40,0],b:[0,20],name:'east'},
+  {dx:0,dy:1,a:[0,20],b:[-40,0],name:'south'},
+  {dx:-1,dy:0,a:[-40,0],b:[0,-20],name:'west'},
 ] as const;
+// Only free, real adjacent non-campus terrain can receive a subdued ground
+// contact. Blocked walls have their separate authored curbs; unknown tiles
+// must never be traced or disclosed by a floor decoration.
+const earthContacts=apron.flatMap(p=>apronEdges.flatMap(edge=>{
+  const x=p.x+edge.dx,y=p.y+edge.dy;
+  const neighbor=key(x,y);
+  if(x<0||y<0||x>=surface.width||y>=surface.height||
+    obstacle.has(neighbor)||apronKeys.has(neighbor))return [];
+  return [{p,edge,neighbor}];
+}));
 
 export function GroundColonyWidePlaza({explored,visible}:Vision){
   return <g data-testid="ground-colony-wide-plaza" pointerEvents="none" aria-hidden="true">
@@ -72,6 +82,30 @@ export function GroundColonyWidePlaza({explored,visible}:Vision){
             r="2" fill="#cdb892" opacity=".45"/>}
         </g>;
       })}
+    </g>
+    {/* The paving's weathered contact with authentic natural terrain.
+        These short, subdued seams soften an abrupt square-grid cutoff;
+        never draw against a wall or across unseen free cells. */}
+    <g data-testid="ground-plaza-earth-contacts" pointerEvents="none">
+      {earthContacts.filter(({p,neighbor})=>
+        explored.has(key(p.x,p.y))&&explored.has(neighbor))
+        .map(({p,edge,neighbor})=>{
+          const cell=key(p.x,p.y),c=point(p.x,p.y);
+          const lit=visible.has(cell)&&visible.has(neighbor);
+          const line='M'+edge.a[0]+' '+edge.a[1]+
+            'L'+edge.b[0]+' '+edge.b[1];
+          return <g key={cell+'-'+edge.name}
+            data-testid={'ground-plaza-earth-contact-'+cell+'-'+edge.name}
+            data-from-cell={cell} data-natural-cell={neighbor}
+            data-fog={lit?'visible':'remembered'}
+            transform={'translate('+c.x+' '+c.y+')'}
+            opacity={lit?.65:.22}>
+            <path d={line} fill="none" stroke="#283c3e"
+              strokeWidth="9" strokeLinecap="butt"/>
+            <path d={line} fill="none" stroke="#96947d"
+              strokeWidth="3.4" strokeLinecap="butt" opacity=".72"/>
+          </g>;
+        })}
     </g>
     {/* Heavy perimeter metal ONLY where the adjoining square is physically
         blocked, revealed, and outside the reachable apron. Gateways remain
