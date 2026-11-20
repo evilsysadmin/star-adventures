@@ -1,0 +1,37 @@
+name: K-47 science receiver · real 390/1280 A/B visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundProbeArray.tsx"
+      - "frontend/tests/groundOutpostScenery.spec.ts"
+      - ".github/workflows/k47-probe-receiver-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe-receiver:
+    name: Original science receiver proportions · real Chromium 390/1280
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Real landing, selection, 216 tiles and same-frame receiver A/B
+        run: npm run test:e2e --prefix frontend -- tests/groundOutpostScenery.spec.ts
+      - name: Preserve original viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-receiver-ab-${{ github.sha }}
+          path: |
+            frontend/test-results/k47-receiver-*.png
+          if-no-files-found: warn
+          retention-days: 14
