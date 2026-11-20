@@ -34,9 +34,14 @@ for(const width of [390,1280]){
     await expect(three).toHaveAttribute('data-published-art-slots','3');
     await expect(three).toHaveAttribute('data-authored-art-ready','');
     await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','5');
-    // The south frontage is explored on landing, so it may request immediately.
-    // West/east must still remain fog-gated and never fetch here.
-    expect(external.every(url=>url.includes('/south-industrial-shell-'))).toBe(true);
+    // Moving can legitimately reveal the west/east frontage. After F5 those
+    // discovered footprints may fetch; forbid non-canonical URLs, not progress.
+    const allowed=new Set([
+      'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-903b06139f9f3881.glb',
+      'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/west-archive-shell-6620dd38f67fc22a.glb',
+      'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/east-utilities-shell-14f64c52b6e92574.glb',
+    ]);
+    expect(external.every(url=>allowed.has(url))).toBe(true);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   });
 }
