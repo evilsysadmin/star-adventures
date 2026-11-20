@@ -99,7 +99,7 @@ export function GroundColonyWidePlaza({explored,visible}:Vision){
             data-from-cell={cell} data-natural-cell={neighbor}
             data-fog={lit?'visible':'remembered'}
             transform={'translate('+c.x+' '+c.y+')'}
-            opacity={lit?.65:.22}>
+            opacity={lit?0.65:0.22}>
             <path d={line} fill="none" stroke="#283c3e"
               strokeWidth="9" strokeLinecap="butt"/>
             <path d={line} fill="none" stroke="#96947d"
