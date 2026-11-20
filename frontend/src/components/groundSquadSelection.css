@@ -149,12 +149,17 @@
    than transparent wireframe debris. Unknown cells remain fully shrouded.
    Paint properties only: no heavy CSS filters per tile, no pointer changes. */
 [data-testid="ground-squad-board"] [data-fog="remembered"]{opacity:.68}
-/* Distant remembered *architecture* must remain a dim silhouette, not a
-   second translucent building painted over the active 3D scene. Keep the
-   walkable remembered tiles, route decals and mission indicators at their
-   existing opacity; this only affects passive SVG walls, roofs and facades. */
+/* Fog memory must preserve the *mass* of a discovered building.
+   The old .28 alpha exposed background and adjacent roof/facade outlines
+   through one another: the explored colony read as transparent wireframe.
+   Keep passive SVG architecture nearly opaque but unlit and darkened, so
+   it reads as a coherent distant silhouette instead. This selector never
+   reveals unknown cells, targets, paths, R2 meshes or interactive units. */
 [data-testid="ground-squad-board"] [data-testid="ground-colony-walls"]
-  [data-fog="remembered"]{opacity:.28}
+  [data-fog="remembered"]{
+    opacity:.88;
+    filter:brightness(.52) saturate(.62) contrast(1.12);
+  }
 
 /* The fully mapped 18×12 colony cannot fill a portrait display without
    cropping or distorting it. Offer deliberate, touch-friendly zoomed sectors

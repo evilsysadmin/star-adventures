@@ -157,10 +157,33 @@ for(const width of [390,1280]) {
   await orderCell(page,4,5);
   await expect(venn).toHaveAttribute('data-grid-x','4');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:18_000});
-  await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','remembered');
+  const rememberedWall=page.getByTestId('ground-architecture-wall-8,3');
+  await expect(rememberedWall).toHaveAttribute('data-fog','remembered');
   await expect(gateway).toHaveAttribute('data-fog','remembered');
+  // Known buildings must remain dark solid volumes rather than translucent
+  // wireframe ghosts; unknown terrain and picking must remain unchanged.
+  await expect(rememberedWall).toHaveCSS('opacity','0.88');
+  const memoryPaint=await rememberedWall.evaluate(node=>({
+    filter:getComputedStyle(node).filter,
+    pointerEvents:getComputedStyle(node).pointerEvents,
+  }));
+  expect(memoryPaint.filter).toContain('brightness(0.52)');
+  expect(memoryPaint.filter).toContain('saturate(0.62)');
+  expect(memoryPaint.pointerEvents).toBe('none');
+  // 16,10 is beyond every 3-cell LOS from the real west-gate route.
+  await expect(board.locator('[data-fog-cell="16,10"]')).toHaveAttribute('data-fog-state','unknown');
+  await board.screenshot({path:'test-results/away-architecture-memory-'+width+'.png'});
+  // Same exact LIVE mission/camera/fog/frame: paint only the previous main's
+  // .28 alpha in a test-only counterfactual, yielding a true visual A/B.
+  await page.addStyleTag({content:
+    '[data-testid="ground-squad-board"] [data-testid="ground-colony-walls"]'+
+    ' [data-fog="remembered"]{opacity:.28 !important;filter:none !important}'});
+  await expect(rememberedWall).toHaveCSS('opacity','0.28');
+  await board.screenshot({path:'test-results/away-architecture-memory-legacy-'+width+'.png'});
+  // Reload drops the test-only override and checks actual saved progression.
   await page.reload();
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','remembered');
+  await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveCSS('opacity','0.88');
   await expect(page.getByTestId('ground-gateway-8,4')).toHaveAttribute('data-fog','remembered');
   await expect(page.getByTestId('ground-south-industrial-wing')
     .locator('[data-render-class="single-continuous-industrial-hangar"]'+
