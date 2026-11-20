@@ -12,7 +12,12 @@ const world=JSON.parse(readFileSync(new URL('content/scenes/meridian.json',root)
   .scenes.surface;
 const manifest=JSON.parse(readFileSync(
   new URL('content/scenes/k47-environment-art.json',root)));
-const clone=()=>structuredClone(manifest);
+// Keep negative tests independent of the shipped publication state.
+const clone=()=>{
+  const copy=structuredClone(manifest);
+  for(const slot of copy.slots){slot.status='unpublished';slot.asset=null;}
+  return copy;
+};
 function published(){
   const copy=clone();
   const slot=copy.slots[0];
@@ -37,12 +42,34 @@ function smallGLB(custom={}){
   return glb.buffer.slice(glb.byteOffset,glb.byteOffset+glb.byteLength);
 }
 
-test('all candidate art slots are real blocked, non-overlapping cells with no CDN request',()=>{
-  assert.equal(validateAuthoredSlots(manifest,world).length,3);
-  assert.deepEqual(eligibleAuthoredSlots(manifest,world,
+test('unpublished fallback slots remain blocked, non-overlapping and never fetched',()=>{
+  const fallback=clone();
+  assert.equal(validateAuthoredSlots(fallback,world).length,3);
+  assert.deepEqual(eligibleAuthoredSlots(fallback,world,
     new Set(world.walls.map(x=>x.x+','+x.y))),[]);
-  assert.deepEqual(manifest.slots.map(x=>x.status),
+  assert.deepEqual(fallback.slots.map(x=>x.status),
     ['unpublished','unpublished','unpublished']);
+});
+test('shipping manifest activates only the three publicly SHA-pinned original GLBs',()=>{
+  assert.equal(validateAuthoredSlots(manifest,world).length,3);
+  const expected=[
+    ['south-industrial-shell','903b06139f9f3881b0a0f93722235536316939c71b19f19800771b8e4a1c8257',418344],
+    ['west-archive-shell','6620dd38f67fc22ab46fce9bc02d482bb47873c04db4468ced6028dc8a223186',418692],
+    ['east-utilities-shell','14f64c52b6e92574b71dfd267d003d3546b76012b9a8324c0b8f7905553bdf65',468632],
+  ];
+  for(const [i,[id,sha256,bytes]] of expected.entries()){
+    const slot=manifest.slots[i];
+    assert.equal(slot.id,id);
+    assert.equal(slot.status,'published');
+    assert.equal(slot.asset?.sha256,sha256);
+    assert.equal(slot.asset?.bytes,bytes);
+    assert.equal(slot.asset?.url,
+      'https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/'+id+'-'+sha256.slice(0,16)+'.glb');
+  }
+  assert.deepEqual(eligibleAuthoredSlots(manifest,world,new Set()),[]);
+  assert.deepEqual(eligibleAuthoredSlots(manifest,world,
+    new Set(world.walls.map(x=>x.x+','+x.y))).map(x=>x.id),
+    expected.map(x=>x[0]));
 });
 test('publication needs every exact blocked tile explored',()=>{
   const m=published();

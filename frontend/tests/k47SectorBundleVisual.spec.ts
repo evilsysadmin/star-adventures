@@ -95,7 +95,18 @@ for(const width of [390,1280])test('three original GLBs after authentic K-47 exp
   'south-industrial-shell west-archive-shell east-utilities-shell',{timeout:40000});
  const original=await browser.newContext({viewport:{width,height:850}});
  try{
-  const baseline=await original.newPage(),oldBoard=await openGame(baseline);
+  const baseline=await original.newPage();
+  // Explicit development-only unpublished counterfactual for real-game A/B.
+  // Production now ships three verified published GLBs, so simply opening
+  // an unmodified page would compare the published scene against itself.
+  const fallbackManifest={...manifest,slots:manifest.slots.map(slot=>({
+    ...slot,status:'unpublished' as const,asset:null,
+  }))};
+  await baseline.addInitScript(value=>{
+    (window as typeof window&{__k47ArtPreviewManifest?:unknown})
+      .__k47ArtPreviewManifest=value;
+  },fallbackManifest);
+  const oldBoard=await openGame(baseline);
   for(const target of ['1,4','5,6','7,3','7,2','7,1','7,3'])await walk(baseline,target);
   await expect(baseline.getByTestId('ground-landing-court-3d'))
    .toHaveAttribute('data-authored-art-state','unpublished');

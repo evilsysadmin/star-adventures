@@ -31,8 +31,14 @@
         0,
         7
       ],
-      "status": "unpublished",
-      "asset": null
+      "status": "published",
+      "asset": {
+        "url": "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/south-industrial-shell-903b06139f9f3881.glb",
+        "sha256": "903b06139f9f3881b0a0f93722235536316939c71b19f19800771b8e4a1c8257",
+        "bytes": 418344,
+        "license": "original",
+        "source": "ShadowOps original K-47 industrial asset authoring script"
+      }
     },
     {
       "id": "west-archive-shell",
@@ -55,8 +61,14 @@
         0,
         4
       ],
-      "status": "unpublished",
-      "asset": null
+      "status": "published",
+      "asset": {
+        "url": "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/west-archive-shell-6620dd38f67fc22a.glb",
+        "sha256": "6620dd38f67fc22ab46fce9bc02d482bb47873c04db4468ced6028dc8a223186",
+        "bytes": 418692,
+        "license": "original",
+        "source": "Original K-47 archive PBR authoring script"
+      }
     },
     {
       "id": "east-utilities-shell",
@@ -79,8 +91,14 @@
         0,
         2
       ],
-      "status": "unpublished",
-      "asset": null
+      "status": "published",
+      "asset": {
+        "url": "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/east-utilities-shell-14f64c52b6e92574.glb",
+        "sha256": "14f64c52b6e92574b71dfd267d003d3546b76012b9a8324c0b8f7905553bdf65",
+        "bytes": 468632,
+        "license": "original",
+        "source": "Original ShadowOps K-47 east scientific utilities module"
+      }
     }
   ]
 }

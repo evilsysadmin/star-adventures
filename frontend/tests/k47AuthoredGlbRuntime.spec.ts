@@ -178,6 +178,32 @@ for(const width of [390,1280]){
  });
 }
 
+test('live published K-47 falls back to normal scenery during public R2 outage',async({page})=>{
+ test.setTimeout(110_000);
+ await page.setViewportSize({width:390,height:850});
+ let failedRequests=0;
+ await page.route('https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/*.glb',route=>{
+   failedRequests++;
+   return route.fulfill({status:503,body:'CDN unavailable'});
+ });
+ await page.goto('/');
+ await page.getByTestId('captain-transport').click();
+ await page.getByTestId('transport-confirm').click();
+ const board=page.getByTestId('ground-squad-board');
+ const court=page.getByTestId('ground-landing-court-3d');
+ await expect(court).toHaveAttribute('data-published-art-slots','3');
+ await board.locator('[data-cell-id="5,6"]').click({button:'right'});
+ await expect(page.getByTestId('ground-unit-venn'))
+   .toHaveAttribute('data-grid-y','6',{timeout:35000});
+ await expect.poll(()=>failedRequests,{timeout:40000}).toBeGreaterThan(0);
+ await expect(court).not.toHaveAttribute('data-authored-art-ready',/south-industrial-shell/);
+ await expect(board.getByTestId('ground-south-industrial-wing')).toHaveCSS('opacity','1');
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+ await page.reload();
+ await expect(board.getByTestId('ground-south-industrial-wing')).toHaveCSS('opacity','1');
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+});
+
 test('invalid dev art preview is ignored instead of blanking the landing',async({page})=>{
  const body=testGLB(),{manifest}=publishedManifest(body);
  manifest.slots[0].asset!.url='https://invalid.example/not-authorized.glb';
@@ -191,8 +217,11 @@ test('invalid dev art preview is ignored instead of blanking the landing',async(
  await page.getByTestId('captain-transport').click();
  await page.getByTestId('transport-confirm').click();
  const court=page.getByTestId('ground-landing-court-3d');
- await expect(court).toHaveAttribute('data-published-art-slots','0');
- await expect(court).toHaveAttribute('data-authored-art-state','unpublished');
+ // An invalid development override must fall back to the real published
+ // manifest, not silently disable/replace the verified production art.
+ await expect(court).toHaveAttribute('data-published-art-slots','3');
+ await expect(court).toHaveAttribute('data-authored-art-ready','');
+ // With actual GLB network errors, existing scenery must remain visible.
  // Invalid art must never blank the real connected industrial facility.
  await expect(page.getByTestId('ground-south-industrial-wing'))
    .toHaveCSS('opacity','1');
