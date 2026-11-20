@@ -14,7 +14,7 @@ import re
 import shutil
 import struct
 
-CDN = "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/"
+CDN = "https://pub-0e83bbe83562412182441ed82173d704.r2.dev/environment/"
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 SLOTS = (
     ("south", "south-industrial-shell", ((3, 7), (4, 7), (5, 7), (6, 7), (7, 7)), (5, 0, 7)),
