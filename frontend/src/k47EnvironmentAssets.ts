@@ -22,7 +22,7 @@ export type AuthoredWorld = {
   width:number;height:number;
   walls:Array<{x:number;y:number}>;
 };
-const ASSET_BASE='https://assets.chess-studio.shadowops.dpdns.org/star-adventures/environment/';
+const ASSET_BASE='https://pub-0e83bbe83562412182441ed82173d704.r2.dev/star-adventures/environment/';
 const hash=/^[0-9a-f]{64}$/;
 const assetName=/^[a-z0-9-]+-([0-9a-f]{16})\.glb$/;
 const MAX_MODEL_BYTES=4*1024*1024;
