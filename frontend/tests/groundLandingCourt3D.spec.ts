@@ -126,12 +126,17 @@ for(const width of [390,1280]){
   expect(await eligible.count()).toBeGreaterThan(0);
   expect(Number(await court.getAttribute('data-hangar-count'))).toBe(await eligible.count());
   await expect(eligible.first()).toHaveCSS('visibility','hidden');
-  // Visited-but-out-of-sight architecture must be a quiet memory, not
-  // a bright translucent duplicate floating over the active colony.
+  // Out-of-sight architecture preserves dark SOLID building mass instead
+  // of the old .28-alpha wireframe ghost. The noninteractive 3D/SVG
+  // composition contract must follow the new accepted fog-memory treatment.
   const rememberedArchitecture=board.locator(
     '[data-testid="ground-colony-walls"] [data-fog="remembered"]');
   expect(await rememberedArchitecture.count()).toBeGreaterThan(0);
-  await expect(rememberedArchitecture.first()).toHaveCSS('opacity','0.28');
+  await expect(rememberedArchitecture.first()).toHaveCSS('opacity','0.88');
+  const memoryFilter=await rememberedArchitecture.first()
+    .evaluate(node=>getComputedStyle(node).filter);
+  expect(memoryFilter).toContain('brightness(0.52)');
+  expect(memoryFilter).toContain('saturate(0.62)');
   await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
   await board.screenshot({path:'test-results/away-3d-connected-hangar-'+width+'.png'});
   await page.reload();
