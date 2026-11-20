@@ -19,6 +19,12 @@ for(const width of [390,1280]){
   await expect(exterior).toHaveCount(1);
   await expect(exterior).toHaveAttribute('pointer-events','none');
   await expect(page.getByTestId('ground-exterior-strata')).toHaveCount(1);
+  const depth=page.getByTestId('ground-distant-atmospheric-depth');
+  await expect(depth).toHaveAttribute('pointer-events','none');
+  await expect(depth).toHaveAttribute('aria-hidden','true');
+  await expect(page.getByTestId('ground-distant-ridge-far')).toHaveCount(1);
+  await expect(page.getByTestId('ground-distant-ridge-near')).toHaveCount(1);
+  await expect(depth.locator('[data-cell-id], [data-fog-cell], [data-officer-id]')).toHaveCount(0);
   // This is distant, decorative terrain only: it must add no fake grid cells
   // or hidden game objects, and turning on full-map must not reveal the fog.
   await expect(exterior.locator('[data-cell-id], [data-fog-cell], [data-officer-id]')).toHaveCount(0);
@@ -96,5 +102,21 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-select-venn')).toHaveAttribute('aria-pressed','true');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await board.screenshot({path:'test-results/planetary-outpost-'+width+'.png'});
+  // Exact same Chromium scene and fog in one run: compare the new distant
+  // atmosphere against the untouched previous backdrop without moving units.
+  // Map overview makes the rear landscape visible on both screen widths.
+  await page.getByTestId('ground-camera-toggle').click();
+  if(width===390)await page.getByTestId('ground-map-sector').selectOption('all');
+  const unknownBefore=await board.locator('[data-fog-state="unknown"]').count();
+  const cellsBefore=await board.locator('[data-cell-id]').count();
+  await board.screenshot({path:'test-results/planetary-ridge-depth-'+width+'.png'});
+  const legacy=await page.addStyleTag({content:
+    '[data-testid="ground-distant-atmospheric-depth"]{display:none!important}'});
+  await expect(depth).toHaveCSS('display','none');
+  await board.screenshot({path:'test-results/planetary-ridge-baseline-'+width+'.png'});
+  await legacy.evaluate(node=>node.remove());
+  await expect(depth).not.toHaveCSS('display','none');
+  expect(await board.locator('[data-fog-state="unknown"]').count()).toBe(unknownBefore);
+  expect(await board.locator('[data-cell-id]').count()).toBe(cellsBefore);
  });
 }
