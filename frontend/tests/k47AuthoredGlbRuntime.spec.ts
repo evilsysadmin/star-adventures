@@ -185,7 +185,7 @@ test('invalid dev art preview is ignored instead of blanking the landing',async(
    (window as typeof window & {__k47ArtPreviewManifest?:unknown})
      .__k47ArtPreviewManifest=value;
  },manifest);
- await page.route('**/star-adventures/environment/*.glb',route=>
+ await page.route('**/environment/*.glb',route=>
    route.abort('failed'));
  await page.goto('/');
  await page.getByTestId('captain-transport').click();
