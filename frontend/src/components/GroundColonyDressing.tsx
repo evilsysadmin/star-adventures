@@ -98,11 +98,14 @@ export function GroundColonyFloor({explored,visible,separatePlatform=false}:
       data-testid={'ground-corridor-deck-'+key(a[0],a[1])+'-to-'+key(b[0],b[1])}
       data-fog={isVisible?'visible':'remembered'}
       pointerEvents="none" opacity={isVisible ? 0.86 : 0.26}>
-      <path d={line} stroke="#152e36" strokeWidth="22" strokeLinecap="round" fill="none" />
-      <path d={line} stroke="#687b76" strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d={line} stroke="#2b4b50" strokeWidth="10" strokeLinecap="round" fill="none" />
-      <path d={line} stroke="#e1c993" strokeWidth="1.4"
-        strokeDasharray="4 10" fill="none"/>
+      <path d={line} stroke="#173038" strokeWidth="17"
+        strokeLinecap="butt" fill="none" />
+      <path d={line} stroke="#546b67" strokeWidth="12"
+        strokeLinecap="butt" fill="none" />
+      <path d={line} stroke="#334f51" strokeWidth="8"
+        strokeLinecap="butt" fill="none" />
+      <path d={line} stroke="#c8ae7e" strokeWidth="1.25"
+        strokeLinecap="butt" strokeDasharray="5 13" fill="none"/>
     </g>;
    })}
   {/* Metallic skirting follows real blocked neighbors. Open door and
