@@ -123,5 +123,23 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-select-venn')).toHaveAttribute('aria-pressed','true');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await board.screenshot({path:'test-results/planetary-outpost-'+width+'.png'});
+  // Authentic same-frame original vs restrained receiver proportion, with
+  // the real science station, squad selection, fog and camera untouched.
+  const receiver=page.getByTestId('ground-probe-receiver');
+  const station=page.getByTestId('ground-landmark-probe');
+  await expect(receiver).toHaveAttribute('transform',
+    'translate(10 -103) rotate(-24) scale(.82)');
+  await expect(station).not.toHaveAttribute('data-fog','unknown');
+  await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+  await page.screenshot({path:'test-results/k47-receiver-balanced-'+width+'.png'});
+  const oldTransform=await receiver.evaluate(el=>{
+    const original=el.getAttribute('transform')!;
+    el.setAttribute('transform','translate(10 -103) rotate(-24)');
+    return original;
+  });
+  await page.screenshot({path:'test-results/k47-receiver-legacy-'+width+'.png'});
+  await receiver.evaluate((el,original)=>el.setAttribute('transform',original),oldTransform);
+  await expect(receiver).toHaveAttribute('transform',
+    'translate(10 -103) rotate(-24) scale(.82)');
  });
 }
