@@ -66,7 +66,7 @@ export function GroundProbeArray(){
     <circle cx="5" cy="-91" r="5" fill="#3f626a" stroke="#c0c5b3" strokeWidth="2"/>
     {/* Parabolic receiver: a ribbed, angled dish with thick elliptical rim,
         visible depth and a cantilevered feed horn instead of a flat icon. */}
-    <g transform="translate(10 -103) rotate(-24)">
+    <g data-testid="ground-probe-receiver" transform="translate(10 -103) rotate(-24) scale(.82)">
       <ellipse cx="2" cy="6" rx="35" ry="16" fill="#122b37" opacity=".68"/>
       <path d="M-36 0Q0 35 36 0Q0 -15 -36 0Z"
         fill="url(#probe-array-dish)" stroke="#d7d4c0" strokeWidth="2.8"/>
