@@ -1,5 +1,12 @@
 import {expect,test,type Page} from '@playwright/test';
-import world from '../../content/scenes/meridian.json';
+import {readFileSync} from 'node:fs';
+
+// Playwright executes this file in Node ESM (not Vite's JSON loader): read
+// the same canonical authored map as data without importing JSON as a module.
+const world=JSON.parse(readFileSync(
+ new URL('../../content/scenes/meridian.json',import.meta.url),'utf8')) as {
+ scenes:{surface:{walls:Array<{x:number;y:number}>}};
+};
 
 // Authentic away-team exploration only: no artificial fog reveal, teleport,
 // added level geometry or click-math overrides. Every visible structure must
