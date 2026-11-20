@@ -53,6 +53,48 @@ function overlap(a:{x:number;y:number;width:number;height:number},
         a.y<b.y+b.height&&b.y<a.y+a.height;
 }
 
+test('desktop follow retains ARCHIVO plaque below real toolbar without moving its station',async({page})=>{
+ test.setTimeout(105000);
+ await page.setViewportSize({width:1280,height:850});
+ const board=await land(page);
+ // Real click-to-walk into the route where the old plaque crossed the
+ // camera/bridge top controls. No fabricated fog reveal or altered camera.
+ await move(page,'5,6');
+ const objective=page.getByTestId('ground-waypoint-label-sensor-vault');
+ const station=page.getByTestId('ground-landmark-sensor-vault');
+ await expect(station).toBeVisible();
+ const label=await objective.boundingBox();
+ const toolbar=await page.locator('.game-toolbar').boundingBox();
+ const controls=await page.locator('.firstperson-top button').all();
+ expect(label).not.toBeNull();
+ expect(toolbar).not.toBeNull();
+ // Capture the actual scene BEFORE strict overlap assertions, so any
+ // failure preserves the offending plaque and control positions.
+ await page.screenshot({path:'test-results/k47-archive-map-switch-safe-follow-1280.png'});
+ const shift=Number(await objective.getAttribute('data-ribbon-y-shift'));
+ expect(shift).toBeGreaterThan(0);
+ expect(label!.y).toBeGreaterThan(toolbar!.y+toolbar!.height+8);
+ // The .firstperson-top layout box can span noninteractive empty space.
+ // Validate actual on-screen buttons, not its rectangular flex footprint.
+ for(const control of controls){
+  const rect=await control.boundingBox();
+  if(rect)expect(overlap(label!,rect),
+    'archive plaque overlaps '+(await control.textContent())+
+    ': '+JSON.stringify({label,rect})).toBe(false);
+ }
+ await expect(page.getByTestId('ground-waypoint-leader-sensor-vault')).toHaveCount(1);
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+ // Examining the actual whole map is not a HUD pin: every landmark returns
+ // to its original world-positioned plaque, without vertical offset.
+ await page.getByTestId('ground-camera-toggle').click();
+ await expect(objective).toHaveAttribute('data-ribbon-y-shift','0.00');
+ await expect(objective).toHaveAttribute('transform','translate(54 -38) scale(.78)');
+ await page.reload();
+ await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','5');
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-y','6');
+});
+
 test('actual 1280px K-47 archive plaque is not covered by compact map switch',async({page})=>{
  test.setTimeout(230000);
  await page.setViewportSize({width:1280,height:850});

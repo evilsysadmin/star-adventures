@@ -454,7 +454,10 @@ function StationGeometry({id}:{id:string}){
  </>;
 }
 
-export function GroundColonyStations({explored,visible,labelFrame}:Vision & {labelFrame?:LabelViewFrame}){
+export function GroundColonyStations({explored,visible,labelFrame,verticalFrame}:Vision & {
+ labelFrame?:LabelViewFrame;
+ verticalFrame?:{top:number;height:number};
+}){
  return <g data-testid="ground-outpost-landmarks" pointerEvents="none">
   {scene.objects.map(object=>{
    const id=key(object.x,object.y),known=explored.has(id),inSight=visible.has(id);
@@ -465,6 +468,16 @@ export function GroundColonyStations({explored,visible,labelFrame}:Vision & {lab
      object.id==='relief-point'?60:0;
    const plaqueY=object.id==='sensor-vault'?-38:object.id==='probe'?-45:
      object.id==='relief-point'?-85:object.id==='perimeter-uplink'?39:37;
+   // Desktop follow camera: objective art above the station sometimes lands
+   // UNDER the actual toolbar/map switch. Move only an onscreen station's
+   // painted plaque into the top safe region. Never pin an offscreen or
+   // unknown station to the HUD; the mission world anchor remains unchanged.
+   // The plaque's scaled 14-unit top extends ~11 units above its origin.
+   const verticalShift=verticalFrame&&Number.isFinite(verticalFrame.top)&&
+     Number.isFinite(verticalFrame.height)&&verticalFrame.height>0&&
+     p.y>=verticalFrame.top&&p.y<=verticalFrame.top+verticalFrame.height
+     ? Math.max(0,verticalFrame.top+verticalFrame.height*.18+11-(p.y+plaqueY))
+     :0;
    // Move the painted plaque within the visible mobile camera, never its
    // world anchor, original station geometry, discovery status or picking.
    // An offscreen objective stays offscreen instead of becoming a false HUD pin.
@@ -481,12 +494,17 @@ export function GroundColonyStations({explored,visible,labelFrame}:Vision & {lab
      transform={`translate(${p.x} ${p.y})`}>
      <title>{object.label}</title>
      <StationGeometry id={object.id}/>
+     {verticalShift>0&&<path data-testid={'ground-waypoint-leader-'+object.id}
+       d={'M'+plaqueX+' '+(plaqueY+verticalShift+6)+'L0 0'}
+       stroke="#b5c1a7" strokeOpacity=".54" strokeWidth="1.15"
+       fill="none" pointerEvents="none" />}
      {/* Grounded waypoints, visible only through the existing station fog.
          All labels are decorative and never intercept real picking. */}
      <g data-testid={'ground-waypoint-label-'+object.id}
        data-ribbon-shift={(shift??0).toFixed(2)}
+       data-ribbon-y-shift={verticalShift.toFixed(2)}
        visibility={shift===null?'hidden':undefined}
-       pointerEvents="none" transform={'translate('+plaqueX+' '+plaqueY+') scale(.78)'}>
+       pointerEvents="none" transform={'translate('+plaqueX+' '+(plaqueY+verticalShift)+') scale(.78)'}>
        <rect x={plaqueShift-plaqueWidth/2} y="-14" width={plaqueWidth}
          height="20" rx="3" fill="#111c24" fillOpacity=".96"
          stroke="#ebc775" strokeWidth="1.5"/>

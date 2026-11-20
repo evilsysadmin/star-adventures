@@ -621,7 +621,9 @@ export function GroundSquadSelection({
             uses the canonical explored/visible sets to hide unknown targets
             and dim remembered ones; only its paint order changes. */}
         <GroundColonyStations explored={displayedFog.explored} visible={displayedFog.visible}
-          labelFrame={focused?{left:cameraX,width:cameraWidth}:undefined} />
+          labelFrame={focused?{left:cameraX,width:cameraWidth}:undefined}
+          verticalFrame={!compact&&followSquad
+            ? {top:cameraY,height:cameraHeight}:undefined} />
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
