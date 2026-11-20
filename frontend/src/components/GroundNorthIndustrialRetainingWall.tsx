@@ -58,7 +58,7 @@ function NorthRetainingSpan({span,visible}:{span:Span;visible:ReadonlySet<string
      fill="url(#ground-north-retaining-cladding)"
      stroke="#11272e" strokeWidth="2.5"/>
    <path d={outline([a,b,c,d])} fill="url(#ground-north-retaining-roof)"
-     stroke="#87978d" strokeWidth="2"/>
+     stroke="#536e66" strokeWidth="1.6"/>
    <path d={panel(0,1,5,10)} fill="#182f36"
      stroke="#84988d" strokeWidth="1.2"/>
    <path d={panel(0,1,36,40)} fill="#152e37"
@@ -86,7 +86,7 @@ function NorthRetainingSpan({span,visible}:{span:Span;visible:ReadonlySet<string
    <path d={'M'+a.x+' '+a.y+'L'+b.x+' '+b.y}
      stroke="#273d42" strokeWidth="5" fill="none"/>
    <path d={'M'+(a.x+3)+' '+(a.y+3)+'L'+(b.x+3)+' '+(b.y+3)}
-     stroke="#a7b8a5" strokeWidth="1.4" fill="none"/>
+     stroke="#708a7f" strokeOpacity=".56" strokeWidth="1.25" fill="none"/>
    <path d={'M'+front(0,41).x+' '+front(0,41).y+
      'L'+front(1,41).x+' '+front(1,41).y}
      stroke="#6f8780" strokeWidth="3" fill="none"/>
