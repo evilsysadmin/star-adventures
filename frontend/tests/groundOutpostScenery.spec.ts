@@ -52,9 +52,38 @@ for(const width of [390,1280]){
    expect(camera.spriteHeight).toBeGreaterThan(75);
    expect(camera.spriteWidth).toBeGreaterThan(50);
    expect(camera.sceneHeight).toBeGreaterThan(320);
+   // The default follow camera should show more of the real installation
+   // than the previously over-zoomed 330-410-world-unit desktop frame.
+   const balancedHeight=await board.evaluate(node=>
+     (node as SVGSVGElement).viewBox.baseVal.height);
+   expect(balancedHeight).toBeGreaterThanOrEqual(430);
+   expect(balancedHeight).toBeLessThanOrEqual(480);
+   await board.screenshot({path:'test-results/away-follow-balanced-1280.png'});
+   // Authentic same-frame A/B: temporarily substitute the old viewBox
+   // using the browser's actual SVG rectangle and viewport height. No game
+   // state, tiles, fog, officers, navigation or WebGL meshes are changed.
+   const priorView=await board.evaluate(node=>{
+     const svg=node as SVGSVGElement,now=svg.viewBox.baseVal;
+     const original=svg.getAttribute('viewBox')!;
+     const parent=svg.parentElement!.getBoundingClientRect();
+     const box=svg.getBoundingClientRect();
+     const oldH=Math.max(330,Math.min(410,Math.round(parent.height/2.25)));
+     const oldW=Math.round(oldH*box.width/box.height);
+     const oldX=now.x+(now.width-oldW)/2;
+     const oldY=now.y+(now.height-oldH)*.56;
+     svg.setAttribute('viewBox',[oldX,oldY,oldW,oldH].join(' '));
+     return original;
+   });
+   await board.screenshot({path:'test-results/away-follow-legacy-1280.png'});
+   await board.evaluate((node,original)=>
+     node.setAttribute('viewBox',original),priorView);
+   await expect(board).toHaveAttribute('viewBox',priorView);
    await expect(page.locator('.ground-squad-event-strip')).toHaveCount(1);
   }
   if(width===390){
+   // This iteration must not disturb the deliberately tuned mobile framing.
+   await expect.poll(async()=>board.evaluate(node=>
+     (node as SVGSVGElement).viewBox.baseVal.height)).toBe(480);
    // Mobile follow mode deliberately crops distant facilities: this is the
    // point of tracking an officer. In explicit FULL MAP every named landmark
    // must remain on screen and none of the neighbouring signs may overlap.
