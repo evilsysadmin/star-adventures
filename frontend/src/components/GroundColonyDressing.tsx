@@ -59,9 +59,9 @@ export function GroundColonyFloor({explored,visible,separatePlatform=false}:
     transform={`translate(${p.x} ${p.y})`} opacity={fade(visible,id)}>
     {colony?<>
      <path d="M-32 0 0 -16 32 0 0 16Z"
-      fill="none" stroke="#bac5ad" strokeWidth="1" strokeOpacity=".19" />
+      fill="none" stroke="#bac5ad" strokeWidth="1" strokeOpacity=".11" />
      <path d="M-24 0 -5 -10M9 9 27 0M-4 12 13 4"
-      fill="none" stroke="#101e22" strokeWidth="2.4" opacity=".42" />
+      fill="none" stroke="#101e22" strokeWidth="2.4" opacity=".32" />
      {(variant===0||variant===3)&&<path d="M-10 -3 0 -8 10 -3 0 2Z"
        fill="#71847a" opacity=".26" />}
      <circle cx="-25" cy="0" r="1.5" fill="#e7cf99" opacity=".42"/>
