@@ -52,6 +52,33 @@ for(const width of [390,1280]){
    expect(camera.spriteHeight).toBeGreaterThan(75);
    expect(camera.spriteWidth).toBeGreaterThan(50);
    expect(camera.sceneHeight).toBeGreaterThan(320);
+   // Default desktop radio shows the real next objective without an opaque
+   // 200px story/abandon box covering the colony. One 44px focusable button
+   // must reveal ALL real narrative and rescue actions on demand.
+   const radio=page.getByTestId('mission-transmission');
+   const toggle=page.getByTestId('mission-brief-toggle');
+   await expect(radio).toHaveAttribute('data-brief-expanded','false');
+   await expect(toggle).toBeVisible();
+   await expect(toggle).toHaveAttribute('aria-expanded','false');
+   await expect(radio.locator('.mission-transmission-story')).toBeHidden();
+   await expect(page.getByTestId('mission-next')).toBeVisible();
+   await expect(page.getByTestId('mission-abandon')).toBeHidden();
+   const closed=await radio.boundingBox();
+   expect(closed!.height).toBeLessThan(135);
+   const toggleBox=await toggle.boundingBox();
+   expect(toggleBox!.height).toBeGreaterThanOrEqual(44);
+   await page.screenshot({path:'test-results/k47-radio-compact-1280.png'});
+   await toggle.click();
+   await expect(radio).toHaveAttribute('data-brief-expanded','true');
+   await expect(toggle).toHaveAttribute('aria-expanded','true');
+   await expect(radio.locator('.mission-transmission-story')).toBeVisible();
+   await expect(page.getByTestId('mission-abandon')).toBeVisible();
+   const expanded=await radio.boundingBox();
+   expect(expanded!.height).toBeGreaterThan(closed!.height+30);
+   await page.screenshot({path:'test-results/k47-radio-expanded-1280.png'});
+   await toggle.click();
+   await expect(radio).toHaveAttribute('data-brief-expanded','false');
+   await expect(page.getByTestId('mission-abandon')).toBeHidden();
    await expect(page.locator('.ground-squad-event-strip')).toHaveCount(1);
   }
   if(width===390){
