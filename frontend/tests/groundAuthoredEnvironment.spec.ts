@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 
 test.use({storageState:{cookies:[],origins:[]}});
 for(const width of [390,1280]){
-  test('published K-47 authored models do not fetch before fog discovery or remove playable SVG '+width,async({page})=>{
+  test('published K-47 requests only discovered art and never removes SVG after CDN failure '+width,async({page})=>{
     test.setTimeout(100_000);
     await page.setViewportSize({width,height:850});
     const external:string[]=[];
@@ -21,7 +21,9 @@ for(const width of [390,1280]){
     await expect(three).toHaveAttribute('data-published-art-slots','3');
     await expect(three).toHaveAttribute('data-authored-art-ready','');
     await expect(three).toHaveAttribute('data-renderer-state','ready',{timeout:20_000});
-    expect(external).toEqual([]);
+    // The south frontage is explored on landing, so it may request immediately.
+    // West/east must still remain fog-gated and never fetch here.
+    expect(external.every(url=>url.includes('/south-industrial-shell-'))).toBe(true);
     await expect(board.locator('[data-cell-id]')).toHaveCount(216);
     const southernWall=board.getByTestId('ground-architecture-wall-3,7');
     if(await southernWall.count())await expect(southernWall).not.toHaveCSS('opacity','0');
@@ -32,7 +34,9 @@ for(const width of [390,1280]){
     await expect(three).toHaveAttribute('data-published-art-slots','3');
     await expect(three).toHaveAttribute('data-authored-art-ready','');
     await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-grid-x','5');
-    expect(external).toEqual([]);
+    // The south frontage is explored on landing, so it may request immediately.
+    // West/east must still remain fog-gated and never fetch here.
+    expect(external.every(url=>url.includes('/south-industrial-shell-'))).toBe(true);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   });
 }
