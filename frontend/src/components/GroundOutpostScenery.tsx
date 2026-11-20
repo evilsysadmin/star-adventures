@@ -21,6 +21,31 @@ export function GroundPlanetBackdrop(){
     <stop stopColor="#91aca2" stopOpacity=".16"/>
     <stop offset="1" stopColor="#1c363a" stopOpacity="0"/>
    </linearGradient>
+   {/* Shared world-space dusk illumination; no tiling or fictional cells. */}
+   <linearGradient id="planet-far-ridge-volume" gradientUnits="userSpaceOnUse"
+     x1="0" y1="165" x2="0" y2="550">
+    <stop stopColor="#526763"/>
+    <stop offset=".32" stopColor="#334d4c"/>
+    <stop offset="1" stopColor="#152e35"/>
+   </linearGradient>
+   <linearGradient id="planet-near-ridge-volume" gradientUnits="userSpaceOnUse"
+     x1="0" y1="230" x2="0" y2="550">
+    <stop stopColor="#314d4b"/>
+    <stop offset=".4" stopColor="#1e3b3e"/>
+    <stop offset="1" stopColor="#102832"/>
+   </linearGradient>
+   <radialGradient id="planet-distant-amber-mist" gradientUnits="userSpaceOnUse"
+     cx="540" cy="225" r="445">
+    <stop stopColor="#dcad78" stopOpacity=".17"/>
+    <stop offset=".48" stopColor="#b0a385" stopOpacity=".065"/>
+    <stop offset="1" stopColor="#a7bcb1" stopOpacity="0"/>
+   </radialGradient>
+   <radialGradient id="planet-moon-halo" gradientUnits="userSpaceOnUse"
+     cx="738" cy="93" r="110">
+    <stop stopColor="#e8d9ac" stopOpacity=".19"/>
+    <stop offset=".35" stopColor="#b4c6b5" stopOpacity=".06"/>
+    <stop offset="1" stopColor="#8ea9a7" stopOpacity="0"/>
+   </radialGradient>
   </defs>
   {/* The fog-undercoat already paints the entire game with the exact
       undiscovered-world gradient. No opaque sky plate may re-cover it:
@@ -29,6 +54,27 @@ export function GroundPlanetBackdrop(){
   <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175V550H0Z" fill="#253e46"/>
   <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239V550H0Z" fill="#1b353b"/>
   <ellipse cx="449" cy="330" rx="455" ry="110" fill="#071b23" opacity=".5"/>
+  {/* Single scenic depth pass over the original backdrop. It lies BEHIND
+      every real cell and the authoritative fog. No new destination, mesh,
+      pick target, building, or information from undiscovered tiles. These
+      broad atmospheric materials follow existing distant geology only. */}
+  <g data-testid="ground-distant-atmospheric-depth" pointerEvents="none" aria-hidden="true">
+    <circle cx="738" cy="93" r="110" fill="url(#planet-moon-halo)"/>
+    <path data-testid="ground-distant-ridge-far"
+      d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175V550H0Z"
+      fill="url(#planet-far-ridge-volume)"/>
+    <path data-testid="ground-distant-ridge-near"
+      d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239V550H0Z"
+      fill="url(#planet-near-ridge-volume)"/>
+    <path d="M0 248 82 196 158 212 241 166 317 219 405 180 495 232 577 177 665 212 763 165 854 204 960 176 1040 205 1120 175"
+      fill="none" stroke="#a4b8a6" strokeOpacity=".20" strokeWidth="2.2"/>
+    <path d="M0 294 94 249 192 278 283 240 369 275 473 237 564 275 656 232 769 278 900 246 1030 277 1120 239"
+      fill="none" stroke="#92afa4" strokeOpacity=".16" strokeWidth="2"/>
+    {/* Backscatter links the distant rock landscape to the colony without
+        a glowing fog plate obscuring the tactical foreground. */}
+    <ellipse cx="540" cy="225" rx="445" ry="176"
+      fill="url(#planet-distant-amber-mist)"/>
+  </g>
   {/* Far beyond the currently visible ground grid: terraces, dust and stone
       strata give the planet scale without pretending to be extra playable
       cells, objects or revealed terrain. This layer sits below every tile,
