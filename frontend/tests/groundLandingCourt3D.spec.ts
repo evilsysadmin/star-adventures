@@ -93,6 +93,23 @@ for(const width of [390,1280]){
   await board.screenshot({path:'test-results/away-industrial-pbr-court-'+width+'.png'});
   await board.screenshot({path:'test-results/away-modular-terrain-pilot-'+width+'.png'});
 
+  // Exact-frame architectural tonal A/B. Grade only the passive WebGL
+  // canvas: no change to SVG floor/LOS/clicks/officers or rendered GLBs.
+  const architectureCanvas=court.locator('canvas');
+  await expect(architectureCanvas).toHaveCSS(
+    'filter','brightness(0.87) saturate(0.85)');
+  const artBefore=await court.getAttribute('data-authored-art-ready');
+  await page.screenshot({path:'test-results/k47-webgl-tonal-integrated-'+width+'.png'});
+  const noGrade=await page.addStyleTag({content:
+    '[data-testid="ground-landing-court-3d"] canvas{filter:none!important}'});
+  await expect(architectureCanvas).toHaveCSS('filter','none');
+  await page.screenshot({path:'test-results/k47-webgl-tonal-legacy-'+width+'.png'});
+  await noGrade.evaluate(node=>node.remove());
+  await expect(architectureCanvas).toHaveCSS(
+    'filter','brightness(0.87) saturate(0.85)');
+  expect(await court.getAttribute('data-authored-art-ready')).toBe(artBefore);
+  await expect(board.locator('polygon[data-cell-id]')).toHaveCount(216);
+
   // A live move command still resolves against the exact canonical cell.
   await board.locator('[data-cell-id="5,4"]').click({button:'right'});
   const unit=page.getByTestId('ground-unit-venn');
