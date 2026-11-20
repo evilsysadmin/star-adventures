@@ -251,3 +251,16 @@
  [data-testid="ground-colony-roof-8,1-to-8,2"],
  [data-testid="ground-colony-roof-8,2-to-8,3"]
 ){opacity:0}
+
+
+/* Industrial material integration candidate: the original published R2
+   shells and local PBR modules are lit significantly brighter than their
+   surrounding SVG masonry, making some supports look like white line art.
+   This restrained tonal grade affects ONLY the single passive WebGL
+   architecture canvas, never the authoritative SVG tiles, officers, fog,
+   hit targets, UI or the fallback architecture when WebGL is unavailable.
+   Exact-frame Chrome before/after decides whether it earns a merge. */
+[data-testid="ground-squad-board"]
+ [data-testid="ground-landing-court-3d"][data-renderer-state="ready"] canvas{
+  filter:brightness(.87) saturate(.85);
+}
