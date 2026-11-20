@@ -82,12 +82,12 @@ export function GroundServiceYard({explored,visible}:Vision){
           data-testid={'ground-yard-lane-'+xy(prev)+'-to-'+xy(p)}
           data-fog={lit?'visible':'remembered'}
           opacity={lit?.9:.28}>
-          <path d={d} stroke="#233d43" strokeWidth="25"
+          <path d={d} stroke="#1b373e" strokeWidth="17"
             strokeLinecap="butt" fill="none"/>
-          <path d={d} stroke="#b8bda1" strokeWidth="2"
-            strokeDasharray="9 8" fill="none"/>
-          <path d={d} stroke="#233d43" strokeWidth="1.5"
-            strokeDasharray="3 14" fill="none"/>
+          <path d={d} stroke="#526b67" strokeWidth="11"
+            strokeLinecap="butt" fill="none"/>
+          <path d={d} stroke="#c5b08a" strokeWidth="1.25"
+            strokeLinecap="butt" strokeDasharray="9 14" fill="none"/>
         </g>;
       }))}
     </g>

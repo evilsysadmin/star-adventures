@@ -106,9 +106,12 @@ export function GroundColonyWidePlaza({explored,visible}:Vision){
         const line='M'+start.x+' '+(start.y+7)+'L'+end.x+' '+(end.y+7);
         return <g key={i+'-'+j} data-testid={'ground-plaza-route-'+id}
           data-fog={lit?'visible':'remembered'} opacity={lit?.85:.28}>
-          <path d={line} stroke="#233940" strokeWidth="19" fill="none"/>
-          <path d={line} stroke="#d0b67c" strokeWidth="2.2"
-            strokeDasharray="11 10" fill="none"/>
+          <path d={line} stroke="#203940" strokeWidth="16"
+            strokeLinecap="butt" fill="none"/>
+          <path d={line} stroke="#516965" strokeWidth="10"
+            strokeLinecap="butt" fill="none"/>
+          <path d={line} stroke="#c4ad81" strokeWidth="1.25"
+            strokeLinecap="butt" strokeDasharray="10 14" fill="none"/>
         </g>;
       }))}
     </g>

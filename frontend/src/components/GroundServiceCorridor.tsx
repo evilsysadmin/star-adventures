@@ -67,8 +67,9 @@ export function GroundServiceCorridor({explored,visible}:Vision){
           fill="url(#ground-corridor-floor-light)"
           opacity={visible.has(xy(p))?1:.32}/>)}
     </g>
-    {/* An unbroken floor-level service conduit follows true connected
-        neighbors only; no cross-wall shortcut and no canopy over officers. */}
+    {/* Recessed service-lane inlay: this is a thin, flush architectural
+        surface, not the thick round-ended "hose" that dominated the yard.
+        Every segment still follows true, explored connected cells. */}
     <g data-testid="ground-service-corridor-conduit">
       {cells.slice(1).filter((p,i)=>{
         const prev=cells[i];
@@ -81,14 +82,14 @@ export function GroundServiceCorridor({explored,visible}:Vision){
           data-testid={'ground-service-conduit-'+xy(prev)+'-to-'+xy(p)}
           data-fog={lit?'visible':'remembered'} opacity={lit?.92:.28}>
           <path d={'M'+a.x+' '+(a.y+8)+'L'+b.x+' '+(b.y+8)}
-            fill="none" stroke="#152e37" strokeWidth="24"
-            strokeLinecap="round"/>
+            fill="none" stroke="#142b33" strokeWidth="18"
+            strokeLinecap="butt"/>
           <path d={'M'+a.x+' '+(a.y+8)+'L'+b.x+' '+(b.y+8)}
-            fill="none" stroke="#587a77" strokeWidth="16"
-            strokeLinecap="round"/>
+            fill="none" stroke="#536c68" strokeWidth="12"
+            strokeLinecap="butt"/>
           <path d={'M'+a.x+' '+(a.y+8)+'L'+b.x+' '+(b.y+8)}
-            fill="none" stroke="#b0bda0" strokeWidth="2"
-            strokeDasharray="9 12"/>
+            fill="none" stroke="#c3b08a" strokeWidth="1.35"
+            strokeLinecap="butt" strokeDasharray="8 14"/>
         </g>;
       })}
     </g>

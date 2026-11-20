@@ -58,8 +58,10 @@ for(const width of [390,1280]){
     });
     expect(footprint.width).toBeGreaterThan(140);
     expect(footprint.height).toBeGreaterThan(60);
-    await expect(page.getByTestId('ground-yard-lane-9,4-to-10,4'))
-      .toHaveAttribute('data-fog','visible');
+    const yardInlay=page.getByTestId('ground-yard-lane-9,4-to-10,4');
+    await expect(yardInlay).toHaveAttribute('data-fog','visible');
+    await expect(yardInlay.locator('path').first()).toHaveAttribute('stroke-width','17');
+    await expect(yardInlay.locator('path').first()).toHaveAttribute('stroke-linecap','butt');
 
     await walk(page,11,7);
     await expect(page.getByTestId('ground-yard-floor-11,7'))

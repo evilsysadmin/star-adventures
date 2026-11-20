@@ -32,7 +32,10 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('ground-colony-corridor-rims')).toHaveCount(1);
   await expect(page.getByTestId('ground-corridor-rim-5,6-south')).toHaveAttribute('data-fog','visible');
   await expect(page.getByTestId('ground-corridor-rim-5,6-north')).toHaveCount(0);
-  await expect(page.getByTestId('ground-corridor-deck-3,4-to-4,4')).toHaveAttribute('data-fog','visible');
+  const courtInlay=page.getByTestId('ground-corridor-deck-3,4-to-4,4');
+  await expect(courtInlay).toHaveAttribute('data-fog','visible');
+  await expect(courtInlay.locator('path').first()).toHaveAttribute('stroke-width','17');
+  await expect(courtInlay.locator('path').first()).toHaveAttribute('stroke-linecap','butt');
   await expect(page.getByTestId('ground-corridor-deck-9,4-to-9,5')).toHaveCount(0);
   await expect(page.getByTestId('ground-dressing-4,4')).toHaveAttribute('data-fog','visible');
   await expect(page.getByTestId('ground-dressing-9,4')).toHaveCount(0);
