@@ -3,6 +3,7 @@ import {GroundRescueBayDeck} from './GroundRescueBayDeck';
 import {GroundServiceCorridor} from './GroundServiceCorridor';
 import {GroundServiceYard} from './GroundServiceYard';
 import {GroundColonyWidePlaza} from './GroundColonyWidePlaza';
+import {GroundNorthIndustrialRetainingWall} from './GroundNorthIndustrialRetainingWall';
 
 // Original vector set dressing in the approved colony/away-team direction.
 // Every detail is scenery; authoritative terrain, paths and collisions still
@@ -49,6 +50,10 @@ const fade=(visible:ReadonlySet<string>,id:string)=>visible.has(id)?1:.34;
 export function GroundColonyFloor({explored,visible,separatePlatform=false}:
  Vision & {separatePlatform?:boolean}){
  return <g data-testid="ground-colony-floor" pointerEvents="none">
+  {/* Long original north perimeter is entirely built on the real blocked
+      wall row. It sits behind the real playable floor, all 3D shells,
+      mission stations, officers and the authoritative fog mask. */}
+  <GroundNorthIndustrialRetainingWall explored={explored} visible={visible}/>
   {cells.filter(p=>!blocked.has(key(p.x,p.y))&&explored.has(key(p.x,p.y))).map(cell=>{
    const id=key(cell.x,cell.y),p=project(cell.x,cell.y);
    const colony=cell.x<9&&cell.y<8;
