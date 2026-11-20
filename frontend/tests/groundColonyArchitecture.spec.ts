@@ -172,6 +172,14 @@ for(const width of [390,1280]) {
   expect(memoryPaint.pointerEvents).toBe('none');
   await expect(board.locator('[data-fog-cell="11,7"]')).toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-architecture-memory-'+width+'.png'});
+  // Same exact LIVE mission/camera/fog/frame: paint only the previous main's
+  // .28 alpha in a test-only counterfactual, yielding a true visual A/B.
+  await page.addStyleTag({content:
+    '[data-testid="ground-squad-board"] [data-testid="ground-colony-walls"]'+
+    ' [data-fog="remembered"]{opacity:.28 !important;filter:none !important}'});
+  await expect(rememberedWall).toHaveCSS('opacity','0.28');
+  await board.screenshot({path:'test-results/away-architecture-memory-legacy-'+width+'.png'});
+  // Reload drops the test-only override and checks actual saved progression.
   await page.reload();
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveAttribute('data-fog','remembered');
   await expect(page.getByTestId('ground-architecture-wall-8,3')).toHaveCSS('opacity','0.88');
