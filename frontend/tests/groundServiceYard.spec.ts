@@ -48,8 +48,9 @@ for(const width of [390,1280]){
     await page.getByTestId('ground-camera-toggle').click();
     if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
     await walk(page,10,4);
-    await expect(page.getByTestId('ground-yard-floor-10,4'))
-      .toHaveAttribute('data-fog','visible');
+    const yardFloor=page.getByTestId('ground-yard-floor-10,4');
+    await expect(yardFloor).toHaveAttribute('data-fog','visible');
+    await expect(yardFloor).toHaveAttribute('fill-opacity','0.16');
     const turntable=page.getByTestId('ground-yard-loading-turntable');
     await expect(turntable).toHaveAttribute('data-fog','visible');
     const footprint=await turntable.evaluate(node=>{
