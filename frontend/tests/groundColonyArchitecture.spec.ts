@@ -170,7 +170,8 @@ for(const width of [390,1280]) {
   expect(memoryPaint.filter).toContain('brightness(0.52)');
   expect(memoryPaint.filter).toContain('saturate(0.62)');
   expect(memoryPaint.pointerEvents).toBe('none');
-  await expect(board.locator('[data-fog-cell="11,7"]')).toHaveAttribute('data-fog-state','unknown');
+  // 16,10 is beyond every 3-cell LOS from the real west-gate route.
+  await expect(board.locator('[data-fog-cell="16,10"]')).toHaveAttribute('data-fog-state','unknown');
   await board.screenshot({path:'test-results/away-architecture-memory-'+width+'.png'});
   // Same exact LIVE mission/camera/fog/frame: paint only the previous main's
   // .28 alpha in a test-only counterfactual, yielding a true visual A/B.
