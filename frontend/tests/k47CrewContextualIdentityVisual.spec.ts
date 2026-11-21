@@ -88,7 +88,7 @@ for(const width of [390,1280]){
    await page.getByTestId('ground-officer-hit-mira').hover();
    await expect(full('mira')).toHaveCSS('opacity','1');
    await expect(initial('mira')).toHaveCSS('opacity','0');
-   await page.getByTestId('ground-squad-viewbar').hover();
+   await page.getByTestId('ground-camera-toggle').hover();
    await expect(full('mira')).toHaveCSS('opacity','0');
   }
   await page.reload();
