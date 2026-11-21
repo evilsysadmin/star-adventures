@@ -7,7 +7,7 @@ import world from '../../../content/scenes/meridian.json';
 const scene=world.scenes.surface;
 type Vision={explored:ReadonlySet<string>;visible:ReadonlySet<string>};
 type Point={x:number;y:number};
-type Span={start:number;end:number;cells:string[]};
+type Span={start:number;end:number;cells:string[];lit:boolean};
 const id=(x:number,y:number)=>x+','+y;
 const at=(x:number,y:number):Point=>({x:440+(x-y)*40,y:52+(x+y)*20});
 const lerp=(a:Point,b:Point,t:number):Point=>({
@@ -18,24 +18,28 @@ const outline=(pts:readonly Point[])=>pts.map((p,i)=>
 const realNorth=new Set(scene.walls.filter(c=>c.y===0&&c.x>=1&&c.x<=7)
  .map(c=>id(c.x,c.y)));
 
-function exploredSpans(explored:ReadonlySet<string>):Span[]{
+// Partition a continuous, honestly explored wall whenever LOS changes.
+// Otherwise one remembered cell dims the entire visible industrial frontage.
+function exploredSpans(explored:ReadonlySet<string>,visible:ReadonlySet<string>):Span[]{
  const spans:Span[]=[];
- let first=-1,run:string[]=[];
+ let first=-1,run:string[]=[],runLit=false;
  const close=()=>{
-  if(run.length)spans.push({start:first,end:first+run.length-1,cells:run});
+  if(run.length)spans.push({start:first,end:first+run.length-1,cells:run,lit:runLit});
   first=-1;run=[];
  };
  for(let x=1;x<=8;x++){
   const cell=id(x,0);
   if(x<=7&&realNorth.has(cell)&&explored.has(cell)){
-   if(!run.length)first=x;
+   const lit=visible.has(cell);
+   if(run.length&&lit!==runLit)close();
+   if(!run.length){first=x;runLit=lit;}
    run.push(cell);
   }else close();
  }
  return spans;
 }
 
-function NorthRetainingSpan({span,visible}:{span:Span;visible:ReadonlySet<string>}){
+function NorthRetainingSpan({span}:{span:Span}){
  const first=at(span.start,0),last=at(span.end,0),rise=43;
  const a={x:first.x,y:first.y-20-rise};
  const b={x:last.x+40,y:last.y-rise};
@@ -47,7 +51,7 @@ function NorthRetainingSpan({span,visible}:{span:Span;visible:ReadonlySet<string
  const panel=(u:number,v:number,top:number,bottom:number)=>
   outline([front(u,top),front(v,top),front(v,bottom),front(u,bottom)]);
  const count=span.cells.length;
- const lit=span.cells.every(k=>visible.has(k));
+ const lit=span.lit;
  return <g data-testid={'ground-north-retaining-span-'+span.start+'-'+span.end}
    data-footprint={span.cells.join(' ')}
    data-fog={lit?'visible':'remembered'} opacity={lit?1:.38}
@@ -95,7 +99,7 @@ function NorthRetainingSpan({span,visible}:{span:Span;visible:ReadonlySet<string
 }
 
 export function GroundNorthIndustrialRetainingWall({explored,visible}:Vision){
- const spans=exploredSpans(explored);
+ const spans=exploredSpans(explored,visible);
  return <g data-testid="ground-north-industrial-retaining"
    data-wall-row="0" data-physical-footprint="1,0 2,0 3,0 4,0 5,0 6,0 7,0"
    aria-hidden="true" pointerEvents="none">
@@ -114,6 +118,6 @@ export function GroundNorthIndustrialRetainingWall({explored,visible}:Vision){
     </linearGradient>
    </defs>
    {spans.map(span=><NorthRetainingSpan key={span.start}
-     span={span} visible={visible}/>)}
+     span={span}/>)}
  </g>;
 }
