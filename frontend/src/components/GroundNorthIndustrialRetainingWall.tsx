@@ -71,7 +71,10 @@ function NorthRetainingSpan({span}:{span:Span}){
        not extra independent little buildings or fictional entrances. */}
    {Array.from({length:count},(_,i)=>{
     const u=(i+.12)/count,v=(i+.88)/count;
-    const cold=i%3!==1;
+    // A bay's material/light identity must not shuffle when fog splits
+    // or reunites its parent span during real squad movement.
+    const ordinal=span.start+i-1;
+    const cold=ordinal%3!==1;
     const mid=front((i+.5)/count);
     return <g key={i} data-testid={'ground-north-bay-'+(span.start+i)}>
       <path d={panel(u,v,13,31)} fill="#112d37"
@@ -82,7 +85,7 @@ function NorthRetainingSpan({span}:{span:Span}){
         fill="#152e38" opacity=".66"/>
       <path d={'M'+mid.x+' '+(mid.y+31)+'v8'}
         stroke="#b39c74" strokeWidth="1.8"/>
-      {i%2===0&&<circle cx={mid.x} cy={mid.y+12} r="2.6"
+      {ordinal%2===0&&<circle cx={mid.x} cy={mid.y+12} r="2.6"
         fill="#e7b77b" opacity=".84"/>}
     </g>;
    })}
