@@ -44,7 +44,7 @@ async function moveToNorth(page:Page){
 for(const width of [390,1280]){
  test('north industrial wall is real, discovered, unpickable and retained '+width,
   async({page})=>{
-   test.setTimeout(170000);
+   test.setTimeout(220000);
    page.setDefaultTimeout(15000);
    await page.setViewportSize({width,height:850});
    const board=await land(page);
@@ -52,6 +52,61 @@ for(const width of [390,1280]){
    await expect(wall).toHaveAttribute('pointer-events','none');
    await expect(wall).toHaveAttribute('data-wall-row','0');
    await moveToNorth(page);
+   // Discover one continuous physical northern wall by walking the real
+   // open y=1 corridor, then return east. The western bays must be remembered
+   // while the eastern bays are visibly lit: never dim the entire facade
+   // because one cell of its previously explored span is outside LOS.
+   const northUnit=page.getByTestId('ground-unit-venn');
+   await page.getByTestId('ground-move-mode').click();
+   await board.focus();
+   for(let i=0;i<6;i++)await page.keyboard.press('ArrowLeft');
+   await page.keyboard.press('Enter');
+   await expect(northUnit).toHaveAttribute('data-grid-x','1',{timeout:35000});
+   await expect(northUnit).toHaveAttribute('data-grid-y','1',{timeout:35000});
+   await expect(northUnit).toHaveAttribute('data-walk-phase','idle',{timeout:35000});
+   const bayMaterials=()=>board.locator('[data-testid^="ground-north-bay-"]')
+     .evaluateAll(nodes=>nodes.map(node=>({
+       id:node.getAttribute('data-testid'),
+       panel:node.querySelectorAll('path')[1]?.getAttribute('fill'),
+       lamp:Boolean(node.querySelector('circle')),
+     })).sort((a,b)=>String(a.id).localeCompare(String(b.id))));
+   const paintAtWest=await bayMaterials();
+   await moveToNorth(page);
+   // Fog alone must not reshuffle physical bay paint or amber light placement.
+   expect(await bayMaterials()).toEqual(paintAtWest);
+   const partitioned=await board.locator(
+     '[data-testid^="ground-north-retaining-span-"]').evaluateAll(nodes=>
+     nodes.map(node=>({
+       fog:node.getAttribute('data-fog'),
+       cells:(node.getAttribute('data-footprint')||'').split(' ').filter(Boolean),
+     })));
+   expect(partitioned.some(span=>span.fog==='visible')).toBe(true);
+   expect(partitioned.some(span=>span.fog==='remembered')).toBe(true);
+   expect(new Set(partitioned.flatMap(span=>span.cells)).size)
+     .toBe(partitioned.reduce((total,span)=>total+span.cells.length,0));
+   for(const span of partitioned){
+     for(const cell of span.cells){
+       const fogCell=board.locator('[data-fog-cell="'+cell+'"]');
+       if(span.fog==='remembered')
+         await expect(fogCell).toHaveAttribute('data-fog-state','remembered');
+       else
+         await expect(fogCell).toHaveCount(0);
+     }
+   }
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-mixed-fog-after-'+width+'.png'});
+   // Visual counterfactual: restore the old ALL-dark façade when any of its
+   // previously discovered cells falls outside LOS. Geometry/camera/selection
+   // are otherwise unchanged; this CSS override is removed immediately.
+   const oldAllDark=await page.addStyleTag({content:
+     '[data-testid="ground-north-industrial-retaining"] [data-fog="visible"]'+
+     '{opacity:.91!important;filter:brightness(.51) saturate(.6) contrast(1.1)!important}'});
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-mixed-fog-before-'+width+'.png'});
+   await oldAllDark.evaluate(node=>node.remove());
+   await expect(board.locator(
+     '[data-testid^="ground-north-retaining-span-"][data-fog="visible"]').first())
+     .toHaveCSS('opacity','1');
    const spans=board.locator('[data-testid^="ground-north-retaining-span-"]');
    await expect.poll(()=>spans.count()).toBeGreaterThan(0);
    const footprint=await spans.evaluateAll(nodes=>nodes.flatMap(n=>
