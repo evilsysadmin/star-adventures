@@ -47,6 +47,10 @@ const officerWalkArt: Record<string,string> = {
   varela: maleWalk, solan: maleWalk, dorn: maleWalk, rhee: maleWalk,
 };
 const blocked = new Set(scene.walls.map(cell => cell.x + ',' + cell.y));
+// Stations and transition objects are not ordinary walkable floor either.
+// Keep the presentation-only camera survey aligned with the real route map.
+const cameraObstacles = new Set([...scene.walls,...scene.objects]
+  .map(cell=>cell.x+','+cell.y));
 // Canonical cell polygons remain the *only* pointer targets. Original
 // per-cell terrain palettes made the colony resemble a checkerboard even
 // after the undiscoved-fog treatment; material shading is now world-space.
@@ -238,10 +242,29 @@ export function GroundSquadSelection({
   const cameraHeight = focused ? 480 : sectorMode ? 520
     : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
   const cameraWidth = Math.round(cameraHeight * aspect);
+  // An officer-centered camera leaves most of the actually known colony to
+  // one side at the north/south edges, with an empty fog backdrop opposite it.
+  // Follow the officer AND a small portion of the REAL, currently visible
+  // traversable world. This is a bounded camera offset only: no extra cells,
+  // fake discovery, changed picking or hidden mission anchors.
+  const knownFloor=sceneTiles.filter(cell=>
+    displayedFog.visible.has(cell.key)&&!cameraObstacles.has(cell.key));
+  const knownX=knownFloor.length
+    ? knownFloor.reduce((total,cell)=>total+tile(cell.x,cell.y).x,0)/knownFloor.length
+    : cameraCenter.x;
+  const legacyFollow=import.meta.env.DEV&&typeof window!=='undefined'&&
+    Boolean((window as typeof window&{__k47LegacyFollowFraming?:boolean})
+      .__k47LegacyFollowFraming);
+  // The officer remains close to screen center even on 360px portrait. The
+  // overview/sector inspector never inherit this follow-only displacement.
+  const maxLead=Math.min(compact?28:90,cameraWidth*.13);
+  const followLead=followSquad&&!legacyFollow
+    ? Math.max(-maxLead,Math.min(maxLead,(knownX-cameraCenter.x)*.55))
+    : 0;
   const cameraX = cameraWidth >= fullWidth
     ? fullFrame.left+Math.round((fullWidth-cameraWidth)/2)
     : Math.max(fullFrame.left, Math.min(fullFrame.left+fullWidth-cameraWidth,
-        Math.round(viewCenter.x-cameraWidth/2)));
+        Math.round(viewCenter.x-cameraWidth/2+followLead)));
   const cameraY = Math.max(fullFrame.top, Math.min(fullFrame.top+fullHeight-cameraHeight,
     Math.round(viewCenter.y-cameraHeight*.56)));
   const cameraView = !followSquad&&!sectorMode
