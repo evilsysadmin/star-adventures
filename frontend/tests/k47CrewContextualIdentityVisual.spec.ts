@@ -24,6 +24,11 @@ for(const width of [390,1280]){
   test.setTimeout(140000);
   await page.setViewportSize({width,height:850});
   const board=await land(page);
+  // Chrome preserves the pointer from the transport confirmation button.
+  // After the scene replaces that screen, it can be directly over Isa;
+  // the genuine :hover reveal is correct. Park outside the game world
+  // before asserting the unhovered baseline at both viewport widths.
+  await page.mouse.move(1,1);
   const camera=await board.getAttribute('viewBox');
   const ids=['venn','dorn','mira'] as const;
   const full=(id:string)=>page.getByTestId('ground-officer-nameplate-full-'+id);
