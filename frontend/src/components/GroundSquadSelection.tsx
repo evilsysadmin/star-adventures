@@ -47,6 +47,10 @@ const officerWalkArt: Record<string,string> = {
   varela: maleWalk, solan: maleWalk, dorn: maleWalk, rhee: maleWalk,
 };
 const blocked = new Set(scene.walls.map(cell => cell.x + ',' + cell.y));
+// Stations and transition objects are not ordinary walkable floor either.
+// Keep the presentation-only camera survey aligned with the real route map.
+const cameraObstacles = new Set([...scene.walls,...scene.objects]
+  .map(cell=>cell.x+','+cell.y));
 // Canonical cell polygons remain the *only* pointer targets. Original
 // per-cell terrain palettes made the colony resemble a checkerboard even
 // after the undiscoved-fog treatment; material shading is now world-space.
@@ -244,7 +248,7 @@ export function GroundSquadSelection({
   // traversable world. This is a bounded camera offset only: no extra cells,
   // fake discovery, changed picking or hidden mission anchors.
   const knownFloor=sceneTiles.filter(cell=>
-    displayedFog.visible.has(cell.key)&&!blocked.has(cell.key));
+    displayedFog.visible.has(cell.key)&&!cameraObstacles.has(cell.key));
   const knownX=knownFloor.length
     ? knownFloor.reduce((total,cell)=>total+tile(cell.x,cell.y).x,0)/knownFloor.length
     : cameraCenter.x;
