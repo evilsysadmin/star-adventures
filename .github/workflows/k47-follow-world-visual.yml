@@ -1,0 +1,36 @@
+name: K-47 honest world-aware follow · real visual gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundSquadSelection.tsx"
+      - "frontend/tests/k47FollowWorldVisual.spec.ts"
+      - ".github/workflows/k47-follow-world-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  follow-world:
+    name: Real 390/1280 colony-framing A/B · camera, picking, fog, F5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Run actual away-team movement and old/new camera comparison
+        run: npm run test:e2e --prefix frontend -- tests/k47FollowWorldVisual.spec.ts
+      - name: Preserve exact game screenshot A/B
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-follow-world-ab-${{ github.sha }}
+          path: frontend/test-results/k47-follow-world-*.png
+          if-no-files-found: warn
+          retention-days: 14
