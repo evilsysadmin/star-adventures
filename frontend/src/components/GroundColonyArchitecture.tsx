@@ -525,15 +525,28 @@ export function GroundColonyStations({explored,visible,labelFrame,verticalFrame}
        data-ribbon-y-shift={verticalShift.toFixed(2)}
        visibility={shift===null?'hidden':undefined}
        pointerEvents="none" transform={'translate('+plaqueX+' '+(plaqueY+verticalShift)+') scale(.78)'}>
-       <rect x={plaqueShift-plaqueWidth/2} y="-14" width={plaqueWidth}
-         height="20" rx="3" fill="#111c24" fillOpacity=".96"
-         stroke="#ebc775" strokeWidth="1.5"/>
-       {/* The pointer tip remains attached to the real station even when
-           only the panel slides away from a camera edge. */}
+       {/* A physically plausible enamel/steel wayfinding plate, not
+           another opaque gold-rimmed HUD card above the architecture.
+           Keep its ORIGINAL geometry and camera-edge anchoring intact. */}
+       <rect data-testid={'ground-waypoint-metal-face-'+object.id}
+         x={plaqueShift-plaqueWidth/2} y="-14" width={plaqueWidth}
+         height="20" rx="2" fill="#1c343b" fillOpacity=".89"
+         stroke="#8fa9a0" strokeWidth="1.1"/>
+       <g data-testid={'ground-waypoint-metal-finish-'+object.id}
+         pointerEvents="none">
+         <path d={`M${plaqueShift-plaqueWidth/2+5} -10H${plaqueShift+plaqueWidth/2-5}`}
+           stroke="#bdc5af" strokeOpacity=".25" strokeWidth=".9"/>
+         <path d={`M${plaqueShift-plaqueWidth/2+4} -8V1`}
+           stroke="#d7bb83" strokeWidth="2.3"/>
+         <circle cx={plaqueShift+plaqueWidth/2-5} cy="-9" r="1.2"
+           fill="#beaa84" opacity=".76"/>
+       </g>
+       {/* The pointer tip stays tethered to its REAL station when the
+           panel is clamped into a narrow camera: never a false HUD pin. */}
        {pointerX!==0&&<path d={`M${plaqueShift} 6L${pointerX} 8`}
-         fill="none" stroke="#ebc775" strokeWidth=".9" />}
+         fill="none" stroke="#a8b1a2" strokeWidth=".9" />}
        <path d={`M${pointerX-4} 6L${pointerX} 12L${pointerX+4} 6`}
-         fill="#111c24" stroke="#ebc775" strokeWidth="1"/>
+         fill="#1c343b" stroke="#a8b1a2" strokeWidth=".9"/>
        <text x={plaqueShift} y="0" textAnchor="middle"
          className="ground-landmark-name">{caption}</text>
      </g>

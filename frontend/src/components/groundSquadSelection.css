@@ -57,8 +57,8 @@
 /* Landscape labels belong to the original authored objectives, not fake
    numbered terminals. The SVG scene remains the same interactive grid. */
 .ground-landmark-name{
-  font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.55px;
-  fill:#ffe6a9;pointer-events:none;
+  font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.5px;
+  fill:#e7e8d7;pointer-events:none;
 }
 .ground-squad-board [data-cell-id]:hover{
   stroke:#d6deb6;stroke-opacity:.62;stroke-width:2;
