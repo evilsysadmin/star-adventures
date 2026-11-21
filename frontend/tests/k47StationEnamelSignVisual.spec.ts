@@ -61,7 +61,7 @@ async function compareSameFrame(page:Page,width:number,phase:string){
  const after=await board.evaluate(root=>
   [...root.querySelectorAll('polygon[data-cell-id]')].map(n=>n.getAttribute('data-cell-id')));
  expect(after).toEqual(before);
- await expect(page.getByTestId('ground-landmark-beam-out')).toHaveAttribute('pointer-events','none');
+ await expect(page.getByTestId('ground-landmark-beam-out')).toHaveCSS('pointer-events','none');
 }
 
 for(const width of [390,1280]){
