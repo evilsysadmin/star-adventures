@@ -67,7 +67,24 @@ for(const width of [390,1280])test('identify actual central K-47 layer occlusion
   }
   await expect(page.getByTestId('ground-landing-court-3d'))
    .toHaveAttribute('data-authored-art-ready',initialArt!);
+  // At initial squad follow the beacon can be outside a 390px camera.
+  // Walk the REAL officer one step farther into the original west/east
+  // access corridor so the compact BALIZA is actually visible on mobile.
+  // This exercises the genuine move cursor and blocked-neighbor routing.
+  await page.getByTestId('ground-move-mode').click();
+  await board.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  const officer=page.getByTestId('ground-unit-venn');
+  await expect(officer).toHaveAttribute('data-grid-x','7',{timeout:30000});
+  await expect(officer).toHaveAttribute('data-grid-y','6',{timeout:30000});
+  await expect(officer).toHaveAttribute('data-walk-phase','idle',{timeout:30000});
+  await expect(beacon).toHaveCount(1);
+  await page.screenshot({path:'test-results/k47-beacon-near-'+width+'.png'});
   await page.reload();
+  await expect(page.getByTestId('ground-unit-venn'))
+   .toHaveAttribute('data-grid-x','7');
   await expect(page.getByTestId('ground-unit-venn'))
    .toHaveAttribute('data-grid-y','6');
   await expect(page.getByTestId('ground-squad-board')
