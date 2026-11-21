@@ -45,6 +45,28 @@ def design():
         b.box('orange',.442,2.55,z,.042,.09,.13)
         for height in (1.43,1.94):
             b.box('rib',.467,height,z,.018,.030,.238)
+    # Original east-facing loading elevation is INSIDE the existing blocked
+    # x=0 archive footprint. Break up the five almost-identical window bays
+    # with REAL closed armored service cladding. Two glazed data bays remain
+    # exposed; the other segments become substantial maintenance modules.
+    # These are never doors, walkways, fog revealers or mission interaction.
+    for z,depth in [(-1.12,.36),(.12,.47),(1.12,.36)]:
+        b.box('basalt',.474,1.60,z,.098,1.50,depth)
+        b.box('panel',.528,1.59,z,.023,1.24,depth-.09)
+        b.box('rib',.544,2.18,z,.017,.068,depth-.04)
+        b.box('brass',.543,1.01,z,.018,.055,depth-.055)
+        # Thin louvres are physically mounted on an opaque steel *panel*,
+        # rather than occupying the whole facade like luminous open grilles.
+        for y in (1.35,1.52,1.69,1.86):
+            b.box('rib',.544,y,z,.015,.023,depth-.11)
+    # Four deeply rooted buttresses tie the real roof to the lower plinth.
+    # These irregular support masses replace the bright skeletal rhythm.
+    for z in (-1.33,-.25,.86,1.33):
+        b.box('shell',.463,1.57,z,.145,2.15,.12)
+        b.box('rib',.542,1.56,z,.016,1.88,.075)
+        b.box('basalt',.464,.48,z,.16,.23,.18)
+    b.box('panel',.463,2.76,0,.153,.19,2.66)
+    b.box('rib',.548,2.80,0,.014,.053,2.62)
     # Sealed data-hatch decorative panel: actual archive interaction remains
     # sensor-vault mission object elsewhere; there is no invented doorway.
     b.box('rib',.40,.79,-.85,.075,.56,.41)
