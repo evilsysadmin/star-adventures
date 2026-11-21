@@ -64,7 +64,16 @@ for(const width of [390,1280]){
    await expect(northUnit).toHaveAttribute('data-grid-x','1',{timeout:35000});
    await expect(northUnit).toHaveAttribute('data-grid-y','1',{timeout:35000});
    await expect(northUnit).toHaveAttribute('data-walk-phase','idle',{timeout:35000});
+   const bayMaterials=()=>board.locator('[data-testid^="ground-north-bay-"]')
+     .evaluateAll(nodes=>nodes.map(node=>({
+       id:node.getAttribute('data-testid'),
+       panel:node.querySelectorAll('path')[1]?.getAttribute('fill'),
+       lamp:Boolean(node.querySelector('circle')),
+     })).sort((a,b)=>String(a.id).localeCompare(String(b.id))));
+   const paintAtWest=await bayMaterials();
    await moveToNorth(page);
+   // Fog alone must not reshuffle physical bay paint or amber light placement.
+   expect(await bayMaterials()).toEqual(paintAtWest);
    const partitioned=await board.locator(
      '[data-testid^="ground-north-retaining-span-"]').evaluateAll(nodes=>
      nodes.map(node=>({
