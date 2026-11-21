@@ -75,13 +75,40 @@ for(const width of [390,1280]){
    await legacy.evaluate(node=>node.remove());
    await expect(wall).not.toHaveCSS('display','none');
 
-   // Recede from the ACTUALLY explored northern wall along normal walkable
-   // cells. The view must remember only known blocked-wall segments, never
-   // draw distant unseen terrain through the fog.
+   // Recede just four actual cells south (7,1 -> 7,4): the physical
+   // north wall falls outside canonical LOS but remains IN the closer mobile
+   // follow camera. Without this stop, a mobile picture at 5,6 sees zero
+   // wall pixels and cannot establish a meaningful visual before/after.
+   await page.getByTestId('ground-move-mode').click();
+   await board.focus();
+   for(let i=0;i<3;i++)await page.keyboard.press('ArrowDown');
+   await page.keyboard.press('Enter');
+   const near=page.getByTestId('ground-unit-venn');
+   await expect(near).toHaveAttribute('data-grid-x','7',{timeout:35000});
+   await expect(near).toHaveAttribute('data-grid-y','4',{timeout:35000});
+   await expect(near).toHaveAttribute('data-walk-phase','idle',{timeout:35000});
+   const nearRemembered=board.locator(
+     '[data-testid^="ground-north-retaining-span-"][data-fog="remembered"]');
+   await expect.poll(()=>nearRemembered.count()).toBeGreaterThan(0);
+   await expect(nearRemembered.first()).toHaveCSS('opacity','0.91');
+   const nearCamera=await board.getAttribute('viewBox');
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-memory-after-near-'+width+'.png'});
+   const oldNear=await page.addStyleTag({content:
+     '[data-testid="ground-north-industrial-retaining"] '+
+     '[data-fog="remembered"]{opacity:.68!important;filter:none!important}'});
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-memory-before-near-'+width+'.png'});
+   await oldNear.evaluate(node=>node.remove());
+   await expect(board).toHaveAttribute('viewBox',nearCamera!);
+   await expect(nearRemembered.first()).toHaveCSS('opacity','0.91');
+
+   // Continue to 5,6 to check that remembered structures remain correct
+   // even when the default mobile camera no longer displays their pixels.
    await page.getByTestId('ground-move-mode').click();
    await board.focus();
    for(let i=0;i<2;i++)await page.keyboard.press('ArrowLeft');
-   for(let i=0;i<5;i++)await page.keyboard.press('ArrowDown');
+   for(let i=0;i<2;i++)await page.keyboard.press('ArrowDown');
    await page.keyboard.press('Enter');
    const venn=page.getByTestId('ground-unit-venn');
    await expect(venn).toHaveAttribute('data-grid-x','5',{timeout:35000});
