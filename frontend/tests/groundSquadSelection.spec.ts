@@ -35,7 +35,7 @@ for (const width of [390, 1280]) {
     // The in-world nameplates must not steal officer hitbox input. These
     // assertions are exercised in both desktop and 390px real browser flows.
     const nameplates=await page.getByTestId('ground-squad-board').evaluate(root=>
-      [...root.querySelectorAll('[data-testid^="ground-officer-nameplate-"]')]
+      [...root.querySelectorAll('.ground-officer-nameplate')]
         .map(node=>({
           text:node.querySelector('text')?.textContent,
           passive:getComputedStyle(node).pointerEvents==='none',
