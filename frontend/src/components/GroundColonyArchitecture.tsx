@@ -421,22 +421,42 @@ function StationGeometry({id}:{id:string}){
  </>;
  if(id==='relief-point')return <GroundMedicalFacility/>;
   if(id==='probe')return <GroundProbeArray/>;
- if(id==='perimeter-uplink')return <>
+ // A true radio/navigation fixture, not a second 100-unit skeletal
+ // observation tower projecting across the triage clinic and crew. The
+ // blocked station footprint, world anchor, fog and interaction remain
+ // unchanged; only its passive silhouette is more compact and solid.
+ if(id==='perimeter-uplink')return <g
+   data-testid="ground-perimeter-uplink-compact"
+   data-station-footprint="7,5" data-mast-top="-81"
+   pointerEvents="none" aria-hidden="true">
   <ellipse cy="7" rx="38" ry="13" fill="#061b20" opacity=".7"/>
   <path d="M-30 -5 0 -22 30 -5 0 13Z" fill="#4c6968"
     stroke="#b5c4aa" strokeWidth="2"/>
   <path d="M-24 -4V-16L0 -29 24 -16V-4L0 9Z"
     fill="#334b50" stroke="#8dacaa" strokeWidth="1.4"/>
-  <path d="M-15 -21 -8 -36 0 -88 8 -36 15 -21M-8 -36H8M-5 -51H5"
-    fill="none" stroke="#b9ccbe" strokeWidth="3"/>
-  <path d="M-22 -16 -4 -7 16 -18" stroke="#e1c990"
+  {/* Enclosed tapered steel mast rather than long white tripod rails. */}
+  <path d="M-12 -24 -8 -58 0 -65 8 -58 12 -24 0 -16Z"
+    fill="#35565a" stroke="#172e36" strokeWidth="2.5"/>
+  <path d="M0 -65 8 -58 12 -24 0 -16Z"
+    fill="#203d47" stroke="#142e36" strokeWidth="1.5"/>
+  <path d="M-5 -53 -3 -28M4 -53 6 -28"
+    fill="none" stroke="#71978d" strokeOpacity=".68" strokeWidth="1.7"/>
+  <path d="M-10 -29 0 -24 10 -29M-8 -48 0 -52 8 -48"
+    stroke="#b7a580" strokeWidth="1.9" fill="none"/>
+  {/* One actual short-range telemetry head, with restrained signal glow
+      and a working lamp. No second mission icon or fake door. */}
+  <path d="M-11 -64 0 -71 11 -64 0 -57Z"
+    fill="#4c6563" stroke="#a2b7a5" strokeWidth="1.8"/>
+  <path d="M0 -70V-79" stroke="#b4c7b5" strokeWidth="2.2"/>
+  <circle cy="-81" r="4" fill="#a4f4d9"/>
+  <circle cy="-81" r="11" stroke="#82d5c3"
+    strokeWidth="1.3" fill="none" opacity=".24"/>
+  <path d="M-22 -16 -4 -7 16 -18" stroke="#d5ad77"
     strokeWidth="2.4" fill="none"/>
-  <path d="M0 -88V-105" stroke="#d4e3d7" strokeWidth="2"/>
-  <circle cy="-107" r="5" fill="#a4f4d9"/>
-  <circle cy="-107" r="17" stroke="#82d5c3"
-    strokeWidth="1.2" fill="none" opacity=".35"/>
-  <circle cx="16" cy="-18" r="4" fill="#ffab70"/>
- </>;
+  <path d="M-15 -12 -6 -7M7 -7 16 -12"
+    stroke="#88beb0" strokeWidth="1.9" fill="none"/>
+  <circle cx="16" cy="-18" r="3.3" fill="#ffab70"/>
+ </g>;
  return <>
   <ellipse cy="9" rx="42" ry="19" fill="#081922" opacity=".7"/>
   <path d="M-39 0 0 -22 39 0 0 22Z" fill="#354e55"

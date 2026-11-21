@@ -1,0 +1,41 @@
+name: K-47 central architecture · actual layer trace
+
+on:
+  pull_request:
+    paths:
+      - "frontend/tests/k47VisibleLayerAudit.spec.ts"
+      - ".github/workflows/k47-visible-layer-audit.yml"
+      - "frontend/src/components/GroundColonyArchitecture.tsx"
+      - "frontend/src/components/GroundColonyDressing.tsx"
+      - "frontend/src/components/GroundMedicalFacility.tsx"
+      - "frontend/src/components/GroundSquadSelection.tsx"
+
+permissions:
+  contents: read
+
+jobs:
+  visual-layer-trace:
+    name: Real K-47 390/1280 center-layer before/after + move/F5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Capture actual K-47 architectural layers
+        run: npm run test:e2e --prefix frontend -- tests/k47VisibleLayerAudit.spec.ts
+      - name: Preserve real Chromium layer traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-central-layer-trace-${{ github.sha }}
+          path: |
+            frontend/test-results/k47-layer-trace-*.png
+            frontend/test-results/k47-beacon-near-*.png
+          if-no-files-found: warn
+          retention-days: 14
