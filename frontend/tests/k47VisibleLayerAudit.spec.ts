@@ -38,6 +38,16 @@ for(const width of [390,1280])test('identify actual central K-47 layer occlusion
   test.setTimeout(150000);
   await page.setViewportSize({width,height:850});
   const board=await followRealSquad(page);
+  // The actual previously over-tall BALIZA is still the same discovered
+  // blocked station and remains reachable through the original mission
+  // model; only its decorative mast is shortened and enclosed.
+  const beacon=board.getByTestId('ground-perimeter-uplink-compact');
+  await expect(beacon).toHaveCount(1);
+  await expect(beacon).toHaveAttribute('data-station-footprint','7,5');
+  await expect(beacon).toHaveAttribute('data-mast-top','-81');
+  await expect(beacon).toHaveAttribute('pointer-events','none');
+  await expect(board.getByTestId('ground-landmark-perimeter-uplink'))
+    .toHaveCount(1);
   const initialCamera=await board.getAttribute('viewBox');
   const initialArt=await page.getByTestId('ground-landing-court-3d')
    .getAttribute('data-authored-art-ready');
