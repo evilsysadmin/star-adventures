@@ -74,11 +74,74 @@ for(const width of [390,1280]){
    await page.screenshot({path:'test-results/k47-north-industrial-before-'+width+'.png'});
    await legacy.evaluate(node=>node.remove());
    await expect(wall).not.toHaveCSS('display','none');
+
+   // Recede from the ACTUALLY explored northern wall along normal walkable
+   // cells. The view must remember only known blocked-wall segments, never
+   // draw distant unseen terrain through the fog.
+   await page.getByTestId('ground-move-mode').click();
+   await board.focus();
+   for(let i=0;i<2;i++)await page.keyboard.press('ArrowLeft');
+   for(let i=0;i<5;i++)await page.keyboard.press('ArrowDown');
+   await page.keyboard.press('Enter');
+   const venn=page.getByTestId('ground-unit-venn');
+   await expect(venn).toHaveAttribute('data-grid-x','5',{timeout:35000});
+   await expect(venn).toHaveAttribute('data-grid-y','6',{timeout:35000});
+   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:35000});
+   const remembered=board.locator(
+     '[data-testid^="ground-north-retaining-span-"][data-fog="remembered"]');
+   await expect.poll(()=>remembered.count()).toBeGreaterThan(0);
+   await expect(remembered.first()).toHaveCSS('opacity','0.91');
+   const fogPaint=await remembered.first().evaluate(node=>({
+     filter:getComputedStyle(node).filter,
+     pointerEvents:getComputedStyle(node).pointerEvents,
+   }));
+   expect(fogPaint.filter).toContain('brightness(0.51)');
+   expect(fogPaint.filter).toContain('saturate(0.6)');
+   expect(fogPaint.pointerEvents).toBe('none');
+   await expect(board.locator('[data-fog-cell="16,10"]'))
+     .toHaveAttribute('data-fog-state','unknown');
+   await expect(board.locator('[data-cell-id]')).toHaveCount(216);
+   const originalCamera=await board.getAttribute('viewBox');
+
+   // Exact Chromium same-frame A/B: recover the old semitransparent
+   // remembered styling in CSS only; never mutate the game or fog.
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-memory-after-follow-'+width+'.png'});
+   const oldMemory=await page.addStyleTag({content:
+     '[data-testid="ground-north-industrial-retaining"] '+
+     '[data-fog="remembered"]{opacity:.68!important;filter:none!important}'});
+   await expect(remembered.first()).toHaveCSS('opacity','0.68');
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-memory-before-follow-'+width+'.png'});
+   await oldMemory.evaluate(node=>node.remove());
+   await expect(remembered.first()).toHaveCSS('opacity','0.91');
+   await expect(board).toHaveAttribute('viewBox',originalCamera!);
+
+   // The mobile sector inspector can actually show the already discovered
+   // northern span at useful size; desktop uses its real full-map viewport.
+   await page.getByTestId('ground-camera-toggle').click();
+   if(width<=520)await page.getByTestId('ground-map-sector').selectOption('west');
+   else await expect(board).toHaveAttribute('viewBox','-72 0 1280 640');
+   const overviewCamera=await board.getAttribute('viewBox');
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-memory-after-overview-'+width+'.png'});
+   const oldOverview=await page.addStyleTag({content:
+     '[data-testid="ground-north-industrial-retaining"] '+
+     '[data-fog="remembered"]{opacity:.68!important;filter:none!important}'});
+   await page.screenshot({
+     path:'test-results/k47-north-industrial-memory-before-overview-'+width+'.png'});
+   await oldOverview.evaluate(node=>node.remove());
+   await expect(board).toHaveAttribute('viewBox',overviewCamera!);
+   await expect(remembered.first()).toHaveCSS('opacity','0.91');
+
    await page.reload();
    await expect(page.getByTestId('ground-unit-venn'))
-     .toHaveAttribute('data-grid-x','7');
+     .toHaveAttribute('data-grid-x','5');
    await expect(page.getByTestId('ground-unit-venn'))
-     .toHaveAttribute('data-grid-y','1');
+     .toHaveAttribute('data-grid-y','6');
+   await expect(page.getByTestId('ground-squad-board').locator(
+     '[data-testid^="ground-north-retaining-span-"][data-fog="remembered"]')
+     .first()).toHaveCSS('opacity','0.91');
    await expect(page.getByTestId('ground-squad-board').locator('[data-cell-id]'))
      .toHaveCount(216);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
