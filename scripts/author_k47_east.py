@@ -95,6 +95,38 @@ def design():
             b.box('rib',side*.459,1.39,z,.065,2.04,.065)
         for y in [.57,2.40]:
             b.box('brass',xx,y,0,.055,.05,2.83)
+    # A continuous *physical* facade behind the old highly articulated
+    # instrument framing. Earlier renders resembled a thin white scaffold:
+    # too many narrow exposed glazed bays, too little architectural mass.
+    # Asymmetric plated service modules replace part of that transparent
+    # rhythm with CLOSED, weight-bearing utility bays. They do NOT create
+    # new doors, steps or mission affordances, and remain inside the existing
+    # blocked 1x3 east wall footprint on both physical sides.
+    for side in (-1, 1):
+        for z, width in [(-.92, .43), (.18, .51), (1.05, .36)]:
+            b.box('basalt', side*.492, 1.52, z, .052, 1.37, width)
+            b.box('panel', side*.526, 1.54, z, .024, 1.11, width-.09)
+            # Vented steel skin, not luminous graphic lines. A robust
+            # recessed plinth and top bearer make each bay read as volume.
+            b.box('rib', side*.541, 2.11, z, .018, .07, width-.055)
+            b.box('brass', side*.539, .98, z, .020, .055, width-.065)
+            for y in (1.27, 1.43, 1.59, 1.75):
+                b.box('rib', side*.542, y, z, .016, .025, width-.12)
+        # Genuine structural buttresses are integrated into the SAME blocked
+        # shell. Their thick sections anchor the roof, rather than leaving
+        # the side elevations as glass strips suspended in open air.
+        for z in (-1.25, -.06, 1.23):
+            b.box('shell', side*.488, 1.43, z, .123, 2.12, .17)
+            b.box('rib', side*.545, 1.46, z, .017, 1.72, .11)
+    # One dense, original engineering housing links the roof machinery
+    # into a continuous mass. Preserve the parabolic dish and the rear
+    # beacon as separate distinguishable instruments.
+    b.box('shell', 0, 2.96, -.70, .70, .28, 1.02)
+    b.box('panel', 0, 3.14, -.70, .77, .10, 1.12)
+    for z in (-1.12, -.90, -.68, -.46):
+        b.box('rib', 0, 3.20, z, .73, .026, .036)
+    b.box('rubber', 0, 2.99, -.17, .56, .14, .025)
+
     # South/north ends are engineering caps, never fake traversable doors.
     for z in [-1.43,1.43]:
         b.box('rubber',0,1.43,z,.78,1.9,.028)
