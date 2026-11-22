@@ -355,9 +355,6 @@ export function GroundSquadSelection({
       setMoveNotice('Casilla bloqueada u ocupada; el equipo no se mueve.');
       return;
     }
-    if(realtime && selected.length!==1){
-      setMoveNotice('Movimiento libre beta: selecciona un único oficial.');return;
-    }
     const destination=realtime&&exact?exact:{x,y};
     if((!realtime && selected.length===squad.length && allowWholeMove &&
         x===position.x && y===position.y) ||
@@ -870,7 +867,7 @@ export function GroundSquadSelection({
           // Disclosure must not cover/intercept ground picking after activation.
           event.currentTarget.closest('details')?.removeAttribute('open');
         }}>
-        {realtime?'Volver al movimiento clásico':'Probar movimiento libre (beta)'}
+        {realtime?'Volver al movimiento clásico':'Probar movimiento libre del equipo (beta)'}
       </button>}
       <p className="ground-squad-help">{realtime
         ? 'Beta: elige un oficial; clic derecho o Mover y tocar. Cambia destino durante la marcha. Volver al clásico descarta el recorrido de prueba.'
