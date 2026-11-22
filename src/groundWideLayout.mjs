@@ -11,6 +11,7 @@ const coordinate=(point,width,height)=>
   point[0]<width&&point[1]<height;
 const fail=message=>{throw new TypeError('Invalid ground expansion: '+message);};
 const basicName=value=>typeof value==='string'&&value.length>0&&value.length<=128;
+const description=value=>typeof value==='string'&&value.length>0&&value.length<=512;
 
 export function composeGroundExpansion(baseWorld,plan){
   validateWorld(baseWorld);
@@ -51,7 +52,7 @@ export function composeGroundExpansion(baseWorld,plan){
   for(const objective of plan.proposedObjectives){
     if(!basicName(objective?.id)||ids.has(objective.id)||
        !basicName(objective.title)||!basicName(objective.kind)||
-       !basicName(objective.outcome)||
+       !description(objective.outcome)||
        !coordinate(objective.at,plan.width,plan.height))fail('objective metadata');
     const id=key(...objective.at);
     if(obstacles.has(id)||realObjects.has(id)||targets.has(id))
@@ -61,7 +62,7 @@ export function composeGroundExpansion(baseWorld,plan){
   const sectors=new Set();
   for(const sector of plan.sectors){
     if(!basicName(sector?.id)||sectors.has(sector.id)||
-       !basicName(sector.name)||!basicName(sector.role)||
+       !basicName(sector.name)||!description(sector.role)||
        !Array.isArray(sector.bounds)||sector.bounds.length!==4||
        !sector.bounds.every(Number.isSafeInteger)||
        !coordinate([sector.bounds[0],sector.bounds[1]],plan.width,plan.height)||
