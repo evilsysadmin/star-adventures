@@ -5,7 +5,7 @@
   "basedOn": "meridian.surface",
   "width": 32,
   "height": 20,
-  "premise": "An expanded K-47 evacuation and research installation. Reach the far research archive by the protected north ridge or the industrial south approach; no new interactions are live in this candidate.",
+  "premise": "K-47 Outer Array: opt-in six-sector expedition with real connected exploration and two trial-live actions (emergency power routing and laboratory evidence). This remains separate from the canonical K-47 episode.",
   "retainedAuthoredFootprints": [
     "south-industrial-shell",
     "west-archive-shell",
@@ -390,7 +390,8 @@
         15
       ],
       "kind": "main",
-      "outcome": "Future tested event: energize life-support and communications for the research annex; must have a real game state transition."
+      "outcome": "Actual two-way irreversible allocation: emergency life-support backup OR laboratory analysis power; both branch consequences are persisted and audited.",
+      "status": "trial-live"
     },
     {
       "id": "lab-evidence",
@@ -400,7 +401,8 @@
         13
       ],
       "kind": "main",
-      "outcome": "Future real scientific evidence and a nonviolent resolution path, not a static inspect tooltip."
+      "outcome": "Actual lab-only scientific event after relay allocation: in situ verified evidence with research power, or sealed unverified samples with life-support priority; persisted as the second mission event.",
+      "status": "trial-live"
     },
     {
       "id": "ridge-uplink",
@@ -410,7 +412,8 @@
         4
       ],
       "kind": "optional",
-      "outcome": "Future revealed alternative route and reliable threat/intel data, never discover fog ahead of actual observation."
+      "outcome": "Future revealed alternative route and reliable threat/intel data, never discover fog ahead of actual observation.",
+      "status": "planned-only"
     },
     {
       "id": "civilian-assembly",
@@ -420,7 +423,8 @@
         16
       ],
       "kind": "optional",
-      "outcome": "Future medical/diplomatic branch that changes civilian count/evacuation readiness."
+      "outcome": "Future medical/diplomatic branch that changes civilian count/evacuation readiness.",
+      "status": "planned-only"
     },
     {
       "id": "fallback-extraction",
@@ -430,7 +434,8 @@
         18
       ],
       "kind": "optional",
-      "outcome": "Future extract choice that only activates following a documented mission event."
+      "outcome": "Future extract choice that only activates following a documented mission event.",
+      "status": "planned-only"
     }
   ],
   "decorativeScenery": [
@@ -503,6 +508,11 @@
     ],
     "fullMapCells": 640,
     "knownPublishedGLBCellsUnchanged": true,
-    "interactionsActive": false
-  }
+    "interactionsActive": true,
+    "activeTrialObjectiveIds": [
+      "relay-power",
+      "lab-evidence"
+    ]
+  },
+  "trialMissionSchemaVersion": 1
 }
