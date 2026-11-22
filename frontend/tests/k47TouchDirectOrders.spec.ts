@@ -101,6 +101,13 @@ for(const width of [390,430]){
   await tapCell(page,3,5);
   await expect(venn).toHaveAttribute('data-world-x','4.000',
     {timeout:1500});
+  // In classic mode a floor tap deselects (by design). Select a real officer
+  // again before using the *explicit* Mover action. The beta alone bypasses
+  // this extra tap; never mistake an empty selection for a movement bug.
+  await expect(page.getByTestId('ground-selection-status'))
+    .toContainText('Ningún oficial seleccionado');
+  await page.getByTestId('ground-select-venn').tap();
+  await expect(page.getByTestId('ground-select-venn')).toHaveAttribute('aria-pressed','true');
   await move.tap();
   await expect(move).toHaveAttribute('aria-pressed','true');
   await tapCell(page,3,5);
