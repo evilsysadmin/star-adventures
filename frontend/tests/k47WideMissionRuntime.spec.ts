@@ -42,6 +42,11 @@ for(const [width,branch] of [[390,'life-support'],[1280,'research']] as const){
   await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute(
     'data-move-phase','idle',{timeout:32000});
   await expect(board.locator('[data-wide-objective="relay-power"]')).toHaveCount(1);
+  if(width===390){
+    await expect(page.getByTestId('wide-mission-toggle')).toContainText('ACTUAR');
+    await page.getByTestId('wide-mission-toggle').click();
+    await expect(page.getByTestId('wide-mission-toggle')).toHaveAttribute('aria-expanded','true');
+  }
   await expect(page.getByTestId('wide-power-life')).toBeVisible();
   await expect(page.getByTestId('wide-power-research')).toBeVisible();
   await expect(page.getByTestId('wide-lab-collect')).toHaveCount(0);
@@ -53,6 +58,15 @@ for(const [width,branch] of [[390,'life-support'],[1280,'research']] as const){
   await expect(page.getByTestId('wide-power-life')).toHaveCount(0);
   await expect(board.locator('[data-wide-objective="relay-power"]'))
     .toHaveAttribute('data-objective-state','complete');
+  if(width===390){
+    await expect(page.getByTestId('wide-mission-toggle')).toHaveAttribute('aria-expanded','false');
+    const obstruction=await page.evaluate(()=>{
+      const a=document.querySelector('.wide-mission-panel')!.getBoundingClientRect();
+      const b=document.querySelector('[data-testid="wide-officer-venn"]')!.getBoundingClientRect();
+      return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+    });
+    expect(obstruction,'collapsed mission should not hide the selected officer').toBe(false);
+  }
   await expect(board.locator('[data-wide-objective="lab-evidence"]')).toHaveCount(0);
   await page.screenshot({path:'test-results/k47-wide-mission-relay-'+width+'.png'});
 
@@ -84,6 +98,7 @@ for(const [width,branch] of [[390,'life-support'],[1280,'research']] as const){
     'data-move-phase','moving');
   await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute(
     'data-move-phase','idle',{timeout:36000});
+  if(width===390)await page.getByTestId('wide-mission-toggle').click();
   await expect(page.getByTestId('wide-lab-collect')).toBeVisible();
   await expect(board.locator('[data-wide-objective="lab-evidence"]'))
     .toHaveAttribute('data-objective-state','pending');
@@ -92,10 +107,14 @@ for(const [width,branch] of [[390,'life-support'],[1280,'research']] as const){
   await expect(panel).toHaveAttribute('data-wide-evidence',evidence);
   await expect(page.getByTestId('wide-mission-progress')).toHaveText('2/2');
   await expect(page.getByTestId('wide-lab-collect')).toHaveCount(0);
+  if(width===390)
+    await expect(page.getByTestId('wide-mission-toggle')).toHaveAttribute('aria-expanded','false');
   await expect(board.locator('[data-wide-objective="lab-evidence"]'))
     .toHaveAttribute('data-objective-state','complete');
+  if(width===390)await page.getByTestId('wide-mission-toggle').click();
   await expect(page.getByTestId('wide-mission-result')).toContainText(
     evidence==='verified'?'evidencia verificada':'muestras conservadas');
+  if(width===390)await page.getByTestId('wide-mission-toggle').click();
   await page.screenshot({path:'test-results/k47-wide-mission-lab-'+width+'.png'});
 
   const completed=await page.evaluate(()=>localStorage.getItem(
