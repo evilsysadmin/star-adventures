@@ -137,7 +137,7 @@ export function GroundWideTrial({squad,paused=false}:{
    raf=requestAnimationFrame(step);
    return ()=>cancelAnimationFrame(raf);
  },[paused,replace,save]);
- useEffect(()=>()=>save(current.current),[save]);
+ useEffect(()=>()=>{save(current.current);},[save]);
  const order=useCallback((x:number,y:number)=>{
    if(paused)return;
    if(!selected.length){setNotice('Selecciona antes a un oficial.');return;}
