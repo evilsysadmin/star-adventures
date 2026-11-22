@@ -101,7 +101,8 @@ export function GroundWideTrial({squad,paused=false}:{
    state.motion.officers.some(o=>o.route.length>0)
      ? 'El equipo continúa el recorrido guardado.'
      : 'Selecciona uno o varios oficiales y marca un destino real.');
- const [compact,setCompact]=useState(()=>window.matchMedia('(max-width: 520px)').matches);
+ const [compact,setCompact]=useState(()=>window.matchMedia('(max-width: 700px)').matches);
+ const [missionExpanded,setMissionExpanded]=useState(false);
  const stageRef=useRef<HTMLDivElement>(null);
  const [viewport,setViewport]=useState({width:740,height:440});
  useEffect(()=>{
@@ -113,7 +114,7 @@ export function GroundWideTrial({squad,paused=false}:{
          ? old:{width:box.width,height:box.height});
    };
    update();const observer=new ResizeObserver(update);observer.observe(el);
-   const media=window.matchMedia('(max-width: 520px)');
+   const media=window.matchMedia('(max-width: 700px)');
    const onMedia=()=>setCompact(media.matches);
    media.addEventListener('change',onMedia);
    return ()=>{observer.disconnect();media.removeEventListener('change',onMedia);};
@@ -165,6 +166,7 @@ export function GroundWideTrial({squad,paused=false}:{
        wideWorld,plan,current.current,missionRef.current,actorId,action) as WideMission;
      missionRef.current=next;
      setMission(next);
+     setMissionExpanded(false);
      const persisted=save(current.current,next); // atomic mission+position write
      if(!persisted){
        setNotice('Acción aplicada en esta sesión, pero no se pudo guardar: revisa almacenamiento local.');
@@ -186,6 +188,9 @@ export function GroundWideTrial({squad,paused=false}:{
  const labInRange=selected.some(id=>wideMissionOfficerInRange(
    state,id,WIDE_MISSION_TARGETS['lab-evidence']));
  const consequences=wideMissionConsequences(mission);
+ const interventionAvailable=(mission.powerRoute===null&&relayInRange)||
+   (mission.powerRoute!==null&&mission.evidence===null&&labInRange);
+ const showMissionDetails=!compact||missionExpanded;
  const fog=useMemo(()=>groundRealtimeVision(wideWorld,state),[state]);
  const visibleBarriers=useMemo(()=>terrainWalls.filter(w=>fog.explored.has(w.key)),
    [fog.explored]);
@@ -398,13 +403,23 @@ export function GroundWideTrial({squad,paused=false}:{
        {touchOrder?'Cancelar orden':'Mover · tocar suelo'}
      </button>
    </div>
-   <section className="wide-mission-panel" aria-label="Operación experimental del array exterior"
+   <section className={'wide-mission-panel'+(showMissionDetails?'':' is-collapsed')}
+     aria-label="Operación experimental del array exterior"
      data-testid="wide-mission-panel" data-wide-power-route={mission.powerRoute??'none'}
      data-wide-evidence={mission.evidence??'none'}>
-     <div className="wide-mission-title">
-       <strong>PROTOCOLO EXTERIOR</strong>
-       <span data-testid="wide-mission-progress">{mission.journal.length}/2</span>
-     </div>
+     {compact
+       ?<button type="button" className="wide-mission-title wide-mission-title-button"
+         data-testid="wide-mission-toggle" aria-expanded={showMissionDetails}
+         onClick={()=>setMissionExpanded(value=>!value)}>
+         <strong>PROTOCOLO EXTERIOR{interventionAvailable?' · ACTUAR':''}</strong>
+         <span data-testid="wide-mission-progress">{mission.journal.length}/2</span>
+         <span aria-hidden="true">{showMissionDetails?'▴':'▾'}</span>
+       </button>
+       :<div className="wide-mission-title">
+         <strong>PROTOCOLO EXTERIOR</strong>
+         <span data-testid="wide-mission-progress">{mission.journal.length}/2</span>
+       </div>}
+     {showMissionDetails&&<div className="wide-mission-body">
      <div className="wide-mission-step">
        <span className="wide-mission-number">01</span>
        <div>
@@ -473,6 +488,7 @@ export function GroundWideTrial({squad,paused=false}:{
          mission.evidence===null?'La elección es definitiva. Continúa hasta el laboratorio.':
          'Dos decisiones registradas en la bitácora de esta expedición.'}
      </p>
+     </div>}
    </section>
    <p className="wide-trial-notice" data-testid="wide-move-status" role="status">{status}</p>
    <details className="wide-trial-help">
