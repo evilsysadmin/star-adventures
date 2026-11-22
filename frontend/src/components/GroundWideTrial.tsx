@@ -70,7 +70,10 @@ export function GroundWideTrial({squad,paused=false}:{
  const [touchOrder,setTouchOrder]=useState(false);
  const [following,setFollowing]=useState(true);
  const [sector,setSector]=useState('landing');
- const [notice,setNotice]=useState('Selecciona uno o varios oficiales y marca un destino real.');
+ const [notice,setNotice]=useState(()=>
+   state.motion.officers.some(o=>o.route.length>0)
+     ? 'El equipo continúa el recorrido guardado.'
+     : 'Selecciona uno o varios oficiales y marca un destino real.');
  const [compact,setCompact]=useState(()=>window.matchMedia('(max-width: 520px)').matches);
  const stageRef=useRef<HTMLDivElement>(null);
  const [viewport,setViewport]=useState({width:740,height:440});
@@ -148,9 +151,12 @@ export function GroundWideTrial({squad,paused=false}:{
  // The full map is a strategic overview, not a tiny default control surface.
  const viewMode=following?'SEGUIR EQUIPO':sector==='all'?'MAPA COMPLETO':'EXAMINAR '+viewing.name.toUpperCase();
  const onCell=(x:number,y:number)=>order(x,y);
+ const moving=officers.some(o=>o.route.length>0);
+ const status=moving?notice:notice.replace(' avanzando hacia ',' ha llegado a ')
+   .replace(/^Formación de (\\d+) hacia /,'Formación de $1 ha llegado a ');
  return <div className="wide-trial" data-testid="wide-trial"
    aria-label="Prueba jugable de K-47 Exterior, mapa de 32 por 20 casillas">
-   <div className="wide-trial-viewbar">
+   <div className="wide-trial-viewbar" data-testid="wide-viewbar">
      <span><strong>K-47 · ARRAY EXTERIOR</strong> <small>BETA DE EXPLORACIÓN · 32×20</small></span>
      <label>Sector
        <select data-testid="wide-sector-select" value={following?'follow':sector}
@@ -216,7 +222,7 @@ export function GroundWideTrial({squad,paused=false}:{
            return <g key={o.id} transform={'translate('+p.x+' '+p.y+')'}>
              <circle cy="-13" r="15" fill="#203d49" stroke="#d5b981" strokeWidth="3"/>
              <path d="M0 -32V-12" stroke="#eacb91" strokeWidth="3"/>
-             <text textAnchor="middle" y="-40" fontSize="11" fill="#ecdcb3">{o.label}</text>
+             <title>{o.label} · disponible en la misión principal de K-47</title>
            </g>;
          })}
        </g>
@@ -276,9 +282,13 @@ export function GroundWideTrial({squad,paused=false}:{
        {touchOrder?'Cancelar orden':'Mover · tocar suelo'}
      </button>
    </div>
-   <p className="wide-trial-notice" data-testid="wide-move-status" role="status">{notice}</p>
-   <p className="wide-trial-disclaimer">Prototipo de navegación: las cinco nuevas misiones están
-     planificadas, no activadas. Clic derecho o «Mover» + tocar una casilla.
-     El mapa y su guardado son independientes de la misión actual.</p>
+   <p className="wide-trial-notice" data-testid="wide-move-status" role="status">{status}</p>
+   <details className="wide-trial-help">
+     <summary>Ayuda de esta expedición beta</summary>
+     Prototipo jugable de movimiento y reconocimiento. Las cinco nuevas misiones
+     están planificadas, no activadas. Las estaciones originales solo funcionan
+     en el K-47 principal. Clic derecho, o «Mover» y tocar una casilla. El mapa
+     de 32×20 y su guardado son independientes del desembarco actual.
+   </details>
  </div>;
 }
