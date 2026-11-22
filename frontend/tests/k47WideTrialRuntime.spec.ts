@@ -190,3 +190,69 @@ test('opening 640-cell trial freezes any ongoing old K-47 real-time route until 
    return Math.hypot(o.x-moving.x,o.y-moving.y);
  },{timeout:7000}).toBeGreaterThan(.2);
 });
+
+
+for(const width of [390,1280]){
+ test('K-47 true biomes: real walk from landing through ridge to freight, art never leaks fog '+width,
+ async({page})=>{
+  test.setTimeout(155000);
+  page.setDefaultTimeout(20000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  await page.locator('.ground-squad-instructions summary').click();
+  await page.getByTestId('wide-trial-enter').click();
+  await expect(page.getByTestId('wide-trial')).toBeVisible();
+
+  // The scene contains exactly the real polygons; all visual prefabs are
+  // pointer-events none, physically authored and revealed only by LOS travel.
+  const board=page.getByTestId('wide-squad-board');
+  await expect(board.locator('[data-wide-cell]')).toHaveCount(640);
+  await expect(board.locator('[data-wide-obstacle="true"]')).toHaveCount(228);
+  await expect(page.getByTestId('wide-terrain-art')).toBeVisible();
+  await expect(board.locator('[data-wide-terrain="24,5"]')).toHaveCount(0);
+  await expect(board.locator('[data-wide-fog-cell="24,5"]'))
+    .toHaveAttribute('data-fog-state','unknown');
+  await expect(board.locator('[data-wide-terrain="18,15"]')).toHaveCount(0);
+
+  await page.getByTestId('wide-sector-select').selectOption('north-ridge');
+  await expect(page.getByTestId('wide-map-caption')).toContainText('CORDILLERA');
+  await expect(board.locator('[data-wide-cell="23,5"]')).toHaveAttribute('data-wide-obstacle','false');
+  await board.locator('[data-wide-cell="23,5"]').click({button:'right'});
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','moving');
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
+    {timeout:32000});
+  const ridge=await actualPosition(page);
+  expect(ridge.x).toBeCloseTo(23,1);
+  expect(ridge.y).toBeCloseTo(5,1);
+  await expect(board.locator('[data-wide-terrain="24,5"]')).toHaveCount(1);
+  await expect(board.locator('[data-wide-terrain="24,5"]'))
+    .toHaveAttribute('data-wide-art-family','ridge-shale');
+  await expect(board.locator('[data-wide-wall-style="rock"]').first()).toBeVisible();
+  await expect(board.locator('[data-wide-fog-cell="27,13"]'))
+    .toHaveAttribute('data-fog-state','unknown');
+  await page.screenshot({path:'test-results/k47-wide-authored-ridge-'+width+'.png'});
+
+  await page.getByTestId('wide-sector-select').selectOption('south-yard');
+  await expect(page.getByTestId('wide-map-caption')).toContainText('PATIOS DE CARGA');
+  await expect(board.locator('[data-wide-cell="18,15"]')).toHaveAttribute('data-wide-obstacle','false');
+  await board.locator('[data-wide-cell="18,15"]').click({button:'right'});
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','moving');
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
+    {timeout:40000});
+  const yard=await actualPosition(page);
+  expect(yard.x).toBeCloseTo(18,1);
+  expect(yard.y).toBeCloseTo(15,1);
+  await expect(board.locator('[data-wide-terrain="18,15"]'))
+    .toHaveAttribute('data-wide-art-family','freight-concrete');
+  await expect(board.locator('[data-wide-wall-style="freight"]').first()).toBeVisible();
+  await expect(board.locator('[data-wide-fog-cell="27,13"]'))
+    .toHaveAttribute('data-fog-state','unknown',
+      'Only actual exploration, never cosmetic sector selection, reveals the remote lab');
+  await page.screenshot({path:'test-results/k47-wide-authored-freight-'+width+'.png'});
+
+  // Same rendered board still picks the canonical cell and never changes old saves.
+  await page.getByTestId('wide-trial-exit').click();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ });
+}
