@@ -177,8 +177,11 @@ export function GroundWideTrial({squad,paused=false}:{
    }
  };
  const moving=officers.some(o=>o.route.length>0);
- const status=moving?notice:notice.replace(' avanzando hacia ',' ha llegado a ')
-   .replace(/^Formación de (\d+) hacia /,'Formación de $1 ha llegado a ');
+ const status=moving?notice:
+   notice==='El equipo continúa el recorrido guardado.'
+     ? 'Equipo en posición · recorrido restaurado.'
+     : notice.replace(' avanzando hacia ',' ha llegado a ')
+       .replace(/^Formación de (\d+) hacia /,'Formación de $1 ha llegado a ');
  return <div className="wide-trial" data-testid="wide-trial"
    aria-label="Prueba jugable de K-47 Exterior, mapa de 32 por 20 casillas">
    <div className="wide-trial-viewbar" data-testid="wide-viewbar">
