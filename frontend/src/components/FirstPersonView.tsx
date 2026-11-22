@@ -470,7 +470,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const squadIds = squad.map(officer => officer.id);
   const realtime = useGroundRealtime({
     legacy:groundSnapshot,ids:squadIds,
-    surface:exploration.area==='surface',showSquad,paused,
+    surface:exploration.area==='surface',showSquad:showSquad&&!wideTrial,paused,
   });
   // A bridge transition cannot carry a planetary sandbox into another area.
   // Its independent motion save is retained for the next explicit opt-in.
