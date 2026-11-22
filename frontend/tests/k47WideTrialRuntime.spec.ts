@@ -271,7 +271,7 @@ for(const width of [390,1280]){
 
   // Lab facades are BOTH real 4-cell blocked runs. The old distant
   // reconnaissance must not leak their art, only physical arrival reveals it.
-  await expect(board.locator('[data-wide-structure="lab-25-11-y"]')).toHaveCount(0);
+  await expect(board.locator('[data-wide-structure-cells*="25,12;25,13"]')).toHaveCount(0);
   await page.getByTestId('wide-sector-select').selectOption('remote-lab');
   await board.locator('[data-wide-cell="27,13"]').click({button:'right'});
   await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
@@ -279,10 +279,12 @@ for(const width of [390,1280]){
   const lab=await actualPosition(page);
   expect(lab.x).toBeCloseTo(27,1);
   expect(lab.y).toBeCloseTo(13,1);
-  await expect(board.locator('[data-wide-structure="lab-25-11-y"]'))
-    .toHaveAttribute('data-wide-structure-cells','25,11;25,12;25,13;25,14');
-  await expect(board.locator('[data-wide-structure="lab-29-11-y"]'))
-    .toHaveAttribute('data-wide-structure-cells','29,11;29,12;29,13;29,14');
+  // The approach can discover the northern y=10 corner first, so require
+  // the physical 11..14 segment, without assuming when the corner is revealed.
+  await expect(board.locator('[data-wide-structure-cells*="25,11;25,12;25,13;25,14"]'))
+    .toHaveCount(1);
+  await expect(board.locator('[data-wide-structure-cells*="29,11;29,12;29,13;29,14"]'))
+    .toHaveCount(1);
   await page.screenshot({path:'test-results/k47-wide-authored-lab-'+width+'.png'});
 
   // Same rendered board still picks the canonical cell and never changes old saves.
