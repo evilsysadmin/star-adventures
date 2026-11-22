@@ -222,3 +222,10 @@
  .wide-mission-choices{gap:4px}
  .wide-mission-panel button{font-size:10px;min-height:43px}
 }
+
+.wide-mission-log{margin:9px 0 0;padding:6px 0 0;
+  border-top:1px solid #5a898272;color:#bbd3c5;font-size:10px}
+.wide-mission-log summary{cursor:pointer;min-height:22px;font-weight:700;
+  color:#e1d5b5}
+.wide-mission-log ol{margin:5px 0 0;padding-left:17px;line-height:1.5}
+.wide-mission-log li+li{margin-top:4px}
