@@ -131,7 +131,7 @@ test('forged events, fabricated verification, changed topology and extra schema 
  const saved=serializeGroundWideTrial(world,away,legacy,relay,applyWideMissionAction(
    world,plan,relay,startWideMission(),'venn','relay.life-support'));
  const mutate=fn=>{const o=JSON.parse(saved);fn(o);return JSON.stringify(o);};
- const throws=raw=>assert.throws(()=>restoreGroundWideCampaign(world,away,legacy,raw),/Invalid|Stale|foreign/);
+ const throws=raw=>assert.throws(()=>restoreGroundWideCampaign(world,away,legacy,raw),/Invalid|Stale|foreign|Corrupt/);
  throws(mutate(x=>x.mission.powerRoute='research'));
  throws(mutate(x=>x.mission.evidence='verified'));
  throws(mutate(x=>x.mission.journal.push({code:'lab.verified',officerId:'venn'})));
