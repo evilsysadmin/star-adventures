@@ -16,6 +16,7 @@ import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { OFFICERS } from '../../../src/crew.mjs';
 import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
 import { groundFogOfWar, groundVisionCells } from '../../../src/groundFogOfWar.mjs';
+import { groundRealtimeGroupFrame } from '../../../src/groundRealtimeGroupFrame.mjs';
 import type { GroundSnapshot } from '../groundSquadSession';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
@@ -227,7 +228,6 @@ export function GroundSquadSelection({
   const sectorCenter=overviewSector==='west' ? tile(3,5)
     : overviewSector==='center' ? tile(8,5)
     : overviewSector==='east' ? tile(14,6) : cameraCenter;
-  const viewCenter=sectorMode ? sectorCenter : cameraCenter;
   // Fill the *actual* map viewport, not a letterboxed preview.
   // "Mapa completo" remains an explicit, entirely un-cropped overview.
   const aspect = viewportSize.width / viewportSize.height;
@@ -239,8 +239,23 @@ export function GroundSquadSelection({
   // A restrained 480-unit crop makes the *real* squad and floor more legible.
   // Sector inspection retains 520; explicit full map remains un-cropped.
   // Picking continues to use the actual SVG CTM; no world/grid shifts.
-  const cameraHeight = focused ? 480 : sectorMode ? 520
+  const baseCameraHeight = focused ? 480 : sectorMode ? 520
     : Math.max(330, Math.min(410, Math.round(viewportSize.height / 2.25)));
+  // Solo and classic modes remain pixel-identical. In the opt-in continuous
+  // mode, frame the real *selected* officers rather than losing followers
+  // when the first selected officer walks away from the rest of the squad.
+  const legacyGroupFollow=import.meta.env.DEV && typeof window!=='undefined' &&
+    Boolean((window as typeof window&{__k47LegacyGroupFollow?:boolean})
+      .__k47LegacyGroupFollow);
+  const groupPoints=realtime&&selected.length>1
+    ? units.filter(unit=>selected.includes(unit.id))
+      .map(unit=>({x:unit.x,y:unit.y}))
+    : [];
+  const groupFrame=followSquad&&!legacyGroupFollow&&groupPoints.length>1
+    ? groundRealtimeGroupFrame(groupPoints,aspect,baseCameraHeight,compact)
+    : null;
+  const viewCenter=sectorMode ? sectorCenter : groupFrame?.center??cameraCenter;
+  const cameraHeight=groupFrame?.height??baseCameraHeight;
   const cameraWidth = Math.round(cameraHeight * aspect);
   // An officer-centered camera leaves most of the actually known colony to
   // one side at the north/south edges, with an empty fog backdrop opposite it.
@@ -258,7 +273,7 @@ export function GroundSquadSelection({
   // The officer remains close to screen center even on 360px portrait. The
   // overview/sector inspector never inherit this follow-only displacement.
   const maxLead=Math.min(compact?28:90,cameraWidth*.13);
-  const followLead=followSquad&&!legacyFollow
+  const followLead=followSquad&&!groupFrame&&!legacyFollow
     ? Math.max(-maxLead,Math.min(maxLead,(knownX-cameraCenter.x)*.55))
     : 0;
   const cameraX = cameraWidth >= fullWidth
@@ -463,7 +478,7 @@ export function GroundSquadSelection({
   return <div className="ground-squad" data-testid="ground-squad-selection">
     {<div className="ground-squad-viewbar">
       <span>VISTA PLANETARIA · {followSquad ? 'SEGUIMIENTO'
-        : sectorMode ? 'SECTOR '+overviewSector.toUpperCase() : 'MAPA COMPLETO'}{realtime?' · LIBRE BETA':''}</span>
+        : sectorMode ? 'SECTOR '+overviewSector.toUpperCase() : 'MAPA COMPLETO'}{realtime?' · LIBRE BETA':''}{groupFrame&&!groupFrame.fits?' · EQUIPO DISPERSO':''}</span>
       <button type="button" data-testid="ground-camera-toggle" aria-pressed={followSquad}
         onClick={() => {
           const enteringMap=followSquad;
@@ -490,6 +505,8 @@ export function GroundSquadSelection({
     </div>}
     <div className="ground-squad-viewport" ref={viewportRef}>
       <svg ref={svg} data-testid="ground-squad-board" viewBox={cameraView}
+        data-group-follow={groupFrame?'on':'off'}
+        data-group-frame-fits={groupFrame?(groupFrame.fits?'true':'false'):undefined}
         className={focused ? 'ground-squad-board-focused' : undefined} tabIndex={0}
         preserveAspectRatio="xMidYMid meet" role="img" onKeyDown={onBoardKeyDown}
         aria-label="Vista elevada del puesto planetario, con los tres oficiales desplegados"
