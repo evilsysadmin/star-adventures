@@ -28,7 +28,7 @@ function roofOutline(structure:ConnectedStructure){
  ];
 }
 const colors={
- rock:{roof:'#899283',light:'#c7c6ad',edge:'#4e6258',side:'#344b45',seam:'#798673'},
+ rock:{roof:'#6c7b71',light:'#b2baa4',edge:'#4e6258',side:'#344b45',seam:'#798673'},
  freight:{roof:'#aba18c',light:'#d7ccad',edge:'#645f54',side:'#424d4c',seam:'#c5ac78'},
  lab:{roof:'#a4c8c1',light:'#e0f1de',edge:'#4c8c8c',side:'#315c65',seam:'#8ad8c9'},
  service:{roof:'#91aaa4',light:'#d0dacb',edge:'#436b6e',side:'#2a4c59',seam:'#cbb781'},
@@ -39,9 +39,21 @@ export function WideTerrainStructure({structure}:{structure:ConnectedStructure})
  const outline=roofOutline(structure);
  const centers=structure.cells.map(cell=>point(cell.x,cell.y));
  const start=centers[0],end=centers.at(-1)!;
- const roof=pairs(outline);
- const ridgeLine=centers.map((p,i)=>
-  `${i?'L':'M'} ${p.x} ${p.y-9-(structure.style==='rock'?(i%3)*6:0)}`).join(' ');
+ // Ridge tops are fractured, not polished slab roofs. The irregular
+ // vertices remain on the very same impassable diamonds; only paint changes.
+ const roughTop=structure.style==='rock'
+   ?outline.map((p,i)=>i>0&&i<=centers.length+1
+     ?{x:p.x+(i%2?2:-3),y:p.y-[7,3,11,5][i%4]}:p)
+   :outline;
+ const roof=pairs(roughTop);
+ const crest=centers.map((p,i)=>({
+   x:p.x+[-4,4,-2,3][i%4],y:p.y-12-[4,13,7,16][i%4],
+ }));
+ const scree=[...centers].reverse().map((p,i)=>({
+   x:p.x+[5,-1,7][i%3],y:p.y+[3,8,5][i%3],
+ }));
+ const ridgeLine=crest.map((p,i)=>
+  `${i?'L':'M'} ${p.x} ${p.y}`).join(' ');
  return <g data-wide-structure={structure.id}
    data-wide-structure-style={structure.style}
    data-wide-structure-size={structure.length}
@@ -49,10 +61,10 @@ export function WideTerrainStructure({structure}:{structure:ConnectedStructure})
    pointerEvents="none" aria-hidden="true">
    {/* Side faces share a single continuous upper lip rather than one cube
        per tile; the entire footprint is 3-7 real impassable diamonds. */}
-   <polygon points={pairs(outline.map(p=>({x:p.x,y:p.y+23})))}
+   <polygon points={pairs(roughTop.map(p=>({x:p.x,y:p.y+23})))}
      fill={tone.side} opacity=".82"/>
-   {outline.map((p,i)=>{
-     const q=outline[(i+1)%outline.length];
+   {roughTop.map((p,i)=>{
+     const q=roughTop[(i+1)%roughTop.length];
      if(q.x>=p.x)return null;
      return <polygon key={i}
        points={pairs([p,q,{x:q.x,y:q.y+23},{x:p.x,y:p.y+23}])}
@@ -62,13 +74,19 @@ export function WideTerrainStructure({structure}:{structure:ConnectedStructure})
    <polygon points={roof} fill={tone.roof}
      stroke={tone.light} strokeWidth="2.3" strokeLinejoin="round"/>
    {structure.style==='rock'&&<>
-     <path d={ridgeLine} stroke={tone.light} strokeWidth="3.4"
-       fill="none" strokeLinejoin="round" strokeLinecap="round" opacity=".8"/>
-     <path d={`M ${start.x} ${start.y+7} L ${end.x} ${end.y+7}`}
-       stroke="#566a60" strokeWidth="4.5" opacity=".8" fill="none"/>
+     {/* One continuous fractured crest, with angular facets/strata and
+         uneven highlights rather than an unbroken flat metal-like panel. */}
+     <polygon points={pairs([...crest,...scree])}
+       fill="#4f685b" stroke="#8d9a84" strokeWidth="1.5"
+       strokeLinejoin="bevel" opacity=".93"/>
+     <path d={ridgeLine} stroke="#c2c1a2" strokeWidth="2.4"
+       fill="none" strokeLinejoin="bevel" strokeLinecap="butt" opacity=".9"/>
+     {centers.filter((_,i)=>i%2===1).map((p,i)=>
+       <path key={i} d={`M ${p.x-13} ${p.y+4} l 13 6 9 -4 -5 9`}
+         stroke="#354f46" strokeWidth="3" opacity=".68" fill="none"/>)}
      <path d={centers.map((p,i)=>
-       `${i?'L':'M'} ${p.x+5} ${p.y+3+(i%2)*3}`).join(' ')}
-       stroke="#d1c5a2" strokeWidth="1.5" opacity=".7" fill="none"/>
+       `${i?'L':'M'} ${p.x+8} ${p.y+8+(i%2)*4}`).join(' ')}
+       stroke="#d0c5a4" strokeWidth="1.6" opacity=".62" fill="none"/>
    </>}
    {structure.style==='freight'&&<>
      <path d={`M ${start.x} ${start.y-6} L ${end.x} ${end.y-6}`}
