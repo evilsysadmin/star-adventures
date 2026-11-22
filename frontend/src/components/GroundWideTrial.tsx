@@ -80,9 +80,13 @@ export function GroundWideTrial({squad,paused=false}:{
  const current=useRef(state);
  const replace=useCallback((next:WideState)=>{current.current=next;setState(next);},[]);
  const save=useCallback((snapshot:WideState,missionSnapshot:WideMission=missionRef.current)=>{
-   try{localStorageOrNull()?.setItem(K47_WIDE_TRIAL_SAVE_KEY,
-     serializeGroundWideTrial(wideWorld,away,legacy,snapshot,missionSnapshot));}
-   catch{/* Storage denial does not pretend a mission was saved. */}
+   try{
+     const storage=localStorageOrNull();
+     if(!storage)return false;
+     storage.setItem(K47_WIDE_TRIAL_SAVE_KEY,
+       serializeGroundWideTrial(wideWorld,away,legacy,snapshot,missionSnapshot));
+     return true;
+   }catch{return false;}
  },[away,legacy]);
  const [selected,setSelected]=useState<string[]>(()=>squad[0]?[squad[0].id]:[]);
  const [touchOrder,setTouchOrder]=useState(false);
@@ -161,7 +165,11 @@ export function GroundWideTrial({squad,paused=false}:{
        wideWorld,plan,current.current,missionRef.current,actorId,action) as WideMission;
      missionRef.current=next;
      setMission(next);
-     save(current.current,next); // atomic mission+position write
+     const persisted=save(current.current,next); // atomic mission+position write
+     if(!persisted){
+       setNotice('Acción aplicada en esta sesión, pero no se pudo guardar: revisa almacenamiento local.');
+       return;
+     }
      setNotice(action.startsWith('relay.')
        ?(next.powerRoute==='life-support'
          ?'Soporte vital respaldado · laboratorio sin potencia de análisis.'
@@ -442,6 +450,18 @@ export function GroundWideTrial({squad,paused=false}:{
           'Sellar muestras sin análisis'}
        </button>
      </>}
+     {mission.journal.length>0&&<details className="wide-mission-log">
+       <summary>Bitácora · {mission.journal.length} eventos</summary>
+       <ol data-testid="wide-mission-journal">
+         {mission.journal.map((event,index)=><li key={index}>
+           {event.code==='relay.life-support'?'Reserva al soporte vital':
+             event.code==='relay.research'?'Reserva a investigación':
+             event.code==='lab.verified'?'Muestras verificadas':
+             'Muestras selladas sin analizar'}
+           {' · '+(squad.find(o=>o.id===event.officerId)?.name??event.officerId)}
+         </li>)}
+       </ol>
+     </details>}
      {consequences.complete&&<p className="wide-mission-result"
        data-testid="wide-mission-result">
        {consequences.lifeSupportBacked
@@ -451,7 +471,7 @@ export function GroundWideTrial({squad,paused=false}:{
      <p className="wide-mission-context">
        {mission.journal.length===0?'Acerca un oficial al relé para empezar.':
          mission.evidence===null?'La elección es definitiva. Continúa hasta el laboratorio.':
-         'Dos eventos registrados en el diario y guardados con la expedición.'}
+         'Dos decisiones registradas en la bitácora de esta expedición.'}
      </p>
    </section>
    <p className="wide-trial-notice" data-testid="wide-move-status" role="status">{status}</p>
