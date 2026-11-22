@@ -65,7 +65,7 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeToggle, disabled = false,
+  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeToggle, onWideTrial, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
@@ -80,6 +80,7 @@ export function GroundSquadSelection({
   realtimeFog?: {visible:ReadonlySet<string>;explored:ReadonlySet<string>}|null;
   realtimeMovingIds?: string[];
   onRealtimeToggle?:()=>void;
+  onWideTrial?:()=>void;
   disabled?: boolean;
 }) {
   // Every sprite has a validated, replayed cell; the classic FPS position is separate.
@@ -891,6 +892,10 @@ export function GroundSquadSelection({
           event.currentTarget.closest('details')?.removeAttribute('open');
         }}>
         {realtime?'Volver al movimiento clásico':'Probar movimiento libre del equipo (beta)'}
+      </button>}
+      {onWideTrial && <button type="button" className="ground-realtime-toggle"
+        data-testid="wide-trial-enter" disabled={disabled} onClick={onWideTrial}>
+        Explorar K-47 exterior · mapa grande 32×20 (beta)
       </button>}
       <p className="ground-squad-help">{realtime
         ? 'Beta: elige un oficial; clic derecho o Mover y tocar. Cambia destino durante la marcha. Volver al clásico descarta el recorrido de prueba.'
