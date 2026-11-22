@@ -6,7 +6,10 @@ on:
       - "content/scenes/k47-wide-plan.json"
       - "src/groundWideTrialSave.mjs"
       - "src/groundWideTerrainKit.mjs"
-      - "tests/groundWideTerrainKit.test.mjs"
+      - "src/groundWideStructures.mjs"
+      - "tests/groundWideStructures.test.mjs"
+      - "frontend/src/components/WideTerrainStructure.tsx"
+      - "tests/groundWideTerrainKit.test.mjs tests/groundWideStructures.test.mjs"
       - "frontend/src/components/GroundWideTerrainArt.tsx"
       - "tests/groundWideTrialSave.test.mjs"
       - "frontend/src/components/GroundWideTrial.tsx"
@@ -21,7 +24,7 @@ permissions:
 
 jobs:
   wide-trial:
-    name: Real 640-cell expedition · 390/1280 terrain, fog, F5 and classic rollback
+    name: Real 640-cell expedition · 390/1280 connected structures, fog, F5 and rollback
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

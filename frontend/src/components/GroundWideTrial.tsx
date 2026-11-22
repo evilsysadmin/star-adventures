@@ -15,6 +15,8 @@ import {groundSurfaceFrame} from '../groundSurfaceFrame';
 import {groundRealtimeGroupFrame} from '../../../src/groundRealtimeGroupFrame.mjs';
 import {buildWideTerrainKit} from '../../../src/groundWideTerrainKit.mjs';
 import {WideTerrainDetail,WideTerrainBarrier} from './GroundWideTerrainArt';
+import {buildWideConnectedStructures} from '../../../src/groundWideStructures.mjs';
+import {WideTerrainStructure,type ConnectedStructure} from './WideTerrainStructure';
 import {localStorageOrNull} from '../session';
 import './groundWideTrial.css';
 
@@ -130,6 +132,12 @@ export function GroundWideTrial({squad,paused=false}:{
    }catch{setNotice('Ruta bloqueada o conflicto entre los oficiales: orden no ejecutada.');}
  },[paused,replace,save,selected]);
  const fog=useMemo(()=>groundRealtimeVision(wideWorld,state),[state]);
+ const visibleBarriers=useMemo(()=>terrainWalls.filter(w=>fog.explored.has(w.key)),
+   [fog.explored]);
+ const connected=useMemo(()=>buildWideConnectedStructures(
+   visibleBarriers,scene.width,scene.height) as ConnectedStructure[],
+   [visibleBarriers]);
+ const covered=new Set(connected.flatMap(c=>c.cells.map(cell=>cell.key)));
  const officers=state.motion.officers;
  const viewing=sectors.find(s=>s.id===sector)??sectors[0];
  const aspect=viewport.width/viewport.height;
@@ -226,8 +234,10 @@ export function GroundWideTrial({squad,paused=false}:{
        <g pointerEvents="none" aria-hidden="true" data-testid="wide-terrain-art">
          {cells.filter(cell=>!cell.blocked&&fog.explored.has(cell.key))
            .map(cell=><WideTerrainDetail key={cell.key} tile={cell}/>)}
-         {terrainWalls.filter(wall=>fog.explored.has(wall.key))
+         {visibleBarriers.filter(wall=>!covered.has(wall.key))
            .map(wall=><WideTerrainBarrier key={wall.key} wall={wall}/> )}
+         {connected.map(structure=><WideTerrainStructure
+           key={structure.id} structure={structure}/> )}
          {scenery.filter(o=>fog.explored.has(o.x+','+o.y)).map(o=>{
            const p=point(o.x,o.y);
            return <g key={o.x+','+o.y} transform={'translate('+p.x+' '+p.y+')'}>
