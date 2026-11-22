@@ -9,11 +9,15 @@ import {
  orderGroundRealtimeFormation,groundRealtimeVision,
 } from '../../../src/groundRealtimeWorld.mjs';
 import {
- K47_WIDE_TRIAL_SAVE_KEY,serializeGroundWideTrial,restoreGroundWideTrial,
+ K47_WIDE_TRIAL_SAVE_KEY,serializeGroundWideTrial,restoreGroundWideCampaign,
 } from '../../../src/groundWideTrialSave.mjs';
 import {groundSurfaceFrame} from '../groundSurfaceFrame';
 import {groundRealtimeGroupFrame} from '../../../src/groundRealtimeGroupFrame.mjs';
 import {buildWideTerrainKit} from '../../../src/groundWideTerrainKit.mjs';
+import {
+ startWideMission,wideMissionConsequences,wideMissionOfficerInRange,
+ applyWideMissionAction,WIDE_MISSION_TARGETS,
+} from '../../../src/groundWideMission.mjs';
 import {WideTerrainDetail,WideTerrainBarrier} from './GroundWideTerrainArt';
 import {buildWideConnectedStructures} from '../../../src/groundWideStructures.mjs';
 import {WideTerrainStructure,type ConnectedStructure} from './WideTerrainStructure';
@@ -24,6 +28,11 @@ type Point={x:number;y:number};
 type Officer={id:string;name:string};
 type MobileMotion={id:string;x:number;y:number;route:Point[]};
 type WideState={version:number;motion:{version:number;officers:MobileMotion[]};explored:string[]};
+type WideMission={
+ version:1;powerRoute:'life-support'|'research'|null;
+ evidence:'sealed'|'verified'|null;
+ journal:Array<{code:string;officerId:string}>;
+};
 type Region={id:string;name:string;bounds:number[];entry:number[]};
 type TerrainTile={x:number;y:number;key:string;sectorId:string;family:string;
  floor:string;edge:string;highlight:string;variant:number;grain:number;blocked:boolean};
@@ -51,19 +60,33 @@ export function GroundWideTrial({squad,paused=false}:{
  const away=useMemo(()=>({...startAwayTeam(),squad:squad.map(o=>o.id)}),[rosterKey]);
  const legacy=useMemo(()=>startGroundSquadPositions(wideWorld,
    {version:1,area:'surface',...scene.spawn,pending:null},away),[away]);
- const [state,setState]=useState<WideState>(()=>{
+ // Single, atomic motion+mission snapshot: V1 beta saves are upgraded
+ // transparently, while the canonical 18x12 sidecar is never accessed here.
+ const [initial]=useState<{motion:WideState;mission:WideMission}>(()=>{
    try{
      const raw=localStorageOrNull()?.getItem(K47_WIDE_TRIAL_SAVE_KEY);
-     if(raw)return restoreGroundWideTrial(wideWorld,away,legacy,raw) as WideState;
-   }catch{/* A damaged/foreign prototype save resets only this prototype. */}
-   return startGroundRealtimeWorld(wideWorld,away,legacy) as WideState;
+     if(raw)return restoreGroundWideCampaign(wideWorld,away,legacy,raw) as {
+       motion:WideState;mission:WideMission;
+     };
+   }catch{/* An old/damaged prototype save resets only this prototype. */}
+   return {
+     motion:startGroundRealtimeWorld(wideWorld,away,legacy) as WideState,
+     mission:startWideMission() as WideMission,
+   };
  });
+ const [state,setState]=useState<WideState>(()=>initial.motion);
+ const [mission,setMission]=useState<WideMission>(()=>initial.mission);
+ const missionRef=useRef(mission);
  const current=useRef(state);
  const replace=useCallback((next:WideState)=>{current.current=next;setState(next);},[]);
- const save=useCallback((snapshot:WideState)=>{
-   try{localStorageOrNull()?.setItem(K47_WIDE_TRIAL_SAVE_KEY,
-     serializeGroundWideTrial(wideWorld,away,legacy,snapshot));}
-   catch{/* Browser storage denial does not change a legitimate order. */}
+ const save=useCallback((snapshot:WideState,missionSnapshot:WideMission=missionRef.current)=>{
+   try{
+     const storage=localStorageOrNull();
+     if(!storage)return false;
+     storage.setItem(K47_WIDE_TRIAL_SAVE_KEY,
+       serializeGroundWideTrial(wideWorld,away,legacy,snapshot,missionSnapshot));
+     return true;
+   }catch{return false;}
  },[away,legacy]);
  const [selected,setSelected]=useState<string[]>(()=>squad[0]?[squad[0].id]:[]);
  const [touchOrder,setTouchOrder]=useState(false);
@@ -78,7 +101,8 @@ export function GroundWideTrial({squad,paused=false}:{
    state.motion.officers.some(o=>o.route.length>0)
      ? 'El equipo continúa el recorrido guardado.'
      : 'Selecciona uno o varios oficiales y marca un destino real.');
- const [compact,setCompact]=useState(()=>window.matchMedia('(max-width: 520px)').matches);
+ const [compact,setCompact]=useState(()=>window.matchMedia('(max-width: 700px)').matches);
+ const [missionExpanded,setMissionExpanded]=useState(false);
  const stageRef=useRef<HTMLDivElement>(null);
  const [viewport,setViewport]=useState({width:740,height:440});
  useEffect(()=>{
@@ -90,7 +114,7 @@ export function GroundWideTrial({squad,paused=false}:{
          ? old:{width:box.width,height:box.height});
    };
    update();const observer=new ResizeObserver(update);observer.observe(el);
-   const media=window.matchMedia('(max-width: 520px)');
+   const media=window.matchMedia('(max-width: 700px)');
    const onMedia=()=>setCompact(media.matches);
    media.addEventListener('change',onMedia);
    return ()=>{observer.disconnect();media.removeEventListener('change',onMedia);};
@@ -114,7 +138,7 @@ export function GroundWideTrial({squad,paused=false}:{
    raf=requestAnimationFrame(step);
    return ()=>cancelAnimationFrame(raf);
  },[paused,replace,save]);
- useEffect(()=>()=>save(current.current),[save]);
+ useEffect(()=>()=>{save(current.current);},[save]);
  const order=useCallback((x:number,y:number)=>{
    if(paused)return;
    if(!selected.length){setNotice('Selecciona antes a un oficial.');return;}
@@ -131,6 +155,42 @@ export function GroundWideTrial({squad,paused=false}:{
        :'Formación de '+selected.length+' hacia '+x+':'+y);
    }catch{setNotice('Ruta bloqueada o conflicto entre los oficiales: orden no ejecutada.');}
  },[paused,replace,save,selected]);
+ const act=useCallback((action:string)=>{
+   if(paused)return;
+   const target=WIDE_MISSION_TARGETS[action.startsWith('relay.')
+     ?'relay-power':'lab-evidence'];
+   const actorId=selected.find(id=>wideMissionOfficerInRange(current.current,id,target))
+     ??selected[0];
+   try{
+     const next=applyWideMissionAction(
+       wideWorld,plan,current.current,missionRef.current,actorId,action) as WideMission;
+     missionRef.current=next;
+     setMission(next);
+     setMissionExpanded(false);
+     const persisted=save(current.current,next); // atomic mission+position write
+     if(!persisted){
+       setNotice('Acción aplicada en esta sesión, pero no se pudo guardar: revisa almacenamiento local.');
+       return;
+     }
+     setNotice(action.startsWith('relay.')
+       ?(next.powerRoute==='life-support'
+         ?'Soporte vital respaldado · laboratorio sin potencia de análisis.'
+         :'Instrumental del laboratorio energizado · evacuados sin respaldo adicional.')
+       :(next.evidence==='verified'
+         ?'Evidencia analizada y verificada. Informe científico completo.'
+         :'Muestras selladas, sin validación instrumental. Soporte vital respaldado.'));
+   }catch{
+     setNotice('No se puede intervenir: acerca el oficial seleccionado, termina su ruta y comprueba la secuencia.');
+   }
+ },[paused,save,selected]);
+ const relayInRange=selected.some(id=>wideMissionOfficerInRange(
+   state,id,WIDE_MISSION_TARGETS['relay-power']));
+ const labInRange=selected.some(id=>wideMissionOfficerInRange(
+   state,id,WIDE_MISSION_TARGETS['lab-evidence']));
+ const consequences=wideMissionConsequences(mission);
+ const interventionAvailable=(mission.powerRoute===null&&relayInRange)||
+   (mission.powerRoute!==null&&mission.evidence===null&&labInRange);
+ const showMissionDetails=!compact||missionExpanded;
  const fog=useMemo(()=>groundRealtimeVision(wideWorld,state),[state]);
  const visibleBarriers=useMemo(()=>terrainWalls.filter(w=>fog.explored.has(w.key)),
    [fog.explored]);
@@ -270,6 +330,27 @@ export function GroundWideTrial({squad,paused=false}:{
              fill={fog.explored.has(c.key)?'#102a34':'#06111b'}
              opacity={fog.explored.has(c.key)?.72:.98}/>)}
        </g>
+       {/* These are actual live trial objectives, not fake old-world
+           stations. Never mark an unexplored target from mission metadata. */}
+       <g data-testid="wide-mission-markers" pointerEvents="none" aria-hidden="true">
+         {(['relay-power','lab-evidence'] as const).map(id=>{
+           const site=WIDE_MISSION_TARGETS[id],cell=site.x+','+site.y;
+           if(!fog.explored.has(cell))return null;
+           const p=point(site.x,site.y);
+           const complete=id==='relay-power'?consequences.relayRestored:consequences.samplesPreserved;
+           return <g key={id} data-wide-objective={id}
+             data-objective-state={complete?'complete':'pending'}
+             transform={'translate('+p.x+' '+p.y+')'}>
+             <ellipse cy="0" rx="28" ry="13" fill="#0e3439"
+               stroke={complete?'#93d3b8':'#e7bf74'} strokeWidth="3"/>
+             <path d="M0 -35 L15 -16 0 -1 -15 -16Z"
+               fill={complete?'#76bca1':'#d6af64'}
+               stroke="#f4e5ba" strokeWidth="1.5"/>
+             <text y="-12" fontSize="14" textAnchor="middle"
+               fill="#122a32" fontWeight="bold">{id==='relay-power'?'⚡':'+'}</text>
+           </g>;
+         })}
+       </g>
        {keyboardActive&&<polygon data-testid="wide-keyboard-destination"
          points={diamond(keyboardCell.x,keyboardCell.y)}
          fill="#e8ca86" fillOpacity=".2" stroke="#f1d08d"
@@ -322,13 +403,101 @@ export function GroundWideTrial({squad,paused=false}:{
        {touchOrder?'Cancelar orden':'Mover · tocar suelo'}
      </button>
    </div>
+   <section className={'wide-mission-panel'+(showMissionDetails?'':' is-collapsed')}
+     aria-label="Operación experimental del array exterior"
+     data-testid="wide-mission-panel" data-wide-power-route={mission.powerRoute??'none'}
+     data-wide-evidence={mission.evidence??'none'}>
+     {compact
+       ?<button type="button" className="wide-mission-title wide-mission-title-button"
+         data-testid="wide-mission-toggle" aria-expanded={showMissionDetails}
+         onClick={()=>setMissionExpanded(value=>!value)}>
+         <strong>PROTOCOLO EXTERIOR{interventionAvailable?' · ACTUAR':''}</strong>
+         <span data-testid="wide-mission-progress">{mission.journal.length}/2</span>
+         <span aria-hidden="true">{showMissionDetails?'▴':'▾'}</span>
+       </button>
+       :<div className="wide-mission-title">
+         <strong>PROTOCOLO EXTERIOR</strong>
+         <span data-testid="wide-mission-progress">{mission.journal.length}/2</span>
+       </div>}
+     {showMissionDetails&&<div className="wide-mission-body">
+     <div className="wide-mission-step">
+       <span className="wide-mission-number">01</span>
+       <div>
+         <strong>Relé de emergencia</strong>
+         <small>(18,15) · {mission.powerRoute===null?'Sin restaurar':
+           mission.powerRoute==='life-support'?'Soporte vital respaldado':
+           'Laboratorio energizado'}</small>
+       </div>
+     </div>
+     {mission.powerRoute===null&&relayInRange&&<>
+       <p className="wide-mission-explainer">
+         El circuito solo admite una prioridad. Esta decisión queda guardada.
+       </p>
+       <div className="wide-mission-choices">
+         <button type="button" data-testid="wide-power-life"
+           disabled={paused} onClick={()=>act('relay.life-support')}>
+           Respaldar soporte vital
+         </button>
+         <button type="button" data-testid="wide-power-research"
+           disabled={paused} onClick={()=>act('relay.research')}>
+           Alimentar laboratorio
+         </button>
+       </div>
+     </>}
+     <div className="wide-mission-step">
+       <span className="wide-mission-number">02</span>
+       <div>
+         <strong>Evidencia científica</strong>
+         <small>(27,13) · {mission.evidence==='verified'?'Verificada':
+           mission.evidence==='sealed'?'Conservada sin analizar':
+           mission.powerRoute===null?'Requiere relé': 'Pendiente'}</small>
+       </div>
+     </div>
+     {mission.powerRoute!==null&&mission.evidence===null&&labInRange&&<>
+       <p className="wide-mission-explainer">
+         {mission.powerRoute==='research'
+           ?'Analizador alimentado: las muestras pueden verificarse in situ.'
+           :'Sin energía de laboratorio: conserva las muestras, pero no podrás verificarlas aquí.'}
+       </p>
+       <button type="button" data-testid="wide-lab-collect"
+         disabled={paused} onClick={()=>act('lab.collect')}>
+         {mission.powerRoute==='research'?'Analizar y sellar evidencia':
+          'Sellar muestras sin análisis'}
+       </button>
+     </>}
+     {mission.journal.length>0&&<details className="wide-mission-log">
+       <summary>Bitácora · {mission.journal.length} eventos</summary>
+       <ol data-testid="wide-mission-journal">
+         {mission.journal.map((event,index)=><li key={index}>
+           {event.code==='relay.life-support'?'Reserva al soporte vital':
+             event.code==='relay.research'?'Reserva a investigación':
+             event.code==='lab.verified'?'Muestras verificadas':
+             'Muestras selladas sin analizar'}
+           {' · '+(squad.find(o=>o.id===event.officerId)?.name??event.officerId)}
+         </li>)}
+       </ol>
+     </details>}
+     {consequences.complete&&<p className="wide-mission-result"
+       data-testid="wide-mission-result">
+       {consequences.lifeSupportBacked
+         ?'Informe cerrado: soporte vital estabilizado; muestras conservadas sin validar.'
+         :'Informe cerrado: evidencia verificada; soporte vital sin respaldo adicional.'}
+     </p>}
+     <p className="wide-mission-context">
+       {mission.journal.length===0?'Acerca un oficial al relé para empezar.':
+         mission.evidence===null?'La elección es definitiva. Continúa hasta el laboratorio.':
+         'Dos decisiones registradas en la bitácora de esta expedición.'}
+     </p>
+     </div>}
+   </section>
    <p className="wide-trial-notice" data-testid="wide-move-status" role="status">{status}</p>
    <details className="wide-trial-help">
      <summary>Ayuda de esta expedición beta</summary>
-     Prototipo jugable de movimiento y reconocimiento. Flechas y Enter en el tablero para ordenar movimientos. Las cinco nuevas misiones
-     están planificadas, no activadas. Las estaciones originales solo funcionan
-     en el K-47 principal. Clic derecho, o «Mover» y tocar una casilla. El mapa
-     de 32×20 y su guardado son independientes del desembarco actual.
+     Dos objetivos experimentales activos: relé y laboratorio. Otros tres
+     siguen previstos, sin interacciones. Escoge físicamente un oficial en
+     la casilla o junto al objetivo para intervenir. Las decisiones persisten
+     y no alteran la misión clásica. Flechas y Enter, clic derecho o «Mover»
+     y tocar suelo ordenan desplazamientos.
    </details>
  </div>;
 }

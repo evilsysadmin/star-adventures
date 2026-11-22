@@ -5,11 +5,15 @@ on:
     paths:
       - "content/scenes/k47-wide-plan.json"
       - "src/groundWideTrialSave.mjs"
+      - "src/groundWideMission.mjs"
+      - "tests/groundWideMission.test.mjs"
+      - "frontend/tests/k47WideMissionRuntime.spec.ts"
       - "src/groundWideTerrainKit.mjs"
       - "src/groundWideStructures.mjs"
       - "tests/groundWideStructures.test.mjs"
       - "frontend/src/components/WideTerrainStructure.tsx"
-      - "tests/groundWideTerrainKit.test.mjs tests/groundWideStructures.test.mjs"
+      - "tests/groundWideTerrainKit.test.mjs"
+      - "tests/groundWideStructures.test.mjs"
       - "frontend/src/components/GroundWideTerrainArt.tsx"
       - "tests/groundWideTrialSave.test.mjs"
       - "frontend/src/components/GroundWideTrial.tsx"
@@ -24,7 +28,7 @@ permissions:
 
 jobs:
   wide-trial:
-    name: Real 640-cell expedition · 390/1280 connected structures, fog, F5 and rollback
+    name: Live 640-cell mission · 390/1280 relay, science branches, F5 and rollback
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -35,13 +39,13 @@ jobs:
         with:
           node-version: '22'
       - name: Prove terrain topology, trial identity and motion save
-        run: node --test tests/groundWideLayout.test.mjs tests/groundWideTrialSave.test.mjs tests/groundWideTerrainKit.test.mjs
+        run: node --test tests/groundWideLayout.test.mjs tests/groundWideTrialSave.test.mjs tests/groundWideTerrainKit.test.mjs tests/groundWideStructures.test.mjs tests/groundWideMission.test.mjs
       - name: Install frontend
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Typecheck and bundle actual game
         run: npm run build --prefix frontend
       - name: Play the wide trial in real desktop and mobile Chromium
-        run: npm run test:e2e --prefix frontend -- tests/k47WideTrialRuntime.spec.ts
+        run: npm run test:e2e --prefix frontend -- tests/k47WideTrialRuntime.spec.ts tests/k47WideMissionRuntime.spec.ts
       - name: Preserve real-play screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,3 +56,4 @@ jobs:
           path: |
             frontend/test-results/k47-wide-real-*.png
             frontend/test-results/k47-wide-authored-*.png
+            frontend/test-results/k47-wide-mission-*.png

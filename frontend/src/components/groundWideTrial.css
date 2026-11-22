@@ -174,3 +174,83 @@
 .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-stage svg:focus-visible{
   outline:2px solid #e9c780;outline-offset:-3px;
 }
+
+
+/* Real, two-stage mission HUD: compact and independent of the old 18x12
+   rescue briefing. It never blocks the centre of the isometric game. */
+.game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel{
+  position:absolute;z-index:8;top:148px;right:20px;
+  width:min(310px,calc(100% - 40px));max-height:calc(100% - 315px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:12px;border:1px solid #7f9c9a96;border-radius:7px;
+  background:#09232bea;backdrop-filter:blur(13px);
+  box-shadow:0 10px 30px #0008;
+  font:11px/1.45 'DM Sans',sans-serif;
+}
+.wide-mission-title{display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin-bottom:8px;color:#ecd2a1;
+  font:700 11px 'Space Grotes',sans-serif;letter-spacing:.09em}
+.wide-mission-title span{font:700 12px 'Space Grotesk',sans-serif;
+  color:#b9e2cf;border:1px solid #88a7a37c;padding:2px 7px;border-radius:20px}
+.wide-mission-step{display:flex;align-items:flex-start;gap:8px;padding:8px 0;
+  border-top:1px solid #57757959}
+.wide-mission-step>div{display:grid;gap:2px;min-width:0}
+.wide-mission-step strong{color:#f3e5c7;font:700 11px 'Space Grotesk',sans-serif}
+.wide-mission-step small{color:#b8d3cf;font:10px/1.4 'DM Sans',sans-serif}
+.wide-mission-number{color:#e8d3a5;font:700 13px 'Space Grotesk',sans-serif}
+.wide-mission-explainer{margin:2px 0 7px;color:#bbd3d0;font-size:10px}
+.wide-mission-choices{display:flex;flex-direction:column;gap:6px;margin:5px 0 11px}
+.wide-mission-panel button{width:100%;padding:7px 8px;text-align:left;min-height:42px;
+  background:#214855;border-color:#779b9a;color:#f2e4c5;
+  border-radius:4px;white-space:normal}
+.wide-mission-panel button:hover:not(:disabled){background:#356372}
+.wide-mission-context{margin:7px 0 0;color:#a6bdbb;font-size:10px}
+.wide-mission-result{color:#dfeab9;background:#2950467a;border:1px solid #76a9938c;
+  padding:8px;border-radius:3px;margin:6px 0}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel{
+   top:241px;right:8px;width:min(208px,calc(100% - 16px));
+   max-height:calc(100% - 420px);padding:8px;
+   font-size:10px;
+ }
+ .wide-mission-title{font-size:9px;margin-bottom:6px}
+ .wide-mission-title span{font-size:10px}
+ .wide-mission-step{gap:5px;padding:5px 0}
+ .wide-mission-step strong{font-size:10px}
+ .wide-mission-step small,.wide-mission-explainer,.wide-mission-context{font-size:9px}
+ .wide-mission-number{font-size:11px}
+ .wide-mission-choices{gap:4px}
+ .wide-mission-panel button{font-size:10px;min-height:43px}
+}
+
+.wide-mission-log{margin:9px 0 0;padding:6px 0 0;
+  border-top:1px solid #5a898272;color:#bbd3c5;font-size:10px}
+.wide-mission-log summary{cursor:pointer;min-height:22px;font-weight:700;
+  color:#e1d5b5}
+.wide-mission-log ol{margin:5px 0 0;padding-left:17px;line-height:1.5}
+.wide-mission-log li+li{margin-top:4px}
+
+/* Mobile pilot objectives reveal their actions deliberately. Keep the board,
+   physical officer and landing marker readable once a choice is made. */
+.wide-mission-title-button{
+  border:0!important;border-radius:4px;
+  width:100%!important;display:flex!important;justify-content:space-between;
+  align-items:center;gap:6px;min-height:38px!important;
+  margin:0!important;padding:4px 5px!important;
+  text-align:left!important;background:transparent!important;
+  box-shadow:none!important;color:#efd3a0!important;
+}
+.wide-mission-title-button strong{font-size:inherit}
+.wide-mission-title-button>span:last-child{color:#cce1d4;font-size:13px}
+.wide-mission-title-button:focus-visible{outline:2px solid #f4d299}
+.wide-mission-panel.is-collapsed{overflow:hidden!important;
+  border-color:#d9ba7b9e!important}
+.wide-mission-panel.is-collapsed .wide-mission-title{margin-bottom:0}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel.is-collapsed{
+   padding:4px 6px;max-height:48px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel:not(.is-collapsed){
+   max-height:calc(100% - 440px);
+ }
+}
