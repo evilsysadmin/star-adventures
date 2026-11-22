@@ -276,6 +276,12 @@ export function GroundSquadSelection({
   const [medicalNotice, setMedicalNotice] = useState('Acerca un oficial al puesto de socorro para atender a los civiles.');
   const [perimeterNotice, setPerimeterNotice] = useState('Acerca un oficial a la baliza para establecer contacto.');
   const [lastNotice, setLastNotice] = useState<'move' | 'science' | 'medical' | 'perimeter'>('move');
+  // An accepted realtime order describes live movement, not a permanent
+  // status. Once all requested routes complete, say so rather than showing
+  // "en marcha" indefinitely next to stationary officers.
+  const visibleMoveNotice=realtime&&realtimeMovingIds.length===0
+    ? moveNotice.replace(' en marcha hacia ', ' ha llegado a ')
+    : moveNotice;
   const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
   const probeAtHand = !!probe && !!selectedUnit &&
     Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
@@ -354,9 +360,6 @@ export function GroundSquadSelection({
         scene.objects.some(object => object.x === x && object.y === y)) {
       setMoveNotice('Casilla bloqueada u ocupada; el equipo no se mueve.');
       return;
-    }
-    if(realtime && selected.length!==1){
-      setMoveNotice('Movimiento libre beta: selecciona un único oficial.');return;
     }
     const destination=realtime&&exact?exact:{x,y};
     if((!realtime && selected.length===squad.length && allowWholeMove &&
@@ -852,11 +855,11 @@ export function GroundSquadSelection({
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
     <p className="ground-squad-notice-current" data-testid="ground-current-notice" aria-live="polite">
-      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : lastNotice === 'perimeter' ? perimeterNotice : moveNotice}
+      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : lastNotice === 'perimeter' ? perimeterNotice : visibleMoveNotice}
     </p>
     {/* Keep existing semantic status IDs for live feedback and regression
         contracts, visually condensed into the single latest notice above. */}
-    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-move-status" role="status">{moveNotice}</p>
+    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-move-status" role="status">{visibleMoveNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-perimeter-status" role="status" aria-live="polite">{perimeterNotice}</p>
@@ -870,7 +873,7 @@ export function GroundSquadSelection({
           // Disclosure must not cover/intercept ground picking after activation.
           event.currentTarget.closest('details')?.removeAttribute('open');
         }}>
-        {realtime?'Volver al movimiento clásico':'Probar movimiento libre (beta)'}
+        {realtime?'Volver al movimiento clásico':'Probar movimiento libre del equipo (beta)'}
       </button>}
       <p className="ground-squad-help">{realtime
         ? 'Beta: elige un oficial; clic derecho o Mover y tocar. Cambia destino durante la marcha. Volver al clásico descarta el recorrido de prueba.'

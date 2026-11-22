@@ -95,10 +95,70 @@ for(const width of [390,1280]){
     if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
     await expect(page.getByTestId('ground-camera-toggle'))
       .toHaveAttribute('aria-pressed','false');
-    // Group movement remains explicitly unavailable until collision avoidance.
+    // The full selected team now receives ONE atomic continuous formation
+    // order. Each selected officer travels independently and simultaneously
+    // into a distinct real walkable cell around the clicked anchor.
     await page.getByTestId('ground-select-all').click();
-    await clickGround(page,6,5);
-    await expect(page.getByTestId('ground-move-status')).toContainText('único oficial');
+    await clickGround(page,2,5);
+    await expect(page.getByTestId('ground-move-status'))
+      .toContainText('Formación de 3 oficiales');
+    await expect.poll(async()=>page.evaluate(()=>{
+      const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+      return raw?JSON.parse(raw).motion.officers.filter(
+        (o:{route:unknown[]})=>o.route.length>0).length:0;
+    }),{timeout:8000}).toBeGreaterThanOrEqual(2);
+    await page.getByTestId('ground-squad-board').screenshot({
+      path:'test-results/away-realtime-formation-moving-'+width+'.png',
+    });
+    await expect.poll(async()=>page.evaluate(()=>{
+      const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+      return raw?JSON.parse(raw).motion.officers.every(
+        (o:{route:unknown[]})=>o.route.length===0):false;
+    }),{timeout:22000}).toBe(true);
+    const team=await page.evaluate(()=>{
+      const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+      return JSON.parse(raw!).motion.officers as Array<{id:string;x:number;y:number}>;
+    });
+    const unique=new Set(team.map(o=>o.x.toFixed(3)+','+o.y.toFixed(3)));
+    expect(unique.size).toBe(3);
+    expect(team.find(o=>o.id==='venn')?.x).toBeCloseTo(2,1);
+    expect(team.find(o=>o.id==='venn')?.y).toBeCloseTo(5,1);
+    await expect(page.getByTestId('ground-move-status'))
+      .toContainText('ha llegado a');
+    await page.getByTestId('ground-squad-board').screenshot({
+      path:'test-results/away-realtime-formation-arrived-'+width+'.png',
+    });
+    // Review the actual follow camera, not only the tiny whole-map overview.
+    // All three real officer bodies must be within the playable stage.
+    await page.getByTestId('ground-camera-toggle').click();
+    await expect(page.getByTestId('ground-camera-toggle'))
+      .toHaveAttribute('aria-pressed','true');
+    const followed=await page.getByTestId('ground-squad-board').evaluate(svg=>{
+      const frame=svg.getBoundingClientRect();
+      return ['venn','dorn','mira'].map(id=>{
+        const r=svg.querySelector('[data-testid="ground-unit-'+id+'"]')!
+          .getBoundingClientRect();
+        return {id,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,
+          left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom};
+      });
+    });
+    for(const o of followed){
+      expect(o.x,o.id+' horizontal view').toBeGreaterThan(o.left);
+      expect(o.x,o.id+' horizontal view').toBeLessThan(o.right);
+      expect(o.y,o.id+' vertical view').toBeGreaterThan(o.top);
+      expect(o.y,o.id+' vertical view').toBeLessThan(o.bottom);
+    }
+    await page.screenshot({
+      path:'test-results/away-realtime-formation-follow-'+width+'.png',
+    });
+    await page.reload();
+    await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
+    const restoredTeam=await page.evaluate(()=>{
+      const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+      return JSON.parse(raw!).motion.officers as Array<{id:string;x:number;y:number}>;
+    });
+    expect(restoredTeam.map(o=>({id:o.id,x:o.x,y:o.y})))
+      .toEqual(team.map(o=>({id:o.id,x:o.x,y:o.y})));
 
     // Classic rollback removes the experimental sidecar and restores v1.
     await page.locator('.ground-squad-instructions summary').click();

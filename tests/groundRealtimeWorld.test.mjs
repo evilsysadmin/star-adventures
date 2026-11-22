@@ -7,6 +7,7 @@ import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,
   serializeGroundRealtimeWorld,orderGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,groundRealtimeStationUse,
+  orderGroundRealtimeFormation,
 } from '../src/groundRealtimeWorld.mjs';
 import {serializeGroundRealtimeSave} from '../src/groundRealtimeSave.mjs';
 const world=JSON.parse(readFileSync(new URL('../content/scenes/meridian.json',import.meta.url),'utf8'));
@@ -111,4 +112,23 @@ test('v1 sidecar loads, tampered terrain fails closed and legacy recovery never 
   raw.explored=['1,1','1,1'];
   assert.equal(restoreGroundRealtimeWorld(world,away,saved,JSON.stringify(raw)).source,
     'recovered-legacy');
+});
+
+test('three-person real K-47 free-walk formation commits atomically and survives F5',()=>{
+  const original=deploy(),f=orderGroundRealtimeFormation(world,original,
+    ['venn','dorn','mira'],{x:2,y:5});
+  assert.ok(f.motion.officers.every(o=>o.route.length>0));
+  const endpoints=f.motion.officers.map(o=>o.route.at(-1));
+  assert.equal(new Set(endpoints.map(o=>o.x+','+o.y)).size,3);
+  assert.deepEqual(endpoints[0],{x:2,y:5});
+  assert.deepEqual(original,deploy(),'legacy state was not changed by team order');
+  let moving=advanceGroundRealtimeWorld(world,f,160);
+  assert.ok(moving.motion.officers.some(o=>o.x!==4&&o.y!==5));
+  const saved=serializeGroundRealtimeWorld(world,away,legacy(),moving);
+  const restored=restoreGroundRealtimeWorld(world,away,legacy(),saved);
+  assert.equal(restored.source,'realtime');
+  assert.deepEqual(restored.state,moving);
+  moving=finish(restored.state);
+  assert.ok(moving.motion.officers.every(o=>o.route.length===0));
+  assert.deepEqual(moving.motion.officers.map(o=>({x:o.x,y:o.y})),endpoints);
 });

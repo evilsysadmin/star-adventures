@@ -4,6 +4,7 @@ import {
   REALTIME_WALK_TILES_PER_SECOND,
   startRealtimeExploration,
   orderRealtimeExplorationMove,
+  orderRealtimeExplorationFormation,
   advanceRealtimeExploration,
   serializeRealtimeExploration,
   deserializeRealtimeExploration,
@@ -122,4 +123,48 @@ test('invalid scene and overlapping start points fail closed',()=>{
   assert.throws(()=>startRealtimeExploration(scene,[
     {id:'venn',x:1,y:2},{id:'venn',x:2,y:2},
   ]),/Invalid/);
+});
+
+test('continuous group order commits distinct simultaneous routes, and never overlaps',()=>{
+  const origin=deploy();
+  const formation=orderRealtimeExplorationFormation(scene,origin,
+    ['venn','mira'],{x:5,y:4});
+  assert.deepEqual(origin,deploy(),'group planning must not mutate the original state');
+  assert.ok(officer(formation,'venn').route.length);
+  assert.ok(officer(formation,'mira').route.length);
+  const goals=formation.officers.map(o=>o.route.at(-1)??{x:o.x,y:o.y});
+  assert.deepEqual(goals[0],{x:5,y:4});
+  assert.notDeepEqual(goals[0],goals[1]);
+  let live=formation;
+  for(let i=0;i<160;i++){
+    live=advanceRealtimeExploration(scene,live,80);
+    const [a,b]=live.officers;
+    assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>=.32-1e-7,
+      'no officers intersect while moving');
+    if(live.officers.every(o=>!o.route.length))break;
+  }
+  assert.ok(live.officers.every(o=>!o.route.length));
+  assert.deepEqual(live.officers.map(o=>({x:o.x,y:o.y})),goals);
+});
+
+test('independent retarget reserves moving colleague future route and formation failures stay atomic',()=>{
+  const original=deploy();
+  const venn=orderRealtimeExplorationMove(scene,original,'venn',{x:2,y:2});
+  assert.throws(()=>orderRealtimeExplorationMove(scene,venn,'mira',{x:2,y:2}),
+    /occupied/,'the future target is reserved even when Venn has not arrived');
+  const active=advanceRealtimeExploration(scene,venn,120);
+  const reformed=orderRealtimeExplorationFormation(scene,active,
+    ['venn','mira'],{x:5,y:4});
+  assert.ok(reformed.officers.every(o=>o.route.length));
+  approx(officer(reformed,'venn').x,officer(active,'venn').x);
+  approx(officer(reformed,'venn').y,officer(active,'venn').y);
+  assert.deepEqual(officer(active,'venn').route,officer(venn,'venn').route,
+    'retarget never mutates the previously accepted route');
+  assert.throws(()=>orderRealtimeExplorationFormation(scene,active,
+    ['venn','mira'],{x:3,y:2}),/blocked/);
+  assert.throws(()=>orderRealtimeExplorationFormation(scene,active,
+    ['venn','venn'],{x:5,y:4}),/Invalid/);
+  assert.throws(()=>orderRealtimeExplorationFormation(scene,active,
+    ['venn','unknown'],{x:5,y:4}),/Invalid/);
+  assert.deepEqual(active,advanceRealtimeExploration(scene,venn,120));
 });

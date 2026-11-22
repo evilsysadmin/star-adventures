@@ -3,7 +3,8 @@ import world from '../../../content/scenes/meridian.json';
 import {startAwayTeam} from '../../../src/awayTeam.mjs';
 import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,serializeGroundRealtimeWorld,
-  orderGroundRealtimeWorld,advanceGroundRealtimeWorld,groundRealtimeVision,
+  orderGroundRealtimeWorld,orderGroundRealtimeFormation,
+  advanceGroundRealtimeWorld,groundRealtimeVision,
   groundRealtimeStationUse,
 } from '../../../src/groundRealtimeWorld.mjs';
 import {GROUND_REALTIME_SAVE_KEY} from '../../../src/groundRealtimeSave.mjs';
@@ -21,9 +22,8 @@ export type RealtimeSurface={
 const storage=()=>localStorageOrNull();
 const deployed=(ids:string[])=>({...startAwayTeam(),squad:ids});
 
-// First experimental gameplay slice: one officer can be ordered/retargeted
-// during real time. The classic v1 squad remains available as rollback.
-// Multiplayer/group collision avoidance is NOT enabled by this opt-in.
+// Opt-in continuous movement: solo or 2–3 officer formation orders preserve
+// physical positions and reserve paths. Classic v1 remains the rollback.
 export function useGroundRealtime({
   legacy,ids,surface,showSquad,paused,
 }:{
@@ -87,12 +87,12 @@ export function useGroundRealtime({
   },[replace]);
 
   const order=useCallback((point:Point,selection:string[])=>{
-    // Do not pretend full-squad orders are safe while dynamic collisions
-    // and formations are not implemented in the continuous engine.
-    if(paused||!surface||!showSquad||selection.length!==1||!legacy||!stateRef.current)
+    if(paused||!surface||!showSquad||selection.length<1||selection.length>3||!legacy||!stateRef.current)
       return false;
     try{
-      const next=orderGroundRealtimeWorld(world,stateRef.current,selection[0],point) as RealtimeSurface;
+      const next=(selection.length===1
+        ? orderGroundRealtimeWorld(world,stateRef.current,selection[0],point)
+        : orderGroundRealtimeFormation(world,stateRef.current,selection,point)) as RealtimeSurface;
       replace(next);
       save(next);
       return true;
