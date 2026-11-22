@@ -101,6 +101,20 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('wide-select-all')).toHaveAttribute('aria-pressed','true');
   await page.screenshot({path:'test-results/k47-wide-real-arrived-'+width+'.png'});
 
+  // Keyboard parity on the exact SAME 640-cell map: focus restores the real
+  // physical leader position, arrows show a visual cursor, Enter uses BFS.
+  await page.getByTestId('wide-select-venn').click();
+  const keyboardBoard=page.getByTestId('wide-squad-board');
+  await keyboardBoard.focus();
+  await keyboardBoard.press('ArrowLeft');
+  await expect(page.getByTestId('wide-keyboard-destination')).toBeVisible();
+  await keyboardBoard.press('Enter');
+  await expect(page.getByTestId('wide-move-status')).toContainText('10:5');
+  await expect.poll(async()=>{
+   const pos=await actualPosition(page);
+   return Math.hypot(pos.x-10,pos.y-5);
+  },{timeout:6500}).toBeLessThan(.15);
+
   // Sector inspector can view a remote (not-yet-explored) place but fog must
   // still hide terrain. It must never manufacture mission events or pickups.
   await page.getByTestId('wide-sector-select').selectOption('remote-lab');
