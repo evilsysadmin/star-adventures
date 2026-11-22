@@ -99,6 +99,20 @@ for(const width of [390,1280]){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.getByTestId('wide-select-all').click();
   await expect(page.getByTestId('wide-select-all')).toHaveAttribute('aria-pressed','true');
+  // Unlike the original 18x12 portrait cap, the new 32x20 campaign has a
+  // wider group-framing allowance: real officer bodies AND nameplates must
+  // remain inside the camera after a long solo excursion.
+  const framing=await page.getByTestId('wide-squad-board').evaluate(node=>{
+   const board=node.getBoundingClientRect();
+   return ['venn','dorn','mira'].map(id=>{
+    const r=node.querySelector('[data-testid="wide-officer-'+id+'"]')!
+      .getBoundingClientRect();
+    return {id,inside:r.left>=board.left-6&&r.right<=board.right+6&&
+      r.top>=board.top-6&&r.bottom<=board.bottom+6};
+   });
+  });
+  for(const person of framing)expect(person.inside,person.id+' fully framed').toBe(true);
+  await expect(page.getByTestId('wide-move-status')).not.toContainText('continúa');
   await page.screenshot({path:'test-results/k47-wide-real-arrived-'+width+'.png'});
 
   // Keyboard parity on the exact SAME 640-cell map: focus restores the real
