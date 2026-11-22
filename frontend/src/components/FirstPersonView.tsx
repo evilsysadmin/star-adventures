@@ -656,7 +656,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
           data-testid="wide-trial-exit" onClick={exitWideTrial}>Volver a K-47</button>}
         {!wideTrial && <button type="button" className="firstperson-map-toggle" onClick={() => { setShowSquad(false); setShowMap(m => !m); }}>
           {showMap ? 'Volver al puente' : 'Mapa táctico'}
-        </button>
+        </button>}
       </div>
       {showMap ? <BridgeScene alert={alert} terminal={terminal} /> : (
         <>
