@@ -42,6 +42,11 @@
 .firstperson-is-wide .firstperson-render-stage{height:clamp(510px,80vh,890px);min-height:0;
   overflow:hidden}
 .firstperson-is-wide .firstperson-top{position:relative;z-index:2}
+/* Never show the old 18x12 captain coordinates or obsolete FPS controls
+   underneath the independent 32x20 map. The trial owns its actual HUD. */
+.firstperson-is-wide .firstperson-hud,
+.firstperson-is-wide .firstperson-controls,
+.firstperson-is-wide .firstperson-feedback{display:none}
 .firstperson-is-wide .firstperson-top .firstperson-name{flex:1;min-width:0}
 @media(max-width:520px){
  .firstperson-is-wide .firstperson-render-stage{height:calc(100dvh - 70px);
