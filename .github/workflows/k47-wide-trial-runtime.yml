@@ -5,6 +5,9 @@ on:
     paths:
       - "content/scenes/k47-wide-plan.json"
       - "src/groundWideTrialSave.mjs"
+      - "src/groundWideTerrainKit.mjs"
+      - "tests/groundWideTerrainKit.test.mjs"
+      - "frontend/src/components/GroundWideTerrainArt.tsx"
       - "tests/groundWideTrialSave.test.mjs"
       - "frontend/src/components/GroundWideTrial.tsx"
       - "frontend/src/components/groundWideTrial.css"
@@ -18,7 +21,7 @@ permissions:
 
 jobs:
   wide-trial:
-    name: Genuine 640-cell squad expedition · 390/1280, fog, F5 and classic rollback
+    name: Real 640-cell expedition · 390/1280 terrain, fog, F5 and classic rollback
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -28,8 +31,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Prove distinct trial identity and motion save
-        run: node --test tests/groundWideLayout.test.mjs tests/groundWideTrialSave.test.mjs
+      - name: Prove terrain topology, trial identity and motion save
+        run: node --test tests/groundWideLayout.test.mjs tests/groundWideTrialSave.test.mjs tests/groundWideTerrainKit.test.mjs
       - name: Install frontend
         run: npm ci --prefix frontend --no-audit --no-fund
       - name: Typecheck and bundle actual game
@@ -43,4 +46,6 @@ jobs:
           name: k47-wide-trial-${{ github.sha }}
           retention-days: 14
           if-no-files-found: warn
-          path: frontend/test-results/k47-wide-real-*.png
+          path: |
+            frontend/test-results/k47-wide-real-*.png
+            frontend/test-results/k47-wide-authored-*.png
