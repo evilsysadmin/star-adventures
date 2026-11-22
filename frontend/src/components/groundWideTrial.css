@@ -168,3 +168,9 @@
 .game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-wide) .mission-transmission{
   display:none;
 }
+
+
+/* Focus on the real SVG CTM, not a separate hidden off-board cursor. */
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-stage svg:focus-visible{
+  outline:2px solid #e9c780;outline-offset:-3px;
+}
