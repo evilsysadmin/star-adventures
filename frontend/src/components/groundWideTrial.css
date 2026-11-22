@@ -111,6 +111,11 @@
   cursor:pointer;color:#d6dcbf;min-height:20px;
   font:600 10px 'Space Grotesk',sans-serif;
 }
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-coordinates{
+  top:234px;left:305px;right:auto;
+  border:1px solid #74969a65;background:#09232dd9;
+  backdrop-filter:blur(10px);
+}
 .game-shell[data-interface=game] .firstperson-is-wide .firstperson-top{
   position:absolute;top:98px;left:20px;right:auto;
   max-width:min(430px,calc(100% - 380px));
