@@ -31,6 +31,26 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('wide-trial-enter')).toBeVisible();
   await page.getByTestId('wide-trial-enter').click();
   await expect(page.getByTestId('wide-trial')).toBeVisible();
+  const layout=await page.evaluate(()=>{
+    const box=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
+    const overlaps=(a:DOMRect,b:DOMRect)=>
+      a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+    const mission=box('.mission-transmission'),header=box('[data-testid="wide-viewbar"]'),
+      exit=box('[data-testid="wide-trial-exit"]');
+    const controls=box('.wide-trial-controls');
+    return {headerOverMission:overlaps(header,mission),
+      exitOverMission:overlaps(exit,mission),
+      controlsOverMission:overlaps(controls,mission),
+      headerUnderGlobal:header.top<box('.game-toolbar').bottom,
+      board:box('[data-testid="wide-squad-board"]'),
+      viewport:{width:innerWidth,height:innerHeight}};
+  });
+  expect(layout.headerOverMission).toBe(false);
+  expect(layout.exitOverMission).toBe(false);
+  expect(layout.controlsOverMission).toBe(false);
+  expect(layout.headerUnderGlobal).toBe(false);
+  expect(layout.board.width).toBeGreaterThanOrEqual(width-2);
+  expect(layout.board.height).toBeGreaterThan(width===390?650:770);
   await expect(page.getByTestId('wide-squad-board').locator('[data-wide-cell]')).toHaveCount(640);
   await expect(page.getByTestId('wide-squad-board').locator('[data-wide-obstacle="true"]'))
    .toHaveCount(228); // 223 actual walls + 5 unchanged stations
