@@ -195,7 +195,7 @@ test('opening 640-cell trial freezes any ongoing old K-47 real-time route until 
 for(const width of [390,1280]){
  test('K-47 true biomes: real walk from landing through ridge to freight, art never leaks fog '+width,
  async({page})=>{
-  test.setTimeout(155000);
+  test.setTimeout(210000);
   page.setDefaultTimeout(20000);
   await page.setViewportSize({width,height:850});
   await land(page);
@@ -230,6 +230,17 @@ for(const width of [390,1280]){
   await expect(board.locator('[data-wide-wall-style="rock"]').first()).toBeVisible();
   await expect(board.locator('[data-wide-fog-cell="27,13"]'))
     .toHaveAttribute('data-fog-state','unknown');
+  // Walk up to the REAL blocked y=3 ridge: the four opaque cells must
+  // become a single continuous rock silhouette only after physical LOS.
+  await board.locator('[data-wide-cell="22,4"]').click({button:'right'});
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
+    {timeout:10000});
+  await expect(board.locator('[data-wide-structure="rock-20-3-x"]'))
+    .toHaveAttribute('data-wide-structure-cells','20,3;21,3;22,3;23,3');
+  await expect(board.locator('[data-wide-wall="21,3"]')).toHaveCount(0,
+    {timeout:5000});
+  await expect(board.locator('[data-wide-fog-cell="27,13"]'))
+    .toHaveAttribute('data-fog-state','unknown');
   await page.screenshot({path:'test-results/k47-wide-authored-ridge-'+width+'.png'});
 
   await page.getByTestId('wide-sector-select').selectOption('south-yard');
@@ -248,7 +259,31 @@ for(const width of [390,1280]){
   await expect(board.locator('[data-wide-fog-cell="27,13"]'))
     .toHaveAttribute('data-fog-state','unknown',
       'Only actual exploration, never cosmetic sector selection, reveals the remote lab');
+  await board.locator('[data-wide-cell="13,12"]').click({button:'right'});
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
+    {timeout:24000});
+  await expect(board.locator('[data-wide-structure="freight-11-14-x"]'))
+    .toHaveAttribute('data-wide-structure-cells','11,14;12,14;13,14;14,14;15,14');
+  await expect(board.locator('[data-wide-wall="13,14"]')).toHaveCount(0);
+  await expect(board.locator('[data-wide-fog-cell="27,13"]'))
+    .toHaveAttribute('data-fog-state','unknown');
   await page.screenshot({path:'test-results/k47-wide-authored-freight-'+width+'.png'});
+
+  // Lab facades are BOTH real 4-cell blocked runs. The old distant
+  // reconnaissance must not leak their art, only physical arrival reveals it.
+  await expect(board.locator('[data-wide-structure="lab-25-11-y"]')).toHaveCount(0);
+  await page.getByTestId('wide-sector-select').selectOption('remote-lab');
+  await board.locator('[data-wide-cell="27,13"]').click({button:'right'});
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
+    {timeout:36000});
+  const lab=await actualPosition(page);
+  expect(lab.x).toBeCloseTo(27,1);
+  expect(lab.y).toBeCloseTo(13,1);
+  await expect(board.locator('[data-wide-structure="lab-25-11-y"]'))
+    .toHaveAttribute('data-wide-structure-cells','25,11;25,12;25,13;25,14');
+  await expect(board.locator('[data-wide-structure="lab-29-11-y"]'))
+    .toHaveAttribute('data-wide-structure-cells','29,11;29,12;29,13;29,14');
+  await page.screenshot({path:'test-results/k47-wide-authored-lab-'+width+'.png'});
 
   // Same rendered board still picks the canonical cell and never changes old saves.
   await page.getByTestId('wide-trial-exit').click();
