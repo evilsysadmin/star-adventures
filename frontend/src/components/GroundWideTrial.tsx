@@ -27,7 +27,6 @@ const sectors=plan.sectors as Region[];
 const cells=Array.from({length:scene.height},(_,y)=>
  Array.from({length:scene.width},(_,x)=>({x,y,key:x+','+y}))).flat();
 const obstacles=new Set([...scene.walls,...scene.objects].map(p=>p.x+','+p.y));
-const buildings=new Set(scene.walls.map(p=>p.x+','+p.y));
 const scenery=[...scene.scenery] as Array<{x:number;y:number;type:string}>;
 const frame=groundSurfaceFrame(scene.width,scene.height);
 const point=(x:number,y:number)=>({x:440+(x-y)*40,y:52+(x+y)*20});
@@ -188,7 +187,7 @@ export function GroundWideTrial({squad,paused=false}:{
          onClick={()=>{if(touchOrder)onCell(cell.x,cell.y);}}
          style={{cursor:paused?'default':'crosshair'}}/>)}
        <g pointerEvents="none" aria-hidden="true">
-         {scene.walls.filter(w=>fog.explored.has(w.x+','+w.y)).map(w=>{
+         {scene.walls.filter((w:{x:number;y:number})=>fog.explored.has(w.x+','+w.y)).map((w:{x:number;y:number})=>{
            const p=point(w.x,w.y);
            return <g key={w.x+','+w.y} transform={'translate('+p.x+' '+p.y+')'}>
              <path d="M-32 -6 L0 -23 L32 -6 L0 11 Z" fill="url(#wide-masonry)"
@@ -212,7 +211,7 @@ export function GroundWideTrial({squad,paused=false}:{
                  fill="#74827b" stroke="#a0ada1" strokeWidth="2"/>}
            </g>;
          })}
-         {scene.objects.filter(o=>fog.explored.has(o.x+','+o.y)).map(o=>{
+         {scene.objects.filter((o:{x:number;y:number;id:string;label:string})=>fog.explored.has(o.x+','+o.y)).map((o:{x:number;y:number;id:string;label:string})=>{
            const p=point(o.x,o.y);
            return <g key={o.id} transform={'translate('+p.x+' '+p.y+')'}>
              <circle cy="-13" r="15" fill="#203d49" stroke="#d5b981" strokeWidth="3"/>
