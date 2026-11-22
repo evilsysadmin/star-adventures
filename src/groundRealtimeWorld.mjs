@@ -5,6 +5,7 @@ import {groundFogOfWar,groundVisionCells} from './groundFogOfWar.mjs';
 import {applyExploration} from './spatial.mjs';
 import {
   advanceRealtimeExploration,orderRealtimeExplorationMove,
+  orderRealtimeExplorationFormation,
   serializeRealtimeExploration,
 } from './groundRealtimeExploration.mjs';
 import {
@@ -70,6 +71,12 @@ export function serializeGroundRealtimeWorld(world,away,legacy,state){
 export function orderGroundRealtimeWorld(world,state,id,destination){
   const {scene}=verify(world,state);
   const motion=orderRealtimeExplorationMove(scene,state.motion,id,destination);
+  return {...state,motion,explored:[...state.explored]};
+}
+
+export function orderGroundRealtimeFormation(world,state,ids,destination){
+  const {scene}=verify(world,state);
+  const motion=orderRealtimeExplorationFormation(scene,state.motion,ids,destination);
   return {...state,motion,explored:[...state.explored]};
 }
 
