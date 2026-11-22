@@ -152,7 +152,10 @@ export function GroundWideTrial({squad,paused=false}:{
  },[paused,replace,save,selected]);
  const act=useCallback((action:string)=>{
    if(paused)return;
-   const actorId=selected[0];
+   const target=WIDE_MISSION_TARGETS[action.startsWith('relay.')
+     ?'relay-power':'lab-evidence'];
+   const actorId=selected.find(id=>wideMissionOfficerInRange(current.current,id,target))
+     ??selected[0];
    try{
      const next=applyWideMissionAction(
        wideWorld,plan,current.current,missionRef.current,actorId,action) as WideMission;
