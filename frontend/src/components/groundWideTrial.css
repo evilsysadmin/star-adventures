@@ -64,3 +64,95 @@
  .wide-trial-disclaimer{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.wide-trial *{transition:none!important}}
+
+
+/* The game shell is genuinely fullscreen and owns its header + mission glass.
+   Keep 640-cell terrain underneath it, but dock TRIAL controls into actual
+   safe regions instead of building a separate scrollable 510px card. */
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-render-stage{
+  position:absolute;inset:0;width:100%;height:100%;max-height:none;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial{
+  position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
+  background:#0c1e28;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-stage{
+  position:absolute;inset:0;width:100%;height:100%;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar{
+  position:absolute;z-index:6;top:152px;left:20px;right:auto;
+  width:min(420px,calc(100% - 400px));min-width:295px;
+  border:1px solid #74969a75;border-radius:6px;
+  background:#0b222cde;backdrop-filter:blur(12px);
+  box-shadow:0 8px 25px #0008;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-controls{
+  position:absolute;z-index:7;bottom:60px;left:50%;transform:translateX(-50%);
+  width:min(620px,calc(100% - 40px));
+  border:1px solid #74969a8a;border-radius:6px;
+  background:#09232de5;backdrop-filter:blur(14px);
+  box-shadow:0 10px 32px #0008;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-notice{
+  position:absolute;z-index:7;bottom:15px;left:50%;
+  transform:translateX(-50%);width:min(620px,calc(100% - 40px));
+  border:1px solid #74969a70;border-radius:4px;
+  background:#09232de5;backdrop-filter:blur(12px);
+  min-height:26px;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help{
+  position:absolute;z-index:8;top:223px;left:20px;
+  width:min(260px,calc(100% - 40px));padding:7px 10px;
+  border:1px solid #62828766;border-radius:4px;
+  color:#a9c5c6;background:#0b222cdb;backdrop-filter:blur(12px);
+  font:10px/1.4 'DM Sans',sans-serif;max-height:175px;overflow:auto;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help summary{
+  cursor:pointer;color:#d6dcbf;min-height:20px;
+  font:600 10px 'Space Grotesk',sans-serif;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-top{
+  position:absolute;top:98px;left:20px;right:auto;
+  max-width:min(430px,calc(100% - 380px));
+  z-index:7;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-name{
+  font-size:11px;line-height:1.2;letter-spacing:.02em;white-space:nowrap;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-map-toggle{
+  min-height:42px;
+}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .firstperson-top{
+   top:85px;left:8px;right:auto;max-width:calc(100% - 196px);
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .firstperson-name{display:none}
+ .game-shell[data-interface=game] .firstperson-is-wide .firstperson-map-toggle{min-height:36px}
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar{
+   top:195px;left:8px;right:8px;width:auto;min-width:0;
+   padding:6px 7px;gap:6px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar>span{
+   max-width:155px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar select{
+   width:min(41vw,164px);max-width:164px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help{
+   top:257px;left:8px;width:150px;max-height:90px;
+   padding:5px 7px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-controls{
+   bottom:45px;width:calc(100% - 16px);padding:5px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-roster{
+   flex:1 1 100%;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-notice{
+   bottom:6px;width:calc(100% - 16px);padding:6px 8px;
+   font-size:10px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-coordinates{
+   top:269px;left:auto;right:8px;font-size:9px;
+ }
+}
