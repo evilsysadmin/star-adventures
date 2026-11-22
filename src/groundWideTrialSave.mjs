@@ -2,6 +2,7 @@
 // motion sidecar or old-world command journal: the prototype's identity,
 // topology and storage are deliberately independent. No browser imports.
 import {restoreGroundRealtimeWorld,serializeGroundRealtimeWorld} from './groundRealtimeWorld.mjs';
+import {startWideMission,validateWideMission} from './groundWideMission.mjs';
 
 export const K47_WIDE_TRIAL_ACTIVE_KEY='shadowops.star-adventures.k47-wide-trial.active.v1';
 export const K47_WIDE_TRIAL_SAVE_KEY='shadowops.star-adventures.k47-wide-trial.motion.v1';
@@ -22,23 +23,48 @@ export function groundWideTopologyFingerprint(scene){
   return hash.toString(16).padStart(8,'0');
 }
 
-export function serializeGroundWideTrial(world,away,legacy,state){
+// Writing a campaign produces one atomic V2 envelope. Historic V1 640-cell
+// exploration sidecars remain readable and acquire an empty mission snapshot
+// without ever reverting to the original 18x12 K-47 save.
+export function serializeGroundWideTrial(world,away,legacy,state,mission=null){
   const fingerprint=groundWideTopologyFingerprint(world.scenes.surface);
   const motion=serializeGroundRealtimeWorld(world,away,legacy,state);
-  return JSON.stringify({version:1,mapId:'k47-outer-array',topology:fingerprint,motion});
+  if(mission===null)
+    return JSON.stringify({version:1,mapId:'k47-outer-array',topology:fingerprint,motion});
+  validateWideMission(mission,away.squad);
+  return JSON.stringify({
+    version:2,mapId:'k47-outer-array',topology:fingerprint,
+    motion,mission,
+  });
 }
 
-export function restoreGroundWideTrial(world,away,legacy,raw){
+export function restoreGroundWideCampaign(world,away,legacy,raw){
   if(typeof raw!=='string'||raw.length>250000)
     throw new TypeError('Invalid wide trial save');
   const data=JSON.parse(raw);
-  if(!data||Array.isArray(data)||data.version!==1||
-      Object.keys(data).sort().join('|')!=='mapId|motion|topology|version'||
+  const v1=data?.version===1&&
+    Object.keys(data).sort().join('|')==='mapId|motion|topology|version';
+  const v2=data?.version===2&&
+    Object.keys(data).sort().join('|')==='mapId|mission|motion|topology|version';
+  if(!data||Array.isArray(data)||(!v1&&!v2)||
       data.mapId!=='k47-outer-array'||
       data.topology!==groundWideTopologyFingerprint(world.scenes.surface)||
       typeof data.motion!=='string')
     throw new TypeError('Stale or foreign wide trial save');
   const restored=restoreGroundRealtimeWorld(world,away,legacy,data.motion);
   if(restored.source!=='realtime')throw new TypeError('Corrupt wide trial motion');
-  return restored.state;
+  const mission=v1?startWideMission():data.mission;
+  validateWideMission(mission,away.squad);
+  return {
+    motion:restored.state,
+    mission:{
+      version:mission.version,powerRoute:mission.powerRoute,
+      evidence:mission.evidence,journal:mission.journal.map(e=>({...e})),
+    },
+  };
+}
+
+// Backwards-compatible motion-only API used by existing historical callers.
+export function restoreGroundWideTrial(world,away,legacy,raw){
+  return restoreGroundWideCampaign(world,away,legacy,raw).motion;
 }
