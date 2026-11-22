@@ -26,7 +26,14 @@ export function groundWideTopologyFingerprint(scene){
 // Writing a campaign produces one atomic V2 envelope. Historic V1 640-cell
 // exploration sidecars remain readable and acquire an empty mission snapshot
 // without ever reverting to the original 18x12 K-47 save.
-/** @param {ReturnType<typeof startWideMission> | null} [mission] */
+/** @typedef {{
+ *   version: 1,
+ *   powerRoute: 'life-support'|'research'|null,
+ *   evidence: 'sealed'|'verified'|null,
+ *   journal: Array<{code:string,officerId:string}>
+ * }} WideMissionSnapshot
+ */
+/** @param {WideMissionSnapshot | null} [mission] */
 export function serializeGroundWideTrial(world,away,legacy,state,mission=null){
   const fingerprint=groundWideTopologyFingerprint(world.scenes.surface);
   const motion=serializeGroundRealtimeWorld(world,away,legacy,state);
