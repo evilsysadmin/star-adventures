@@ -141,7 +141,7 @@ export function GroundWideTrial({squad,paused=false}:{
  const groupPositions=officers.filter(o=>selected.includes(o.id)).map(o=>point(o.x,o.y));
  const baseHeight=compact?500:Math.max(350,Math.min(430,Math.round(viewport.height/2.2)));
  const groupFrame=following&&groupPositions.length>1
-   ?groundRealtimeGroupFrame(groupPositions,aspect,baseHeight,compact):null;
+   ?groundRealtimeGroupFrame(groupPositions,aspect,baseHeight,compact,compact?900:760):null;
  const cameraHeight=groupFrame?.height??baseHeight;
  const cameraWidth=cameraHeight*aspect;
  const target=following?(groupFrame?.center??primaryPoint)
