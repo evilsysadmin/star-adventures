@@ -39,7 +39,7 @@ Las letras representan *sectores conceptuales*, no ocupación ni colisiones exac
 | E · Laboratorio remoto | x23–30, y10–18 | Destino profundo con **dos huecos transitables**; investigación y dilema final |
 | F · Paso sur | x1–8, y12–18 | Rampa de aproximación secundaria y conexión de retorno |
 
-Hay **seis aperturas reales** en la antigua frontera (x17:y4,y8,y10 y y11:x10,x13,x15). El laboratorio tiene accesos reales en (27,10) y (27,15). Las restantes paredes y el terreno no transitable pertenecen al mapa, no a un falso decorado. Se cierra asimismo una bolsa inaccesible preexistente en (1–3,8), de modo que el mapa ampliado pueda exigir **100 % de suelo transitable conectado**.
+Hay **seis aperturas reales** en la antigua frontera (x17:y4,y8,y10 y y11:x10,x13,x15). El laboratorio tiene accesos reales en (27,10) y (27,15). Las restantes paredes y el terreno no transitable pertenecen al mapa, no a un falso decorado. Se cierra asimismo una bolsa inaccesible preexistente en (1–3,8), de modo que el mapa ampliado pueda exigir **100 % de suelo transitable conectado** y un perímetro cerrado sin salidas falsas.
 
 ## Bucle jugable y decisiones
 
@@ -71,7 +71,7 @@ Ninguno se introduce como una `station` activa en el JSON del mundo: **un marcad
 
 ## Entrega incremental y puertas de calidad
 
-**PR 1 — este blueprint, no un lanzamiento jugable.** Archivo declarativo 32×20, compilador puro y tests que demuestran las 640 casillas, **413 transitables y conectadas**, las dos alternativas, objetivos accesibles, huellas GLB bloqueadas, rutas continuas reales, niebla y serialización v2 en memoria. No activa un menú ni modifica el desembarco actual.
+**PR 1 — este blueprint, no un lanzamiento jugable.** Archivo declarativo 32×20, compilador puro y tests que demuestran las 640 casillas, **412 transitables y conectadas**, las dos alternativas, objetivos accesibles, huellas GLB bloqueadas, rutas continuas reales, niebla y serialización v2 en memoria. No activa un menú ni modifica el desembarco actual.
 
 **PR 2 — mapa seleccionable en una misión de prueba, separado de partidas existentes.** Adaptar renderer y picking de SVG/3D a tamaño de escena, frame derivado y seis sectores sin coordenadas hardcodeadas. Señal visual de «prototipo», F5 aislado, recorrido punta a punta y capturas 390/1280 reales **antes** de merge.
 
