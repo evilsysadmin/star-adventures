@@ -229,3 +229,28 @@
   color:#e1d5b5}
 .wide-mission-log ol{margin:5px 0 0;padding-left:17px;line-height:1.5}
 .wide-mission-log li+li{margin-top:4px}
+
+/* Mobile pilot objectives reveal their actions deliberately. Keep the board,
+   physical officer and landing marker readable once a choice is made. */
+.wide-mission-title-button{
+  border:0!important;border-radius:4px;
+  width:100%!important;display:flex!important;justify-content:space-between;
+  align-items:center;gap:6px;min-height:38px!important;
+  margin:0!important;padding:4px 5px!important;
+  text-align:left!important;background:transparent!important;
+  box-shadow:none!important;color:#efd3a0!important;
+}
+.wide-mission-title-button strong{font-size:inherit}
+.wide-mission-title-button>span:last-child{color:#cce1d4;font-size:13px}
+.wide-mission-title-button:focus-visible{outline:2px solid #f4d299}
+.wide-mission-panel.is-collapsed{overflow:hidden!important;
+  border-color:#d9ba7b9e!important}
+.wide-mission-panel.is-collapsed .wide-mission-title{margin-bottom:0}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel.is-collapsed{
+   padding:4px 6px;max-height:48px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel:not(.is-collapsed){
+   max-height:calc(100% - 440px);
+ }
+}
