@@ -41,3 +41,16 @@ test('invalid or forged selected camera input fails closed without mutating orig
  assert.throws(()=>groundRealtimeGroupFrame([{x:Infinity,y:2},group[1]],.5,480,true),/Invalid/);
  assert.equal(JSON.stringify(group),original);
 });
+
+
+test('only the large K-47 trial may explicitly widen the portrait follow envelope',()=>{
+ const spread=[{x:440,y:232},{x:680,y:372},{x:440,y:272}];
+ const defaultFrame=groundRealtimeGroupFrame(spread,.46,500,true);
+ assert.equal(defaultFrame.height,620);
+ assert.equal(defaultFrame.fits,false);
+ const wideFrame=groundRealtimeGroupFrame(spread,.46,500,true,900);
+ assert.ok(wideFrame.height>620&&wideFrame.height<=900);
+ assert.equal(wideFrame.fits,true);
+ assert.deepEqual(wideFrame.center,defaultFrame.center);
+ assert.throws(()=>groundRealtimeGroupFrame(spread,.46,500,true,Infinity),/Invalid/);
+});

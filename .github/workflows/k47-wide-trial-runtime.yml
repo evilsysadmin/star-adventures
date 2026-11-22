@@ -1,0 +1,46 @@
+name: K-47 wide mission · real playable 640-cell trial
+
+on:
+  pull_request:
+    paths:
+      - "content/scenes/k47-wide-plan.json"
+      - "src/groundWideTrialSave.mjs"
+      - "tests/groundWideTrialSave.test.mjs"
+      - "frontend/src/components/GroundWideTrial.tsx"
+      - "frontend/src/components/groundWideTrial.css"
+      - "frontend/src/components/GroundSquadSelection.tsx"
+      - "frontend/src/components/FirstPersonView.tsx"
+      - "frontend/tests/k47WideTrialRuntime.spec.ts"
+      - ".github/workflows/k47-wide-trial-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  wide-trial:
+    name: Genuine 640-cell squad expedition · 390/1280, fog, F5 and classic rollback
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prove distinct trial identity and motion save
+        run: node --test tests/groundWideLayout.test.mjs tests/groundWideTrialSave.test.mjs
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Typecheck and bundle actual game
+        run: npm run build --prefix frontend
+      - name: Play the wide trial in real desktop and mobile Chromium
+        run: npm run test:e2e --prefix frontend -- tests/k47WideTrialRuntime.spec.ts
+      - name: Preserve real-play screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-wide-trial-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: frontend/test-results/k47-wide-real-*.png
