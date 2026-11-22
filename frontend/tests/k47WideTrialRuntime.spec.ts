@@ -1,0 +1,102 @@
+import {expect,test,type Page} from '@playwright/test';
+
+test.use({storageState:{cookies:[],origins:[]}});
+
+async function land(page:Page){
+ await page.goto('/');
+ await expect(page.getByTestId('captain-controls')).toBeVisible({timeout:25000});
+ await page.getByTestId('captain-transport').click();
+ await page.getByTestId('transport-confirm').click();
+ await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+}
+
+async function actualPosition(page:Page){
+ const officer=page.getByTestId('wide-officer-venn');
+ return {
+  x:Number(await officer.getAttribute('data-world-x')),
+  y:Number(await officer.getAttribute('data-world-y')),
+ };
+}
+
+for(const width of [390,1280]){
+ test('K-47 640-cell playable trial: real move, discovery, F5 and classic exit '+width,
+ async({page})=>{
+  test.setTimeout(210000);
+  page.setDefaultTimeout(16000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  const oldSidecar=await page.evaluate(()=>
+   localStorage.getItem('shadowops.star-adventures.ground-realtime.v1'));
+  await page.locator('.ground-squad-instructions summary').click();
+  await expect(page.getByTestId('wide-trial-enter')).toBeVisible();
+  await page.getByTestId('wide-trial-enter').click();
+  await expect(page.getByTestId('wide-trial')).toBeVisible();
+  await expect(page.getByTestId('wide-squad-board').locator('[data-wide-cell]')).toHaveCount(640);
+  await expect(page.getByTestId('wide-squad-board').locator('[data-wide-obstacle="true"]'))
+   .toHaveCount(228); // 223 actual walls + 5 unchanged stations
+  await expect(page.locator('[data-wide-fog-cell="26,4"]'))
+   .toHaveAttribute('data-fog-state','unknown');
+  await expect(page.getByTestId('wide-sector-select')).toHaveValue('follow');
+  await page.getByTestId('wide-sector-select').selectOption('industrial');
+  await expect(page.getByTestId('wide-map-caption')).toContainText('CINTURÓN INDUSTRIAL');
+  const before=await actualPosition(page);
+  await page.getByTestId('wide-squad-board').locator('[data-wide-cell="11,5"]')
+   .click({button:'right'});
+  await expect(page.getByTestId('wide-move-status'))
+   .toContainText('Oficial avanzando hacia 11:5');
+  await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','moving');
+  await expect(page.getByTestId('wide-sector-select')).toHaveValue('follow');
+  await expect(page.locator('[data-wide-fog-cell="26,4"]'))
+   .toHaveAttribute('data-fog-state','unknown');
+
+  await expect.poll(async()=>{
+   const p=await actualPosition(page);
+   return Math.hypot(p.x-before.x,p.y-before.y);
+  },{timeout:8000}).toBeGreaterThan(.15);
+  const mid=await actualPosition(page);
+  expect(Math.hypot(mid.x-11,mid.y-5)).toBeGreaterThan(.5);
+  const save=await page.evaluate(()=>localStorage.getItem(
+   'shadowops.star-adventures.k47-wide-trial.motion.v1'));
+  expect(save).toContain('k47-outer-array');
+  expect(JSON.parse(save!).topology).toMatch(/^[0-9a-f]{8}$/);
+  expect(await page.evaluate(()=>
+   localStorage.getItem('shadowops.star-adventures.ground-realtime.v1')))
+   .toBe(oldSidecar);
+  await page.screenshot({path:'test-results/k47-wide-real-moving-'+width+'.png'});
+
+  await page.reload();
+  await expect(page.getByTestId('wide-trial')).toBeVisible();
+  await expect(page.getByTestId('wide-squad-board').locator('[data-wide-cell]'))
+   .toHaveCount(640);
+  const after=await actualPosition(page);
+  expect(Math.hypot(after.x-mid.x,after.y-mid.y)).toBeLessThan(.85);
+  await expect(page.getByTestId('wide-officer-venn'))
+   .toHaveAttribute('data-move-phase','idle',{timeout:19000});
+  const arrived=await actualPosition(page);
+  expect(arrived.x).toBeCloseTo(11,1);
+  expect(arrived.y).toBeCloseTo(5,1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.getByTestId('wide-select-all').click();
+  await expect(page.getByTestId('wide-select-all')).toHaveAttribute('aria-pressed','true');
+  await page.screenshot({path:'test-results/k47-wide-real-arrived-'+width+'.png'});
+
+  // Sector inspector can view a remote (not-yet-explored) place but fog must
+  // still hide terrain. It must never manufacture mission events or pickups.
+  await page.getByTestId('wide-sector-select').selectOption('remote-lab');
+  await expect(page.getByTestId('wide-map-caption')).toContainText('LABORATORIO REMOTO');
+  await expect(page.locator('[data-wide-fog-cell="27,13"]'))
+   .toHaveAttribute('data-fog-state','unknown');
+  await page.screenshot({path:'test-results/k47-wide-real-lab-fog-'+width+'.png'});
+
+  await page.getByTestId('wide-trial-exit').click();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-world-x','4.000');
+  expect(await page.evaluate(()=>localStorage.getItem(
+   'shadowops.star-adventures.ground-realtime.v1'))).toBe(oldSidecar);
+  expect(await page.evaluate(()=>localStorage.getItem(
+   'shadowops.star-adventures.k47-wide-trial.active.v1'))).toBeNull();
+  await page.reload();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await expect(page.getByTestId('wide-trial')).toHaveCount(0);
+ });
+}
