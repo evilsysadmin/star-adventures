@@ -1,5 +1,19 @@
 # Delivery roadmap — PR by PR
 
+## Nuevo objetivo prioritario — K-47 Outdoor Array, desembarco amplio (22-11-2026)
+
+Aprobado como **diseño de la próxima misión**, no como mapa ya activado:
+[blueprint K-47 32×20](K47-WIDE-SECTOR-BLUEPRINT.md) + candidato declarativo
+`content/scenes/k47-wide-plan.json`.
+**640 celdas, 6 sectores y 2 aproximaciones al laboratorio**. Los cinco objetivos
+de la nueva zona son *diseño futuro*, no interacciones existentes. El primer PR
+preserva el 18×12 actual y valida el candidato de manera independiente.
+Secuencia obligatoria: blueprint + motor → selector opt-in y cámara/picking
+multisector en Chrome 390/1280 → objetivos con consecuencias, guardado aislado
+y extracción → assets originales de escala apropiada → E2E de una misión completa.
+**Prohibido** confundir una ampliación del JSON con un desembarco ya jugable;
+no sustituir saves o GLB publicados sin migración y screenshots reales.
+
 Status below is a **plan**, not a claim of implemented features.
 
 ## Latest surface-exploration direction — selectable isometric away team (2026-11-04)

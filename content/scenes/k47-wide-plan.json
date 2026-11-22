@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "id": "k47-outer-array",
+  "status": "candidate-not-active",
+  "basedOn": "meridian.surface",
+  "width": 32,
+  "height": 20,
+  "premise": "An expanded K-47 evacuation and research installation. Reach the far research archive by the protected north ridge or the industrial south approach; no new interactions are live in this candidate.",
+  "retainedAuthoredFootprints": [
+    "south-industrial-shell",
+    "west-archive-shell",
+    "east-utilities-shell"
+  ],
+  "openings": [
+    [
+      17,
+      4
+    ],
+    [
+      17,
+      8
+    ],
+    [
+      17,
+      10
+    ],
+    [
+      10,
+      11
+    ],
+    [
+      13,
+      11
+    ],
+    [
+      15,
+      11
+    ]
+  ],
+  "wallRuns": [
+    [
+      [
+        18,
+        0
+      ],
+      [
+        31,
+        0
+      ]
+    ],
+    [
+      [
+        31,
+        1
+      ],
+      [
+        31,
+        19
+      ]
+    ],
+    [
+      [
+        0,
+        19
+      ],
+      [
+        30,
+        19
+      ]
+    ],
+    [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        18
+      ]
+    ],
+    [
+      [
+        1,
+        8
+      ],
+      [
+        3,
+        8
+      ]
+    ],
+    [
+      [
+        20,
+        3
+      ],
+      [
+        23,
+        3
+      ]
+    ],
+    [
+      [
+        21,
+        6
+      ],
+      [
+        22,
+        6
+      ]
+    ],
+    [
+      [
+        27,
+        6
+      ],
+      [
+        28,
+        6
+      ]
+    ],
+    [
+      [
+        20,
+        9
+      ],
+      [
+        22,
+        9
+      ]
+    ],
+    [
+      [
+        20,
+        12
+      ],
+      [
+        22,
+        12
+      ]
+    ],
+    [
+      [
+        22,
+        13
+      ],
+      [
+        22,
+        14
+      ]
+    ],
+    [
+      [
+        22,
+        16
+      ],
+      [
+        22,
+        16
+      ]
+    ],
+    [
+      [
+        11,
+        14
+      ],
+      [
+        15,
+        14
+      ]
+    ],
+    [
+      [
+        11,
+        15
+      ],
+      [
+        11,
+        17
+      ]
+    ],
+    [
+      [
+        15,
+        15
+      ],
+      [
+        15,
+        17
+      ]
+    ],
+    [
+      [
+        12,
+        17
+      ],
+      [
+        12,
+        17
+      ]
+    ],
+    [
+      [
+        14,
+        17
+      ],
+      [
+        14,
+        17
+      ]
+    ],
+    [
+      [
+        25,
+        10
+      ],
+      [
+        26,
+        10
+      ]
+    ],
+    [
+      [
+        28,
+        10
+      ],
+      [
+        29,
+        10
+      ]
+    ],
+    [
+      [
+        25,
+        11
+      ],
+      [
+        25,
+        14
+      ]
+    ],
+    [
+      [
+        29,
+        11
+      ],
+      [
+        29,
+        14
+      ]
+    ],
+    [
+      [
+        25,
+        15
+      ],
+      [
+        26,
+        15
+      ]
+    ],
+    [
+      [
+        28,
+        15
+      ],
+      [
+        29,
+        15
+      ]
+    ],
+    [
+      [
+        24,
+        17
+      ],
+      [
+        29,
+        17
+      ]
+    ],
+    [
+      [
+        1,
+        18
+      ],
+      [
+        8,
+        18
+      ]
+    ]
+  ],
+  "sectors": [
+    {
+      "id": "landing",
+      "name": "Cabeza de playa",
+      "bounds": [
+        1,
+        1,
+        8,
+        10
+      ],
+      "role": "Original K-47 rescue landing. Real existing extraction, science, medicine and perimeter interactions remain the only live mission actions.",
+      "entry": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "industrial",
+      "name": "Cinturón industrial",
+      "bounds": [
+        9,
+        1,
+        17,
+        10
+      ],
+      "role": "Existing connected warehouses and utilites, now a genuine midway transit zone.",
+      "entry": [
+        9,
+        4
+      ]
+    },
+    {
+      "id": "north-ridge",
+      "name": "Cordillera de sensores",
+      "bounds": [
+        18,
+        1,
+        30,
+        9
+      ],
+      "role": "Long northern route with exposed rock, line-of-sight breaks and an optional reconnaissance objective.",
+      "entry": [
+        18,
+        4
+      ]
+    },
+    {
+      "id": "south-yard",
+      "name": "Patios de carga",
+      "bounds": [
+        9,
+        11,
+        22,
+        18
+      ],
+      "role": "Second route through a screened loading yard and power distribution. Alternative to exposed northern approach.",
+      "entry": [
+        13,
+        12
+      ]
+    },
+    {
+      "id": "remote-lab",
+      "name": "Laboratorio remoto",
+      "bounds": [
+        23,
+        10,
+        30,
+        18
+      ],
+      "role": "Real narrow-footprint courtyard and a walled laboratory with two actual walkable openings, north and south.",
+      "entry": [
+        27,
+        13
+      ]
+    },
+    {
+      "id": "low-approach",
+      "name": "Paso sur",
+      "bounds": [
+        1,
+        12,
+        8,
+        18
+      ],
+      "role": "Peripheral southern rock shelf and potential evacuation detour, not a gratuitous blank area.",
+      "entry": [
+        8,
+        16
+      ]
+    }
+  ],
+  "proposedObjectives": [
+    {
+      "id": "relay-power",
+      "title": "Reponer energía de emergencia",
+      "at": [
+        18,
+        15
+      ],
+      "kind": "main",
+      "outcome": "Future tested event: energize life-support and communications for the research annex; must have a real game state transition."
+    },
+    {
+      "id": "lab-evidence",
+      "title": "Analizar las muestras del laboratorio",
+      "at": [
+        27,
+        13
+      ],
+      "kind": "main",
+      "outcome": "Future real scientific evidence and a nonviolent resolution path, not a static inspect tooltip."
+    },
+    {
+      "id": "ridge-uplink",
+      "title": "Reconocimiento de la cordillera",
+      "at": [
+        26,
+        4
+      ],
+      "kind": "optional",
+      "outcome": "Future revealed alternative route and reliable threat/intel data, never discover fog ahead of actual observation."
+    },
+    {
+      "id": "civilian-assembly",
+      "title": "Reagrupar evacuados",
+      "at": [
+        10,
+        16
+      ],
+      "kind": "optional",
+      "outcome": "Future medical/diplomatic branch that changes civilian count/evacuation readiness."
+    },
+    {
+      "id": "fallback-extraction",
+      "title": "Señalizar extracción alternativa",
+      "at": [
+        12,
+        18
+      ],
+      "kind": "optional",
+      "outcome": "Future extract choice that only activates following a documented mission event."
+    }
+  ],
+  "decorativeScenery": [
+    {
+      "type": "stone",
+      "x": 19,
+      "y": 5
+    },
+    {
+      "type": "tuft",
+      "x": 24,
+      "y": 5
+    },
+    {
+      "type": "crystal",
+      "x": 28,
+      "y": 4
+    },
+    {
+      "type": "crater",
+      "x": 23,
+      "y": 8
+    },
+    {
+      "type": "stone",
+      "x": 29,
+      "y": 8
+    },
+    {
+      "type": "tuft",
+      "x": 26,
+      "y": 8
+    },
+    {
+      "type": "tuft",
+      "x": 17,
+      "y": 13
+    },
+    {
+      "type": "stone",
+      "x": 19,
+      "y": 16
+    },
+    {
+      "type": "crater",
+      "x": 20,
+      "y": 17
+    },
+    {
+      "type": "tuft",
+      "x": 10,
+      "y": 18
+    },
+    {
+      "type": "stone",
+      "x": 5,
+      "y": 16
+    },
+    {
+      "type": "crystal",
+      "x": 8,
+      "y": 14
+    }
+  ],
+  "acceptance": {
+    "minimumConnectedWalkableFraction": 1,
+    "requiredDistinctApproaches": [
+      "north-corridor",
+      "south-yard"
+    ],
+    "fullMapCells": 640,
+    "knownPublishedGLBCellsUnchanged": true,
+    "interactionsActive": false
+  }
+}
