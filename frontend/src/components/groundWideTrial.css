@@ -134,7 +134,7 @@
  .game-shell[data-interface=game] .firstperson-is-wide .firstperson-name{display:none}
  .game-shell[data-interface=game] .firstperson-is-wide .firstperson-map-toggle{min-height:36px}
  .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar{
-   top:195px;left:8px;right:8px;width:auto;min-width:0;
+   top:126px;left:8px;right:8px;width:auto;min-width:0;
    padding:6px 7px;gap:6px;
  }
  .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar>span{
@@ -144,7 +144,7 @@
    width:min(41vw,164px);max-width:164px;
  }
  .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help{
-   top:257px;left:8px;width:150px;max-height:90px;
+   top:auto;bottom:158px;left:8px;width:150px;max-height:90px;
    padding:5px 7px;
  }
  .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-controls{
@@ -158,7 +158,7 @@
    font-size:10px;
  }
  .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-coordinates{
-   top:269px;left:auto;right:8px;font-size:9px;
+   top:195px;left:auto;right:8px;font-size:9px;
  }
 }
 
