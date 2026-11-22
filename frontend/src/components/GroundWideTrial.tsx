@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type KeyboardEvent} from 'react';
 import baseWorld from '../../../content/scenes/meridian.json';
 import plan from '../../../content/scenes/k47-wide-plan.json';
 import {composeGroundExpansion} from '../../../src/groundWideLayout.mjs';
@@ -68,6 +68,11 @@ export function GroundWideTrial({squad,paused=false}:{
  },[away,legacy]);
  const [selected,setSelected]=useState<string[]>(()=>squad[0]?[squad[0].id]:[]);
  const [touchOrder,setTouchOrder]=useState(false);
+ const [keyboardCell,setKeyboardCell]=useState<Point>(()=>({
+   x:Math.round(state.motion.officers[0]?.x??scene.spawn.x),
+   y:Math.round(state.motion.officers[0]?.y??scene.spawn.y),
+ }));
+ const [keyboardActive,setKeyboardActive]=useState(false);
  const [following,setFollowing]=useState(true);
  const [sector,setSector]=useState('landing');
  const [notice,setNotice]=useState(()=>
@@ -122,6 +127,7 @@ export function GroundWideTrial({squad,paused=false}:{
        ? orderGroundRealtimeWorld(wideWorld,current.current,selected[0],{x,y})
        : orderGroundRealtimeFormation(wideWorld,current.current,selected,{x,y})) as WideState;
      replace(next);save(next);setFollowing(true);setTouchOrder(false);
+     setKeyboardCell({x,y});
      setNotice(selected.length===1?'Oficial avanzando hacia '+x+':'+y
        :'Formación de '+selected.length+' hacia '+x+':'+y);
    }catch{setNotice('Ruta bloqueada o conflicto entre los oficiales: orden no ejecutada.');}
@@ -151,6 +157,25 @@ export function GroundWideTrial({squad,paused=false}:{
  // The full map is a strategic overview, not a tiny default control surface.
  const viewMode=following?'SEGUIR EQUIPO':sector==='all'?'MAPA COMPLETO':'EXAMINAR '+viewing.name.toUpperCase();
  const onCell=(x:number,y:number)=>order(x,y);
+ const onBoardKeyDown=(e:KeyboardEvent<SVGSVGElement>)=>{
+   if(paused||e.altKey||e.ctrlKey||e.metaKey)return;
+   const moves:Record<string,[number,number]>={
+     ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
+   };
+   const move=moves[e.key];
+   if(move){
+     e.preventDefault();
+     setKeyboardActive(true);
+     setKeyboardCell(old=>({
+       x:Math.max(0,Math.min(scene.width-1,old.x+move[0])),
+       y:Math.max(0,Math.min(scene.height-1,old.y+move[1])),
+     }));
+   }else if(e.key==='Enter'&&keyboardActive){
+     e.preventDefault();order(keyboardCell.x,keyboardCell.y);
+   }else if(e.key==='Escape'&&touchOrder){
+     e.preventDefault();setTouchOrder(false);
+   }
+ };
  const moving=officers.some(o=>o.route.length>0);
  const status=moving?notice:notice.replace(' avanzando hacia ',' ha llegado a ')
    .replace(/^Formación de (\d+) hacia /,'Formación de $1 ha llegado a ');
@@ -171,7 +196,15 @@ export function GroundWideTrial({squad,paused=false}:{
      </label>
    </div>
    <div className="wide-trial-stage" ref={stageRef}>
-     <svg data-testid="wide-squad-board" role="img" aria-label="Mapa real de 640 casillas de K-47"
+     <svg data-testid="wide-squad-board" role="img" tabIndex={0}
+       aria-label="Mapa real de 640 casillas de K-47; flechas para escoger destino y Enter para mover"
+       onFocus={()=>{
+         const lead=current.current.motion.officers.find(o=>o.id===selected[0]);
+         if(lead)setKeyboardCell({x:Math.round(lead.x),y:Math.round(lead.y)});
+         setKeyboardActive(false);
+       }}
+       onBlur={()=>setKeyboardActive(false)}
+       onKeyDown={onBoardKeyDown}
        viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
        <defs>
          <linearGradient id="wide-ground" x1="0" y1="0" x2="0.8" y2="1">
@@ -234,6 +267,10 @@ export function GroundWideTrial({squad,paused=false}:{
              fill={fog.explored.has(c.key)?'#102a34':'#06111b'}
              opacity={fog.explored.has(c.key)?.72:.98}/>)}
        </g>
+       {keyboardActive&&<polygon data-testid="wide-keyboard-destination"
+         points={diamond(keyboardCell.x,keyboardCell.y)}
+         fill="#e8ca86" fillOpacity=".2" stroke="#f1d08d"
+         strokeWidth="3" strokeDasharray="7 4" pointerEvents="none"/>}
        {officers.map((o,index)=>{
          const p=point(o.x,o.y),active=selected.includes(o.id);
          const moving=o.route.length>0;
@@ -285,7 +322,7 @@ export function GroundWideTrial({squad,paused=false}:{
    <p className="wide-trial-notice" data-testid="wide-move-status" role="status">{status}</p>
    <details className="wide-trial-help">
      <summary>Ayuda de esta expedición beta</summary>
-     Prototipo jugable de movimiento y reconocimiento. Las cinco nuevas misiones
+     Prototipo jugable de movimiento y reconocimiento. Flechas y Enter en el tablero para ordenar movimientos. Las cinco nuevas misiones
      están planificadas, no activadas. Las estaciones originales solo funcionan
      en el K-47 principal. Clic derecho, o «Mover» y tocar una casilla. El mapa
      de 32×20 y su guardado son independientes del desembarco actual.
