@@ -232,7 +232,9 @@ for(const width of [390,1280]){
     .toHaveAttribute('data-fog-state','unknown');
   // Walk up to the REAL blocked y=3 ridge: the four opaque cells must
   // become a single continuous rock silhouette only after physical LOS.
-  await board.locator('[data-wide-cell="22,4"]').click({button:'right'});
+  // Pick a neighboring clear ground center, not the pixel rectangle
+  // belonging to Venn's tall standing character at 23,5.
+  await board.locator('[data-wide-cell="21,4"]').click({button:'right'});
   await expect(page.getByTestId('wide-officer-venn')).toHaveAttribute('data-move-phase','idle',
     {timeout:10000});
   await expect(board.locator('[data-wide-structure="rock-20-3-x"]'))
