@@ -150,3 +150,43 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('wide-trial')).toHaveCount(0);
  });
 }
+
+
+test('opening 640-cell trial freezes any ongoing old K-47 real-time route until return',async({page})=>{
+ test.setTimeout(110000);
+ page.setDefaultTimeout(15000);
+ await page.setViewportSize({width:390,height:850});
+ await land(page);
+ await page.locator('.ground-squad-instructions summary').click();
+ await page.getByTestId('ground-realtime-toggle').click();
+ await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
+ await page.getByTestId('ground-camera-toggle').click();
+ await page.getByTestId('ground-map-sector').selectOption('all');
+ await page.getByTestId('ground-squad-board').locator('[data-cell-id="9,4"]')
+   .click({button:'right'});
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','moving');
+ await page.locator('.ground-squad-instructions summary').click();
+ await page.getByTestId('wide-trial-enter').click();
+ await expect(page.getByTestId('wide-trial')).toBeVisible();
+ const sidecar=await page.evaluate(()=>
+   localStorage.getItem('shadowops.star-adventures.ground-realtime.v1'));
+ expect(sidecar).toBeTruthy();
+ const saved=JSON.parse(sidecar!);
+ const moving=saved.motion.officers.find((o:{id:string})=>o.id==='venn');
+ expect(moving.route.length).toBeGreaterThan(0);
+ // Wait longer than the old 240ms checkpoint cadence. No background
+ // simulation is allowed to mutate or silently advance the classic mission.
+ await page.waitForTimeout(1000);
+ expect(await page.evaluate(()=>
+   localStorage.getItem('shadowops.star-adventures.ground-realtime.v1'))).toBe(sidecar);
+ await page.getByTestId('wide-trial-exit').click();
+ await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+ await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
+ await expect.poll(async()=>{
+   const raw=await page.evaluate(()=>localStorage.getItem(
+     'shadowops.star-adventures.ground-realtime.v1'));
+   if(!raw)return 0;
+   const o=JSON.parse(raw).motion.officers.find((x:{id:string})=>x.id==='venn');
+   return Math.hypot(o.x-moving.x,o.y-moving.y);
+ },{timeout:7000}).toBeGreaterThan(.2);
+});
