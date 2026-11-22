@@ -94,8 +94,19 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
   const result=clone(state),actor=result.officers.find(o=>o.id===id);
   const start=cell(actor),end=cell(destination);
   const occupied=new Set(blocked);
-  for(const other of result.officers)
-    if(other.id!==id)occupied.add(key(cell(other).x,cell(other).y));
+  // A moving colleague owns both endpoints of their current fractional
+  // step AND every future waypoint. Occupying only their rounded current
+  // cell let independently ordered officers collide on intersecting routes.
+  // Reserve the entire planned corridor conservatively; no swaps/head-on
+  // passes until the dedicated dynamic avoidance system exists.
+  for(const other of result.officers){
+    if(other.id===id)continue;
+    for(const x of [Math.floor(other.x),Math.ceil(other.x)])
+      for(const y of [Math.floor(other.y),Math.ceil(other.y)])
+        occupied.add(key(x,y));
+    for(const point of other.route)
+      occupied.add(key(cell(point).x,cell(point).y));
+  }
   if(occupied.has(key(end.x,end.y)))
     throw new RangeError('Destination occupied');
   if(distance(actor,destination)<1e-7){actor.route=[];return result;}
@@ -129,6 +140,69 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
   if(path.length>MAX_WAYPOINTS)throw new RangeError('Exploration route too long');
   actor.route=path;
   return result;
+}
+
+
+// Atomic 2–3 officer formation order for the opt-in continuous surface.
+// Every member starts moving on the same next simulation tick. All proposed
+// routes are reserved against colleagues' physical positions and routes;
+// if even one member cannot reach a distinct nearby cell, nothing commits.
+// This intentionally prefers safety over swapping or threading tight doors.
+export function orderRealtimeExplorationFormation(scene,state,ids,destination){
+  checkState(scene,state);
+  if(!Array.isArray(ids)||ids.length<2||ids.length>3||
+     new Set(ids).size!==ids.length||
+     ids.some(id=>typeof id!=='string'||!state.officers.some(o=>o.id===id)))
+    throw new TypeError('Invalid exploration formation');
+  if(!destination||!Number.isFinite(destination.x)||!Number.isFinite(destination.y))
+    throw new TypeError('Invalid formation destination');
+  const anchor={x:Math.round(destination.x),y:Math.round(destination.y)};
+  const blocked=topology(scene);
+  if(!free(scene,blocked,anchor))
+    throw new RangeError('Formation destination blocked');
+  const start=clone(state);
+  // Retargeting a moving team cancels their *old routes* but never changes
+  // their actual fractional positions. Unselected active routes stay reserved.
+  for(const officer of start.officers)
+    if(ids.includes(officer.id))officer.route=[];
+  const reserved=new Set([key(anchor.x,anchor.y)]);
+  const headings=[[0,-1],[1,0],[0,1],[-1,0]];
+  const candidates=(index)=>{
+    const [dx,dy]=headings[(index-1)%headings.length];
+    const ideal={x:anchor.x+dx,y:anchor.y+dy};
+    const choices=[];
+    for(let y=Math.max(0,anchor.y-3);y<=Math.min(scene.height-1,anchor.y+3);y++)
+      for(let x=Math.max(0,anchor.x-3);x<=Math.min(scene.width-1,anchor.x+3);x++){
+        const point={x,y},radius=Math.abs(x-anchor.x)+Math.abs(y-anchor.y);
+        if(radius>3||!radius||!free(scene,blocked,point))continue;
+        choices.push({point,rank:
+          (Math.abs(x-ideal.x)+Math.abs(y-ideal.y))*10+radius});
+      }
+    choices.sort((a,b)=>a.rank-b.rank||
+      a.point.y-b.point.y||a.point.x-b.point.x);
+    return choices.slice(0,20).map(c=>c.point);
+  };
+  // Each full candidate is planned through the real BFS/clearance validator.
+  // No partial state is ever exposed to caller on a failed candidate.
+  function plan(index,working){
+    if(index===ids.length)return working;
+    const options=index===0?[anchor]:candidates(index);
+    for(const target of options){
+      const k=key(target.x,target.y);
+      if(index!==0&&reserved.has(k))continue;
+      let next;
+      try{next=orderRealtimeExplorationMove(scene,working,ids[index],target);}
+      catch{continue;}
+      reserved.add(k);
+      const finished=plan(index+1,next);
+      if(finished)return finished;
+      if(index!==0)reserved.delete(k);
+    }
+    return null;
+  }
+  const planned=plan(0,start);
+  if(!planned)throw new RangeError('No collision-free continuous formation');
+  return planned;
 }
 
 // deltaMs is supplied by the caller: no timers, rendering, wall clock or
