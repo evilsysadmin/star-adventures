@@ -21,9 +21,10 @@ test('actual geological and industrial silhouettes join 3+ genuinely solid adjac
    'upper ridge must become one continuous rock outcrop');
  assert.ok(at('freight','11,14;12,14;13,14;14,14;15,14'),
    'the loading yard must read as one freight compound');
- assert.ok(at('lab','25,11;25,12;25,13;25,14'),
-   'laboratory side facade must be a single connected wall');
- assert.ok(at('lab','29,11;29,12;29,13;29,14'));
+ assert.ok(at('lab','25,10;25,11;25,12;25,13;25,14'),
+   'lab north-west corner joins the full physical five-cell side facade');
+ assert.ok(at('lab','29,10;29,11;29,12;29,13;29,14'),
+   'lab north-east corner joins its full physical five-cell facade');
  assert.ok(groups.some(s=>s.style==='lab'&&s.length>=5&&s.axis==='x'),
    'the lower lab fence forms a continuous corridor');
  assert.ok(groups.every(s=>s.length>=3&&s.length<=7));
