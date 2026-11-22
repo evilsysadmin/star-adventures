@@ -1,0 +1,40 @@
+name: K-47 realtime squad follow · actual viewport visual gate
+
+on:
+  pull_request:
+    paths:
+      - "src/groundRealtimeGroupFrame.mjs"
+      - "tests/groundRealtimeGroupFrame.test.mjs"
+      - "frontend/src/components/GroundSquadSelection.tsx"
+      - "frontend/tests/k47RealtimeGroupFollowVisual.spec.ts"
+      - ".github/workflows/k47-realtime-group-follow-visual.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  group-camera:
+    name: Actual 390/1280 dispersed squad framing A/B · pick, F5, rollback
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify pure group camera stays independent from game rules
+        run: node --test tests/groundRealtimeGroupFrame.test.mjs
+      - name: Install frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Compare ACTUAL in-game old/new group camera
+        run: npm run test:e2e --prefix frontend -- tests/k47RealtimeGroupFollowVisual.spec.ts
+      - name: Preserve genuine Chromium moving + A/B 390/1280 PNG
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-realtime-group-follow-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: frontend/test-results/k47-realtime-group-*.png
