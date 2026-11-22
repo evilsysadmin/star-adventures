@@ -123,8 +123,33 @@ for(const width of [390,1280]){
     expect(unique.size).toBe(3);
     expect(team.find(o=>o.id==='venn')?.x).toBeCloseTo(2,1);
     expect(team.find(o=>o.id==='venn')?.y).toBeCloseTo(5,1);
+    await expect(page.getByTestId('ground-move-status'))
+      .toContainText('ha llegado a');
     await page.getByTestId('ground-squad-board').screenshot({
       path:'test-results/away-realtime-formation-arrived-'+width+'.png',
+    });
+    // Review the actual follow camera, not only the tiny whole-map overview.
+    // All three real officer bodies must be within the playable stage.
+    await page.getByTestId('ground-camera-toggle').click();
+    await expect(page.getByTestId('ground-camera-toggle'))
+      .toHaveAttribute('aria-pressed','true');
+    const followed=await page.getByTestId('ground-squad-board').evaluate(svg=>{
+      const frame=svg.getBoundingClientRect();
+      return ['venn','dorn','mira'].map(id=>{
+        const r=svg.querySelector('[data-testid="ground-unit-'+id+'"]')!
+          .getBoundingClientRect();
+        return {id,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,
+          left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom};
+      });
+    });
+    for(const o of followed){
+      expect(o.x,o.id+' horizontal view').toBeGreaterThan(o.left);
+      expect(o.x,o.id+' horizontal view').toBeLessThan(o.right);
+      expect(o.y,o.id+' vertical view').toBeGreaterThan(o.top);
+      expect(o.y,o.id+' vertical view').toBeLessThan(o.bottom);
+    }
+    await page.screenshot({
+      path:'test-results/away-realtime-formation-follow-'+width+'.png',
     });
     await page.reload();
     await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
