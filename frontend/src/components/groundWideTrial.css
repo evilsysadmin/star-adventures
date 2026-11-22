@@ -161,3 +161,10 @@
    top:269px;left:auto;right:8px;font-size:9px;
  }
 }
+
+/* The 32x20 experiment is not the canonical civilian rescue mission.
+   Do not float the 18x12 mission briefing over an unrelated sandbox map.
+   Returning to K-47 instantly restores the authoritative mission panel. */
+.game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-wide) .mission-transmission{
+  display:none;
+}
