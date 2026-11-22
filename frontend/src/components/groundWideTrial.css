@@ -1,0 +1,61 @@
+/* Deliberately scoped to the opt-in 32x20 prototype. The existing K-47
+   cinematic art, camera and v1 mission presentation must stay untouched. */
+.wide-trial{display:flex;flex-direction:column;height:100%;min-width:0;
+  background:#091924;color:#dce8df;overflow:hidden;
+  font-family:'DM Sans',sans-serif}
+.wide-trial-viewbar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 12px;background:#102b36;border-bottom:1px solid #44616a;min-width:0}
+.wide-trial-viewbar>span{display:grid;gap:4px;min-width:0}
+.wide-trial-viewbar strong{font:700 12px 'Space Grotesk',sans-serif;letter-spacing:.06em;
+  color:#f3deaa}
+.wide-trial-viewbar small{font:600 9px 'Space Grotesk',sans-serif;letter-spacing:.1em;
+  color:#a6c4c1}
+.wide-trial-viewbar label{display:flex;align-items:center;gap:7px;white-space:nowrap;
+  font:600 10px 'Space Grotesk',sans-serif}
+.wide-trial-viewbar select{max-width:min(55vw,230px);min-height:42px;border:1px solid #647f82;
+  border-radius:3px;background:#193744;color:#f2e7c8;padding:7px;font:600 11px 'DM Sans',sans-serif}
+.wide-trial-stage{position:relative;min-width:0;min-height:0;flex:1 1 auto;
+  background:radial-gradient(ellipse at 60% 38%,#293f43,#0b1b28 72%);
+  overflow:hidden}
+.wide-trial-stage svg{display:block;width:100%;height:100%;touch-action:pan-y;
+  user-select:none}
+.wide-trial-stage [data-wide-cell]:hover{stroke:#ebcd8a;stroke-opacity:1;stroke-width:2.5}
+.wide-unit{cursor:pointer}
+.wide-unit.is-active{filter:drop-shadow(0 0 5px #ebcf8d99)}
+.wide-trial-coordinates{position:absolute;top:8px;left:10px;pointer-events:none;
+  color:#cbe4dd;background:#0b202bdb;border:1px solid #58716f;border-radius:3px;
+  padding:6px 9px;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.04em}
+.wide-trial-controls{display:flex;align-items:center;gap:10px;background:#102935;
+  padding:8px 10px;border-top:1px solid #355c62;min-width:0}
+.wide-trial-roster{display:flex;flex:1;flex-wrap:wrap;gap:6px}
+.wide-trial button{border:1px solid #607e81;background:#264451;color:#e7f0e9;
+  padding:8px 9px;min-height:44px;cursor:pointer;
+  font:700 11px 'Space Grotesk',sans-serif}
+.wide-trial button[aria-pressed=true]{background:#62705b;border-color:#edcc84;color:#fff3d4}
+.wide-trial button:disabled{cursor:not-allowed;opacity:.55}
+.wide-trial button:focus-visible,.wide-trial select:focus-visible{
+  outline:2px solid #f1c97c;outline-offset:2px}
+.wide-trial-notice{margin:0;padding:6px 11px 3px;color:#dfc88d;
+  background:#102935;font:600 11px/1.4 'DM Sans',sans-serif}
+.wide-trial-disclaimer{margin:0;padding:2px 11px 8px;color:#94b6b6;
+  background:#102935;font:10px/1.35 'DM Sans',sans-serif}
+.firstperson-is-wide .firstperson-render-stage{height:clamp(510px,80vh,890px);min-height:0;
+  overflow:hidden}
+.firstperson-is-wide .firstperson-top{position:relative;z-index:2}
+.firstperson-is-wide .firstperson-top .firstperson-name{flex:1;min-width:0}
+@media(max-width:520px){
+ .firstperson-is-wide .firstperson-render-stage{height:calc(100dvh - 70px);
+   min-height:520px;max-height:900px}
+ .wide-trial-viewbar{gap:6px;padding:6px 7px}
+ .wide-trial-viewbar strong{font-size:10px}
+ .wide-trial-viewbar label{font-size:0}
+ .wide-trial-viewbar select{width:164px;font-size:10px}
+ .wide-trial-controls{flex-wrap:wrap;gap:5px;padding:6px}
+ .wide-trial-roster{flex:1 1 100%;flex-wrap:nowrap;gap:4px}
+ .wide-trial-roster button{flex:1;min-width:0;font-size:10px;padding:4px}
+ .wide-trial-controls>button{flex:1;padding:5px}
+ .wide-trial-coordinates{top:6px;left:6px;padding:5px;font-size:9px}
+ .wide-trial-notice{font-size:10px}
+ .wide-trial-disclaimer{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.wide-trial *{transition:none!important}}
