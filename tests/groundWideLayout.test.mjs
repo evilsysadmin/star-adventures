@@ -61,13 +61,23 @@ test('the 32x20 candidate is a new legal world; the shipped 18x12 mission is unt
  assert.equal(scene.walls.some(p=>p.x===17&&p.y===4),false);
 });
 
-test('all 413 free cells belong to one actual connected ground mission; no fake isolated islands',()=>{
+test('all 412 free cells belong to one actual connected ground mission; no fake isolated islands',()=>{
  const blocked=blockedOf(scene);
  const walked=reachable(scene,scene.spawn);
- assert.equal(scene.width*scene.height-blocked.size,413);
- assert.equal(walked.size,413);
- assert.equal(scene.walls.length,222);
+ assert.equal(scene.width*scene.height-blocked.size,412);
+ assert.equal(walked.size,412);
+ assert.equal(scene.walls.length,223);
  assert.equal(scene.objects.length,5);
+ // Every extreme cell is a real wall; no off-board illusion, missing western
+ // tile or unvalidated decorative exit at 0,10.
+ for(let x=0;x<scene.width;x++){
+  assert.equal(blocked.has(x+',0'),true);
+  assert.equal(blocked.has(x+','+(scene.height-1)),true);
+ }
+ for(let y=0;y<scene.height;y++){
+  assert.equal(blocked.has('0,'+y),true);
+  assert.equal(blocked.has((scene.width-1)+','+y),true);
+ }
  for(const [x,y] of plan.openings){
   assert.equal(blocked.has(x+','+y),false,'a declared gateway is navigable');
   assert.equal(walked.has(x+','+y),true);
