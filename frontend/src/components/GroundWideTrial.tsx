@@ -13,6 +13,8 @@ import {
 } from '../../../src/groundWideTrialSave.mjs';
 import {groundSurfaceFrame} from '../groundSurfaceFrame';
 import {groundRealtimeGroupFrame} from '../../../src/groundRealtimeGroupFrame.mjs';
+import {buildWideTerrainKit} from '../../../src/groundWideTerrainKit.mjs';
+import {WideTerrainDetail,WideTerrainBarrier} from './GroundWideTerrainArt';
 import {localStorageOrNull} from '../session';
 import './groundWideTrial.css';
 
@@ -21,11 +23,16 @@ type Officer={id:string;name:string};
 type MobileMotion={id:string;x:number;y:number;route:Point[]};
 type WideState={version:number;motion:{version:number;officers:MobileMotion[]};explored:string[]};
 type Region={id:string;name:string;bounds:number[];entry:number[]};
+type TerrainTile={x:number;y:number;key:string;sectorId:string;family:string;
+ floor:string;edge:string;highlight:string;variant:number;grain:number;blocked:boolean};
+type TerrainWall={x:number;y:number;key:string;sectorId:string;family:string;
+ wall:string;variant:number};
 const wideWorld=composeGroundExpansion(baseWorld,plan);
 const scene=wideWorld.scenes.surface;
 const sectors=plan.sectors as Region[];
-const cells=Array.from({length:scene.height},(_,y)=>
- Array.from({length:scene.width},(_,x)=>({x,y,key:x+','+y}))).flat();
+const terrain=buildWideTerrainKit(scene,sectors);
+const cells=terrain.tiles as TerrainTile[];
+const terrainWalls=terrain.barriers as TerrainWall[];
 const obstacles=new Set([...scene.walls,...scene.objects].map(p=>p.x+','+p.y));
 const scenery=[...scene.scenery] as Array<{x:number;y:number;type:string}>;
 const frame=groundSurfaceFrame(scene.width,scene.height);
@@ -33,16 +40,6 @@ const point=(x:number,y:number)=>({x:440+(x-y)*40,y:52+(x+y)*20});
 const diamond=(x:number,y:number)=>{
  const p=point(x,y);
  return [p.x+','+(p.y-20),(p.x+40)+','+p.y,p.x+','+(p.y+20),(p.x-40)+','+p.y].join(' ');
-};
-const palette=[
- ['#48534a','#344b45'],['#53605a','#334949'],['#47564e','#314b49'],
- ['#554f48','#403f3b'],['#48595a','#2d4b51'],['#4a5145','#34493d'],
-];
-const tilePalette=(x:number,y:number)=>{
- const index=sectors.findIndex(s=>x>=s.bounds[0]&&y>=s.bounds[1]&&
-   x<=s.bounds[2]&&y<=s.bounds[3]);
- const [light,dark]=palette[index<0?2:index];
- return (x*13+y*17)%7<3?light:dark;
 };
 
 export function GroundWideTrial({squad,paused=false}:{
@@ -214,30 +211,23 @@ export function GroundWideTrial({squad,paused=false}:{
            <stop stopColor="#42575a"/><stop offset=".55" stopColor="#243c40"/>
            <stop offset="1" stopColor="#142a34"/>
          </linearGradient>
-         <linearGradient id="wide-masonry" x1="0" y1="0" x2="0" y2="1">
-           <stop stopColor="#9fada0"/><stop offset="1" stopColor="#4d6062"/>
-         </linearGradient>
+
        </defs>
        <rect x={frame.left} y={frame.top} width={frame.width} height={frame.height}
          fill="#0b1b27" pointerEvents="none"/>
        {cells.map(cell=><polygon key={cell.key} data-wide-cell={cell.key}
          data-wide-obstacle={obstacles.has(cell.key)?'true':'false'}
          points={diamond(cell.x,cell.y)}
-         fill={obstacles.has(cell.key)?'#263c41':tilePalette(cell.x,cell.y)}
+         fill={cell.blocked?'#263c41':fog.explored.has(cell.key)?cell.floor:'#20323a'}
          stroke="#152e35" strokeOpacity=".65" strokeWidth="1.4"
          onContextMenu={e=>{e.preventDefault();onCell(cell.x,cell.y);}}
          onClick={()=>{if(touchOrder)onCell(cell.x,cell.y);}}
          style={{cursor:paused?'default':'crosshair'}}/>)}
-       <g pointerEvents="none" aria-hidden="true">
-         {scene.walls.filter((w:{x:number;y:number})=>fog.explored.has(w.x+','+w.y)).map((w:{x:number;y:number})=>{
-           const p=point(w.x,w.y);
-           return <g key={w.x+','+w.y} transform={'translate('+p.x+' '+p.y+')'}>
-             <path d="M-32 -6 L0 -23 L32 -6 L0 11 Z" fill="url(#wide-masonry)"
-               stroke="#9ca9a0" strokeWidth="1.4"/>
-             <path d="M-32 -6 L0 11 L0 22 L-32 5Z" fill="#2f4248"/>
-             <path d="M0 11 L32 -6 L32 5 L0 22Z" fill="#1b333c"/>
-           </g>;
-         })}
+       <g pointerEvents="none" aria-hidden="true" data-testid="wide-terrain-art">
+         {cells.filter(cell=>!cell.blocked&&fog.explored.has(cell.key))
+           .map(cell=><WideTerrainDetail key={cell.key} tile={cell}/>)}
+         {terrainWalls.filter(wall=>fog.explored.has(wall.key))
+           .map(wall=><WideTerrainBarrier key={wall.key} wall={wall}/> )}
          {scenery.filter(o=>fog.explored.has(o.x+','+o.y)).map(o=>{
            const p=point(o.x,o.y);
            return <g key={o.x+','+o.y} transform={'translate('+p.x+' '+p.y+')'}>
