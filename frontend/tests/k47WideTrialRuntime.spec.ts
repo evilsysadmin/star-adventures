@@ -31,6 +31,7 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('wide-trial-enter')).toBeVisible();
   await page.getByTestId('wide-trial-enter').click();
   await expect(page.getByTestId('wide-trial')).toBeVisible();
+  await expect(page.locator('.mission-transmission')).toBeHidden();
   const layout=await page.evaluate(()=>{
     const box=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
     const overlaps=(a:DOMRect,b:DOMRect)=>
@@ -110,6 +111,7 @@ for(const width of [390,1280]){
 
   await page.getByTestId('wide-trial-exit').click();
   await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await expect(page.locator('.mission-transmission')).toBeVisible();
   await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-world-x','4.000');
   expect(await page.evaluate(()=>localStorage.getItem(
    'shadowops.star-adventures.ground-realtime.v1'))).toBe(oldSidecar);
