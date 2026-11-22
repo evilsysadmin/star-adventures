@@ -1,5 +1,17 @@
 # K-47 · Outer Array — blueprint del desembarco grande
 
+## Estado implementado · piloto interactivo (noviembre de 2026)
+
+Este documento conserva el **plano y las fases históricas** de la propuesta. El mapa de 32×20 ya es jugable de forma opcional, con sectores, movimiento, rutas y niebla auténticos. Ahora se han activado **dos acciones de misión reales y persistentes únicamente en esa beta**, sin modificar la misión canónica 18×12.
+
+- **Relé (18,15)**: un oficial realmente cercano puede destinar la reserva de energía al **soporte vital** o al **laboratorio**. La elección queda registrada, es excluyente y cambia las consecuencias internas del piloto: respaldo humanitario o disponibilidad de análisis científico. No se inventa número de civiles salvados.
+- **Laboratorio (27,13)**: una vez restaurado el relé, un oficial físicamente presente puede recuperar las muestras. Con energía de laboratorio, la evidencia se **verifica**; con el soporte vital priorizado, se **conserva sin análisis**. Ambas rutas son científicas/no violentas y dejan una segunda entrada auditable en la bitácora.
+- **Guardados**: el snapshot V2 guarda movimiento, fog y decisiones atómicamente, valida topología y diario y carga los snapshots V1 previos como expediciones nuevas sin decisiones. El K-47 clásico, sus GLB y su guardado siguen inalterados.
+- **Aún previstos, no interactivos**: enlace de la cordillera (26,4), evacuados (10,16) y extracción alternativa (12,18). No se ha simulado un final de campaña, rescate efectivo ni un regreso automático a la nave.
+
+**Siguiente aceptación**: añadir uno de los eventos opcionales auténticos (con efecto verificable en el piloto) y una extracción/resultado conectados con el estado elegido, antes de plantear que sustituya la misión normal. Los nombres, referencias y escenarios son originales; la inspiración en juegos de escuadrón no autoriza copiar sus assets.
+
+
 **Decisión de diseño · 22 de noviembre de 2026.** Referencia de ritmo y legibilidad: operaciones isométricas de escuadrón de principios de los 2000, especialmente *Star Trek: Away Team*, **sin copiar** mapas, personajes, misiones ni assets. Este repositorio público contiene solo geografía y ficción originales.
 
 ## El problema que resolvemos
