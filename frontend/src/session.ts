@@ -1,4 +1,5 @@
 import { startCrewSession, serializeCrewCheckpoint, deserializeCrewCheckpoint, migrateLegacyCheckpoint } from '../../src/crewSession.mjs';
+import { gameStorageOrNull } from './identityStorage.ts';
 import { startExploration } from '../../src/spatial.mjs';
 import { recoverSpatialCheckpoint, serializeSpatialCheckpoint } from '../../src/spatialCheckpoint.mjs';
 
@@ -52,7 +53,7 @@ export function persistSession(episode: Parameters<typeof startCrewSession>[0], 
 }
 
 export function localStorageOrNull(): Storage | null {
-  try { return window.localStorage; } catch { return null; }
+  return gameStorageOrNull();
 }
 
 /** Standalone v1 location snapshot. The mission/crew v2 checkpoint is never altered. */
