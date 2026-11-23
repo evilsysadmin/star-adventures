@@ -61,6 +61,12 @@ audience binding through the Worker response, fail-closed errors, local
 offline compatibility, two independent accounts with overlapping keys,
 legacy preservation and namespace-scoped deletion/iteration.
 
+`frontend/tests/identityScopedSaves.spec.ts` exercises the same adapter with
+actual Chromium localStorage and simulated distinct Worker responses, proving
+that account A, account B and the original legacy save do not overwrite one
+another. This fixture is a **browser-storage isolation test**, not an
+authenticated live login/logout test.
+
 Before enabling the protected site in Cloudflare, additionally run real
 browser E2E across **account A → close central session → sign in B → F5 →
 sign back in A** with real Identity/Worker/Mongo and assert no cross-account
