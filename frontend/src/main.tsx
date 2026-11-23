@@ -14,8 +14,9 @@ import './bridge/bridgePresentation.css';
 const TacticalCameraProbe = React.lazy(() => import('./tactical/TacticalCameraProbe'));
 const isCameraProbe = new URLSearchParams(window.location.search).get('tactical') === 'probe';
 
-const node = document.getElementById('root');
-if (!node) throw new Error('Cannot mount Star Adventures without #root');
+const mountNode = document.getElementById('root');
+if (!mountNode) throw new Error('Cannot mount Star Adventures without #root');
+const node: HTMLElement = mountNode;
 const root = createRoot(node);
 
 function blockedIdentity() {
@@ -73,7 +74,7 @@ function monitorProtectedSession() {
   const check = async (blocking: boolean) => {
     if (stopped) return;
     if (blocking) { pauseBoundGameStorage(); mask(); }
-    if (document.visibilityState === 'hidden' || unfocused) return;
+    if (document.hidden || unfocused) return;
     if (pending) { queued = true; return; }
     pending = true;
     let valid = false;
@@ -81,7 +82,7 @@ function monitorProtectedSession() {
     catch { /* Unexpected verification failures also fail closed. */ }
     pending = false;
     if (stopped) return;
-    if (document.visibilityState === 'hidden' || unfocused) {
+    if (document.hidden || unfocused) {
       pauseBoundGameStorage();
       return;
     }
