@@ -96,6 +96,9 @@ focus on `bringToFront()`, this browser test explicitly dispatches focus and
 blur events after switching real tabs. It verifies the installed handlers,
 but **does not prove OS-native focus delivery on every browser/platform**.
 The visual evidence includes the denied mobile and revoked desktop screens.
+The fail-closed interstitial uses a responsive, keyboard-accessible ShadowOps
+panel rather than unstyled browser links; its 390px and 1280px screenshots
+must be visually inspected on the PR before it is marked ready.
 These fixtures are **browser-storage / synthetic-Worker tests**, not
 authenticated live login/logout tests.
 
