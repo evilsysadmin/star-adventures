@@ -73,23 +73,26 @@ export function createAccountLease(
   if (!isAccountSubject(subject) || !Number.isSafeInteger(expiresAt) ||
       expiresAt * 1000 <= now()) throw new Error('invalid initial Identity session');
   let status: 'active' | 'paused' | 'revoked' = 'active';
+  let generation = 0;
   let deadline = Math.min(now() + ACCOUNT_LEASE_MS, expiresAt * 1000);
   return {
     allowed: () => status === 'active' && now() < deadline,
+    generation: () => generation,
     pause: () => {
-      if (status !== 'revoked') { status = 'paused'; deadline = 0; }
+      if (status !== 'revoked') { status = 'paused'; deadline = 0; generation += 1; }
     },
     renew: (next: GameStorageScope): boolean => {
       if (status === 'revoked') return false;
       if (next.mode !== 'account' || next.subject !== subject ||
           !Number.isSafeInteger(next.expiresAt) || next.expiresAt * 1000 <= now()) {
-        status = 'revoked'; deadline = 0; return false;
+        status = 'revoked'; deadline = 0; generation += 1; return false;
       }
       status = 'active';
+      generation += 1;
       deadline = Math.min(now() + ACCOUNT_LEASE_MS, next.expiresAt * 1000);
       return true;
     },
-    revoke: () => { status = 'revoked'; deadline = 0; },
+    revoke: () => { status = 'revoked'; deadline = 0; generation += 1; },
   };
 }
 
@@ -154,9 +157,10 @@ export async function revalidateBoundGameStorage(
 ): Promise<boolean> {
   const lease = accountLease;
   if (!lease || activeScope?.mode !== 'account') return false;
+  const generation = lease.generation();
   const refreshed = await resolveGameStorageScope(origin, request);
-  // A response from another account must never repoint this mounted game.
-  if (lease !== accountLease) return false;
+  // A delayed check cannot reactivate storage after tab suspension/revocation.
+  if (lease !== accountLease || lease.generation() !== generation) return false;
   return lease.renew(refreshed);
 }
 
