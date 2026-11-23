@@ -33,7 +33,42 @@ export function GameShell({ presentation: game, children, location, transportPen
   const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenNotice, setFullscreenNotice] = useState('');
   const [audioNotice, setAudioNotice] = useState('');
+  const [centralIdentity, setCentralIdentity] = useState(false);
   const modalOpen = !!game.menu || game.atTitle;
+  // The game is also usable as an intentionally public local/dev build.
+  // Only the authenticated Pages Worker can attest the active staradvs
+  // session. An SPA HTML fallback, HTTP error or wrong audience hides logout.
+  useEffect(() => {
+    setCentralIdentity(false);
+    if (!modalOpen) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 4000);
+    void (async () => {
+      try {
+        const response = await fetch('/api/staradvs/session', {
+          method: 'GET', credentials: 'same-origin', cache: 'no-store',
+          redirect: 'error', signal: controller.signal,
+        });
+        if (!response.ok || !response.headers.get('Content-Type')?.toLowerCase().startsWith('application/json')) return;
+        const body: unknown = await response.json();
+        if (!body || typeof body !== 'object') return;
+        const session = body as Record<string, unknown>;
+        if (session.identity === 'staradvs' &&
+            typeof session.subject === 'string' &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(session.subject) &&
+            typeof session.expires_at === 'number' &&
+            Number.isSafeInteger(session.expires_at) &&
+            session.expires_at > Date.now() / 1000 &&
+            !controller.signal.aborted) setCentralIdentity(true);
+      } catch {
+        // Local dev, public Pages staging or an unavailable IdP never gets
+        // a misleading sign-out control. The game remains playable.
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    })();
+    return () => { controller.abort(); window.clearTimeout(timeout); };
+  }, [modalOpen]);
   const change = (patch: Partial<GamePreferences>) => game.setPreferences(before => ({ ...before, ...patch }));
   const resume = () => { game.setMenu(null); game.setAtTitle(false); };
   const back = () => game.setMenu(game.atTitle ? null : 'pause');
@@ -108,6 +143,8 @@ export function GameShell({ presentation: game, children, location, transportPen
         <button type="button" className="game-menu-primary" data-testid="game-continue" onClick={resume}>Continuar partida <span>→</span></button>
         <button type="button" onClick={() => game.setMenu('options')}>Opciones</button>
         <button type="button" onClick={() => game.setMenu('audio')}>Audio</button>
+        {centralIdentity && <a className="game-identity-logout" data-testid="game-identity-logout"
+          href="/_shadowops/logout">Cerrar sesión de ShadowOps ID</a>}
         <small>Tu partida conserva su progreso en este navegador.</small>
       </> : game.menu === 'pause' ? <>
         <p>{location} · Esc para volver</p>
@@ -115,6 +152,8 @@ export function GameShell({ presentation: game, children, location, transportPen
         <button type="button" data-testid="game-options" onClick={() => game.setMenu('options')}>Opciones</button>
         <button type="button" data-testid="game-audio" onClick={() => game.setMenu('audio')}>Audio</button>
         <button type="button" data-testid="game-exit" onClick={exit}>Salir al menú principal</button>
+        {centralIdentity && <a className="game-identity-logout" data-testid="game-identity-logout"
+          href="/_shadowops/logout">Cerrar sesión de ShadowOps ID</a>}
       </> : game.menu === 'options' ? <>
         <button type="button" className="game-menu-back" onClick={back}>← Volver</button>
         <label className="game-setting">Interfaz
