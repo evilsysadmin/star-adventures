@@ -32,6 +32,9 @@ preferences.
   checkpoint adapters use `localStorageOrNull()` and automatically receive
   that view; `getItem`, `setItem`, `removeItem`, `key`, `length` and
   `clear` are restricted to the current subject's namespace.
+- The tactical-view selector and tactical audio preference fallback are also
+  wired through the shared adapter; neither may access raw `localStorage`
+  directly or inherit another user's layout/audio choices.
 - The binding is one-shot per browser page load. A session switch must
   navigate through the existing IdP logout confirmation and bootstrap a
   fresh page. **Do not swap identity ownership in a mounted React tree**.
