@@ -1,0 +1,136 @@
+/* Protected Identity boundary: rendered only after a failed verified session.
+   Keep it visually consistent with the Star Adventures command UI without
+   importing the gameplay scene or reading any account-owned storage. */
+.identity-gate-screen {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100dvh;
+  padding: clamp(24px, 6vw, 72px);
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 76% 12%, #203747 0%, transparent 53%),
+    radial-gradient(ellipse at 10% 82%, #152d35 0%, transparent 46%),
+    linear-gradient(145deg, #0b1b25, #070f16 75%);
+  color: #f3f0e8;
+  font-family: system-ui, sans-serif;
+}
+.identity-gate-panel {
+  box-sizing: border-box;
+  position: relative;
+  width: min(100%, 565px);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid rgba(204, 176, 120, .40);
+  border-radius: 12px;
+  background: linear-gradient(157deg, rgba(28, 48, 58, .96), rgba(9, 23, 33, .97));
+  box-shadow: 0 28px 110px rgba(0, 0, 0, .47);
+}
+.identity-gate-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  width: 88px;
+  height: 2px;
+  background: #d8ba80;
+}
+.identity-gate-mark {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1px solid #c7ab7880;
+  border-radius: 12px;
+  color: #d6bd88;
+  background: #c0a36c14;
+  font-size: 27px;
+  margin-bottom: 24px;
+}
+.identity-gate-eyebrow {
+  font: 600 10px/1.6 ui-monospace, monospace;
+  color: #cdbb96;
+  letter-spacing: .15em;
+  margin: 0 0 15px;
+}
+.identity-gate-panel h1 {
+  margin: 0 0 20px;
+  font-size: clamp(28px, 5.6vw, 39px);
+  font-weight: 550;
+  letter-spacing: -.035em;
+  line-height: 1.16;
+  text-wrap: balance;
+}
+.identity-gate-panel .identity-gate-description {
+  margin: 0;
+  color: #c0d0d1;
+  font-size: 14px;
+  line-height: 1.75;
+}
+.identity-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+.identity-gate-actions > a,
+.identity-gate-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 11px 18px;
+  border: 1px solid #9cb0b160;
+  border-radius: 5px;
+  background: #213641;
+  color: #e4e9e5;
+  font: 600 12px/1.45 system-ui, sans-serif;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+}
+.identity-gate-actions > .identity-gate-primary {
+  border-color: #d5b477ae;
+  background: #a98b57;
+  color: #081720;
+}
+.identity-gate-actions > a:hover,
+.identity-gate-actions > button:hover { filter: brightness(1.15); }
+.identity-gate-actions > a:focus-visible,
+.identity-gate-actions > button:focus-visible {
+  outline: 3px solid #e9cb8e;
+  outline-offset: 3px;
+}
+.identity-gate-panel .identity-gate-footnote {
+  margin: 27px 0 0;
+  padding-top: 17px;
+  border-top: 1px solid #a7b9b926;
+  color: #a8b8b9;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.identity-gate-rechecking {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 28px;
+  display: grid;
+  place-items: center;
+  background: #091923;
+  color: #d7c19a;
+  font: 600 15px/1.6 system-ui, sans-serif;
+  text-align: center;
+}
+@media (max-width: 420px) {
+  .identity-gate-screen { padding: 18px; }
+  .identity-gate-panel { padding: 28px 24px; }
+  .identity-gate-actions { flex-direction: column; }
+  .identity-gate-actions > a,
+  .identity-gate-actions > button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .identity-gate-actions > a,
+  .identity-gate-actions > button { transition: none; }
+}

@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   STARADVS_PROTECTED_ORIGIN, isAccountSubject, resolveGameStorageScope,
-  createAccountStorage,
+  createAccountStorage, createAccountLease, ACCOUNT_LEASE_MS,
+  bindGameStorageScope, pauseBoundGameStorage, revalidateBoundGameStorage,
+  revokeBoundGameStorage, activeAccountSubject,
 } from '../src/identityStorage.ts';
 import {
   GAME_PREFERENCES_KEY, readGamePreferences, saveGamePreferences,
@@ -38,7 +40,9 @@ test('protected staging resolves only the exact fresh staradvs session before ga
     requests.push({ url, init });
     return Promise.resolve(identityReply(alice));
   });
-  assert.deepEqual(scope, { mode: 'account', subject: alice });
+  assert.equal(scope.mode, 'account');
+  assert.equal(scope.subject, alice);
+  assert.ok(scope.expiresAt >= Math.floor(Date.now() / 1000) + 70);
   assert.equal(requests.length, 1);
   assert.equal(requests[0].url, '/api/staradvs/session');
   assert.equal(requests[0].init.method, 'GET');
@@ -151,4 +155,84 @@ test('remove, key(), length and clear never touch another account or legacy save
   assert.equal(b.getItem('crew'), 'bob');
   assert.equal(backing.getItem('old-global-save'), 'keep');
   assert.throws(() => createAccountStorage(backing, 'fake-user'));
+});
+
+test('cached account storage handles fail closed on blur, renewal and session revocation', () => {
+  let clock = 1_900_000_000_000;
+  const now = () => clock;
+  const a = createAccountLease(alice, Math.floor(clock / 1000) + 120, now);
+  const backing = nativeStorage();
+  const storageA = createAccountStorage(backing, alice, a.allowed);
+  const storageB = createAccountStorage(backing, bob);
+  storageA.setItem('campaign', 'alice-1');
+  storageB.setItem('campaign', 'bob-1');
+
+  a.pause();
+  assert.equal(storageA.getItem('campaign'), null);
+  assert.equal(storageA.length, 0);
+  assert.equal(storageA.key(0), null);
+  assert.throws(() => storageA.setItem('campaign', 'stale-writer'));
+  assert.throws(() => storageA.removeItem('campaign'));
+  assert.throws(() => storageA.clear());
+  assert.equal(storageB.getItem('campaign'), 'bob-1');
+
+  assert.equal(a.renew({
+    mode: 'account', subject: alice, expiresAt: Math.floor(clock / 1000) + 100,
+  }), true);
+  assert.equal(storageA.getItem('campaign'), 'alice-1');
+  storageA.setItem('campaign', 'alice-2');
+  clock += ACCOUNT_LEASE_MS + 1;
+  assert.equal(a.allowed(), false, 'no unchecked writes after the bounded lease');
+  assert.throws(() => storageA.setItem('campaign', 'expired-write'));
+  assert.equal(storageA.getItem('campaign'), null);
+
+  assert.equal(a.renew({
+    mode: 'account', subject: bob, expiresAt: Math.floor(clock / 1000) + 100,
+  }), false);
+  assert.equal(a.allowed(), false);
+  assert.equal(a.renew({
+    mode: 'account', subject: alice, expiresAt: Math.floor(clock / 1000) + 100,
+  }), false, 'a mismatched account irreversibly revokes this page load');
+  assert.equal(backing.getItem('shadowops.star-adventures.account.v1.' + alice + '.campaign'), 'alice-2');
+  assert.equal(storageB.getItem('campaign'), 'bob-1');
+});
+
+test('out-of-order rechecks cannot revive a paused or revoked storage lease', () => {
+  let clock = 1_900_000_000_000;
+  const a = createAccountLease(alice, Math.floor(clock / 1000) + 100, () => clock);
+  const generation = a.generation();
+  a.pause();
+  assert.notEqual(a.generation(), generation);
+  assert.equal(a.allowed(), false);
+  // A stale network response must be rejected by the caller's generation guard.
+  assert.equal(generation === a.generation(), false);
+  a.renew({ mode: 'account', subject: alice, expiresAt: Math.floor(clock / 1000) + 50 });
+  assert.equal(a.allowed(), true);
+  a.revoke();
+  assert.equal(a.allowed(), false);
+  assert.equal(a.renew({ mode: 'account', subject: alice, expiresAt: Math.floor(clock / 1000) + 50 }), false);
+});
+
+test('an in-flight Worker reply cannot reactivate suspended account storage', async () => {
+  const scope = { mode: 'account', subject: alice, expiresAt: Math.floor(Date.now() / 1000) + 110 };
+  assert.equal(bindGameStorageScope(scope), true);
+  assert.equal(activeAccountSubject(), alice);
+  let release;
+  const reply = new Promise(resolve => { release = resolve; });
+  const verification = revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN, () => reply);
+  pauseBoundGameStorage();
+  assert.equal(activeAccountSubject(), null);
+  release(identityReply(alice));
+  assert.equal(await verification, false);
+  assert.equal(activeAccountSubject(), null);
+  // A fresh, same-subject check may resume; an unrelated subject may not.
+  assert.equal(await revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN,
+    async () => identityReply(alice)), true);
+  assert.equal(activeAccountSubject(), alice);
+  assert.equal(await revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN,
+    async () => identityReply(bob)), false);
+  assert.equal(activeAccountSubject(), null);
+  assert.equal(await revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN,
+    async () => identityReply(alice)), false);
+  revokeBoundGameStorage();
 });
