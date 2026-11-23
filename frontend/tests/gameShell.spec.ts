@@ -174,7 +174,7 @@ for (const width of [390, 1280]) {
     await expect(page.getByTestId('game-identity-logout')).toBeVisible();
     await page.screenshot({ path: `test-results/game-central-logout-title-${width}.png` });
     await page.getByTestId('game-identity-logout').click();
-    await expect(page).toHaveURL(new RegExp('/_shadowops/logout
+    await expect(page).toHaveURL(new RegExp('/_shadowops/logout$'));
     await expect(page.getByRole('heading', { name: 'IdP confirmation is server owned' })).toBeVisible();
   });
 }
