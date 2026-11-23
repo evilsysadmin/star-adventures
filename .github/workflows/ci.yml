@@ -103,28 +103,29 @@ jobs:
           retention-days: 7
 
   infra-staging-notification:
-    name: Request Infra-owned staging sync
+    name: Request Infra-owned protected release candidate (no deploy)
     needs: [core, web, web-browser-rest]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'evilsysadmin/star-adventures'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Notify ShadowOps Infra without publishing from game repo
+      - name: Ask Infra to build a protected ShadowOps ID candidate (never deploy)
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.SHADOWOPS_INFRA_ACTIONS_TOKEN }}
         run: |
           set -euo pipefail
           if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo 'STARADVS_INFRA_DISPATCH_NOT_CONFIGURED (Infra scheduled fallback remains active)'
+            echo 'STARADVS_PROTECTED_CANDIDATE_DISPATCH_NOT_CONFIGURED (manual Infra candidate build available)'
             exit 0
           fi
-          # This only requests the trusted Infra workflow; that workflow
-          # independently checks exact main SHA and successful source CI.
+          # This only requests the trusted, non-deploying protected candidate
+          # workflow. Infra independently checks exact green game main SHA
+          # and assembles the fail-closed Identity Worker without Cloudflare credentials.
           if gh api --method POST \
-              repos/evilsysadmin/shadowops-infra/actions/workflows/staradvs-pages-staging.yml/dispatches \
+              repos/evilsysadmin/shadowops-infra/actions/workflows/staradvs-protected-candidate.yml/dispatches \
               -f ref=main; then
-            echo "STARADVS_INFRA_DISPATCH_ACCEPTED source_sha=$GITHUB_SHA"
+            echo "STARADVS_PROTECTED_CANDIDATE_DISPATCH_ACCEPTED source_sha=$GITHUB_SHA deployment=not-attempted"
           else
-            echo '::warning::ShadowOps Infra dispatch unavailable; Infra scheduled fallback remains active'
+            echo '::warning::Protected candidate dispatch unavailable; use Infra manual candidate builder'
           fi
