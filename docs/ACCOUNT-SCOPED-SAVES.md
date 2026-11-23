@@ -91,6 +91,11 @@ that account A, account B and the original legacy save do not overwrite one
 another. `identityForeground.spec.ts` mounts the real React app under the
 canonical protected URL with proxied local Vite assets and simulated Worker
 responses, then checks initial deny and A→B cross-tab focus revocation.
+Because Chromium's headless window manager does not reliably fire native
+focus on `bringToFront()`, this browser test explicitly dispatches focus and
+blur events after switching real tabs. It verifies the installed handlers,
+but **does not prove OS-native focus delivery on every browser/platform**.
+The visual evidence includes the denied mobile and revoked desktop screens.
 These fixtures are **browser-storage / synthetic-Worker tests**, not
 authenticated live login/logout tests.
 
