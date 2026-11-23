@@ -36,6 +36,7 @@ function monitorProtectedSession() {
   let pending = false;
   let queued = false;
   let stopped = false;
+  let unfocused = false;
   let interval = 0;
   let notice: HTMLParagraphElement | null = null;
 
@@ -72,7 +73,7 @@ function monitorProtectedSession() {
   const check = async (blocking: boolean) => {
     if (stopped) return;
     if (blocking) { pauseBoundGameStorage(); mask(); }
-    if (document.visibilityState === 'hidden') return;
+    if (document.visibilityState === 'hidden' || unfocused) return;
     if (pending) { queued = true; return; }
     pending = true;
     let valid = false;
@@ -80,7 +81,7 @@ function monitorProtectedSession() {
     catch { /* Unexpected verification failures also fail closed. */ }
     pending = false;
     if (stopped) return;
-    if (document.visibilityState === 'hidden') {
+    if (document.visibilityState === 'hidden' || unfocused) {
       pauseBoundGameStorage();
       return;
     }
@@ -94,8 +95,8 @@ function monitorProtectedSession() {
       pauseBoundGameStorage(); mask();
     } else void check(true);
   };
-  const onBlur = () => { pauseBoundGameStorage(); mask(); };
-  const onFocus = () => { if (document.visibilityState === 'visible') void check(true); };
+  const onBlur = () => { unfocused = true; pauseBoundGameStorage(); mask(); };
+  const onFocus = () => { unfocused = false; if (document.visibilityState === 'visible') void check(true); };
 
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('focus', onFocus);
@@ -103,7 +104,7 @@ function monitorProtectedSession() {
   // A continuously foreground tab also checks freshness. Hidden-tab timers
   // are not trusted; returning to visibility always runs a new check.
   interval = window.setInterval(() => {
-    if (document.visibilityState === 'visible') void check(false);
+    if (document.visibilityState === 'visible' && !unfocused) void check(false);
   }, 25_000);
 }
 
