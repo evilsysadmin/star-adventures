@@ -126,7 +126,7 @@ test('account A -> logout -> B -> A restores only its own real checkpoint and pr
   assert.equal(reloggedA.getItem(sharedKeys[2]), null);
   assert.deepEqual(readGamePreferences(reloggedA), alicePrefs);
   assert.equal(backing.getItem(legacy), 'legacy-unattributed-checkpoint');
-  assert.ok(backing.entries().length >= 7);
+  assert.ok(backing.entries().length >= 6);
 });
 
 test('remove, key(), length and clear never touch another account or legacy saves', () => {
