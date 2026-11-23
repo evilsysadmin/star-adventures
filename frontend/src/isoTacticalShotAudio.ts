@@ -3,6 +3,7 @@
 // Match the mission board's fast tracer arrival exactly.
 import { SHOT_DURATION_MS, SHOT_TRAVEL_FRACTION } from './isoFirePlayback.ts';
 import { readGamePreferences } from './gamePreferences.ts';
+import { localStorageOrNull } from './session.ts';
 export const SHOT_IMPACT_DELAY_SECONDS = SHOT_DURATION_MS * SHOT_TRAVEL_FRACTION / 1000;
 
 let context: AudioContext | null = null;
@@ -44,9 +45,9 @@ export function scheduleTacticalShot(audio: AudioContext, at = audio.currentTime
 export function playAcceptedTacticalShot(): boolean {
   if (typeof window === 'undefined' || document.hidden || !window.AudioContext) return false;
   try {
-    let storage: Storage | null = null;
-    try { storage = window.localStorage; } catch { /* Session-only options remain usable. */ }
-    const preferences = livePreferences ?? readGamePreferences(storage);
+    // Audio fallback is a preference read, not a reason to bypass the
+    // authenticated account's storage namespace.
+    const preferences = livePreferences ?? readGamePreferences(localStorageOrNull());
     if (preferences.muted || preferences.volume === 0) return false;
     if (!context || context.state === 'closed') {
       context = new window.AudioContext(); master = context.createGain(); master.connect(context.destination);
