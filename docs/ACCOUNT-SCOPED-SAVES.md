@@ -38,6 +38,27 @@ preferences.
 - The binding is one-shot per browser page load. A session switch must
   navigate through the existing IdP logout confirmation and bootstrap a
   fresh page. **Do not swap identity ownership in a mounted React tree**.
+- Authenticated save handles now hold a short **45-second local lease**,
+  bounded by the actual signed token expiration. Even a cached Storage
+  handle fails closed when the lease is paused, expired or revoked; failures
+  never grant an unprefixed legacy key. A successful, live same-subject Worker
+  recheck extends the lease; a different subject cannot reactivate the page.
+  Late responses after a pause/revocation are ignored by a generation check.
+- When the tab is hidden or the window loses focus, the game is masked and
+  all authenticated storage operations are suspended synchronously. On
+  return the tab must recheck live ShadowOps ID before it exposes the saved
+  game. A continuously foreground tab checks every 25 seconds. A session
+  change, revocation, network error or expired token unmounts the game,
+  preserving all stored bytes. A failed recheck requires a fresh bootstrap;
+  it cannot silently repoint a mounted campaign at another account.
+
+The 25-second poll and 45-second lease limit stale background/foreground
+access windows; they cannot provide instantaneous cross-device session
+revocation or protect against malicious JavaScript with direct access to the
+same-origin native localStorage. The Worker must enforce current identity on
+all protected asset/API access. The short-lived Worker game cookie currently
+requires re-bootstrap when its token expires, so transparent long-lived login
+renewal remains a separate UX/cutover task.
 
 ## Legacy ownership and preservation
 
@@ -67,8 +88,11 @@ legacy preservation and namespace-scoped deletion/iteration.
 `frontend/tests/identityScopedSaves.spec.ts` exercises the same adapter with
 actual Chromium localStorage and simulated distinct Worker responses, proving
 that account A, account B and the original legacy save do not overwrite one
-another. This fixture is a **browser-storage isolation test**, not an
-authenticated live login/logout test.
+another. `identityForeground.spec.ts` mounts the real React app under the
+canonical protected URL with proxied local Vite assets and simulated Worker
+responses, then checks initial deny and A→B cross-tab focus revocation.
+These fixtures are **browser-storage / synthetic-Worker tests**, not
+authenticated live login/logout tests.
 
 Before enabling the protected site in Cloudflare, additionally run real
 browser E2E across **account A → close central session → sign in B → F5 →
