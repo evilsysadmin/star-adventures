@@ -1,0 +1,60 @@
+name: Star Adventures · notify protected Infra candidate after green main
+
+on:
+  workflow_run:
+    workflows: ['Star Adventures CI']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Notify trusted Infra only after completed green game CI
+    if: >-
+      github.repository == 'evilsysadmin/star-adventures' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == 'evilsysadmin/star-adventures' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Refuse a superseded game SHA without executing source artifacts
+        id: guard
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          latest="$(gh api repos/evilsysadmin/star-adventures/commits/main --jq .sha)"
+          if [[ "$latest" != "$SOURCE_SHA" ]]; then
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+            echo "STARADVS_CANDIDATE_DISPATCH_SUPERSEDED no deploy"
+            exit 0
+          fi
+          echo 'current=true' >> "$GITHUB_OUTPUT"
+
+      - name: Request only the non-deploying Infra-owned protected candidate
+        if: steps.guard.outputs.current == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.SHADOWOPS_INFRA_ACTIONS_TOKEN }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo '::warning::STARADVS_PROTECTED_CANDIDATE_DISPATCH_NOT_CONFIGURED; Infra has daily/main manual fallback'
+            exit 0
+          fi
+          # Infra performs independent exact-game-SHA/green-CI admission and
+          # creates only a time-limited artifact. No Cloudflare or Pages write.
+          if gh api --method POST \
+              repos/evilsysadmin/shadowops-infra/actions/workflows/staradvs-protected-candidate.yml/dispatches \
+              -f ref=main; then
+            echo "STARADVS_PROTECTED_CANDIDATE_DISPATCH_ACCEPTED source_sha=$SOURCE_SHA deployment=not-attempted"
+          else
+            echo '::warning::Protected candidate dispatch unavailable; Infra daily/manual fallback required'
+          fi
