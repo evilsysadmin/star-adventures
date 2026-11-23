@@ -99,6 +99,7 @@ test('account A -> logout -> B -> A restores only its own real checkpoint and pr
     'shadowops.star-adventures.physical-perimeter.v1',
     'shadowops.star-adventures.ground-squad.v1',
     'shadowops.star-adventures.training.v1',
+    'shadowops.star-adventures.tactical-view.v1',
     GAME_PREFERENCES_KEY,
   ];
   backing.setItem(legacy, 'legacy-unattributed-checkpoint');
