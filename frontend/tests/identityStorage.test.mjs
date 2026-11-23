@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   STARADVS_PROTECTED_ORIGIN, isAccountSubject, resolveGameStorageScope,
   createAccountStorage, createAccountLease, ACCOUNT_LEASE_MS,
+  bindGameStorageScope, pauseBoundGameStorage, revalidateBoundGameStorage,
+  revokeBoundGameStorage, activeAccountSubject,
 } from '../src/identityStorage.ts';
 import {
   GAME_PREFERENCES_KEY, readGamePreferences, saveGamePreferences,
@@ -209,4 +211,28 @@ test('out-of-order rechecks cannot revive a paused or revoked storage lease', ()
   a.revoke();
   assert.equal(a.allowed(), false);
   assert.equal(a.renew({ mode: 'account', subject: alice, expiresAt: Math.floor(clock / 1000) + 50 }), false);
+});
+
+test('an in-flight Worker reply cannot reactivate suspended account storage', async () => {
+  const scope = { mode: 'account', subject: alice, expiresAt: Math.floor(Date.now() / 1000) + 110 };
+  assert.equal(bindGameStorageScope(scope), true);
+  assert.equal(activeAccountSubject(), alice);
+  let release;
+  const reply = new Promise(resolve => { release = resolve; });
+  const verification = revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN, () => reply);
+  pauseBoundGameStorage();
+  assert.equal(activeAccountSubject(), null);
+  release(identityReply(alice));
+  assert.equal(await verification, false);
+  assert.equal(activeAccountSubject(), null);
+  // A fresh, same-subject check may resume; an unrelated subject may not.
+  assert.equal(await revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN,
+    async () => identityReply(alice)), true);
+  assert.equal(activeAccountSubject(), alice);
+  assert.equal(await revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN,
+    async () => identityReply(bob)), false);
+  assert.equal(activeAccountSubject(), null);
+  assert.equal(await revalidateBoundGameStorage(STARADVS_PROTECTED_ORIGIN,
+    async () => identityReply(alice)), false);
+  revokeBoundGameStorage();
 });
