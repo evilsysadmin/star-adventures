@@ -236,3 +236,61 @@ test('an in-flight Worker reply cannot reactivate suspended account storage', as
     async () => identityReply(alice)), false);
   revokeBoundGameStorage();
 });
+
+test('bound session renews near expiry or after cookie expiry using central token and subject fence', async () => {
+  for (const initial of [
+    identityReply(alice, { expires_at: Math.floor(Date.now() / 1000) + 15 }),
+    new Response(null, { status: 401 }),
+  ]) {
+    const calls = [];
+    const scope = await resolveGameStorageScope(STARADVS_PROTECTED_ORIGIN, async (url, init) => {
+      calls.push([url, init]);
+      if (calls.length === 1) return initial;
+      if (calls.length === 2) return Response.json({ token: 'synthetic-signed-token' });
+      return identityReply(alice);
+    }, { subject: alice, current: () => true });
+    assert.equal(scope.mode, 'account');
+    assert.equal(scope.subject, alice);
+    assert.equal(calls.length, 3);
+    assert.equal(calls[1][0], 'https://id-staging.shadowops.dpdns.org/api/identity/token');
+    assert.equal(calls[1][1].credentials, 'include');
+    assert.equal(calls[1][1].redirect, 'error');
+    assert.equal(calls[2][0], '/api/staradvs/session/renew');
+    assert.equal(calls[2][1].credentials, 'same-origin');
+    assert.deepEqual(JSON.parse(calls[2][1].body), { token: 'synthetic-signed-token', expected_subject: alice });
+  }
+});
+
+test('renewal never exchanges on wrong account, upstream failure, stale generation or invalid token reply', async () => {
+  for (const initial of [identityReply(bob), new Response(null, { status: 503 })]) {
+    let calls = 0;
+    const result = await resolveGameStorageScope(STARADVS_PROTECTED_ORIGIN, async () => {
+      calls++; return initial;
+    }, { subject: alice, current: () => true });
+    assert.deepEqual(result, { mode: 'blocked' });
+    assert.equal(calls, 1);
+  }
+  for (const central of [Response.json({ token: 'synthetic' }), Response.json({ token: null })]) {
+    let calls = 0, current = true;
+    const result = await resolveGameStorageScope(STARADVS_PROTECTED_ORIGIN, async () => {
+      calls++;
+      if (calls === 1) return new Response(null, { status: 401 });
+      if (central.headers.get('Content-Type') && calls === 2) {
+        current = false;
+        return central;
+      }
+      throw Error('stale exchange must not run');
+    }, { subject: alice, current: () => current });
+    assert.deepEqual(result, { mode: 'blocked' });
+    assert.equal(calls, 2);
+  }
+  let calls = 0;
+  const result = await resolveGameStorageScope(STARADVS_PROTECTED_ORIGIN, async () => {
+    calls++;
+    if (calls === 1) return new Response(null, { status: 401 });
+    if (calls === 2) return Response.json({ token: 'synthetic' });
+    return identityReply(bob);
+  }, { subject: alice, current: () => true });
+  assert.deepEqual(result, { mode: 'blocked' });
+  assert.equal(calls, 3);
+});

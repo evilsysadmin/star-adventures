@@ -19,12 +19,59 @@ function protectedPagesAlias(hostname: string): boolean {
     /^[a-z0-9-]+\.staradvs-staging\.pages\.dev$/.test(hostname);
 }
 
-// Resolve BEFORE the first App render / first checkpoint read. No browser
-// token is persisted or trusted; the canonical Worker's same-origin session
-// endpoint already enforces JWT signature + live Identity freshness.
+const IDENTITY_TOKEN_URL = 'https://id-staging.shadowops.dpdns.org/api/identity/token';
+export const SESSION_RENEW_BEFORE_SECONDS = 45;
+
+async function readAccountSession(response: Response, signal: AbortSignal): Promise<GameStorageScope> {
+  if (signal.aborted || response.status !== 200 ||
+      response.headers.get('Content-Type')?.toLowerCase().split(';')[0].trim() !== 'application/json') {
+    return { mode: 'blocked' };
+  }
+  const payload: unknown = await response.json();
+  if (signal.aborted || !payload || typeof payload !== 'object') return { mode: 'blocked' };
+  const session = payload as Record<string, unknown>;
+  if (session.identity !== 'staradvs' || !isAccountSubject(session.subject) ||
+      !Number.isSafeInteger(session.expires_at) ||
+      (session.expires_at as number) <= Date.now() / 1000) {
+    return { mode: 'blocked' };
+  }
+  return { mode: 'account', subject: session.subject, expiresAt: session.expires_at as number };
+}
+
+// No browser token is persisted or trusted. Only the edge can authorize
+// a new session; expected_subject fences the exchange to the mounted game.
+async function renewAccountSession(
+  subject: string, request: typeof fetch, signal: AbortSignal, current: () => boolean,
+): Promise<GameStorageScope> {
+  if (signal.aborted || !current()) return { mode: 'blocked' };
+  const central = await request(IDENTITY_TOKEN_URL, {
+    method: 'POST', credentials: 'include', cache: 'no-store', redirect: 'error',
+    headers: { 'Content-Type': 'application/json' }, body: '{}', signal,
+  });
+  if (signal.aborted || !current() || central.status !== 200 ||
+      central.headers.get('Content-Type')?.toLowerCase().split(';')[0].trim() !== 'application/json') {
+    return { mode: 'blocked' };
+  }
+  const payload: unknown = await central.json();
+  const token = payload && typeof payload === 'object' ? (payload as Record<string, unknown>).token : null;
+  if (signal.aborted || !current() || typeof token !== 'string' || !token || token.length > 8192) {
+    return { mode: 'blocked' };
+  }
+  const exchanged = await request('/api/staradvs/session/renew', {
+    method: 'POST', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, expected_subject: subject }), signal,
+  });
+  const next = await readAccountSession(exchanged, signal);
+  return current() && next.mode === 'account' && next.subject === subject ? next : { mode: 'blocked' };
+}
+
+// Resolve BEFORE the first App render / first checkpoint read. Initial
+// bootstrap never exchanges a token; only a bound account may renew.
 export async function resolveGameStorageScope(
   origin: string,
   request: typeof fetch = fetch,
+  renewal?: { subject: string; current: () => boolean },
 ): Promise<GameStorageScope> {
   let address: URL;
   try { address = new URL(origin); }
@@ -34,29 +81,28 @@ export async function resolveGameStorageScope(
   if (protectedPagesAlias(address.hostname)) return { mode: 'blocked' };
   if (address.hostname !== canonical.hostname) return { mode: 'local' };
   if (address.origin !== STARADVS_PROTECTED_ORIGIN) return { mode: 'blocked' };
+  if (renewal && (!isAccountSubject(renewal.subject) || !renewal.current())) return { mode: 'blocked' };
 
   const controller = new AbortController();
-  const deadline = setTimeout(() => controller.abort(), 4500);
+  // One bounded budget covers the GET and both renewal requests.
+  const deadline = setTimeout(() => controller.abort(), renewal ? 10_000 : 4500);
   try {
     const response = await request('/api/staradvs/session', {
       method: 'GET', credentials: 'same-origin', cache: 'no-store',
       redirect: 'error', signal: controller.signal,
     });
-    if (controller.signal.aborted || response.status !== 200 ||
-        response.headers.get('Content-Type')?.toLowerCase().split(';')[0].trim() !== 'application/json') {
-      return { mode: 'blocked' };
+    if (renewal && response.status === 401) {
+      return await renewAccountSession(renewal.subject, request, controller.signal, renewal.current);
     }
-    const payload: unknown = await response.json();
-    if (controller.signal.aborted || !payload || typeof payload !== 'object') return { mode: 'blocked' };
-    const session = payload as Record<string, unknown>;
-    if (session.identity !== 'staradvs' || !isAccountSubject(session.subject) ||
-        !Number.isSafeInteger(session.expires_at) ||
-        (session.expires_at as number) <= Date.now() / 1000) {
-      return { mode: 'blocked' };
+    const scope = await readAccountSession(response, controller.signal);
+    if (!renewal) return scope;
+    // An explicit account switch or an upstream error never triggers exchange.
+    if (!renewal.current() || scope.mode !== 'account' || scope.subject !== renewal.subject) return { mode: 'blocked' };
+    if (scope.expiresAt - Date.now() / 1000 <= SESSION_RENEW_BEFORE_SECONDS) {
+      return await renewAccountSession(renewal.subject, request, controller.signal, renewal.current);
     }
-    return { mode: 'account', subject: session.subject, expiresAt: session.expires_at as number };
+    return scope;
   } catch {
-    // Never fall back to somebody else's unscoped save if Identity is down.
     return { mode: 'blocked' };
   } finally {
     clearTimeout(deadline);
@@ -158,7 +204,10 @@ export async function revalidateBoundGameStorage(
   const lease = accountLease;
   if (!lease || activeScope?.mode !== 'account') return false;
   const generation = lease.generation();
-  const refreshed = await resolveGameStorageScope(origin, request);
+  const refreshed = await resolveGameStorageScope(origin, request, {
+    subject: activeScope.subject,
+    current: () => lease === accountLease && lease.generation() === generation,
+  });
   // A delayed check cannot reactivate storage after tab suspension/revocation.
   if (lease !== accountLease || lease.generation() !== generation) return false;
   return lease.renew(refreshed);
