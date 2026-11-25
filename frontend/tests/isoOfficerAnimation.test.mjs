@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoOfficerFrame, joinOfficerRoutes, officerRouteStepAt, OFFICER_ROUTE_STEP_MS } from '../src/isoOfficerAnimation.ts';
+import { isoOfficerFrame, joinOfficerRoutes, officerRouteStepAt, OFFICER_ROUTE_STEP_MS, reconcileWalkStarts, realtimeOfficerFrame } from '../src/isoOfficerAnimation.ts';
 import { createMission, missionPath, SCENARIOS } from '../src/isoScenarioCampaign.ts';
 import { WALK_ATLAS } from '../src/tacticalAnimation.ts';
 
@@ -112,4 +112,23 @@ test('officer retains walking speed through an intermediate BFS corner', () => {
   assert.ok(Math.abs((1 - before.progress) - delta / OFFICER_ROUTE_STEP_MS) < 1e-10);
   assert.ok(Math.abs(after.progress - delta / OFFICER_ROUTE_STEP_MS) < 1e-10);
   assert.equal(corner.progress, 0);
+});
+
+
+test('realtime walk clips are independent, forward-only, and restart after stopping',()=>{
+  const first=reconcileWalkStarts(new Map(),['venn'],1000);
+  const together=reconcileWalkStarts(first,['dorn','venn'],1400);
+  assert.equal(first.size,1);
+  assert.equal(together.get('venn'),1000);
+  assert.equal(together.get('dorn'),1400);
+  assert.equal(realtimeOfficerFrame('venn',together,1550,true),3);
+  assert.equal(realtimeOfficerFrame('dorn',together,1550,true),0);
+  assert.equal(realtimeOfficerFrame('venn',together,1550,false),0);
+  const sequence=Array.from({length:12},(_,i)=>realtimeOfficerFrame('venn',together,1000+i*1000/WALK_ATLAS.fps+1,true));
+  assert.deepEqual(sequence,[0,1,2,3,4,5,0,1,2,3,4,5]);
+  const stopped=reconcileWalkStarts(together,['dorn'],1800);
+  assert.equal(realtimeOfficerFrame('venn',stopped,1900,true),0);
+  const restarted=reconcileWalkStarts(stopped,['venn','dorn'],1900);
+  assert.equal(realtimeOfficerFrame('venn',restarted,1900,true),0);
+  assert.equal(restarted.get('dorn'),1400);
 });

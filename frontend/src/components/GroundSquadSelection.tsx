@@ -10,7 +10,7 @@ import { GroundRescueBayDeck } from './GroundRescueBayDeck';
 import { groundSurfaceFrame } from '../groundSurfaceFrame';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
-import { officerRouteStepAt } from '../isoOfficerAnimation';
+import { officerRouteStepAt, reconcileWalkStarts, realtimeOfficerFrame } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { OFFICERS } from '../../../src/crew.mjs';
@@ -123,6 +123,35 @@ export function GroundSquadSelection({
   // Only a change of deployed officer IDs requires fresh atlas preloads.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[rosterKey]);
+  // Each real moving officer has its own elapsed-time clip. Reversing or
+  // retargeting a route must not reverse/freeze the atlas animation.
+  const realtimeWalkKey = realtime ? [...new Set(realtimeMovingIds)].sort().join('|') : '';
+  const walkStarts = useRef<ReadonlyMap<string, number>>(new Map());
+  const [realtimeWalkFrames, setRealtimeWalkFrames] = useState<Record<string,number>>({});
+  useEffect(()=>{
+    const ids = realtimeWalkKey ? realtimeWalkKey.split('|') : [];
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    walkStarts.current = reconcileWalkStarts(walkStarts.current, ids, performance.now());
+    const tick = ()=>{
+      const now = performance.now();
+      setRealtimeWalkFrames(Object.fromEntries(ids.map(id=>[
+        id,realtimeOfficerFrame(id,walkStarts.current,now,!media.matches),
+      ])));
+    };
+    let timer: number | undefined;
+    const schedule = ()=>{
+      if(timer!==undefined)window.clearInterval(timer);
+      timer=undefined;
+      tick();
+      if(ids.length&&!media.matches)timer=window.setInterval(tick,1000/WALK_ATLAS.fps);
+    };
+    schedule();
+    media.addEventListener('change',schedule);
+    return ()=>{
+      if(timer!==undefined)window.clearInterval(timer);
+      media.removeEventListener('change',schedule);
+    };
+  },[realtimeWalkKey]);
   const [walking, setWalking] = useState<WalkSession | null>(null);
   const [walkPose, setWalkPose] = useState<WalkPose | null>(null);
   const [fogBeforeWalk, setFogBeforeWalk] = useState<{
@@ -696,7 +725,7 @@ export function GroundSquadSelection({
           const showWalk = moving && readyWalk.has(unit.id);
           const point = !realtime && walkPose?.officerId===unit.id
             ? {x:walkPose.x,y:walkPose.y} : unit;
-          const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%WALK_ATLAS.frames :
+          const frame = realtime ? (moving ? realtimeWalkFrames[unit.id] ?? 0 : 0) :
             walkPose?.officerId===unit.id ? walkPose.frame : 0;
           // Camera-aligned identity plaques remain visual only; the original
           // player selection targets and projection are unchanged.
