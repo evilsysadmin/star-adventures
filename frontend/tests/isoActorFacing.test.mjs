@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { headingFromCells } from '../src/isoActorFacing.ts';
+import { headingFromCells, isoSpriteSideFromPoints } from '../src/isoActorFacing.ts';
 
 test('eight observed directions map to real x/z world headings, not walk-atlas frames', () => {
   const cases = [
@@ -29,4 +29,14 @@ test('invalid or identical positions never invent a facing direction', () => {
   for (const [from,to] of [['1:1','1:1'],['','2:1'],['1:2','1:a'],['1:2','Infinity:1'],['-1:1','1:1'],['1:1','1:2:3']]) {
     assert.equal(headingFromCells(from,to),null);
   }
+});
+
+test('continuous fractional routes face according to projected lateral travel',()=>{
+ const from={x:4.25,y:5.5};
+ for(const [to,expected] of [
+  [{x:3.75,y:5.5},'left'], [{x:4.75,y:5.5},'right'],
+  [{x:4.25,y:5},'right'], [{x:4.25,y:6},'left'],
+  [{x:5.25,y:6.5},null], [{x:3.25,y:4.5},null],
+  [from,null], [{x:NaN,y:5},null],
+ ])assert.equal(isoSpriteSideFromPoints(from,to),expected);
 });
