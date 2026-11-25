@@ -683,7 +683,7 @@ export function GroundSquadSelection({
           const showWalk = moving && readyWalk.has(unit.id);
           const point = !realtime && walkPose?.officerId===unit.id
             ? {x:walkPose.x,y:walkPose.y} : unit;
-          const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%12 :
+          const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%WALK_ATLAS.frames :
             walkPose?.officerId===unit.id ? walkPose.frame : 0;
           // Camera-aligned identity plaques remain visual only; the original
           // player selection targets and projection are unchanged.

@@ -50,6 +50,21 @@ for(const width of [390,1280]){
       const p=await pose(page);
       return Math.hypot(p.x-4,p.y-5);
     },{timeout:6000}).toBeGreaterThan(.08);
+    // Sample real movement across multiple rendered frames: a 3x2 atlas has
+    // exactly six frames, and out-of-range rows can make the actor disappear.
+    const observed=await officer.evaluate(async element=>{
+      const samples:number[]=[];
+      const until=performance.now()+700;
+      while(performance.now()<until){
+        await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
+        if(element.getAttribute('data-walk-phase')==='moving')
+          samples.push(Number(element.getAttribute('data-walk-frame')));
+      }
+      return samples;
+    });
+    expect(observed.length).toBeGreaterThan(1);
+    expect(new Set(observed).size).toBeGreaterThan(1);
+    expect(observed.every(frame=>Number.isInteger(frame)&&frame>=0&&frame<6)).toBe(true);
     const mid=await pose(page);
     expect(Math.hypot(mid.x-9,mid.y-4)).toBeGreaterThan(1);
     // Capture the *actual gameplay follow camera* as well: the overview
