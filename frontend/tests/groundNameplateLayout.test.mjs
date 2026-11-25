@@ -8,7 +8,7 @@ test('nearby body takes precedence even over selected name, separation restores 
  assert.deepEqual([...visibleGroundNameplates([front,{...back,x:80}])],['front','back']);
 });
 test('overlapping label envelopes prefer selected actor, ties use roster order',()=>{
- const a=actor('a',0,0),b=actor('b',44,0,true);
+ const a=actor('a',0,0),b=actor('b',55,0,true);
  // Longer callsigns can overlap even when bodies do not.
  const longA={...a,plateWidth:60},longB={...b,plateWidth:60};
  assert.deepEqual([...visibleGroundNameplates([longA,longB])],['b']);
