@@ -151,9 +151,11 @@ for(const width of [390,1280]){
     const followed=await page.getByTestId('ground-squad-board').evaluate(svg=>{
       const frame=svg.getBoundingClientRect();
       return ['venn','dorn','mira'].map(id=>{
-        const r=svg.querySelector('[data-testid="ground-unit-'+id+'"]')!
-          .getBoundingClientRect();
+        const unit=svg.querySelector('[data-testid="ground-unit-'+id+'"]')!;
+        const art=unit.querySelector('[data-testid="ground-officer-visible-art-'+id+'"]')!;
+        const r=art.getBoundingClientRect();
         return {id,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,
+          artLeft:r.left,artRight:r.right,artTop:r.top,artBottom:r.bottom,
           left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom};
       });
     });
@@ -162,6 +164,11 @@ for(const width of [390,1280]){
       expect(o.x,o.id+' horizontal view').toBeLessThan(o.right);
       expect(o.y,o.id+' vertical view').toBeGreaterThan(o.top);
       expect(o.y,o.id+' vertical view').toBeLessThan(o.bottom);
+      // Verify the actual whole art envelope, not only its midpoint.
+      expect(o.artLeft,o.id+' left edge').toBeGreaterThanOrEqual(o.left-1);
+      expect(o.artRight,o.id+' right edge').toBeLessThanOrEqual(o.right+1);
+      expect(o.artTop,o.id+' top edge').toBeGreaterThanOrEqual(o.top-1);
+      expect(o.artBottom,o.id+' bottom edge').toBeLessThanOrEqual(o.bottom+1);
     }
     await page.screenshot({
       path:'test-results/away-realtime-formation-follow-'+width+'.png',

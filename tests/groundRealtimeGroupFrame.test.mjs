@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {groundRealtimeGroupFrame} from '../src/groundRealtimeGroupFrame.mjs';
+import {groundRealtimeGroupFrame,groundCompactGroupFollowHeight} from '../src/groundRealtimeGroupFrame.mjs';
 
 test('selected continuous squad stays close and centered with only necessary zoom',()=>{
  const group=[
@@ -53,4 +53,20 @@ test('only the large K-47 trial may explicitly widen the portrait follow envelop
  assert.equal(wideFrame.fits,true);
  assert.deepEqual(wideFrame.center,defaultFrame.center);
  assert.throws(()=>groundRealtimeGroupFrame(spread,.46,500,true,Infinity),/Invalid/);
+});
+
+
+test('compact selected squad starts closer but expands to preserve the group envelope',()=>{
+ const base=groundCompactGroupFollowHeight(480,true);
+ assert.equal(base,420);
+ assert.equal(groundCompactGroupFollowHeight(390,false),390);
+ assert.equal(groundCompactGroupFollowHeight(400,true),400);
+ const clustered=[{x:440,y:232},{x:480,y:252},{x:440,y:272}];
+ const close=groundRealtimeGroupFrame(clustered,.52,base,true);
+ assert.equal(close.height,420);
+ assert.equal(close.fits,true);
+ const dispersed=groundRealtimeGroupFrame([{x:440,y:232},{x:640,y:312}],.52,base,true);
+ assert.ok(dispersed.height>close.height);
+ assert.equal(dispersed.fits,true);
+ assert.throws(()=>groundCompactGroupFollowHeight(NaN,true),/Invalid/);
 });

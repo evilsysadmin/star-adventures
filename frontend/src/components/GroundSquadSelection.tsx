@@ -18,7 +18,7 @@ import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { OFFICERS } from '../../../src/crew.mjs';
 import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
 import { groundFogOfWar, groundVisionCells } from '../../../src/groundFogOfWar.mjs';
-import { groundRealtimeGroupFrame } from '../../../src/groundRealtimeGroupFrame.mjs';
+import { groundRealtimeGroupFrame, groundCompactGroupFollowHeight } from '../../../src/groundRealtimeGroupFrame.mjs';
 import type { GroundSnapshot } from '../groundSquadSession';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
 import './groundSquadSelection.css';
@@ -296,7 +296,7 @@ export function GroundSquadSelection({
       .map(unit=>({x:unit.x,y:unit.y}))
     : [];
   const groupFrame=followSquad&&!legacyGroupFollow&&groupPoints.length>1
-    ? groundRealtimeGroupFrame(groupPoints,aspect,baseCameraHeight,compact)
+    ? groundRealtimeGroupFrame(groupPoints,aspect,groundCompactGroupFollowHeight(baseCameraHeight,compact),compact)
     : null;
   const viewCenter=sectorMode ? sectorCenter : groupFrame?.center??cameraCenter;
   const cameraHeight=groupFrame?.height??baseCameraHeight;
