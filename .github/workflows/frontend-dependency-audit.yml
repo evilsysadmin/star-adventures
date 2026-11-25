@@ -38,3 +38,33 @@ jobs:
       - name: Scan locked graph and fail on high or critical advisories
         working-directory: frontend
         run: npm audit --package-lock-only --include=dev --audit-level=high
+
+  # Temporary remediation evidence for #354. Remove this job when the
+  # resolver-generated package metadata is committed. Never write to Git.
+  resolve-remediation:
+    name: Generate reviewed dependency remediation proposal
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 354
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Resolve narrowly scoped patched versions
+        working-directory: frontend
+        run: npm install --package-lock-only --ignore-scripts --save-dev --save-exact --no-audit --no-fund vite@6.4.6 @playwright/test@1.55.1
+      - name: Upload resolver-generated package metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-remediation-${{ github.sha }}
+          path: |
+            frontend/package.json
+            frontend/package-lock.json
+          if-no-files-found: error
+          retention-days: 3
+      - name: Audit proposed dependency graph
+        working-directory: frontend
+        run: npm audit --package-lock-only --include=dev --audit-level=high
