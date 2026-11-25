@@ -736,6 +736,9 @@ export function GroundSquadSelection({
           const moving = realtime ? realtimeMovingIds.includes(unit.id) :
             walking?.officerId===unit.id && walkPose?.officerId===unit.id;
           const showWalk = moving && readyWalk.has(unit.id);
+          // Only blend two decoded assets in realtime mode. A missing asset
+          // must keep the existing immediate idle/proxy fallback.
+          const blendWalk = realtime && artReady && readyWalk.has(unit.id) && !!walkUrl;
           // Prefer the current real segment, then the last known lateral
           // side; vertical segments and arrival must not flip the art.
           const walkSide = realtime ? unit.routeSide ?? lastFacing.get(unit.id) ?? null : null;
@@ -781,6 +784,7 @@ export function GroundSquadSelection({
             </g>
             {artUrl && <image data-testid={'ground-officer-sprite-' + unit.id}
               data-asset-state={artReady ? 'loaded' : 'fallback'}
+              className={blendWalk?'ground-officer-idle-blend'+(showWalk?' is-walking':''):undefined}
               transform={walkSide==='left'?'scale(-1 1)':undefined}
               href={artUrl} x="-27" y="-72" width="54" height="80"
               preserveAspectRatio="xMidYMax meet" pointerEvents="none"
@@ -790,8 +794,10 @@ export function GroundSquadSelection({
                 if (!previous.has(unit.id)) return previous;
                 const next = new Set(previous); next.delete(unit.id); return next;
               })} />}
-            {showWalk && <foreignObject
+            {(showWalk||blendWalk) && <foreignObject
               data-testid={'ground-officer-walk-'+unit.id}
+              className={blendWalk?'ground-officer-walk-blend'+(showWalk?' is-walking':''):undefined}
+              opacity={showWalk?1:0}
               transform={walkSide==='left'?'scale(-1 1)':undefined}
               x="-27" y="-72" width="54" height="80" pointerEvents="none">
               <div aria-hidden="true" style={{

@@ -144,3 +144,70 @@ test('desktop mouse beta remains deliberate: left-click selects, right-click ord
  await expect(venn).toHaveAttribute('data-walk-facing','right');
  await expect(page.getByTestId('ground-officer-sprite-venn')).not.toHaveAttribute('transform','scale(-1 1)');
 });
+
+
+test('realtime pose handoff keeps one decoded layer opaque and respects reduced motion',async({page})=>{
+ test.setTimeout(70000);
+ await page.setViewportSize({width:390,height:850});
+ // Deterministic decodable stand-ins exercise layer lifecycle independently
+ // of CDN availability; the other journeys still capture actual artwork.
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLytAAAAABJRU5ErkJggg==','base64');
+ await page.route(/\/star-adventures\/tactical\/officer-(?:(?:female|male)-walk-v1|mvs(?:-male)?-v1)-[^/]+\.webp$/,route=>
+  route.fulfill({status:200,contentType:'image/png',
+    headers:{'access-control-allow-origin':'*'},body:png}));
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await land(page);
+ await page.locator('.ground-squad-instructions summary').tap();
+ await page.getByTestId('ground-realtime-toggle').tap();
+ const actor=page.getByTestId('ground-unit-venn');
+ const idle=page.getByTestId('ground-officer-sprite-venn');
+ const walk=page.getByTestId('ground-officer-walk-venn');
+ await expect(idle).toHaveAttribute('data-asset-state','loaded');
+ await expect(actor).toHaveAttribute('data-walk-atlas-ready','true');
+ await expect(idle).toHaveCSS('opacity','1');
+ await expect(walk).toHaveCSS('opacity','0');
+ await expect(walk).toHaveCSS('visibility','hidden');
+ await expect(walk).toHaveCSS('transition-duration','0.12s, 0s');
+ await actor.evaluate(element=>{
+  const record={moving:false,arrived:false,minCoverage:1,samples:0};
+  (window as typeof window & {__poseBlend?:typeof record}).__poseBlend=record;
+  const sample=()=>{
+   const moving=element.getAttribute('data-walk-phase')==='moving';
+   if(moving)record.moving=true;
+   if(record.moving&&!moving)record.arrived=true;
+   const idle=element.querySelector('[data-testid="ground-officer-sprite-venn"]');
+   const walk=element.querySelector('[data-testid="ground-officer-walk-venn"]');
+   if(idle&&walk){
+    const coverage=Math.max(Number(getComputedStyle(idle).opacity),Number(getComputedStyle(walk).opacity));
+    record.minCoverage=Math.min(record.minCoverage,coverage);
+    record.samples++;
+   }
+   if(!record.arrived)requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+ });
+ await tapCell(page,3,5);
+ await expect(actor).toHaveAttribute('data-walk-phase','moving');
+ await expect(walk).toHaveCSS('opacity','1');
+ await expect(idle).toHaveCSS('opacity','0');
+ await expect(actor).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
+ await expect(idle).toHaveCSS('opacity','1');
+ await expect(walk).toHaveCSS('visibility','hidden');
+ const record=await page.evaluate(()=>(window as typeof window & {
+  __poseBlend?:{moving:boolean;arrived:boolean;minCoverage:number;samples:number};
+ }).__poseBlend);
+ expect(record?.moving).toBe(true);
+ expect(record?.arrived).toBe(true);
+ expect(record?.samples).toBeGreaterThan(2);
+ expect(record?.minCoverage).toBeGreaterThanOrEqual(.95);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await expect(walk).toHaveCSS('transition-duration','0s');
+ await tapCell(page,4,5);
+ await expect(actor).toHaveAttribute('data-walk-phase','moving');
+ await expect(walk).toHaveCSS('opacity','1');
+ await expect(idle).toHaveCSS('opacity','0');
+ await expect(actor).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
+ await expect(idle).toHaveCSS('opacity','1');
+ await expect(walk).toHaveCSS('opacity','0');
+ await expect(walk).toHaveCSS('visibility','hidden');
+});

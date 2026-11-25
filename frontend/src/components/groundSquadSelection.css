@@ -277,3 +277,24 @@
  [data-testid="ground-colony-roof-8,1-to-8,2"],
  [data-testid="ground-colony-roof-8,2-to-8,3"]
 ){opacity:0}
+
+
+/* K-47 realtime only: keep the decoded idle art fully opaque underneath
+   while walking art fades in. At arrival restore idle immediately before
+   fading walking art away. Never fade both layers to partial opacity. */
+.ground-officer-walk-blend{
+  visibility:hidden;
+  transition:opacity 120ms ease-out,visibility 0s linear 120ms;
+}
+.ground-officer-walk-blend.is-walking{
+  visibility:visible;
+  transition-delay:0s,0s;
+}
+.ground-officer-idle-blend{transition:opacity 0s linear}
+.ground-officer-idle-blend.is-walking{transition-delay:120ms}
+@media(prefers-reduced-motion:reduce){
+  .ground-officer-walk-blend,.ground-officer-idle-blend,
+  .ground-officer-walk-blend.is-walking,.ground-officer-idle-blend.is-walking{
+    transition:none;
+  }
+}
