@@ -16,6 +16,21 @@ export function isoOfficerFrame(
   return walkFrameAt(Math.max(0, nowMs - motion.start));
 }
 
+// The visual clock survives retargeting and other officers joining the march.
+// Stopping removes the old clip; a later order starts from frame zero.
+export function reconcileWalkStarts(
+  previous: ReadonlyMap<string,number>, movingIds: readonly string[], nowMs: number,
+): ReadonlyMap<string,number> {
+  return new Map(movingIds.map(id=>[id,previous.get(id) ?? nowMs]));
+}
+
+export function realtimeOfficerFrame(
+  id: string, starts: ReadonlyMap<string,number>, nowMs: number, animate: boolean,
+): number {
+  const start = starts.get(id);
+  return isoOfficerFrame(id,start===undefined?null:{unitId:id,start},nowMs,animate);
+}
+
 // When two legal movement orders arrive before the first animation finishes,
 // retain the already visible path and append the second BFS route. The second
 // route must begin at the first route's logical destination; otherwise the
