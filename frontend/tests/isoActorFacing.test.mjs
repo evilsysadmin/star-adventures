@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { headingFromCells, isoSpriteSideFromPoints } from '../src/isoActorFacing.ts';
+import { headingFromCells, isoSpriteSideFromPoints, retainIsoSpriteSides } from '../src/isoActorFacing.ts';
 
 test('eight observed directions map to real x/z world headings, not walk-atlas frames', () => {
   const cases = [
@@ -39,4 +39,16 @@ test('continuous fractional routes face according to projected lateral travel',(
   [{x:5.25,y:6.5},null], [{x:3.25,y:4.5},null],
   [from,null], [{x:NaN,y:5},null],
  ])assert.equal(isoSpriteSideFromPoints(from,to),expected);
+});
+
+test('lateral facing survives neutral segments and arrival independently per officer',()=>{
+ const initial=new Map();
+ const walking=retainIsoSpriteSides(initial,[['venn','left'],['dorn','right'],['mira',null]]);
+ assert.equal(initial.size,0);
+ assert.deepEqual([...walking],[['venn','left'],['dorn','right']]);
+ assert.equal(retainIsoSpriteSides(walking,[['venn',null],['dorn',null],['mira',null]]),walking);
+ const reverse=retainIsoSpriteSides(walking,[['venn','right'],['dorn',null],['mira','left']]);
+ assert.deepEqual([...reverse],[['venn','right'],['dorn','right'],['mira','left']]);
+ assert.deepEqual([...retainIsoSpriteSides(reverse,[['dorn',null]])],[['dorn','right']]);
+ assert.equal(retainIsoSpriteSides(reverse,[]).size,0);
 });
