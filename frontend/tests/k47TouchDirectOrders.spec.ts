@@ -64,6 +64,45 @@ for(const width of [390,430]){
   await expect(venn).toHaveAttribute('data-grid-x','3');
   await expect(venn).toHaveAttribute('data-grid-y','5');
   await page.getByTestId('ground-select-all').tap();
+  // Sample the visible label envelopes against all other officer bodies
+  // throughout the real formation order. No fixed screenshot timing.
+  await board.evaluate(svg=>{
+   const result={samples:0,hidden:0,overlaps:0,done:false};
+   (window as typeof window & {__plateProbe?:typeof result}).__plateProbe=result;
+   let movingSeen=false;
+   const until=performance.now()+25000;
+   const sample=()=>{
+    const units=Array.from(svg.querySelectorAll<SVGGElement>('[data-officer-id][data-proj-x]'));
+    const moving=units.some(u=>u.getAttribute('data-walk-phase')==='moving');
+    if(moving)movingSeen=true;
+    const boxes=units.map(u=>{
+     const id=u.getAttribute('data-officer-id');
+     const x=Number(u.getAttribute('data-proj-x')),y=Number(u.getAttribute('data-proj-y'));
+     const label=u.querySelector<SVGGElement>('[data-testid="ground-officer-nameplate-'+id+'"]')!;
+     const art=u.querySelector('[data-testid="ground-officer-sprite-'+id+'"]');
+     const hasArt=art?.getAttribute('data-asset-state')==='loaded'||
+      (u.getAttribute('data-walk-phase')==='moving'&&u.getAttribute('data-walk-atlas-ready')==='true');
+     const box=label.getBBox();
+     const dy=label.transform.baseVal.getItem(0).matrix.f;
+     return {id,visible:getComputedStyle(label).visibility!=='hidden',
+      label:{l:x+box.x,r:x+box.x+box.width,t:y+dy+box.y,b:y+dy+box.y+box.height},
+      body:{l:x-21,r:x+21,t:y+(hasArt?-53:-30),b:y+8}};
+    });
+    const intersects=(a:{l:number;r:number;t:number;b:number},b:{l:number;r:number;t:number;b:number})=>
+     a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t;
+    if(moving||movingSeen){
+     result.samples++;
+     for(const a of boxes){
+      if(!a.visible){result.hidden++;continue;}
+      if(boxes.some(b=>b.id!==a.id&&(intersects(a.label,b.body)||
+       (b.visible&&intersects(a.label,b.label)))))result.overlaps++;
+     }
+    }
+    if(movingSeen&&!moving){result.done=true;return;}
+    if(performance.now()<until)requestAnimationFrame(sample);
+   };
+   requestAnimationFrame(sample);
+  });
   await tapCell(page,2,5);
   await expect(page.getByTestId('ground-move-status')).toContainText('Formación de 3 oficiales');
   await expect(move).toHaveAttribute('aria-pressed','false');
@@ -78,6 +117,14 @@ for(const width of [390,430]){
    return saved?JSON.parse(saved).motion.officers.every(
     (unit:{route:unknown[]})=>unit.route.length===0):false;
   }),{timeout:22000}).toBe(true);
+  await expect.poll(async()=>page.evaluate(()=>
+   (window as typeof window & {__plateProbe?:{done:boolean}}).__plateProbe?.done??false
+  )).toBe(true);
+  const plateProbe=await page.evaluate(()=>(window as typeof window & {
+   __plateProbe?:{samples:number;hidden:number;overlaps:number}
+  }).__plateProbe);
+  expect(plateProbe?.samples).toBeGreaterThan(0);
+  expect(plateProbe?.overlaps).toBe(0);
   const team=await page.evaluate(()=>{
    const saved=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
    return JSON.parse(saved!).motion.officers as Array<{id:string;x:number;y:number}>;
