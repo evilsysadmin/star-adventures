@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { TacticalProbe } from './TacticalProbe';
+import { localStorageOrNull } from '../session';
 import './isoTacticalLab.css';
 
 // Explicit, reversible opt-in: keep Codex's canonical fixed-camera probe untouched.
@@ -12,7 +13,7 @@ const TACTICAL_VIEW_PREFERENCE = 'shadowops.star-adventures.tactical-view.v1';
 
 function initialMode(): TacticalViewMode {
   try {
-    const saved = localStorage.getItem(TACTICAL_VIEW_PREFERENCE);
+    const saved = localStorageOrNull()?.getItem(TACTICAL_VIEW_PREFERENCE);
     if (saved === 'existing' || saved === 'iso' || saved === 'missions') return saved;
   } catch {
     // Private browsing/storage denial must still leave the playable mission usable.
@@ -25,7 +26,7 @@ function initialMode(): TacticalViewMode {
 // their view; this is derived from the old preference, not a new save key.
 function initiallyExpanded(): boolean {
   try {
-    const saved = localStorage.getItem(TACTICAL_VIEW_PREFERENCE);
+    const saved = localStorageOrNull()?.getItem(TACTICAL_VIEW_PREFERENCE);
     return saved === 'existing' || saved === 'iso' || saved === 'missions';
   } catch {
     return false;
@@ -40,7 +41,7 @@ export function TacticalViewSwitcher({ gameOverlay = false, onClose }: { gameOve
   const [expanded, setExpanded] = useState(() => gameOverlay || initiallyExpanded());
   const chooseMode = (next: TacticalViewMode) => {
     setMode(next);
-    if (!gameOverlay) try { localStorage.setItem(TACTICAL_VIEW_PREFERENCE, next); } catch { /* non-persistent fallback */ }
+    if (!gameOverlay) try { localStorageOrNull()?.setItem(TACTICAL_VIEW_PREFERENCE, next); } catch { /* non-persistent fallback */ }
   };
   return <section className={`iso-mode-switcher ${expanded ? 'is-expanded' : 'is-collapsed'}`}
     data-testid="tactical-mode-switcher" aria-label="Escenario táctico opcional">

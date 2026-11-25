@@ -6,6 +6,8 @@ import { startExploration, applyExploration, faceTile } from '../../../src/spati
 import { BridgeScene } from './BridgeScene';
 import { BridgeInteriorView } from './BridgeInteriorView';
 import { GroundSquadSelection } from './GroundSquadSelection';
+import { GroundWideTrial } from './GroundWideTrial';
+import { K47_WIDE_TRIAL_ACTIVE_KEY } from '../../../src/groundWideTrialSave.mjs';
 import { useGroundRealtime } from '../hooks/useGroundRealtime';
 import { planGroundSquadRoute } from '../../../src/groundSquadRoute.mjs';
 import { groundStationUse } from '../../../src/groundSquadInteractions.mjs';
@@ -447,6 +449,19 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   // stays reachable explicitly for interactions not yet migrated.
   const [showSquad, setShowSquad] = useState(() =>
     (initialState ?? startExploration(world)).area === 'surface');
+  const [wideTrial,setWideTrial]=useState(()=>{
+    if((initialState??startExploration(world)).area!=='surface')return false;
+    try{return localStorageOrNull()?.getItem(K47_WIDE_TRIAL_ACTIVE_KEY)==='yes';}
+    catch{return false;}
+  });
+  const enterWideTrial=()=>{
+    try{localStorageOrNull()?.setItem(K47_WIDE_TRIAL_ACTIVE_KEY,'yes');}catch{/* optional */}
+    setWideTrial(true);
+  };
+  const exitWideTrial=()=>{
+    try{localStorageOrNull()?.removeItem(K47_WIDE_TRIAL_ACTIVE_KEY);}catch{/* optional */}
+    setWideTrial(false);
+  };
   const [groundSnapshot, setGroundSnapshot] = useState<GroundSnapshot | null>(() =>
     restoreGroundSnapshot(world, initialState ?? startExploration(world),
       squad.map(officer => officer.id), localStorageOrNull()));
@@ -455,8 +470,13 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
   const squadIds = squad.map(officer => officer.id);
   const realtime = useGroundRealtime({
     legacy:groundSnapshot,ids:squadIds,
-    surface:exploration.area==='surface',showSquad,paused,
+    surface:exploration.area==='surface',showSquad:showSquad&&!wideTrial,paused,
   });
+  // A bridge transition cannot carry a planetary sandbox into another area.
+  // Its independent motion save is retained for the next explicit opt-in.
+  useEffect(()=>{
+    if(exploration.area!=='surface')exitWideTrial();
+  },[exploration.area]);
   const [bridgeFallback, setBridgeFallback] = useState(false);
   const [previewStation, setPreviewStation] = useState<string | null>(null);
   const useCompatibleBridge = useCallback(() => setBridgeFallback(true), []);
@@ -625,21 +645,25 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
     return () => window.removeEventListener('keydown', onKey);
   }, [dispatch, exploration.pending, showMap, showSquad, paused, seated]);
   return (
-    <section id="exploration" className={`firstperson firstperson-${exploration.area}${exploration.area === 'surface' && showSquad ? ' firstperson-is-squad' : ''}`} aria-label="Exploración del puente y del equipo de desembarco">
+    <section id="exploration" className={`firstperson firstperson-${exploration.area}${exploration.area === 'surface' && showSquad ? ' firstperson-is-squad' : ''}${exploration.area === 'surface' && showSquad && wideTrial ? ' firstperson-is-wide' : ''}`} aria-label="Exploración del puente y del equipo de desembarco">
       <div className="firstperson-top">
-        <span className="firstperson-name" data-testid="explore-area">{area.title}</span>
-        {exploration.area === 'surface' && !showMap && <button type="button" className="firstperson-map-toggle" data-testid="ground-squad-toggle"
+        <span className="firstperson-name" data-testid="explore-area">{wideTrial ? 'K-47 · Array exterior (beta)' : area.title}</span>
+        {exploration.area === 'surface' && !showMap && !wideTrial && <button type="button" className="firstperson-map-toggle" data-testid="ground-squad-toggle"
           disabled={paused || !!exploration.pending} onClick={() => setShowSquad(value => !value)}>
           {showSquad ? 'Exploración clásica' : 'Volver al equipo'}
         </button>}
-        <button type="button" className="firstperson-map-toggle" onClick={() => { setShowSquad(false); setShowMap(m => !m); }}>
+        {wideTrial && <button type="button" className="firstperson-map-toggle"
+          data-testid="wide-trial-exit" onClick={exitWideTrial}>Volver a K-47</button>}
+        {!wideTrial && <button type="button" className="firstperson-map-toggle" onClick={() => { setShowSquad(false); setShowMap(m => !m); }}>
           {showMap ? 'Volver al puente' : 'Mapa táctico'}
-        </button>
+        </button>}
       </div>
       {showMap ? <BridgeScene alert={alert} terminal={terminal} /> : (
         <>
           <div className="firstperson-render-stage">
-          {exploration.area === 'surface' && showSquad && groundSnapshot
+          {exploration.area === 'surface' && showSquad && wideTrial
+            ? <GroundWideTrial key={squadKey} squad={squad} paused={paused || !!exploration.pending}/>
+            : exploration.area === 'surface' && showSquad && groundSnapshot
             ? <GroundSquadSelection squad={squad} position={exploration}
                 officers={realtime.state ? realtime.state.motion.officers.map(officer=>({
                   ...officer,heading:'N',
@@ -649,6 +673,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
                 realtimeMovingIds={realtime.state?.motion.officers
                   .filter(officer=>officer.route.length>0).map(officer=>officer.id)??[]}
                 onRealtimeToggle={()=>realtime.state?realtime.disable():realtime.enable()}
+                onWideTrial={enterWideTrial}
                 onInspectProbe={id => useGroundStation(id, 'probe')}
                 onAssistCivilians={id => useGroundStation(id, 'relief-point')}
                 onPerimeterContact={id => useGroundStation(id, 'perimeter-uplink')}

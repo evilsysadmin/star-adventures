@@ -110,6 +110,75 @@ for (const width of [390, 1280]) {
   });
 }
 
+// Global logout must be real SSO sign-out, not a decorative local menu exit.
+// A public/dev SPA fallback may return HTTP 200 HTML at the same path: it must
+// never be mistaken for the protected Worker's authenticated session JSON.
+test('public game and unrelated audiences never show central Identity logout', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('game-menu-open').click();
+  await expect(page.getByTestId('game-identity-logout')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  await page.route('**/api/staradvs/session', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({
+      identity: 'snooker', subject: '123e4567-e89b-42d3-a456-426614174000',
+      expires_at: Math.floor(Date.now() / 1000) + 100,
+    }),
+  }));
+  await page.getByTestId('game-menu-open').click();
+  await expect(page.getByTestId('game-identity-logout')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  await page.unroute('**/api/staradvs/session');
+  await page.route('**/api/staradvs/session', route => route.fulfill({
+    status: 401, contentType: 'application/json',
+    body: JSON.stringify({ error: 'authentication_required' }),
+  }));
+  await page.getByTestId('game-menu-open').click();
+  await expect(page.getByTestId('game-identity-logout')).toHaveCount(0);
+});
+
+for (const width of [390, 1280]) {
+  test(`confirmed protected Star Adventures session can navigate to global logout at ${width}px`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width, height: 850 });
+    const requests: string[] = [];
+    await page.route('**/api/staradvs/session', async route => {
+      const req = route.request();
+      requests.push(req.method());
+      await route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({
+          identity: 'staradvs',
+          subject: '123e4567-e89b-42d3-a456-426614174000',
+          expires_at: Math.floor(Date.now() / 1000) + 90,
+        }),
+      });
+    });
+    await page.route('**/_shadowops/logout', route => route.fulfill({
+      status: 200, contentType: 'text/html',
+      body: '<!doctype html><html lang="es"><title>Central logout navigation fixture</title><body><h1>IdP confirmation is server owned</h1></body></html>',
+    }));
+    await page.goto('/');
+    await page.getByTestId('game-menu-open').click();
+    const logout = page.getByTestId('game-identity-logout');
+    await expect(logout).toHaveCount(1);
+    await expect(logout).toHaveAttribute('href', '/_shadowops/logout');
+    await expect(logout).toBeVisible();
+    expect(requests).toEqual(['GET']);
+    await page.screenshot({ path: `test-results/game-central-logout-pause-${width}.png` });
+    const menu = page.getByRole('dialog');
+    expect(await menu.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.getByTestId('game-exit').click();
+    await expect(page.getByTestId('game-identity-logout')).toBeVisible();
+    await page.screenshot({ path: `test-results/game-central-logout-title-${width}.png` });
+    await page.getByTestId('game-identity-logout').click();
+    await expect(page).toHaveURL(new RegExp('/_shadowops/logout$'));
+    await expect(page.getByRole('heading', { name: 'IdP confirmation is server owned' })).toBeVisible();
+  });
+}
+
 test.describe.configure({ mode: 'parallel' });
 const settingsKey = 'shadowops.star-adventures.presentation.v1';
 

@@ -1,10 +1,11 @@
 // View-only framing of selected continuous officers. No gameplay, fog,
 // route, save or camera WebGL mutation. Positions are canonical projected SVG
 // coordinates; the real SVG CTM continues to own every pick event.
-export function groundRealtimeGroupFrame(points, aspect, baseHeight, compact=false) {
+export function groundRealtimeGroupFrame(points, aspect, baseHeight, compact=false, maxHeight=compact?620:520) {
   if (!Array.isArray(points) || points.length < 2 || points.length > 16 ||
       !Number.isFinite(aspect) || aspect <= 0 || aspect > 10 ||
       !Number.isFinite(baseHeight) || baseHeight <= 0 ||
+      !Number.isFinite(maxHeight) || maxHeight<=0 || maxHeight>1600 ||
       points.some(p=>!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)))
     throw new TypeError('Invalid realtime group camera input');
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
@@ -19,7 +20,7 @@ export function groundRealtimeGroupFrame(points, aspect, baseHeight, compact=fal
     maxY-minY+2*marginY);
   // Beyond this zoom, officers become unreadable. Keep the group centroid
   // instead of inventing a map reveal; offer the existing full-map control.
-  const limit=compact ? 620 : 520;
+  const limit=maxHeight;
   const height=Math.max(baseHeight,Math.min(limit,Math.ceil(needed)));
   return {
     center:{x:(minX+maxX)/2,y:(minY+maxY)/2},

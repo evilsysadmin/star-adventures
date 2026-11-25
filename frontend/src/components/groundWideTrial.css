@@ -1,0 +1,256 @@
+/* Deliberately scoped to the opt-in 32x20 prototype. The existing K-47
+   cinematic art, camera and v1 mission presentation must stay untouched. */
+.wide-trial{display:flex;flex-direction:column;height:100%;min-width:0;
+  background:#091924;color:#dce8df;overflow:hidden;
+  font-family:'DM Sans',sans-serif}
+.wide-trial-viewbar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 12px;background:#102b36;border-bottom:1px solid #44616a;min-width:0}
+.wide-trial-viewbar>span{display:grid;gap:4px;min-width:0}
+.wide-trial-viewbar strong{font:700 12px 'Space Grotesk',sans-serif;letter-spacing:.06em;
+  color:#f3deaa}
+.wide-trial-viewbar small{font:600 9px 'Space Grotesk',sans-serif;letter-spacing:.1em;
+  color:#a6c4c1}
+.wide-trial-viewbar label{display:flex;align-items:center;gap:7px;white-space:nowrap;
+  font:600 10px 'Space Grotesk',sans-serif}
+.wide-trial-viewbar select{max-width:min(55vw,230px);min-height:42px;border:1px solid #647f82;
+  border-radius:3px;background:#193744;color:#f2e7c8;padding:7px;font:600 11px 'DM Sans',sans-serif}
+.wide-trial-stage{position:relative;min-width:0;min-height:0;flex:1 1 auto;
+  background:radial-gradient(ellipse at 60% 38%,#293f43,#0b1b28 72%);
+  overflow:hidden}
+.wide-trial-stage svg{display:block;width:100%;height:100%;touch-action:pan-y;
+  user-select:none}
+.wide-trial-stage [data-wide-cell]:hover{stroke:#ebcd8a;stroke-opacity:1;stroke-width:2.5}
+.wide-unit{cursor:pointer}
+.wide-unit.is-active{filter:drop-shadow(0 0 5px #ebcf8d99)}
+.wide-trial-coordinates{position:absolute;top:8px;left:10px;pointer-events:none;
+  color:#cbe4dd;background:#0b202bdb;border:1px solid #58716f;border-radius:3px;
+  padding:6px 9px;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.04em}
+.wide-trial-controls{display:flex;align-items:center;gap:10px;background:#102935;
+  padding:8px 10px;border-top:1px solid #355c62;min-width:0}
+.wide-trial-roster{display:flex;flex:1;flex-wrap:wrap;gap:6px}
+.wide-trial button{border:1px solid #607e81;background:#264451;color:#e7f0e9;
+  padding:8px 9px;min-height:44px;cursor:pointer;
+  font:700 11px 'Space Grotesk',sans-serif}
+.wide-trial button[aria-pressed=true]{background:#62705b;border-color:#edcc84;color:#fff3d4}
+.wide-trial button:disabled{cursor:not-allowed;opacity:.55}
+.wide-trial button:focus-visible,.wide-trial select:focus-visible{
+  outline:2px solid #f1c97c;outline-offset:2px}
+.wide-trial-notice{margin:0;padding:6px 11px 3px;color:#dfc88d;
+  background:#102935;font:600 11px/1.4 'DM Sans',sans-serif}
+.wide-trial-disclaimer{margin:0;padding:2px 11px 8px;color:#94b6b6;
+  background:#102935;font:10px/1.35 'DM Sans',sans-serif}
+.firstperson-is-wide .firstperson-render-stage{height:clamp(510px,80vh,890px);min-height:0;
+  overflow:hidden}
+.firstperson-is-wide .firstperson-top{position:relative;z-index:2}
+/* Never show the old 18x12 captain coordinates or obsolete FPS controls
+   underneath the independent 32x20 map. The trial owns its actual HUD. */
+.firstperson-is-wide .firstperson-hud,
+.firstperson-is-wide .firstperson-controls,
+.firstperson-is-wide .firstperson-feedback{display:none}
+.firstperson-is-wide .firstperson-top .firstperson-name{flex:1;min-width:0}
+@media(max-width:520px){
+ .firstperson-is-wide .firstperson-render-stage{height:calc(100dvh - 70px);
+   min-height:520px;max-height:900px}
+ .wide-trial-viewbar{gap:6px;padding:6px 7px}
+ .wide-trial-viewbar strong{font-size:10px}
+ .wide-trial-viewbar label{font-size:0}
+ .wide-trial-viewbar select{width:164px;font-size:10px}
+ .wide-trial-controls{flex-wrap:wrap;gap:5px;padding:6px}
+ .wide-trial-roster{flex:1 1 100%;flex-wrap:nowrap;gap:4px}
+ .wide-trial-roster button{flex:1;min-width:0;font-size:10px;padding:4px}
+ .wide-trial-controls>button{flex:1;padding:5px}
+ .wide-trial-coordinates{top:6px;left:6px;padding:5px;font-size:9px}
+ .wide-trial-notice{font-size:10px}
+ .wide-trial-disclaimer{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.wide-trial *{transition:none!important}}
+
+
+/* The game shell is genuinely fullscreen and owns its header + mission glass.
+   Keep 640-cell terrain underneath it, but dock TRIAL controls into actual
+   safe regions instead of building a separate scrollable 510px card. */
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-render-stage{
+  position:absolute;inset:0;width:100%;height:100%;max-height:none;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial{
+  position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
+  background:#0c1e28;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-stage{
+  position:absolute;inset:0;width:100%;height:100%;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar{
+  position:absolute;z-index:6;top:152px;left:20px;right:auto;
+  width:min(420px,calc(100% - 400px));min-width:295px;
+  border:1px solid #74969a75;border-radius:6px;
+  background:#0b222cde;backdrop-filter:blur(12px);
+  box-shadow:0 8px 25px #0008;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-controls{
+  position:absolute;z-index:7;bottom:60px;left:50%;transform:translateX(-50%);
+  width:min(620px,calc(100% - 40px));
+  border:1px solid #74969a8a;border-radius:6px;
+  background:#09232de5;backdrop-filter:blur(14px);
+  box-shadow:0 10px 32px #0008;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-notice{
+  position:absolute;z-index:7;bottom:15px;left:50%;
+  transform:translateX(-50%);width:min(620px,calc(100% - 40px));
+  border:1px solid #74969a70;border-radius:4px;
+  background:#09232de5;backdrop-filter:blur(12px);
+  min-height:26px;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help{
+  position:absolute;z-index:8;top:223px;left:20px;
+  width:min(260px,calc(100% - 40px));padding:7px 10px;
+  border:1px solid #62828766;border-radius:4px;
+  color:#a9c5c6;background:#0b222cdb;backdrop-filter:blur(12px);
+  font:10px/1.4 'DM Sans',sans-serif;max-height:175px;overflow:auto;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help summary{
+  cursor:pointer;color:#d6dcbf;min-height:20px;
+  font:600 10px 'Space Grotesk',sans-serif;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-coordinates{
+  top:234px;left:305px;right:auto;
+  border:1px solid #74969a65;background:#09232dd9;
+  backdrop-filter:blur(10px);
+}
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-top{
+  position:absolute;top:98px;left:20px;right:auto;
+  max-width:min(430px,calc(100% - 380px));
+  z-index:7;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-name{
+  font-size:11px;line-height:1.2;letter-spacing:.02em;white-space:nowrap;
+}
+.game-shell[data-interface=game] .firstperson-is-wide .firstperson-map-toggle{
+  min-height:42px;
+}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .firstperson-top{
+   top:85px;left:8px;right:auto;max-width:calc(100% - 196px);
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .firstperson-name{display:none}
+ .game-shell[data-interface=game] .firstperson-is-wide .firstperson-map-toggle{min-height:36px}
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar{
+   top:126px;left:8px;right:8px;width:auto;min-width:0;
+   padding:6px 7px;gap:6px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar>span{
+   max-width:155px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-viewbar select{
+   width:min(41vw,164px);max-width:164px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-help{
+   top:auto;bottom:158px;left:8px;width:150px;max-height:90px;
+   padding:5px 7px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-controls{
+   bottom:45px;width:calc(100% - 16px);padding:5px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-roster{
+   flex:1 1 100%;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-notice{
+   bottom:6px;width:calc(100% - 16px);padding:6px 8px;
+   font-size:10px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-trial-coordinates{
+   top:195px;left:auto;right:8px;font-size:9px;
+ }
+}
+
+/* The 32x20 experiment is not the canonical civilian rescue mission.
+   Do not float the 18x12 mission briefing over an unrelated sandbox map.
+   Returning to K-47 instantly restores the authoritative mission panel. */
+.game-shell[data-interface=game][data-location=surface]:has(.firstperson-is-wide) .mission-transmission{
+  display:none;
+}
+
+
+/* Focus on the real SVG CTM, not a separate hidden off-board cursor. */
+.game-shell[data-interface=game] .firstperson-is-wide .wide-trial-stage svg:focus-visible{
+  outline:2px solid #e9c780;outline-offset:-3px;
+}
+
+
+/* Real, two-stage mission HUD: compact and independent of the old 18x12
+   rescue briefing. It never blocks the centre of the isometric game. */
+.game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel{
+  position:absolute;z-index:8;top:148px;right:20px;
+  width:min(310px,calc(100% - 40px));max-height:calc(100% - 315px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:12px;border:1px solid #7f9c9a96;border-radius:7px;
+  background:#09232bea;backdrop-filter:blur(13px);
+  box-shadow:0 10px 30px #0008;
+  font:11px/1.45 'DM Sans',sans-serif;
+}
+.wide-mission-title{display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin-bottom:8px;color:#ecd2a1;
+  font:700 11px 'Space Grotes',sans-serif;letter-spacing:.09em}
+.wide-mission-title span{font:700 12px 'Space Grotesk',sans-serif;
+  color:#b9e2cf;border:1px solid #88a7a37c;padding:2px 7px;border-radius:20px}
+.wide-mission-step{display:flex;align-items:flex-start;gap:8px;padding:8px 0;
+  border-top:1px solid #57757959}
+.wide-mission-step>div{display:grid;gap:2px;min-width:0}
+.wide-mission-step strong{color:#f3e5c7;font:700 11px 'Space Grotesk',sans-serif}
+.wide-mission-step small{color:#b8d3cf;font:10px/1.4 'DM Sans',sans-serif}
+.wide-mission-number{color:#e8d3a5;font:700 13px 'Space Grotesk',sans-serif}
+.wide-mission-explainer{margin:2px 0 7px;color:#bbd3d0;font-size:10px}
+.wide-mission-choices{display:flex;flex-direction:column;gap:6px;margin:5px 0 11px}
+.wide-mission-panel button{width:100%;padding:7px 8px;text-align:left;min-height:42px;
+  background:#214855;border-color:#779b9a;color:#f2e4c5;
+  border-radius:4px;white-space:normal}
+.wide-mission-panel button:hover:not(:disabled){background:#356372}
+.wide-mission-context{margin:7px 0 0;color:#a6bdbb;font-size:10px}
+.wide-mission-result{color:#dfeab9;background:#2950467a;border:1px solid #76a9938c;
+  padding:8px;border-radius:3px;margin:6px 0}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel{
+   top:241px;right:8px;width:min(208px,calc(100% - 16px));
+   max-height:calc(100% - 420px);padding:8px;
+   font-size:10px;
+ }
+ .wide-mission-title{font-size:9px;margin-bottom:6px}
+ .wide-mission-title span{font-size:10px}
+ .wide-mission-step{gap:5px;padding:5px 0}
+ .wide-mission-step strong{font-size:10px}
+ .wide-mission-step small,.wide-mission-explainer,.wide-mission-context{font-size:9px}
+ .wide-mission-number{font-size:11px}
+ .wide-mission-choices{gap:4px}
+ .wide-mission-panel button{font-size:10px;min-height:43px}
+}
+
+.wide-mission-log{margin:9px 0 0;padding:6px 0 0;
+  border-top:1px solid #5a898272;color:#bbd3c5;font-size:10px}
+.wide-mission-log summary{cursor:pointer;min-height:22px;font-weight:700;
+  color:#e1d5b5}
+.wide-mission-log ol{margin:5px 0 0;padding-left:17px;line-height:1.5}
+.wide-mission-log li+li{margin-top:4px}
+
+/* Mobile pilot objectives reveal their actions deliberately. Keep the board,
+   physical officer and landing marker readable once a choice is made. */
+.wide-mission-title-button{
+  border:0!important;border-radius:4px;
+  width:100%!important;display:flex!important;justify-content:space-between;
+  align-items:center;gap:6px;min-height:38px!important;
+  margin:0!important;padding:4px 5px!important;
+  text-align:left!important;background:transparent!important;
+  box-shadow:none!important;color:#efd3a0!important;
+}
+.wide-mission-title-button strong{font-size:inherit}
+.wide-mission-title-button>span:last-child{color:#cce1d4;font-size:13px}
+.wide-mission-title-button:focus-visible{outline:2px solid #f4d299}
+.wide-mission-panel.is-collapsed{overflow:hidden!important;
+  border-color:#d9ba7b9e!important}
+.wide-mission-panel.is-collapsed .wide-mission-title{margin-bottom:0}
+@media(max-width:700px){
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel.is-collapsed{
+   padding:4px 6px;max-height:48px;
+ }
+ .game-shell[data-interface=game] .firstperson-is-wide .wide-mission-panel:not(.is-collapsed){
+   max-height:calc(100% - 440px);
+ }
+}

@@ -65,7 +65,7 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeToggle, disabled = false,
+  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeToggle, onWideTrial, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
@@ -80,6 +80,7 @@ export function GroundSquadSelection({
   realtimeFog?: {visible:ReadonlySet<string>;explored:ReadonlySet<string>}|null;
   realtimeMovingIds?: string[];
   onRealtimeToggle?:()=>void;
+  onWideTrial?:()=>void;
   disabled?: boolean;
 }) {
   // Every sprite has a validated, replayed cell; the classic FPS position is separate.
@@ -695,7 +696,7 @@ export function GroundSquadSelection({
           const showWalk = moving && readyWalk.has(unit.id);
           const point = !realtime && walkPose?.officerId===unit.id
             ? {x:walkPose.x,y:walkPose.y} : unit;
-          const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%12 :
+          const frame = realtime ? Math.floor((unit.gridX+unit.gridY)*13)%WALK_ATLAS.frames :
             walkPose?.officerId===unit.id ? walkPose.frame : 0;
           // Camera-aligned identity plaques remain visual only; the original
           // player selection targets and projection are unchanged.
@@ -904,6 +905,10 @@ export function GroundSquadSelection({
           event.currentTarget.closest('details')?.removeAttribute('open');
         }}>
         {realtime?'Volver al movimiento clásico':'Probar movimiento libre del equipo (beta)'}
+      </button>}
+      {onWideTrial && <button type="button" className="ground-realtime-toggle"
+        data-testid="wide-trial-enter" disabled={disabled} onClick={onWideTrial}>
+        Explorar K-47 exterior · mapa grande 32×20 (beta)
       </button>}
       <p className="ground-squad-help">{realtime
         ? 'Beta: en móvil toca terreno libre para ordenar al oficial o equipo seleccionado. En escritorio, clic derecho o Mover. Los compañeros reservan sus rutas. Volver al clásico descarta el recorrido de prueba.'
