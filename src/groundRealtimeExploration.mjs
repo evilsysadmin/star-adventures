@@ -167,26 +167,41 @@ export function orderRealtimeExplorationFormation(scene,state,ids,destination){
     if(ids.includes(officer.id))officer.route=[];
   const reserved=new Set([key(anchor.x,anchor.y)]);
   const headings=[[0,-1],[1,0],[0,1],[-1,0]];
-  const candidates=(index)=>{
-    const [dx,dy]=headings[(index-1)%headings.length];
-    const ideal={x:anchor.x+dx,y:anchor.y+dy};
+  const leader=start.officers.find(o=>o.id===ids[0]);
+  const dx=anchor.x-leader.x,dy=anchor.y-leader.y;
+  // Favor two rear-side slots relative to the intended travel axis. Each
+  // follower prefers the nearer wing instead of crossing its teammate.
+  // These are destination preferences, NOT unvalidated motion waypoints.
+  const direction=Math.hypot(dx,dy)>1e-7
+    ? Math.abs(dx)>=Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)]
+    : null;
+  const candidates=(index,directional)=>{
+    const [ox,oy]=headings[(index-1)%headings.length];
+    const legacy={x:anchor.x+ox,y:anchor.y+oy};
+    const ideals=directional&&direction
+      ? [-1,1].map(side=>({x:anchor.x-direction[0]-side*direction[1],
+          y:anchor.y-direction[1]+side*direction[0]}))
+      : [legacy];
+    const follower=start.officers.find(o=>o.id===ids[index]);
+    const manhattan=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
     const choices=[];
     for(let y=Math.max(0,anchor.y-3);y<=Math.min(scene.height-1,anchor.y+3);y++)
       for(let x=Math.max(0,anchor.x-3);x<=Math.min(scene.width-1,anchor.x+3);x++){
         const point={x,y},radius=Math.abs(x-anchor.x)+Math.abs(y-anchor.y);
         if(radius>3||!radius||!free(scene,blocked,point))continue;
         choices.push({point,rank:
-          (Math.abs(x-ideal.x)+Math.abs(y-ideal.y))*10+radius});
+          Math.min(...ideals.map(ideal=>manhattan(point,ideal)))*10+radius,
+          travel:directional&&direction?manhattan(point,follower):0});
       }
-    choices.sort((a,b)=>a.rank-b.rank||
+    choices.sort((a,b)=>a.rank-b.rank||a.travel-b.travel||
       a.point.y-b.point.y||a.point.x-b.point.x);
     return choices.slice(0,20).map(c=>c.point);
   };
   // Each full candidate is planned through the real BFS/clearance validator.
   // No partial state is ever exposed to caller on a failed candidate.
-  function plan(index,working){
+  function plan(index,working,directional){
     if(index===ids.length)return working;
-    const options=index===0?[anchor]:candidates(index);
+    const options=index===0?[anchor]:candidates(index,directional);
     for(const target of options){
       const k=key(target.x,target.y);
       if(index!==0&&reserved.has(k))continue;
@@ -194,13 +209,15 @@ export function orderRealtimeExplorationFormation(scene,state,ids,destination){
       try{next=orderRealtimeExplorationMove(scene,working,ids[index],target);}
       catch{continue;}
       reserved.add(k);
-      const finished=plan(index+1,next);
+      const finished=plan(index+1,next,directional);
       if(finished)return finished;
       if(index!==0)reserved.delete(k);
     }
     return null;
   }
-  const planned=plan(0,start);
+  // Preserve the existing admissibility fallback when a directional
+  // preference cannot produce a complete collision-free route set.
+  const planned=(direction?plan(0,start,true):null)??plan(0,start,false);
   if(!planned)throw new RangeError('No collision-free continuous formation');
   return planned;
 }
