@@ -168,9 +168,13 @@ test('realtime pose handoff keeps one decoded layer opaque and respects reduced 
  await expect(walk).toHaveCSS('opacity','0');
  await expect(walk).toHaveCSS('visibility','hidden');
  await expect(walk).toHaveCSS('transition-duration','0.12s, 0s');
- await actor.evaluate(element=>{
-  const record={moving:false,arrived:false,minCoverage:1,samples:0};
+ // Collect both layers in the same browser frame, before issuing the order.
+ // Sequential locator polling can miss the short steady walking phase on CI.
+ type BlendProbe={moving:boolean;arrived:boolean;settledWalk:boolean;minCoverage:number;samples:number;done:boolean};
+ const arm=async()=>actor.evaluate(element=>{
+  const record={moving:false,arrived:false,settledWalk:false,minCoverage:1,samples:0,done:false};
   (window as typeof window & {__poseBlend?:typeof record}).__poseBlend=record;
+  const until=performance.now()+10000;
   const sample=()=>{
    const moving=element.getAttribute('data-walk-phase')==='moving';
    if(moving)record.moving=true;
@@ -178,36 +182,40 @@ test('realtime pose handoff keeps one decoded layer opaque and respects reduced 
    const idle=element.querySelector('[data-testid="ground-officer-sprite-venn"]');
    const walk=element.querySelector('[data-testid="ground-officer-walk-venn"]');
    if(idle&&walk){
-    const coverage=Math.max(Number(getComputedStyle(idle).opacity),Number(getComputedStyle(walk).opacity));
-    record.minCoverage=Math.min(record.minCoverage,coverage);
+    const idleStyle=getComputedStyle(idle),walkStyle=getComputedStyle(walk);
+    const a=idleStyle.visibility==='hidden'?0:Number(idleStyle.opacity);
+    const b=walkStyle.visibility==='hidden'?0:Number(walkStyle.opacity);
+    record.minCoverage=Math.min(record.minCoverage,Math.max(a,b));
+    if(moving&&a<=.01&&b>=.99)record.settledWalk=true;
     record.samples++;
+    if(record.arrived&&a>=.99&&b<=.01&&walkStyle.visibility==='hidden')record.done=true;
+   }else{
+    record.minCoverage=0;
    }
-   if(!record.arrived)requestAnimationFrame(sample);
+   if(!record.done&&performance.now()<until)requestAnimationFrame(sample);
   };
   requestAnimationFrame(sample);
  });
- await tapCell(page,3,5);
- await expect(actor).toHaveAttribute('data-walk-phase','moving');
- await expect(walk).toHaveCSS('opacity','1');
- await expect(idle).toHaveCSS('opacity','0');
- await expect(actor).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
- await expect(idle).toHaveCSS('opacity','1');
- await expect(walk).toHaveCSS('visibility','hidden');
- const record=await page.evaluate(()=>(window as typeof window & {
-  __poseBlend?:{moving:boolean;arrived:boolean;minCoverage:number;samples:number};
- }).__poseBlend);
- expect(record?.moving).toBe(true);
- expect(record?.arrived).toBe(true);
- expect(record?.samples).toBeGreaterThan(2);
- expect(record?.minCoverage).toBeGreaterThanOrEqual(.95);
+ const assertHandoff=async(x:number,y:number)=>{
+  await arm();
+  await tapCell(page,x,y);
+  await expect.poll(async()=>page.evaluate(()=>
+   (window as typeof window & {__poseBlend?:BlendProbe}).__poseBlend?.done??false
+  ),{timeout:12000}).toBe(true);
+  const record=await page.evaluate(()=>
+   (window as typeof window & {__poseBlend?:BlendProbe}).__poseBlend);
+  expect(record?.moving).toBe(true);
+  expect(record?.arrived).toBe(true);
+  expect(record?.settledWalk).toBe(true);
+  expect(record?.samples).toBeGreaterThan(2);
+  expect(record?.minCoverage).toBeGreaterThanOrEqual(.95);
+  await expect(actor).toHaveAttribute('data-walk-phase','idle');
+  await expect(idle).toHaveCSS('opacity','1');
+  await expect(walk).toHaveCSS('opacity','0');
+  await expect(walk).toHaveCSS('visibility','hidden');
+ };
+ await assertHandoff(3,5);
  await page.emulateMedia({reducedMotion:'reduce'});
  await expect(walk).toHaveCSS('transition-duration','0s');
- await tapCell(page,4,5);
- await expect(actor).toHaveAttribute('data-walk-phase','moving');
- await expect(walk).toHaveCSS('opacity','1');
- await expect(idle).toHaveCSS('opacity','0');
- await expect(actor).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
- await expect(idle).toHaveCSS('opacity','1');
- await expect(walk).toHaveCSS('opacity','0');
- await expect(walk).toHaveCSS('visibility','hidden');
+ await assertHandoff(4,5);
 });
