@@ -144,3 +144,91 @@ test('desktop mouse beta remains deliberate: left-click selects, right-click ord
  await expect(venn).toHaveAttribute('data-walk-facing','right');
  await expect(page.getByTestId('ground-officer-sprite-venn')).not.toHaveAttribute('transform','scale(-1 1)');
 });
+
+
+test('realtime pose handoff keeps one decoded layer opaque and respects reduced motion',async({page})=>{
+ test.setTimeout(70000);
+ await page.setViewportSize({width:390,height:850});
+ // Deterministic decodable stand-ins exercise layer lifecycle independently
+ // of CDN availability; the other journeys still capture actual artwork.
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLytAAAAABJRU5ErkJggg==','base64');
+ await page.route(/\/star-adventures\/tactical\/officer-(?:(?:female|male)-walk-v1|mvs(?:-male)?-v1)-[^/]+\.webp$/,route=>
+  route.fulfill({status:200,contentType:'image/png',
+    headers:{'access-control-allow-origin':'*'},body:png}));
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await land(page);
+ await page.locator('.ground-squad-instructions summary').tap();
+ await page.getByTestId('ground-realtime-toggle').tap();
+ const actor=page.getByTestId('ground-unit-venn');
+ const idle=page.getByTestId('ground-officer-sprite-venn');
+ const walk=page.getByTestId('ground-officer-walk-venn');
+ await expect(idle).toHaveAttribute('data-asset-state','loaded');
+ await expect(actor).toHaveAttribute('data-walk-atlas-ready','true');
+ await expect(idle).toHaveCSS('opacity','1');
+ await expect(walk).toHaveCSS('opacity','0');
+ await expect(walk).toHaveCSS('visibility','hidden');
+ await expect(walk).toHaveCSS('transition-duration','0.12s, 0s');
+ // Collect both layers in the same browser frame, before issuing the order.
+ // Sequential locator polling can miss the short steady walking phase on CI.
+ type BlendProbe={moving:boolean;arrived:boolean;settledWalk:boolean;minCoverage:number;samples:number;done:boolean};
+ const arm=async()=>actor.evaluate(element=>{
+  const record={moving:false,arrived:false,settledWalk:false,minCoverage:1,samples:0,done:false};
+  (window as typeof window & {__poseBlend?:typeof record}).__poseBlend=record;
+  const until=performance.now()+10000;
+  const sample=()=>{
+   const moving=element.getAttribute('data-walk-phase')==='moving';
+   if(moving)record.moving=true;
+   if(record.moving&&!moving)record.arrived=true;
+   const idle=element.querySelector('[data-testid="ground-officer-sprite-venn"]');
+   const walk=element.querySelector('[data-testid="ground-officer-walk-venn"]');
+   if(idle&&walk){
+    const idleStyle=getComputedStyle(idle),walkStyle=getComputedStyle(walk);
+    const a=idleStyle.visibility==='hidden'?0:Number(idleStyle.opacity);
+    const b=walkStyle.visibility==='hidden'?0:Number(walkStyle.opacity);
+    record.minCoverage=Math.min(record.minCoverage,Math.max(a,b));
+    if(moving&&a<=.01&&b>=.99)record.settledWalk=true;
+    record.samples++;
+    if(record.arrived&&a>=.99&&b<=.01&&walkStyle.visibility==='hidden')record.done=true;
+   }else{
+    record.minCoverage=0;
+   }
+   if(!record.done&&performance.now()<until)requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+ });
+ const assertHandoff=async(x:number,y:number)=>{
+  await arm();
+  await tapCell(page,x,y);
+  await expect.poll(async()=>page.evaluate(()=>
+   (window as typeof window & {__poseBlend?:BlendProbe}).__poseBlend?.done??false
+  ),{timeout:12000}).toBe(true);
+  const record=await page.evaluate(()=>
+   (window as typeof window & {__poseBlend?:BlendProbe}).__poseBlend);
+  expect(record?.moving).toBe(true);
+  expect(record?.arrived).toBe(true);
+  expect(record?.settledWalk).toBe(true);
+  expect(record?.samples).toBeGreaterThan(2);
+  expect(record?.minCoverage).toBeGreaterThanOrEqual(.95);
+  await expect(actor).toHaveAttribute('data-walk-phase','idle');
+  await expect(idle).toHaveCSS('opacity','1');
+  await expect(walk).toHaveCSS('opacity','0');
+  await expect(walk).toHaveCSS('visibility','hidden');
+ };
+ await assertHandoff(3,5);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ // The global accessibility stylesheet uses .01ms !important instead
+ // of literal zero. Verify effective duration AND delay, not serialization.
+ expect(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+ for(const layer of [idle,walk]){
+  const timing=await layer.evaluate(element=>{
+   const style=getComputedStyle(element);
+   const milliseconds=(value:string)=>value.split(',').map(part=>{
+    const token=part.trim();
+    return Number.parseFloat(token)*(token.endsWith('ms')?1:1000);
+   });
+   return [...milliseconds(style.transitionDuration),...milliseconds(style.transitionDelay)];
+  });
+  expect(timing.every(ms=>Number.isFinite(ms)&&Math.abs(ms)<=.011)).toBe(true);
+ }
+ await assertHandoff(4,5);
+});
