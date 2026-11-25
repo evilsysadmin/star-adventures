@@ -168,3 +168,44 @@ test('independent retarget reserves moving colleague future route and formation 
     ['venn','unknown'],{x:5,y:4}),/Invalid/);
   assert.deepEqual(active,advanceRealtimeExploration(scene,venn,120));
 });
+
+
+const openField={width:10,height:9,walls:[],objects:[]};
+const destinationOf=o=>o.route.at(-1)??{x:o.x,y:o.y};
+for(const [label,leaderX,targetX,rearX] of [['east',2,7,6],['west',7,2,3]]){
+ test('formation prefers nearest rear flank when moving '+label,()=>{
+  const original=startRealtimeExploration(openField,[
+   {id:'leader',x:leaderX,y:4},{id:'north',x:leaderX,y:3},{id:'south',x:leaderX,y:5},
+  ]);
+  // Deliberately reverse the follower order: physical proximity, not order,
+  // decides which wing is preferred in this open, unambiguous fixture.
+  const ordered=orderRealtimeExplorationFormation(openField,original,
+   ['leader','south','north'],{x:targetX,y:4});
+  assert.deepEqual(destinationOf(officer(ordered,'leader')),{x:targetX,y:4});
+  assert.deepEqual(destinationOf(officer(ordered,'north')),{x:rearX,y:3});
+  assert.deepEqual(destinationOf(officer(ordered,'south')),{x:rearX,y:5});
+  assert.ok(original.officers.every(o=>o.route.length===0));
+  let live=ordered;
+  for(let i=0;i<100&&live.officers.some(o=>o.route.length);i++){
+   live=advanceRealtimeExploration(openField,live,80);
+   for(let a=0;a<live.officers.length;a++)for(let b=a+1;b<live.officers.length;b++)
+    assert.ok(Math.hypot(live.officers[a].x-live.officers[b].x,
+     live.officers[a].y-live.officers[b].y)>=.32-1e-7);
+  }
+  assert.ok(live.officers.every(o=>!o.route.length));
+  assert.deepEqual(live.officers.map(o=>({x:o.x,y:o.y})),ordered.officers.map(destinationOf));
+ });
+}
+test('blocked preferred flank still produces legal distinct endpoints',()=>{
+ const field={...openField,walls:[{x:6,y:3}]};
+ const original=startRealtimeExploration(field,[
+  {id:'leader',x:2,y:4},{id:'north',x:2,y:3},{id:'south',x:2,y:5},
+ ]);
+ const ordered=orderRealtimeExplorationFormation(field,original,
+  ['leader','north','south'],{x:7,y:4});
+ const targets=ordered.officers.map(destinationOf);
+ assert.deepEqual(targets[0],{x:7,y:4});
+ assert.equal(new Set(targets.map(o=>o.x+','+o.y)).size,3);
+ assert.ok(ordered.officers.every(o=>o.route.every(p=>p.x!==6||p.y!==3)));
+ assert.deepEqual(deserializeRealtimeExploration(field,serializeRealtimeExploration(field,ordered)),ordered);
+});
