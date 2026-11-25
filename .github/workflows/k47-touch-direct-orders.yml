@@ -1,0 +1,36 @@
+name: K-47 mobile direct-touch orders · real browser gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/components/GroundSquadSelection.tsx"
+      - "frontend/tests/k47TouchDirectOrders.spec.ts"
+      - ".github/workflows/k47-touch-direct-orders.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  touch-orders:
+    name: Genuine touch 390/430 solo + formation and desktop mouse rollback
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned frontend
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Real Chromium touch/selection/formation/F5 + mouse parity
+        run: npm run test:e2e --prefix frontend -- tests/k47TouchDirectOrders.spec.ts
+      - name: Capture true moving/arrived mobile touch gameplay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k47-direct-touch-${{ github.sha }}
+          path: frontend/test-results/k47-touch-direct-*.png
+          if-no-files-found: warn
+          retention-days: 14

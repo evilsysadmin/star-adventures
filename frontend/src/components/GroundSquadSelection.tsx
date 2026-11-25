@@ -298,6 +298,13 @@ export function GroundSquadSelection({
   const visibleMoveNotice=realtime&&realtimeMovingIds.length===0
     ? moveNotice.replace(' en marcha hacia ', ' ha llegado a ')
     : moveNotice;
+  // On an actual touch phone, beta floor taps already issue a command.
+  // Explain the one-tap affordance in the existing status strip, without a
+  // new overlay over officers, objectives or the canonical picking plane.
+  const touchMoveNotice=realtime&&compact&&
+    moveNotice==='Selecciona un oficial o todo el equipo para dar una orden.'
+    ? 'Toca el terreno para ordenar al oficial o equipo seleccionado.'
+    : visibleMoveNotice;
   const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
   const probeAtHand = !!probe && !!selectedUnit &&
     Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
@@ -453,7 +460,13 @@ export function GroundSquadSelection({
     const roster = screenRoster();
     if (!roster || disabled) return;
     const end = { x: event.clientX, y: event.clientY };
-    if (!start.dragged && !isSelectionDrag(start.start, end) && moveMode && start.tile) {
+    // One genuine touch on empty terrain issues the real continuous order,
+    // without the extra Mover tap. Officer taps still select, marquee drags
+    // still select, and desktop mouse/classic movement remain unchanged.
+    const directTouchOrder=realtime&&compact&&event.pointerType==='touch'&&
+      !start.target&&!!start.tile;
+    if (!start.dragged && !isSelectionDrag(start.start, end) &&
+        (moveMode||directTouchOrder) && start.tile) {
       requestMove(start.tile,realtime?pickFreePoint(event.clientX,event.clientY):null);
       return;
     }
@@ -873,11 +886,11 @@ export function GroundSquadSelection({
         selected.length + ' de ' + squad.length + ' oficiales seleccionados'}
     </p>
     <p className="ground-squad-notice-current" data-testid="ground-current-notice" aria-live="polite">
-      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : lastNotice === 'perimeter' ? perimeterNotice : visibleMoveNotice}
+      {lastNotice === 'science' ? scienceNotice : lastNotice === 'medical' ? medicalNotice : lastNotice === 'perimeter' ? perimeterNotice : touchMoveNotice}
     </p>
     {/* Keep existing semantic status IDs for live feedback and regression
         contracts, visually condensed into the single latest notice above. */}
-    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-move-status" role="status">{visibleMoveNotice}</p>
+    <p className="ground-squad-status ground-squad-announcement" data-testid="ground-move-status" role="status">{touchMoveNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-probe-status" role="status" aria-live="polite">{scienceNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-medical-status" role="status" aria-live="polite">{medicalNotice}</p>
     <p className="ground-squad-status ground-squad-announcement" data-testid="ground-perimeter-status" role="status" aria-live="polite">{perimeterNotice}</p>
@@ -898,13 +911,13 @@ export function GroundSquadSelection({
         Explorar K-47 exterior · mapa grande 32×20 (beta)
       </button>}
       <p className="ground-squad-help">{realtime
-        ? 'Beta: elige un oficial; clic derecho o Mover y tocar. Cambia destino durante la marcha. Volver al clásico descarta el recorrido de prueba.'
-        : 'Prueba opcional: desplaza un oficial y cambia destino sin saltos. Las formaciones siguen en modo clásico.'}</p>
+        ? 'Beta: en móvil toca terreno libre para ordenar al oficial o equipo seleccionado. En escritorio, clic derecho o Mover. Los compañeros reservan sus rutas. Volver al clásico descarta el recorrido de prueba.'
+        : 'El modo clásico conserva el movimiento por casillas. La beta opcional permite que hasta tres oficiales avancen simultáneamente, sin alterar este historial.'}</p>
       <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Sumar» y toca los nombres para crear un grupo.
       Clic derecho en el suelo: mueve un oficial o una formación de varios,
       sin apilar compañeros ni atravesar obstáculos.
-      En móvil, «Mover selección» y tocar destino; con teclado, flechas y Enter.
+      En móvil clásico, «Mover selección» y tocar destino; en la beta, toca terreno libre directamente. Con teclado, «Mover», flechas y Enter.
       La niebla negra indica terreno desconocido; el terreno gris oscuro es un recuerdo
       y solo las casillas iluminadas están a la vista del equipo.
       La sonda científica y el puesto de socorro admiten acciones del oficial adyacente,
