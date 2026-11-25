@@ -43,3 +43,22 @@ export function isoSpriteSideFromPoints(
  const screenX=(to.x-from.x)-(to.y-from.y);
  return Math.abs(screenX)<1e-7?null:screenX<0?'left':'right';
 }
+
+export type IsoSpriteSide = 'left'|'right';
+
+// Presentation-only continuity for the currently deployed realtime roster.
+// A neutral segment or arrival retains the previous side; a different
+// lateral segment replaces it. Missing IDs are pruned, including rollback.
+// Return the same map for unchanged samples to avoid redundant renders.
+export function retainIsoSpriteSides(
+ previous: ReadonlyMap<string,IsoSpriteSide>,
+ samples: readonly (readonly [string,IsoSpriteSide|null])[],
+): ReadonlyMap<string,IsoSpriteSide> {
+ const next=new Map<string,IsoSpriteSide>();
+ for(const [id,side] of samples){
+  const known=side??previous.get(id);
+  if(known)next.set(id,known);
+ }
+ return next.size===previous.size&&[...next].every(([id,side])=>previous.get(id)===side)
+  ? previous : next;
+}

@@ -58,7 +58,9 @@ for(const width of [390,430]){
   await expect(venn).toHaveAttribute('data-walk-phase','moving',{timeout:8000});
   await expect(venn).toHaveAttribute('data-walk-facing','left');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
-  await expect(venn).toHaveAttribute('data-walk-facing','neutral');
+  await expect(venn).toHaveAttribute('data-walk-facing','left');
+  await expect(page.getByTestId('ground-officer-sprite-venn')).toHaveAttribute('transform','scale(-1 1)');
+  await expect(page.getByTestId('ground-unit-dorn')).toHaveAttribute('data-walk-facing','neutral');
   await expect(venn).toHaveAttribute('data-grid-x','3');
   await expect(venn).toHaveAttribute('data-grid-y','5');
   await page.getByTestId('ground-select-all').tap();
@@ -97,6 +99,7 @@ for(const width of [390,430]){
   // Opting out does not commit experimental routes into the original journal.
   await page.locator('.ground-squad-instructions summary').tap();
   await page.getByTestId('ground-realtime-toggle').tap();
+  await expect(venn).toHaveAttribute('data-walk-facing','neutral');
   await expect(venn).toHaveAttribute('data-world-x','4.000');
   expect(await page.evaluate(()=>localStorage.getItem(
     'shadowops.star-adventures.ground-realtime.v1'))).toBeNull();
@@ -138,4 +141,6 @@ test('desktop mouse beta remains deliberate: left-click selects, right-click ord
  await expect(venn).toHaveAttribute('data-walk-facing','right');
  await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
  await expect(venn).toHaveAttribute('data-grid-x','4');
+ await expect(venn).toHaveAttribute('data-walk-facing','right');
+ await expect(page.getByTestId('ground-officer-sprite-venn')).not.toHaveAttribute('transform','scale(-1 1)');
 });

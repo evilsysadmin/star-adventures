@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import world from '../../../content/scenes/meridian.json';
 import r2Assets from '../assets/r2-assets-manifest.json';
 import { GroundPlanetBackdrop, GroundWildSectorScenery } from './GroundOutpostScenery';
@@ -12,7 +12,7 @@ import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt, reconcileWalkStarts, realtimeOfficerFrame } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
-import { isoSpriteSideFromPoints } from '../isoActorFacing';
+import { isoSpriteSideFromPoints, retainIsoSpriteSides, type IsoSpriteSide } from '../isoActorFacing';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { OFFICERS } from '../../../src/crew.mjs';
 import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
@@ -89,9 +89,20 @@ export function GroundSquadSelection({
     const location = officers.find(unit => unit.id === officer.id);
     const gridX = location?.x ?? position.x;
     const gridY = location?.y ?? position.y;
+    const nextWaypoint=location?.route?.[0];
+    const routeSide=realtime&&realtimeMovingIds.includes(officer.id)&&nextWaypoint
+      ? isoSpriteSideFromPoints({x:gridX,y:gridY},nextWaypoint) : null;
     return {...officer, gridX, gridY, heading: location?.heading ?? 'N',
-      nextWaypoint: location?.route?.[0], ...tile(gridX, gridY)};
+      routeSide, ...tile(gridX, gridY)};
   });
+  // Remember only committed lateral facing within this realtime view.
+  // A stable key avoids a state update on every fractional position tick.
+  const facingKey=JSON.stringify(realtime?units.map(unit=>[unit.id,unit.routeSide]):[]);
+  const [lastFacing,setLastFacing]=useState<ReadonlyMap<string,IsoSpriteSide>>(()=>new Map());
+  useLayoutEffect(()=>{
+    const samples=JSON.parse(facingKey) as [string,IsoSpriteSide|null][];
+    setLastFacing(previous=>retainIsoSpriteSides(previous,samples));
+  },[facingKey]);
   const [selected, setSelected] = useState<string[]>(() => squad[0] ? [squad[0].id] : []);
   // Draw vector proxies until each CDN image is actually decoded. An R2
   // outage must not make an officer invisible or change picking/positions.
@@ -725,12 +736,9 @@ export function GroundSquadSelection({
           const moving = realtime ? realtimeMovingIds.includes(unit.id) :
             walking?.officerId===unit.id && walkPose?.officerId===unit.id;
           const showWalk = moving && readyWalk.has(unit.id);
-          // V1 sheets face screen-right. Mirror only the walking art for
-          // leftward projected travel, using the real next accepted waypoint.
-          // A vertical or zero-length projection has no lateral facing cue.
-          const walkSide = realtime && moving && unit.nextWaypoint
-            ? isoSpriteSideFromPoints({x:unit.gridX,y:unit.gridY},unit.nextWaypoint)
-            : null;
+          // Prefer the current real segment, then the last known lateral
+          // side; vertical segments and arrival must not flip the art.
+          const walkSide = realtime ? unit.routeSide ?? lastFacing.get(unit.id) ?? null : null;
           const point = !realtime && walkPose?.officerId===unit.id
             ? {x:walkPose.x,y:walkPose.y} : unit;
           const frame = realtime ? (moving ? realtimeWalkFrames[unit.id] ?? 0 : 0) :
@@ -773,6 +781,7 @@ export function GroundSquadSelection({
             </g>
             {artUrl && <image data-testid={'ground-officer-sprite-' + unit.id}
               data-asset-state={artReady ? 'loaded' : 'fallback'}
+              transform={walkSide==='left'?'scale(-1 1)':undefined}
               href={artUrl} x="-27" y="-72" width="54" height="80"
               preserveAspectRatio="xMidYMax meet" pointerEvents="none"
               opacity={artReady && !showWalk ? 1 : 0}
