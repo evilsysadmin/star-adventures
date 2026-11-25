@@ -12,6 +12,7 @@ import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt, reconcileWalkStarts, realtimeOfficerFrame } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
+import { isoSpriteSideFromPoints } from '../isoActorFacing';
 import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { OFFICERS } from '../../../src/crew.mjs';
 import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
@@ -69,7 +70,7 @@ export function GroundSquadSelection({
 }: {
   squad: Officer[];
   position: { x: number; y: number };
-  officers: Array<{id: string; x: number; y: number; heading: string}>;
+  officers: Array<{id: string; x: number; y: number; heading: string; route?: readonly Point[]}>;
   snapshot: GroundSnapshot;
   onMove: (target: Point, selection: string[]) => GroundMoveResult;
   onInspectProbe: (officerId: string) => string;
@@ -88,7 +89,8 @@ export function GroundSquadSelection({
     const location = officers.find(unit => unit.id === officer.id);
     const gridX = location?.x ?? position.x;
     const gridY = location?.y ?? position.y;
-    return {...officer, gridX, gridY, heading: location?.heading ?? 'N', ...tile(gridX, gridY)};
+    return {...officer, gridX, gridY, heading: location?.heading ?? 'N',
+      nextWaypoint: location?.route?.[0], ...tile(gridX, gridY)};
   });
   const [selected, setSelected] = useState<string[]>(() => squad[0] ? [squad[0].id] : []);
   // Draw vector proxies until each CDN image is actually decoded. An R2
@@ -723,6 +725,12 @@ export function GroundSquadSelection({
           const moving = realtime ? realtimeMovingIds.includes(unit.id) :
             walking?.officerId===unit.id && walkPose?.officerId===unit.id;
           const showWalk = moving && readyWalk.has(unit.id);
+          // V1 sheets face screen-right. Mirror only the walking art for
+          // leftward projected travel, using the real next accepted waypoint.
+          // A vertical or zero-length projection has no lateral facing cue.
+          const walkSide = realtime && moving && unit.nextWaypoint
+            ? isoSpriteSideFromPoints({x:unit.gridX,y:unit.gridY},unit.nextWaypoint)
+            : null;
           const point = !realtime && walkPose?.officerId===unit.id
             ? {x:walkPose.x,y:walkPose.y} : unit;
           const frame = realtime ? (moving ? realtimeWalkFrames[unit.id] ?? 0 : 0) :
@@ -741,6 +749,7 @@ export function GroundSquadSelection({
             data-world-x={unit.gridX.toFixed(3)} data-world-y={unit.gridY.toFixed(3)}
             data-heading={unit.heading}
             data-walk-phase={moving?'moving':'idle'} data-walk-frame={frame}
+            data-walk-facing={walkSide??'neutral'}
             data-walk-atlas-ready={readyWalk.has(unit.id)}
             transform={'translate(' + point.x + ' ' + point.y + ')'}
             className={active ? 'ground-unit is-selected' : 'ground-unit'}>
@@ -774,6 +783,7 @@ export function GroundSquadSelection({
               })} />}
             {showWalk && <foreignObject
               data-testid={'ground-officer-walk-'+unit.id}
+              transform={walkSide==='left'?'scale(-1 1)':undefined}
               x="-27" y="-72" width="54" height="80" pointerEvents="none">
               <div aria-hidden="true" style={{
                 width:'100%',height:'100%',

@@ -56,7 +56,9 @@ for(const width of [390,430]){
   await tapCell(page,3,5);
   await expect(move).toHaveAttribute('aria-pressed','false');
   await expect(venn).toHaveAttribute('data-walk-phase','moving',{timeout:8000});
+  await expect(venn).toHaveAttribute('data-walk-facing','left');
   await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
+  await expect(venn).toHaveAttribute('data-walk-facing','neutral');
   await expect(venn).toHaveAttribute('data-grid-x','3');
   await expect(venn).toHaveAttribute('data-grid-y','5');
   await page.getByTestId('ground-select-all').tap();
@@ -129,4 +131,11 @@ test('desktop mouse beta remains deliberate: left-click selects, right-click ord
  await page.getByTestId('ground-squad-board').locator('[data-cell-id="3,5"]')
   .click({button:'right'});
  await expect(venn).toHaveAttribute('data-grid-x','3',{timeout:10000});
+ await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
+ // Returning to the vacated original tile must face the other way.
+ await page.getByTestId('ground-squad-board').locator('[data-cell-id="4,5"]')
+  .click({button:'right'});
+ await expect(venn).toHaveAttribute('data-walk-facing','right');
+ await expect(venn).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
+ await expect(venn).toHaveAttribute('data-grid-x','4');
 });

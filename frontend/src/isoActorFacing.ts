@@ -32,3 +32,14 @@ export function mirroredAtlasUv(frame:number,mirror:boolean,columns=3,rows=2) {
  return {x:(col+(mirror?1:0))/columns,y:1-(row+1)/rows,
   repeatX:(mirror?-1:1)/columns,repeatY:1/rows};
 }
+
+// Continuous K-47 routes use fractional coordinates rather than cell IDs.
+// The fixed projection is screenX = 40*(x-y); never infer facing from
+// the final destination when the next validated waypoint goes another way.
+export function isoSpriteSideFromPoints(
+ from: Readonly<{x:number;y:number}>, to: Readonly<{x:number;y:number}>,
+): 'left'|'right'|null {
+ if(![from.x,from.y,to.x,to.y].every(Number.isFinite))return null;
+ const screenX=(to.x-from.x)-(to.y-from.y);
+ return Math.abs(screenX)<1e-7?null:screenX<0?'left':'right';
+}
