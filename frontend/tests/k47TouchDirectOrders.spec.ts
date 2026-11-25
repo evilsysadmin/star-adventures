@@ -216,6 +216,19 @@ test('realtime pose handoff keeps one decoded layer opaque and respects reduced 
  };
  await assertHandoff(3,5);
  await page.emulateMedia({reducedMotion:'reduce'});
- await expect(walk).toHaveCSS('transition-duration','0s');
+ // The global accessibility stylesheet uses .01ms !important instead
+ // of literal zero. Verify effective duration AND delay, not serialization.
+ expect(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+ for(const layer of [idle,walk]){
+  const timing=await layer.evaluate(element=>{
+   const style=getComputedStyle(element);
+   const milliseconds=(value:string)=>value.split(',').map(part=>{
+    const token=part.trim();
+    return Number.parseFloat(token)*(token.endsWith('ms')?1:1000);
+   });
+   return [...milliseconds(style.transitionDuration),...milliseconds(style.transitionDelay)];
+  });
+  expect(timing.every(ms=>Number.isFinite(ms)&&Math.abs(ms)<=.011)).toBe(true);
+ }
  await assertHandoff(4,5);
 });
