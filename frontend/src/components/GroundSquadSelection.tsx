@@ -8,6 +8,7 @@ import { GroundColonyFloor, GroundColonyFixtures } from './GroundColonyDressing'
 import { GroundLandingCourt3D } from './GroundLandingCourt3D';
 import { GroundRescueBayDeck } from './GroundRescueBayDeck';
 import { groundSurfaceFrame } from '../groundSurfaceFrame';
+import { visibleGroundNameplates } from '../groundNameplateLayout';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { officerRouteStepAt, reconcileWalkStarts, realtimeOfficerFrame } from '../isoOfficerAnimation';
@@ -337,6 +338,14 @@ export function GroundSquadSelection({
   // An accepted realtime order describes live movement, not a permanent
   // status. Once all requested routes complete, say so rather than showing
   // "en marcha" indefinitely next to stationary officers.
+  // Reserve the full callsign envelope even for compact initials, so hover
+  // cannot reveal a label over another officer. Never move the actual actor.
+  const plateLayout=realtime?visibleGroundNameplates(units.map(unit=>{
+    const hasArt=readyArt.has(unit.id)||(realtimeMovingIds.includes(unit.id)&&readyWalk.has(unit.id));
+    return {id:unit.id,x:unit.x,y:unit.y,bodyTop:hasArt?-53:-30,
+      plateY:hasArt?-55:-37,plateWidth:Math.max(31,unit.name.split(' ')[0].length*6.4+12),
+      selected:selected.includes(unit.id)};
+  })):null;
   const visibleMoveNotice=realtime&&realtimeMovingIds.length===0
     ? moveNotice.replace(' en marcha hacia ', ' ha llegado a ')
     : moveNotice;
@@ -820,6 +829,7 @@ export function GroundSquadSelection({
               fill="transparent" pointerEvents="all" />
             <g data-testid={'ground-officer-nameplate-'+unit.id}
               className="ground-officer-nameplate" pointerEvents="none"
+              visibility={plateLayout&&!plateLayout.has(unit.id)?'hidden':'visible'}
               transform={'translate(0 '+plateY+')'}>
               <g data-testid={'ground-officer-nameplate-full-'+unit.id}
                 className="ground-officer-nameplate-full">
