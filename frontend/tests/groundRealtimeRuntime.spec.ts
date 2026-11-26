@@ -43,9 +43,49 @@ for(const width of [390,1280]){
     await expect(toggle).toHaveAttribute('aria-pressed','true');
     await page.getByTestId('ground-camera-toggle').click(); // whole map for distant order
     if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
+    // Observe actual committed frame changes before issuing the order.
+    // Sampling RAF for a fixed 700ms can alias the independent sprite timer
+    // on a loaded software-rendered browser, especially at desktop width.
+    const walkSamples=await officer.evaluateHandle(element=>{
+      const samples:number[]=[];
+      const read=()=>{
+        if(element.getAttribute('data-walk-phase')==='moving')
+          samples.push(Number(element.getAttribute('data-walk-frame')));
+      };
+      const observer=new MutationObserver(read);
+      observer.observe(element,{attributes:true,attributeFilter:['data-walk-frame','data-walk-phase']});
+      return {samples,observer};
+    });
     await clickGround(page,9,4);
     await expect(officer).toHaveAttribute('data-walk-phase','moving');
     await expect(page.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','unknown');
+    const preview=page.getByTestId('ground-route-preview-venn');
+    await expect(preview).toBeVisible();
+    await expect(page.getByTestId('ground-route-preview-layer')).toHaveAttribute('pointer-events','none');
+    // Every drawn segment stays within explored cells, including the
+    // conservative half-cell envelope at fractional boundaries.
+    const safe=await preview.evaluate(group=>{
+      const svg=group.ownerSVGElement!;
+      const unknown=new Set([...svg.querySelectorAll('[data-fog-state="unknown"]')]
+        .map(e=>e.getAttribute('data-fog-cell')));
+      const line=group.querySelector('polyline')!;
+      const points=[...Array(line.points.numberOfItems)].map((_,i)=>{
+        const p=line.points.getItem(i);
+        return {x:((p.x-440)/40+(p.y-52)/20)/2,
+          y:((p.y-52)/20-(p.x-440)/40)/2};
+      });
+      for(let i=1;i<points.length;i++){
+        const a=points[i-1],b=points[i];
+        for(let y=Math.ceil(Math.min(a.y,b.y)-.5+1e-8);y<=Math.floor(Math.max(a.y,b.y)+.5-1e-8);y++)
+          for(let x=Math.ceil(Math.min(a.x,b.x)-.5+1e-8);x<=Math.floor(Math.max(a.x,b.x)+.5-1e-8);x++)
+            if(unknown.has(x+','+y))return false;
+      }
+      return points.length>1;
+    });
+    expect(safe).toBe(true);
+    await expect(page.getByTestId('ground-route-preview-dorn')).toHaveCount(0);
+    await expect(page.getByTestId('ground-route-preview-mira')).toHaveCount(0);
+
 
     await expect.poll(async()=>{
       const p=await pose(page);
@@ -53,19 +93,17 @@ for(const width of [390,1280]){
     },{timeout:6000}).toBeGreaterThan(.08);
     // Sample real movement across multiple rendered frames: a 3x2 atlas has
     // exactly six frames, and out-of-range rows can make the actor disappear.
-    const observed=await officer.evaluate(async element=>{
-      const samples:number[]=[];
-      const until=performance.now()+700;
-      while(performance.now()<until){
-        await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
-        if(element.getAttribute('data-walk-phase')==='moving')
-          samples.push(Number(element.getAttribute('data-walk-frame')));
-      }
-      return samples;
-    });
-    expect(observed.length).toBeGreaterThan(1);
-    expect(new Set(observed).size).toBeGreaterThan(1);
-    expect(observed.every(frame=>Number.isInteger(frame)&&frame>=0&&frame<6)).toBe(true);
+    try{
+      await expect.poll(()=>walkSamples.evaluate(({samples})=>new Set(samples).size),
+        {timeout:6000,message:'moving sprite must commit at least two distinct atlas frames'})
+        .toBeGreaterThan(1);
+      const observed=await walkSamples.evaluate(({samples})=>[...samples]);
+      expect(observed.length).toBeGreaterThan(1);
+      expect(observed.every(frame=>Number.isInteger(frame)&&frame>=0&&frame<6)).toBe(true);
+    }finally{
+      await walkSamples.evaluate(({observer})=>observer.disconnect());
+      await walkSamples.dispose();
+    }
     const mid=await pose(page);
     expect(Math.hypot(mid.x-9,mid.y-4)).toBeGreaterThan(1);
     // Capture the *actual gameplay follow camera* as well: the overview
@@ -253,6 +291,7 @@ for(const width of [390,1280]){
     await stop.click();
     await expect(officer).toHaveAttribute('data-walk-phase','idle');
     await expect(stop).toBeDisabled();
+    await expect(page.getByTestId('ground-route-preview-venn')).toHaveCount(0);
     await expect(page.getByTestId('ground-current-notice')).toContainText('se ha detenido');
     const stopped=await pose(page);
     expect(Math.hypot(stopped.x-9,stopped.y-4)).toBeGreaterThan(.5);
