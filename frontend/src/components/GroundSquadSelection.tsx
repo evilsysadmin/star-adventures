@@ -11,6 +11,7 @@ import { groundSurfaceFrame } from '../groundSurfaceFrame';
 import { visibleGroundNameplates } from '../groundNameplateLayout';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
+import { groundRealtimeMoveNotice, groundMoveTargetLabel } from '../groundMoveNotice';
 import { officerRouteStepAt, reconcileWalkStarts, realtimeOfficerFrame } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { isoSpriteSideFromPoints, retainIsoSpriteSides, type IsoSpriteSide } from '../isoActorFacing';
@@ -332,6 +333,7 @@ export function GroundSquadSelection({
     : cameraX+' '+cameraY+' '+cameraWidth+' '+cameraHeight;
   const [moveMode, setMoveMode] = useState(false);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
+  const [orderedIds,setOrderedIds]=useState<string[]>([]);
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
   const [medicalNotice, setMedicalNotice] = useState('Acerca un oficial al puesto de socorro para atender a los civiles.');
   const [perimeterNotice, setPerimeterNotice] = useState('Acerca un oficial a la baliza para establecer contacto.');
@@ -347,8 +349,8 @@ export function GroundSquadSelection({
       plateY:hasArt?-55:-37,plateWidth:Math.max(31,unit.name.split(' ')[0].length*6.4+12),
       selected:selected.includes(unit.id)};
   })):null;
-  const visibleMoveNotice=realtime&&realtimeMovingIds.length===0
-    ? moveNotice.replace(' en marcha hacia ', ' ha llegado a ')
+  const visibleMoveNotice=realtime
+    ? groundRealtimeMoveNotice(moveNotice,orderedIds,realtimeMovingIds)
     : moveNotice;
   // On an actual touch phone, beta floor taps already issue a command.
   // Explain the one-tap affordance in the existing status strip, without a
@@ -425,6 +427,7 @@ export function GroundSquadSelection({
     if (!tileId || disabled) return;
     setLastNotice('move');
     setMoveMode(false);
+    setOrderedIds([]);
     if (!selected.length) {
       setMoveNotice('Selecciona uno o varios oficiales antes de marchar.');
       return;
@@ -461,8 +464,9 @@ export function GroundSquadSelection({
     }
     const name = selected.length === 1 ? squad.find(officer => officer.id === selected[0])?.name :
       'Formación de ' + selected.length + ' oficiales';
+    if(success&&realtime)setOrderedIds([...selected]);
     setMoveNotice(success ? name + (realtime?' en marcha hacia ':' en torno a ') +
-      (realtime?destination.x.toFixed(1)+':'+destination.y.toFixed(1):x+':'+y) :
+      (realtime?groundMoveTargetLabel(destination,selected.length):x+':'+y) :
       'No existe una formación segura: casilla ocupada o destino bloqueado.');
   };
   const onBoardKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {

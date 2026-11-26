@@ -130,7 +130,7 @@ for(const width of [390,430]){
    return JSON.parse(saved!).motion.officers as Array<{id:string;x:number;y:number}>;
   });
   expect(new Set(team.map(u=>u.x.toFixed(3)+','+u.y.toFixed(3))).size).toBe(3);
-  await expect(page.getByTestId('ground-move-status')).toContainText('ha llegado a');
+  await expect(page.getByTestId('ground-move-status')).toContainText('ha llegado a 2.0:5.0');
   await page.screenshot({path:'test-results/k47-touch-direct-arrived-'+width+'.png'});
   await expect(board.locator('[data-cell-id]')).toHaveCount(216);
   await expect(board.locator('[data-fog-cell="16,10"]')).toHaveAttribute('data-fog-state','unknown');

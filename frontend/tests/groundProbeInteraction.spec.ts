@@ -69,7 +69,9 @@ for (const width of [390,1280]) {
 }
 
 
-for(const width of [390,1280]){
+test.describe('fresh continuous surface',()=>{
+ test.use({storageState:{cookies:[],origins:[]}});
+ for(const width of [390,1280]){
  test('realtime station button matches actual fractional arrival at '+width+'px',async({page})=>{
   test.setTimeout(85000);
   await page.setViewportSize({width,height:850});
@@ -105,3 +107,4 @@ for(const width of [390,1280]){
   await expect(page.getByTestId('explore-heading')).toContainText('4:5');
  });
 }
+});
