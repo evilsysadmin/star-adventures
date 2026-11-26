@@ -18,6 +18,7 @@ import { startAwayTeam } from '../../../src/awayTeam.mjs';
 import { OFFICERS } from '../../../src/crew.mjs';
 import { orderGroundOfficersByDepth } from '../../../src/groundIsoDepth.mjs';
 import { groundFogOfWar, groundVisionCells } from '../../../src/groundFogOfWar.mjs';
+import { groundRealtimeStationApproach } from '../../../src/groundRealtimeWorld.mjs';
 import { groundRealtimeGroupFrame, groundCompactGroupFollowHeight } from '../../../src/groundRealtimeGroupFrame.mjs';
 import type { GroundSnapshot } from '../groundSquadSession';
 import { isSelectionDrag, selectOfficer, selectOfficerRectangle } from '../../../src/tacticalSelection.mjs';
@@ -356,17 +357,16 @@ export function GroundSquadSelection({
     moveNotice==='Selecciona un oficial o todo el equipo para dar una orden.'
     ? 'Toca el terreno para ordenar al oficial o equipo seleccionado.'
     : visibleMoveNotice;
-  const probe = scene.objects.find(object => object.id === 'probe' && object.type === 'station');
-  const probeAtHand = !!probe && !!selectedUnit &&
-    Math.abs(selectedUnit.gridX - probe.x) + Math.abs(selectedUnit.gridY - probe.y) === 1;
-  const reliefPoint = scene.objects.find(object =>
-    object.id === 'relief-point' && object.type === 'station');
-  const reliefAtHand = !!reliefPoint && !!selectedUnit &&
-    Math.abs(selectedUnit.gridX - reliefPoint.x) + Math.abs(selectedUnit.gridY - reliefPoint.y) === 1;
-  const uplink = scene.objects.find(object =>
-    object.id === 'perimeter-uplink' && object.type === 'station');
-  const perimeterAtHand = !!uplink && !!selectedUnit &&
-    Math.abs(selectedUnit.gridX - uplink.x) + Math.abs(selectedUnit.gridY - uplink.y) === 1;
+  const stationAtHand=(station:Point|undefined)=>{
+    if(!station||!selectedUnit)return false;
+    const current={x:selectedUnit.gridX,y:selectedUnit.gridY};
+    return realtime
+      ? groundRealtimeStationApproach(current,station,realtimeMovingIds.includes(selectedUnit.id)).reason===null
+      : Math.abs(current.x-station.x)+Math.abs(current.y-station.y)===1;
+  };
+  const probeAtHand=stationAtHand(scene.objects.find(object=>object.id==='probe'&&object.type==='station'));
+  const reliefAtHand=stationAtHand(scene.objects.find(object=>object.id==='relief-point'&&object.type==='station'));
+  const perimeterAtHand=stationAtHand(scene.objects.find(object=>object.id==='perimeter-uplink'&&object.type==='station'));
   const [keyboardCell, setKeyboardCell] = useState<Point>(() => ({x:position.x,y:position.y}));
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const gesture = useRef<Gesture | null>(null);
