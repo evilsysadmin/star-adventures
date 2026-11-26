@@ -5,7 +5,7 @@ import {startAwayTeam} from '../src/awayTeam.mjs';
 import {startGroundSquadPositions} from '../src/groundSquadPositions.mjs';
 import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,
-  serializeGroundRealtimeWorld,orderGroundRealtimeWorld,
+  serializeGroundRealtimeWorld,orderGroundRealtimeWorld,appendGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,groundRealtimeStationUse,
   orderGroundRealtimeFormation,groundRealtimeStationApproach,stopGroundRealtimeWorld,
 } from '../src/groundRealtimeWorld.mjs';
@@ -167,4 +167,33 @@ test('stopping selected formation members preserves K-47 terrain memory and save
  assert.equal(restored.source,'realtime');
  assert.deepEqual(restored.state,all);
  assert.deepEqual(advanceGroundRealtimeWorld(world,all,500),all);
+});
+
+
+test('queued K-47 return order preserves actual fog, pending route and save recovery',()=>{
+ const initial=deploy();
+ const outbound=orderGroundRealtimeWorld(world,initial,'venn',{x:9,y:4});
+ const moving=advanceGroundRealtimeWorld(world,outbound,80);
+ const before=JSON.stringify(moving);
+ const queued=appendGroundRealtimeWorld(world,moving,'venn',{x:4,y:5});
+ const prefix=officer(moving).route;
+ assert.deepEqual(officer(queued).route.slice(0,prefix.length),prefix);
+ assert.deepEqual(officer(queued).route.at(-1),{x:4,y:5});
+ assert.equal(officer(queued).x,officer(moving).x);
+ assert.equal(officer(queued).y,officer(moving).y);
+ assert.deepEqual(groundRealtimeVision(world,queued),groundRealtimeVision(world,moving));
+ assert.equal(groundRealtimeVision(world,queued).explored.has('10,4'),false);
+ assert.throws(()=>appendGroundRealtimeWorld(world,queued,'venn',{x:-1,y:5}),/outside map/);
+ assert.equal(JSON.stringify(moving),before);
+ const raw=serializeGroundRealtimeWorld(world,away,legacy(),queued);
+ const restored=restoreGroundRealtimeWorld(world,away,legacy(),raw);
+ assert.equal(restored.source,'realtime');
+ assert.deepEqual(restored.state,queued);
+ const arrived=finish(restored.state);
+ assert.deepEqual(officer(arrived),{id:'venn',x:4,y:5,route:[]});
+ const vision=groundRealtimeVision(world,arrived);
+ assert.equal(vision.visible.has('10,4'),false);
+ assert.equal(vision.explored.has('10,4'),true,'only actual travel discovers terrain');
+ assert.deepEqual(officer(arrived,'mira'),officer(initial,'mira'));
+ assert.deepEqual(officer(arrived,'dorn'),officer(initial,'dorn'));
 });
