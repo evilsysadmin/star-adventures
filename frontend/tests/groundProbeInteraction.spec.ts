@@ -1,4 +1,7 @@
 import {expect, test} from '@playwright/test';
+import {freshCaptainStorageState,legacyDiagnosticsStorageState} from './fixtures/browserStartProfiles';
+
+test.use({storageState:legacyDiagnosticsStorageState});
 
 async function moveOnGround(page: import('@playwright/test').Page, x: number, y: number) {
   const board = page.getByTestId('ground-squad-board');
@@ -21,6 +24,7 @@ for (const width of [390,1280]) {
     test.setTimeout(85_000);
     await page.setViewportSize({width,height:850});
     await page.goto('/');
+    await expect(page.getByTestId('explore-right')).toBeVisible({timeout:15000});
     await page.getByTestId('explore-right').click();
     await page.getByTestId('explore-forward').click();
     await page.getByTestId('explore-right').click();
@@ -70,7 +74,7 @@ for (const width of [390,1280]) {
 
 
 test.describe('fresh continuous surface',()=>{
- test.use({storageState:{cookies:[],origins:[]}});
+ test.use({storageState:freshCaptainStorageState()});
  for(const width of [390,1280]){
  test('realtime station button matches actual fractional arrival at '+width+'px',async({page})=>{
   test.setTimeout(85000);
