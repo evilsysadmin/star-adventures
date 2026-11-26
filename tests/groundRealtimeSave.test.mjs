@@ -116,3 +116,28 @@ test('overlapping saved officers cannot override the canonical legacy deployment
   }
   assert.equal(JSON.stringify(saved),before);
 });
+
+
+test('sidecars reject converging final destinations even when current poses are valid',()=>{
+  const saved=legacy(),fresh=initialRealtimeFromLegacy(world,away,saved);
+  const scene=world.scenes.surface;
+  const walking=orderRealtimeExplorationMove(scene,fresh,'venn',{x:3,y:5});
+  for(const explored of [null,['4,5']]){
+    const raw=serializeGroundRealtimeSave(world,away,saved,walking,explored);
+    const good=restoreGroundRealtimeSave(world,away,saved,raw);
+    assert.equal(good.source,'realtime');
+    assert.deepEqual(good.state,walking,'valid outstanding route is preserved');
+    for(const route of [[{x:4,y:5},{x:3,y:5}], [{x:4,y:5},{x:3,y:5},{x:3.1,y:5}]]){
+      const bad=JSON.parse(raw);
+      byId(bad.motion,'mira').route=route;
+      assert.throws(()=>serializeGroundRealtimeSave(world,away,saved,bad.motion,explored),/Overlapping deployment/);
+      assert.deepEqual(restoreGroundRealtimeSave(world,away,saved,JSON.stringify(bad)),
+        {state:fresh,source:'recovered-legacy'});
+    }
+    const stationary=JSON.parse(serializeGroundRealtimeSave(world,away,saved,fresh,explored));
+    byId(stationary.motion,'mira').route=[{x:4,y:5}];
+    assert.throws(()=>serializeGroundRealtimeSave(world,away,saved,stationary.motion,explored),/Overlapping deployment/);
+    assert.deepEqual(restoreGroundRealtimeSave(world,away,saved,JSON.stringify(stationary)),
+      {state:fresh,source:'recovered-legacy'});
+  }
+});
