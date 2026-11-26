@@ -235,3 +235,33 @@ test('fractional retarget within one cell cannot cut the clearance envelope of a
  const clear={x:2.1,y:2.2};
  assert.deepEqual(orderRealtimeExplorationMove(field,initial,'venn',clear).officers[0].route,[clear]);
 });
+
+
+test('future fractional waypoints reserve both sides of their cell boundary',()=>{
+ const field={width:8,height:6,walls:[],objects:[]};
+ const left={x:2.49,y:2},right={x:2.51,y:2};
+ const original=startRealtimeExploration(field,[
+  {id:'left',x:1,y:2},{id:'right',x:4,y:2},
+ ]);
+ assert.notEqual(Math.round(left.x),Math.round(right.x));
+ assert.ok(Math.hypot(left.x-right.x,left.y-right.y)<.32);
+ for(const [first,second,goal,conflict,safe] of [
+  ['left','right',left,right,{x:4,y:4}],
+  ['right','left',right,left,{x:1,y:4}],
+ ]){
+  const planned=orderRealtimeExplorationMove(field,original,first,goal);
+  const snapshot=JSON.stringify(planned);
+  assert.throws(()=>orderRealtimeExplorationMove(field,planned,second,conflict),/Destination occupied/);
+  assert.equal(JSON.stringify(planned),snapshot,'rejected order leaves planned route unchanged');
+  const parallel=orderRealtimeExplorationMove(field,planned,second,safe);
+  let live=parallel;
+  for(let i=0;i<200&&live.officers.some(o=>o.route.length);i++){
+   live=advanceRealtimeExploration(field,live,20);
+   const [a,b]=live.officers;
+   assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>=.32-1e-7);
+  }
+  assert.ok(live.officers.every(o=>!o.route.length));
+  assert.deepEqual(destinationOf(officer(live,first)),goal);
+  assert.deepEqual(destinationOf(officer(live,second)),safe);
+ }
+});
