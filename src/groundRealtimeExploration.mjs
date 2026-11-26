@@ -47,6 +47,35 @@ function free(scene,blocked,point){
   return true;
 }
 
+// Endpoints alone do not prove a swept circle clears a solid corner.
+// Only nearby blocked cells need checking. Endpoint clearance is already
+// established by free(); for the segment interior, test rectangle contact
+// and the four corner projections (the remaining closest-feature cases).
+function segmentClear(scene,blocked,from,to){
+  const dx=to.x-from.x,dy=to.y-from.y,length2=dx*dx+dy*dy;
+  if(length2===0)return true;
+  for(let y=Math.max(0,Math.floor(Math.min(from.y,to.y)-1));
+      y<=Math.min(scene.height-1,Math.ceil(Math.max(from.y,to.y)+1));y++)
+    for(let x=Math.max(0,Math.floor(Math.min(from.x,to.x)-1));
+        x<=Math.min(scene.width-1,Math.ceil(Math.max(from.x,to.x)+1));x++){
+      if(!blocked.has(key(x,y)))continue;
+      const left=x-.5,right=x+.5,top=y-.5,bottom=y+.5;
+      // Slab intersection, including tangencies with the solid footprint.
+      let enter=0,exit=1,intersects=true;
+      for(const [origin,delta,min,max] of [[from.x,dx,left,right],[from.y,dy,top,bottom]]){
+        if(delta===0){if(origin<min||origin>max)intersects=false;continue;}
+        const a=(min-origin)/delta,b=(max-origin)/delta;
+        enter=Math.max(enter,Math.min(a,b));exit=Math.min(exit,Math.max(a,b));
+      }
+      if(intersects&&enter<=exit)return false;
+      for(const cx of [left,right])for(const cy of [top,bottom]){
+        const t=Math.max(0,Math.min(1,((cx-from.x)*dx+(cy-from.y)*dy)/length2));
+        if(Math.hypot(from.x+t*dx-cx,from.y+t*dy-cy)<CLEARANCE)return false;
+      }
+    }
+  return true;
+}
+
 function checkState(scene,state,blocked=topology(scene)){
   if(!state||state.version!==1||!Array.isArray(state.officers)||
      state.officers.length<1||state.officers.length>16)
@@ -64,6 +93,7 @@ function checkState(scene,state,blocked=topology(scene)){
       const prevCell=cell(from),nextCell=cell(target);
       if(Math.abs(prevCell.x-nextCell.x)+Math.abs(prevCell.y-nextCell.y)>1)
         throw new TypeError('Disconnected exploration route');
+      if(!segmentClear(scene,blocked,from,target))throw new TypeError('Unsafe exploration segment');
       from=target;
     }
   }
@@ -111,7 +141,16 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
     throw new RangeError('Destination occupied');
   if(distance(actor,destination)<1e-7){actor.route=[];return result;}
   if(start.x===end.x&&start.y===end.y){
-    actor.route=[{x:destination.x,y:destination.y}];
+    // A diagonal within one free grid cell can still clip the rounded
+    // clearance envelope of a neighboring solid corner. Prefer the direct
+    // segment when safe; otherwise take the already walkable cell center.
+    const goal={x:destination.x,y:destination.y};
+    if(segmentClear(scene,blocked,actor,goal))actor.route=[goal];
+    else {
+      if(!segmentClear(scene,blocked,actor,start)||!segmentClear(scene,blocked,start,goal))
+        throw new RangeError('Unsafe exploration segment');
+      actor.route=[start,goal];
+    }
     return result;
   }
   const queue=[start],back=new Map([[key(start.x,start.y),null]]);
