@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {startAwayTeam} from '../src/awayTeam.mjs';
+import {startRealtimeExploration} from '../src/groundRealtimeExploration.mjs';
 import {startGroundSquadPositions} from '../src/groundSquadPositions.mjs';
 import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,
   serializeGroundRealtimeWorld,orderGroundRealtimeWorld,appendGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,groundRealtimeStationUse,
-  orderGroundRealtimeFormation,groundRealtimeStationApproach,stopGroundRealtimeWorld,
+  orderGroundRealtimeFormation,appendGroundRealtimeFormation,groundRealtimeStationApproach,stopGroundRealtimeWorld,
 } from '../src/groundRealtimeWorld.mjs';
 import {serializeGroundRealtimeSave} from '../src/groundRealtimeSave.mjs';
 const world=JSON.parse(readFileSync(new URL('../content/scenes/meridian.json',import.meta.url),'utf8'));
@@ -196,4 +197,45 @@ test('queued K-47 return order preserves actual fog, pending route and save reco
  assert.equal(vision.explored.has('10,4'),true,'only actual travel discovers terrain');
  assert.deepEqual(officer(arrived,'mira'),officer(initial,'mira'));
  assert.deepEqual(officer(arrived,'dorn'),officer(initial,'dorn'));
+});
+
+
+test('queued formation in K-47 exterior preserves fog, poses and exact sidecar recovery',()=>{
+ const initial=deploy();
+ // Deliberate mid-mission fixture on real exterior topology, not an
+ // alternate deployment origin or a change to the legacy rollback anchor.
+ const positions={venn:{x:13,y:3},dorn:{x:13,y:6},mira:{x:13,y:8}};
+ const motion=startRealtimeExploration(world.scenes.surface,
+   initial.motion.officers.map(o=>({id:o.id,...positions[o.id]})));
+ const exterior={...initial,motion};
+ let state=orderGroundRealtimeWorld(world,exterior,'venn',{x:14,y:3});
+ state=orderGroundRealtimeWorld(world,state,'dorn',{x:14,y:6});
+ const moving=advanceGroundRealtimeWorld(world,state,80);
+ const before=JSON.stringify(moving);
+ const queued=appendGroundRealtimeFormation(world,moving,['venn','dorn'],{x:16,y:3});
+ assert.deepEqual(groundRealtimeVision(world,queued),groundRealtimeVision(world,moving));
+ for(const id of ['venn','dorn']){
+   const previous=officer(moving,id),next=officer(queued,id);
+   assert.deepEqual([next.x,next.y],[previous.x,previous.y]);
+   assert.deepEqual(next.route.slice(0,previous.route.length),previous.route);
+   assert.ok(next.route.length>previous.route.length);
+ }
+ assert.deepEqual(officer(queued,'venn').route.at(-1),{x:16,y:3});
+ assert.deepEqual(officer(queued,'mira'),officer(moving,'mira'));
+ assert.equal(JSON.stringify(moving),before);
+ const restored=restoreGroundRealtimeWorld(world,away,legacy(),
+   serializeGroundRealtimeWorld(world,away,legacy(),queued));
+ assert.equal(restored.source,'realtime');
+ assert.deepEqual(restored.state,queued);
+ const arrived=finish(restored.state);
+ for(const id of ['venn','dorn']){
+   const last=officer(queued,id).route.at(-1);
+   assert.deepEqual(officer(arrived,id),{id,...last,route:[]});
+ }
+ assert.deepEqual(officer(arrived,'mira'),officer(moving,'mira'));
+ const stopped=stopGroundRealtimeWorld(world,queued,['venn','dorn']);
+ assert.deepEqual(stopped.explored,queued.explored);
+ assert.ok(stopped.motion.officers.every(o=>o.route.length===0));
+ assert.deepEqual(appendGroundRealtimeFormation(world,initial,['venn','dorn','mira'],{x:2,y:5}),
+   orderGroundRealtimeFormation(world,initial,['venn','dorn','mira'],{x:2,y:5}));
 });
