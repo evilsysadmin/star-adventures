@@ -161,6 +161,21 @@ for(const width of [390,1280]){
       return raw?JSON.parse(raw).motion.officers.filter(
         (o:{route:unknown[]})=>o.route.length>0).length:0;
     }),{timeout:8000}).toBeGreaterThanOrEqual(2);
+    // All actually rendered trails have a distinct ink and dash pattern,
+    // matching the existing selected officer's portrait-card accent.
+    const signatures=await page.getByTestId('ground-squad-board').evaluate(svg=>{
+      const layer=svg.querySelector('[data-testid="ground-route-preview-layer"]')!;
+      return [...layer.querySelectorAll('[data-route-ink]')].map(ink=>{
+        const id=ink.parentElement!.getAttribute('data-testid')!.replace('ground-route-preview-','');
+        const card=document.querySelector<HTMLElement>('[data-testid="ground-select-'+id+'"]')!;
+        return {id,ink:getComputedStyle(ink).stroke,
+          dash:ink.getAttribute('stroke-dasharray'),accent:getComputedStyle(card).borderLeftColor};
+      });
+    });
+    expect(signatures.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(signatures.map(s=>s.ink)).size).toBe(signatures.length);
+    expect(new Set(signatures.map(s=>s.dash)).size).toBe(signatures.length);
+    expect(signatures.every(s=>s.ink===s.accent)).toBe(true);
     await page.getByTestId('ground-squad-board').screenshot({
       path:'test-results/away-realtime-formation-moving-'+width+'.png',
     });
