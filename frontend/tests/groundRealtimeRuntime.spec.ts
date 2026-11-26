@@ -3,7 +3,7 @@ import {freshCaptainStorageState,legacyDiagnosticsStorageState} from './fixtures
 
 test.use({storageState:freshCaptainStorageState()});
 
-async function clickGround(page:Page,x:number,y:number,button:'left'|'right'='right'){
+async function clickGround(page:Page,x:number,y:number,button:'left'|'right'='right',shift=false){
   const board=page.getByTestId('ground-squad-board');
   const p=await board.evaluate((element,{x,y})=>{
     const svg=element as SVGSVGElement;
@@ -15,7 +15,7 @@ async function clickGround(page:Page,x:number,y:number,button:'left'|'right'='ri
     const screen=center.matrixTransform(matrix),rect=svg.getBoundingClientRect();
     return {x:screen.x-rect.left,y:screen.y-rect.top};
   },{x,y});
-  await board.click({position:p,button});
+  await board.click({position:p,button,modifiers:shift?['Shift']:[]});
 }
 
 const pose=async(page:Page)=>{
@@ -359,3 +359,32 @@ for(const width of [390,1280]){
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   });
 }
+
+
+test('queued solo input appends a return and normal stop cancels the entire route',async({page})=>{
+ test.setTimeout(90_000);
+ await page.setViewportSize({width:1280,height:850});
+ await page.goto('/');
+ await expect(page.getByTestId('captain-controls')).toBeVisible();
+ await page.getByTestId('captain-transport').click();
+ await page.getByTestId('transport-confirm').click();
+ await page.locator('.ground-squad-instructions summary').click();
+ await page.getByTestId('ground-realtime-toggle').click();
+ await page.getByTestId('ground-camera-toggle').click();
+ const motion=()=>page.evaluate(()=>{
+  const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+  return JSON.parse(raw!).motion.officers as Array<{id:string;x:number;y:number;route:Array<{x:number;y:number}>}>;
+ });
+ await clickGround(page,9,4);
+ await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','moving');
+ await clickGround(page,4,5,'right',true);
+ const queued=(await motion()).find(o=>o.id==='venn')!;
+ expect(queued.route.at(-1)).toEqual({x:4,y:5});
+ expect(queued.route).toContainEqual({x:9,y:4});
+ await page.reload();
+ await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
+ const restored=(await motion()).find(o=>o.id==='venn')!;
+ expect(restored.route.at(-1)).toEqual({x:4,y:5});
+ await page.getByTestId('ground-stop-officer').click();
+ expect((await motion()).find(o=>o.id==='venn')!.route).toEqual([]);
+});

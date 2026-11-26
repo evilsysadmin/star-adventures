@@ -84,7 +84,7 @@ export function GroundSquadSelection({
   position: { x: number; y: number };
   officers: Array<{id: string; x: number; y: number; heading: string; route?: readonly Point[]}>;
   snapshot: GroundSnapshot;
-  onMove: (target: Point, selection: string[]) => GroundMoveResult;
+  onMove: (target: Point, selection: string[], append?:boolean) => GroundMoveResult;
   onInspectProbe: (officerId: string) => string;
   onAssistCivilians: (officerId: string) => string;
   onPerimeterContact: (officerId: string) => string;
@@ -433,10 +433,16 @@ export function GroundSquadSelection({
     return Math.abs(x-nearX)<.09&&Math.abs(y-nearY)<.09
       ? {x:nearX,y:nearY} : {x,y};
   };
-  const requestMove = (tileId: string | null, exact?:Point|null) => {
+  const requestMove = (tileId: string | null, exact?:Point|null, queue=false) => {
     if (!tileId || disabled) return;
     setLastNotice('move');
     setMoveMode(false);
+    const append=realtime&&queue;
+    if(append&&selected.length!==1){
+      setOrderedIds([]);
+      setMoveNotice('Para añadir un destino, selecciona un solo oficial. Las rutas actuales se conservan.');
+      return;
+    }
     setOrderedIds([]);
     if (!selected.length) {
       setMoveNotice('Selecciona uno o varios oficiales antes de marchar.');
@@ -451,11 +457,11 @@ export function GroundSquadSelection({
     const destination=realtime&&exact?exact:{x,y};
     if((!realtime && selected.length===squad.length && allowWholeMove &&
         x===position.x && y===position.y) ||
-        (selected.length===1&&selectedUnit&&
+        (!append&&selected.length===1&&selectedUnit&&
          Math.hypot(selectedUnit.gridX-destination.x,selectedUnit.gridY-destination.y)<.025)){
       setMoveNotice('La selección ya está en ese punto.');return;
     }
-    const outcome=onMove(destination,[...selected]);
+    const outcome=onMove(destination,[...selected],append);
     const success = typeof outcome==='boolean' ? outcome : outcome.moved;
     if(!realtime && success && typeof outcome!=='boolean' && outcome.path.length>1){
       setFogBeforeWalk(displayedFog);
@@ -477,6 +483,7 @@ export function GroundSquadSelection({
     if(success&&realtime)setOrderedIds([...selected]);
     setMoveNotice(success ? name + (realtime?' en marcha hacia ':' en torno a ') +
       (realtime?groundMoveTargetLabel(destination,selected.length):x+':'+y) :
+      append?'No se pudo añadir el destino; se conserva la ruta anterior.':
       'No existe una formación segura: casilla ocupada o destino bloqueado.');
   };
   const onBoardKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
@@ -486,7 +493,7 @@ export function GroundSquadSelection({
     };
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      requestMove(keyboardCell.x + ',' + keyboardCell.y);
+      requestMove(keyboardCell.x + ',' + keyboardCell.y,null,event.shiftKey);
     } else if (offsets[event.key]) {
       event.preventDefault();
       setKeyboardCell(cell => ({
@@ -496,7 +503,15 @@ export function GroundSquadSelection({
     }
   };
   const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
-    if (disabled || event.button !== 0 || !event.isPrimary) return;
+    if(disabled||!event.isPrimary)return;
+    // Firefox can bypass contextmenu for Shift+right click. Dispatch the
+    // explicit queue command on pointerdown; never dispatch it twice.
+    if(realtime&&event.button===2&&event.shiftKey){
+      event.preventDefault();
+      requestMove(pickGroundCell(event.clientX,event.clientY),pickFreePoint(event.clientX,event.clientY),true);
+      return;
+    }
+    if(event.button!==0)return;
     const target = (event.target as Element).closest('[data-officer-id]')?.getAttribute('data-officer-id') ?? null;
     const tileTarget = pickGroundCell(event.clientX, event.clientY);
     gesture.current = {
@@ -593,6 +608,7 @@ export function GroundSquadSelection({
         onPointerUp={onPointerUp} onPointerCancel={cancelGesture}
         onLostPointerCapture={cancelGesture} onContextMenu={event => {
           event.preventDefault();
+          if(realtime&&event.shiftKey)return;
           requestMove(pickGroundCell(event.clientX,event.clientY),
             realtime?pickFreePoint(event.clientX,event.clientY):null);
         }}>
@@ -1020,7 +1036,7 @@ export function GroundSquadSelection({
         Explorar K-47 exterior · mapa grande 32×20 (beta)
       </button>}
       <p className="ground-squad-help">{realtime
-        ? 'Beta: en móvil toca terreno libre para ordenar al oficial o equipo seleccionado. En escritorio, clic derecho o Mover. Los compañeros reservan sus rutas. Volver al clásico descarta el recorrido de prueba.'
+        ? 'Beta: en móvil toca terreno libre para ordenar al oficial o equipo seleccionado. En escritorio, clic derecho o Mover. Con un oficial, Shift + clic derecho o Shift + Enter en modo Mover añade un destino. Los compañeros reservan sus rutas. Volver al clásico descarta el recorrido de prueba.'
         : 'El modo clásico conserva el movimiento por casillas. La beta opcional permite que hasta tres oficiales avancen simultáneamente, sin alterar este historial.'}</p>
       <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Sumar» y toca los nombres para crear un grupo.
