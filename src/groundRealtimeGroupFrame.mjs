@@ -28,3 +28,11 @@ export function groundRealtimeGroupFrame(points, aspect, baseHeight, compact=fal
     fits:needed<=height+.5,
   };
 }
+
+// The ordinary K-47 portrait group starts closer than solo follow. The
+// existing group envelope still expands as the real officers spread out.
+// Desktop and other callers keep their existing baseline.
+export function groundCompactGroupFollowHeight(baseHeight,compact){
+ if(!Number.isFinite(baseHeight)||baseHeight<=0)throw new TypeError('Invalid group follow height');
+ return compact?Math.min(baseHeight,420):baseHeight;
+}
