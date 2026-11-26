@@ -122,6 +122,10 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
   const selected=state.officers.find(o=>o.id===id);
   if(!selected)throw new RangeError('Unknown exploration officer');
   const result=clone(state),actor=result.officers.find(o=>o.id===id);
+  // Stopping does not claim a new destination. A colleague's conservative
+  // reservation can include our current cell even when bodies are separate.
+  // Cancel only our own route without moving either officer.
+  if(distance(actor,destination)<1e-7){actor.route=[];return result;}
   const start=cell(actor),end=cell(destination);
   const occupied=new Set(blocked);
   // A moving colleague owns both endpoints of their current fractional
@@ -144,7 +148,6 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
   }
   if(occupied.has(key(end.x,end.y)))
     throw new RangeError('Destination occupied');
-  if(distance(actor,destination)<1e-7){actor.route=[];return result;}
   if(start.x===end.x&&start.y===end.y){
     // A diagonal within one free grid cell can still clip the rounded
     // clearance envelope of a neighboring solid corner. Prefer the direct
