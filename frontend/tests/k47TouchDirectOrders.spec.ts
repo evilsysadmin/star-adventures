@@ -1,6 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
+import {freshCaptainStorageState} from './fixtures/browserStartProfiles';
 
-test.use({storageState:{cookies:[],origins:[]},hasTouch:true});
+test.use({storageState:freshCaptainStorageState(),hasTouch:true});
 
 async function cellScreen(page:Page,x:number,y:number){
  return page.getByTestId('ground-squad-board').evaluate((el,{x,y})=>{
