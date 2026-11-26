@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import {legacyDiagnosticsStorageState} from './tests/fixtures/browserStartProfiles';
 
 export default defineConfig({
   testDir: './tests',
@@ -10,7 +11,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     // Most browser specs exercise an explicitly selected diagnostics view.
     // Product default remains the playable mission for an unconfigured player.
-    storageState: './tests/tactical-existing.storageState.json',
+    storageState: legacyDiagnosticsStorageState,
     ...devices['Desktop Chrome'],
     channel: 'chrome',
     launchOptions: process.env.PLAYWRIGHT_CHROME_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROME_PATH } : undefined,
