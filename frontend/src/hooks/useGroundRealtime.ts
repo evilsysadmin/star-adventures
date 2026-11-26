@@ -9,6 +9,7 @@ import {
 } from '../../../src/groundRealtimeWorld.mjs';
 import {GROUND_REALTIME_SAVE_KEY} from '../../../src/groundRealtimeSave.mjs';
 import {localStorageOrNull} from '../session';
+import {createRealtimeFrameClock} from '../realtimeFrameClock';
 import type {GroundSnapshot} from '../groundSquadSession';
 
 type Point={x:number;y:number};
@@ -33,7 +34,7 @@ export function useGroundRealtime({
   const rosterKey=ids.join('|');
   const [state,setState]=useState<RealtimeSurface|null>(null);
   const stateRef=useRef<RealtimeSurface|null>(null);
-  const active=state!==null;
+  const moving=state?.motion.officers.some(o=>o.route.length>0)??false;
   const replace=useCallback((next:RealtimeSurface|null)=>{
     stateRef.current=next;
     setState(next);
@@ -121,26 +122,38 @@ export function useGroundRealtime({
   },[paused,surface]);
 
   useEffect(()=>{
-    if(!active||!surface||!showSquad||paused)return;
-    let raf=0,last=0,lastSaved=0;
+    if(!moving||!surface||!showSquad||paused)return;
+    let raf=0,lastSaved=0;
+    const clock=createRealtimeFrameClock();
     const tick=(now:number)=>{
-      raf=requestAnimationFrame(tick);
-      if(document.visibilityState==='hidden'){last=0;return;}
-      if(last===0){last=now;return;}
-      const elapsed=now-last;
-      if(elapsed<40)return; // ~25 authoritative frames per second
-      last=now;
       const current=stateRef.current;
       if(!current||!current.motion.officers.some(o=>o.route.length))return;
-      const next=advanceGroundRealtimeWorld(world,current,Math.min(elapsed,80)) as RealtimeSurface;
+      if(document.visibilityState==='hidden'){clock.reset();return;}
+      const elapsed=clock.step(now);
+      if(elapsed===null){raf=requestAnimationFrame(tick);return;}
+      const next=advanceGroundRealtimeWorld(world,current,elapsed) as RealtimeSurface;
       replace(next);
-      if(now-lastSaved>240||next.motion.officers.every(o=>!o.route.length)){
+      const finished=next.motion.officers.every(o=>!o.route.length);
+      if(now-lastSaved>240||finished){
         save(next);lastSaved=now;
       }
+      if(!finished)raf=requestAnimationFrame(tick);
     };
-    raf=requestAnimationFrame(tick);
-    return ()=>{cancelAnimationFrame(raf);save(stateRef.current);};
-  },[active,surface,showSquad,paused,replace,save]);
+    const resume=()=>{
+      // Hidden tabs may receive no RAF callbacks at all. Reset on the
+      // actual visibility event, never advance using background time.
+      cancelAnimationFrame(raf);
+      clock.reset();
+      if(document.visibilityState!=='hidden')raf=requestAnimationFrame(tick);
+    };
+    document.addEventListener('visibilitychange',resume);
+    resume();
+    return ()=>{
+      document.removeEventListener('visibilitychange',resume);
+      cancelAnimationFrame(raf);
+      save(stateRef.current);
+    };
+  },[moving,surface,showSquad,paused,replace,save]);
 
   useEffect(()=>{
     const flush=()=>save(stateRef.current);
