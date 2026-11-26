@@ -74,14 +74,15 @@ for(const width of [390,1280]){
   test.setTimeout(85000);
   await page.setViewportSize({width,height:850});
   await page.goto('/');
-  await page.getByTestId('explore-right').click();
-  await page.getByTestId('explore-forward').click();
-  await page.getByTestId('explore-right').click();
-  await page.getByTestId('explore-use').click();
+  // Same real captain deployment as the continuous-runtime browser journey.
+  await expect(page.getByTestId('captain-controls')).toBeVisible();
+  await page.getByTestId('captain-transport').click();
   await page.getByTestId('transport-confirm').click();
   await expect(page.getByTestId('ground-squad-board')).toBeVisible();
   await page.locator('.ground-squad-instructions summary').click();
-  await page.getByTestId('ground-realtime-toggle').click();
+  const toggle=page.getByTestId('ground-realtime-toggle');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed','true');
   await page.getByTestId('ground-select-venn').click();
   const inspect=page.getByTestId('ground-inspect-probe');
   const officer=page.getByTestId('ground-unit-venn');
