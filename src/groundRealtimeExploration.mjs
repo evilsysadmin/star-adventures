@@ -310,6 +310,66 @@ export function orderRealtimeExplorationFormation(scene,state,ids,destination){
   return planned;
 }
 
+// Queue a formation from its planned endpoints without teleporting or
+// cancelling the unfinished prefixes. Members may reach their old endpoints
+// at different times, so conservatively reject suffixes that intersect ANY
+// other member's old route corridor. No synchronized arrival assumption.
+export function appendRealtimeExplorationFormation(scene,state,ids,destination){
+  const blocked=checkState(scene,state);
+  if(!Array.isArray(ids)||ids.length<2||ids.length>3||
+     new Set(ids).size!==ids.length||
+     ids.some(id=>typeof id!=='string'||!state.officers.some(o=>o.id===id)))
+    throw new TypeError('Invalid exploration formation');
+  const selected=new Set(ids);
+  if(!state.officers.some(o=>selected.has(o.id)&&o.route.length))
+    return orderRealtimeExplorationFormation(scene,state,ids,destination);
+  const virtual=clone(state);
+  for(const o of virtual.officers){
+    if(!selected.has(o.id)||!o.route.length)continue;
+    const end=o.route.at(-1);
+    o.x=end.x;o.y=end.y;o.route=[];
+  }
+  const planned=orderRealtimeExplorationFormation(scene,virtual,ids,destination);
+  const next=clone(state);
+  // A rectangular floor/ceil envelope is deliberately more conservative
+  // than rounding cells, including fractional waypoints and segment corners.
+  const corridor=(start,route)=>{
+    const cells=new Set();
+    let from=start;
+    for(const to of [start,...route]){
+      for(let y=Math.floor(Math.min(from.y,to.y));y<=Math.ceil(Math.max(from.y,to.y));y++)
+        for(let x=Math.floor(Math.min(from.x,to.x));x<=Math.ceil(Math.max(from.x,to.x));x++)
+          cells.add(key(x,y));
+      from=to;
+    }
+    return cells;
+  };
+  const prefixes=new Map(state.officers.map(o=>[o.id,corridor(o,o.route)]));
+  const suffixes=new Map();
+  for(const o of planned.officers){
+    if(!selected.has(o.id))continue;
+    const start=virtual.officers.find(v=>v.id===o.id);
+    suffixes.set(o.id,corridor(start,o.route));
+  }
+  // Check both directions and new suffixes against each other, including
+  // their start/end positions. A failed candidate commits no partial queue.
+  for(const [id,cells] of suffixes)
+    for(const k of cells){
+      if([...prefixes].some(([other,old])=>other!==id&&old.has(k))||
+         [...suffixes].some(([other,tail])=>other!==id&&tail.has(k)))
+        throw new RangeError('Queued formation crosses a reserved corridor');
+    }
+  for(const o of next.officers){
+    if(!selected.has(o.id))continue;
+    const suffix=planned.officers.find(p=>p.id===o.id).route;
+    if(o.route.length+suffix.length>MAX_WAYPOINTS)
+      throw new RangeError('Exploration route too long');
+    o.route.push(...suffix);
+  }
+  checkState(scene,next,blocked);
+  return next;
+}
+
 // deltaMs is supplied by the caller: no timers, rendering, wall clock or
 // browser state in the engine. All units with routes advance concurrently.
 export function advanceRealtimeExploration(scene,state,deltaMs,{paused=false}={}){
