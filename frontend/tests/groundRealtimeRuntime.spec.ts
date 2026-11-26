@@ -1,6 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
+import {freshCaptainStorageState,legacyDiagnosticsStorageState} from './fixtures/browserStartProfiles';
 
-test.use({storageState:{cookies:[],origins:[]}});
+test.use({storageState:freshCaptainStorageState()});
 
 async function clickGround(page:Page,x:number,y:number,button:'left'|'right'='right'){
   const board=page.getByTestId('ground-squad-board');
@@ -195,12 +196,13 @@ for(const width of [390,1280]){
 
 
 test.describe('legacy first-person deployment',()=>{
-  test.use({storageState:'./tests/tactical-existing.storageState.json'});
+  test.use({storageState:legacyDiagnosticsStorageState});
   for(const width of [390,1280]){
   test('legacy deployment leaves tactical help clickable above the HUD at '+width+'px',async({page})=>{
     test.setTimeout(70000);
     await page.setViewportSize({width,height:850});
     await page.goto('/');
+    await expect(page.getByTestId('explore-right')).toBeVisible({timeout:15000});
     await page.getByTestId('explore-right').click();
     await page.getByTestId('explore-forward').click();
     await page.getByTestId('explore-right').click();
