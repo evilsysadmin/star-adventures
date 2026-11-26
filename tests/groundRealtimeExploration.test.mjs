@@ -265,3 +265,26 @@ test('future fractional waypoints reserve both sides of their cell boundary',()=
   assert.deepEqual(destinationOf(officer(live,second)),safe);
  }
 });
+
+
+test('stop at current position cancels only the selected route even inside a conservative reservation',()=>{
+ const field={width:8,height:6,walls:[],objects:[]};
+ const initial=startRealtimeExploration(field,[
+  {id:'left',x:2.1,y:2},{id:'right',x:2.8,y:2},
+ ]);
+ const moving=orderRealtimeExplorationMove(field,initial,'left',{x:1,y:2});
+ const parallel=orderRealtimeExplorationMove(field,moving,'right',{x:4,y:2});
+ const snapshot=JSON.stringify(parallel);
+ assert.ok(parallel.officers.every(o=>o.route.length));
+ // The right officer reserves cells 2 and 3, including left's rounded
+ // cell, despite .7 tiles of actual separation. A stop has no swept path.
+ const stopped=orderRealtimeExplorationMove(field,parallel,'left',{x:2.1,y:2});
+ assert.deepEqual(officer(stopped,'left'),{id:'left',x:2.1,y:2,route:[]});
+ assert.deepEqual(officer(stopped,'right'),officer(parallel,'right'));
+ assert.equal(JSON.stringify(parallel),snapshot);
+ const later=advanceRealtimeExploration(field,stopped,800);
+ assert.deepEqual(officer(later,'left'),officer(stopped,'left'));
+ assert.deepEqual(officer(later,'right'),{id:'right',x:4,y:2,route:[]});
+ assert.throws(()=>orderRealtimeExplorationMove(field,stopped,'left',{x:2.2,y:2}),/Destination occupied/);
+ assert.deepEqual(orderRealtimeExplorationMove(field,stopped,'left',{x:2.1,y:2}),stopped);
+});
