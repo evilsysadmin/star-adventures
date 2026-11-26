@@ -99,6 +99,14 @@ export function useGroundRealtime({
     }catch{return false;}
   },[paused,surface,showSquad,legacy,replace,save]);
 
+  // Read the authoritative pose at click time, not a potentially stale
+  // rendered position. The engine's zero-distance command cancels the route.
+  const stop=useCallback((id:string)=>{
+    const officer=stateRef.current?.motion.officers.find(o=>o.id===id);
+    if(!officer?.route.length)return false;
+    return order({x:officer.x,y:officer.y},[id]);
+  },[order]);
+
   const station=useCallback((id:string,stationId:string)=>{
     if(paused||!surface||!stateRef.current)
       throw new RangeError('Exploration unavailable');
@@ -141,6 +149,6 @@ export function useGroundRealtime({
   return {
     state,
     vision:state?groundRealtimeVision(world,state):null,
-    enable,disable,order,station,
+    enable,disable,order,stop,station,
   };
 }

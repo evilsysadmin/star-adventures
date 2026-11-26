@@ -69,7 +69,7 @@ const sceneTiles = Array.from({ length: scene.height }, (_, y) =>
   Array.from({ length: scene.width }, (_, x) => ({ x, y, key: x + ',' + y }))).flat();
 
 export function GroundSquadSelection({
-  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeToggle, onWideTrial, disabled = false,
+  squad, position, officers, snapshot, onMove, onInspectProbe, onAssistCivilians, onPerimeterContact, allowWholeMove, realtime=false, realtimeFog=null, realtimeMovingIds=[], onRealtimeStop, onRealtimeToggle, onWideTrial, disabled = false,
 }: {
   squad: Officer[];
   position: { x: number; y: number };
@@ -83,6 +83,7 @@ export function GroundSquadSelection({
   realtime?: boolean;
   realtimeFog?: {visible:ReadonlySet<string>;explored:ReadonlySet<string>}|null;
   realtimeMovingIds?: string[];
+  onRealtimeStop?:(id:string)=>boolean;
   onRealtimeToggle?:()=>void;
   onWideTrial?:()=>void;
   disabled?: boolean;
@@ -913,6 +914,16 @@ export function GroundSquadSelection({
         }}>
         {moveMode ? 'Cancelar' : 'Mover'}
       </button>
+      {realtime && onRealtimeStop && !perimeterAtHand && <button type="button" data-testid="ground-stop-officer"
+        disabled={disabled || !selectedUnit || !realtimeMovingIds.includes(selectedUnit.id)}
+        aria-label="Detener oficial seleccionado" title="Cancelar la ruta sin cambiar de posición"
+        onClick={()=>{
+          if(!selectedUnit || !onRealtimeStop(selectedUnit.id))return;
+          setMoveMode(false);
+          setOrderedIds([]);
+          setLastNotice('move');
+          setMoveNotice(selectedUnit.name+' se ha detenido.');
+        }}>Detener</button>}
       <button type="button" data-testid="ground-inspect-probe"
         disabled={disabled || !probeAtHand}
         aria-label={'Investigar sonda ' + (probeAtHand ? 'con ' + selectedUnit?.name : '· requiere proximidad')}

@@ -462,6 +462,14 @@
     grid-template-columns:repeat(5,minmax(0,1fr));
     padding:4px;gap:3px;
   }
+  /* The optional sixth action must stay in the single-row touch dock.
+     At the uplink, Baliza takes the otherwise inactive stop slot. */
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
+  .ground-squad-toolbar:has([data-testid="ground-stop-officer"]),
+  .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad
+  .ground-squad-toolbar:has([data-testid="ground-perimeter-contact"]){
+    grid-template-columns:repeat(6,minmax(0,1fr));
+  }
   .game-shell[data-interface=game][data-location=surface] .firstperson-is-squad .ground-squad-toolbar button{
     /* Real Chromium showed 42px targets; preserve the compact dock but
        meet the 44px minimum without altering game input or button count. */

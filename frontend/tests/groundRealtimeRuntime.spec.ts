@@ -226,3 +226,41 @@ test.describe('legacy first-person deployment',()=>{
   });
 }
 });
+
+
+for(const width of [390,1280]){
+  test('stop selected realtime officer without teleporting and preserve stop on reload '+width,async({page})=>{
+    test.setTimeout(70000);
+    await page.setViewportSize({width,height:850});
+    await page.goto('/');
+    await expect(page.getByTestId('captain-controls')).toBeVisible({timeout:15000});
+    await page.getByTestId('captain-transport').click();
+    await page.getByTestId('transport-confirm').click();
+    await page.locator('.ground-squad-instructions summary').click();
+    await page.getByTestId('ground-realtime-toggle').click();
+    await page.getByTestId('ground-select-venn').click();
+    const stop=page.getByTestId('ground-stop-officer');
+    const officer=page.getByTestId('ground-unit-venn');
+    await expect(stop).toBeDisabled();
+    await page.getByTestId('ground-camera-toggle').click();
+    if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
+    await clickGround(page,9,4);
+    await expect(stop).toBeEnabled();
+    await expect.poll(async()=>{
+      const p=await pose(page);
+      return Math.hypot(p.x-4,p.y-5);
+    }).toBeGreaterThan(.08);
+    await stop.click();
+    await expect(officer).toHaveAttribute('data-walk-phase','idle');
+    await expect(stop).toBeDisabled();
+    await expect(page.getByTestId('ground-current-notice')).toContainText('se ha detenido');
+    const stopped=await pose(page);
+    expect(Math.hypot(stopped.x-9,stopped.y-4)).toBeGreaterThan(.5);
+    await page.screenshot({path:'test-results/ground-realtime-stopped-'+width+'.png'});
+    await page.reload();
+    await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','idle');
+    expect(await pose(page)).toEqual(stopped);
+    await expect(page.getByTestId('ground-stop-officer')).toBeDisabled();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  });
+}
