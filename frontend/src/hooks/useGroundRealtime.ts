@@ -3,7 +3,7 @@ import world from '../../../content/scenes/meridian.json';
 import {startAwayTeam} from '../../../src/awayTeam.mjs';
 import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,serializeGroundRealtimeWorld,
-  orderGroundRealtimeWorld,orderGroundRealtimeFormation,
+  orderGroundRealtimeWorld,orderGroundRealtimeFormation,stopGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,
   groundRealtimeStationUse,
 } from '../../../src/groundRealtimeWorld.mjs';
@@ -99,13 +99,20 @@ export function useGroundRealtime({
     }catch{return false;}
   },[paused,surface,showSquad,legacy,replace,save]);
 
-  // Read the authoritative pose at click time, not a potentially stale
-  // rendered position. The engine's zero-distance command cancels the route.
-  const stop=useCallback((id:string)=>{
-    const officer=stateRef.current?.motion.officers.find(o=>o.id===id);
-    if(!officer?.route.length)return false;
-    return order({x:officer.x,y:officer.y},[id]);
-  },[order]);
+  // Apply the entire selection to one authoritative snapshot, then save
+  // once. No intermediate partial cancellation or rendered pose input.
+  const stop=useCallback((selection:string[])=>{
+    const current=stateRef.current;
+    if(paused||!surface||!showSquad||!legacy||!current||
+       !current.motion.officers.some(o=>selection.includes(o.id)&&o.route.length))
+      return false;
+    try{
+      const next=stopGroundRealtimeWorld(world,current,selection) as RealtimeSurface;
+      replace(next);
+      save(next);
+      return true;
+    }catch{return false;}
+  },[paused,surface,showSquad,legacy,replace,save]);
 
   const station=useCallback((id:string,stationId:string)=>{
     if(paused||!surface||!stateRef.current)

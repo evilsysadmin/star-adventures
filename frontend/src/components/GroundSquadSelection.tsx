@@ -83,7 +83,7 @@ export function GroundSquadSelection({
   realtime?: boolean;
   realtimeFog?: {visible:ReadonlySet<string>;explored:ReadonlySet<string>}|null;
   realtimeMovingIds?: string[];
-  onRealtimeStop?:(id:string)=>boolean;
+  onRealtimeStop?:(ids:string[])=>boolean;
   onRealtimeToggle?:()=>void;
   onWideTrial?:()=>void;
   disabled?: boolean;
@@ -915,14 +915,15 @@ export function GroundSquadSelection({
         {moveMode ? 'Cancelar' : 'Mover'}
       </button>
       {realtime && onRealtimeStop && !perimeterAtHand && <button type="button" data-testid="ground-stop-officer"
-        disabled={disabled || !selectedUnit || !realtimeMovingIds.includes(selectedUnit.id)}
-        aria-label="Detener oficial seleccionado" title="Cancelar la ruta sin cambiar de posición"
+        disabled={disabled || !selected.some(id=>realtimeMovingIds.includes(id))}
+        aria-label={selected.length===1?'Detener oficial seleccionado':'Detener oficiales seleccionados'}
+        title="Cancelar las rutas seleccionadas sin cambiar de posición"
         onClick={()=>{
-          if(!selectedUnit || !onRealtimeStop(selectedUnit.id))return;
+          if(!onRealtimeStop([...selected]))return;
           setMoveMode(false);
           setOrderedIds([]);
           setLastNotice('move');
-          setMoveNotice(selectedUnit.name+' se ha detenido.');
+          setMoveNotice(selectedUnit?selectedUnit.name+' se ha detenido.':'Formación de '+selected.length+' oficiales detenida.');
         }}>Detener</button>}
       <button type="button" data-testid="ground-inspect-probe"
         disabled={disabled || !probeAtHand}
