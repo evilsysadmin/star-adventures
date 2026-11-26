@@ -204,6 +204,28 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
 }
 
 
+// Queue a single officer's next destination after their existing route.
+// Use the same planner and conservative colleague reservations from the
+// last planned position, but never publish that virtual position as a pose.
+// The complete concatenated route is bounded and validated before returning.
+export function appendRealtimeExplorationMove(scene,state,id,destination){
+  const blocked=checkState(scene,state);
+  const actor=state.officers.find(o=>o.id===id);
+  if(!actor)throw new RangeError('Unknown exploration officer');
+  if(!actor.route.length)return orderRealtimeExplorationMove(scene,state,id,destination);
+  const virtual=clone(state),tail=virtual.officers.find(o=>o.id===id);
+  const endpoint=tail.route.at(-1);
+  tail.x=endpoint.x;tail.y=endpoint.y;tail.route=[];
+  const planned=orderRealtimeExplorationMove(scene,virtual,id,destination);
+  const suffix=planned.officers.find(o=>o.id===id).route;
+  const next=clone(state),combined=next.officers.find(o=>o.id===id);
+  if(combined.route.length+suffix.length>MAX_WAYPOINTS)
+    throw new RangeError('Exploration route too long');
+  combined.route.push(...suffix);
+  checkState(scene,next,blocked);
+  return next;
+}
+
 // Atomic 2–3 officer formation order for the opt-in continuous surface.
 // Every member starts moving on the same next simulation tick. All proposed
 // routes are reserved against colleagues' physical positions and routes;
