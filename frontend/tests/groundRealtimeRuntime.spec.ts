@@ -43,6 +43,19 @@ for(const width of [390,1280]){
     await expect(toggle).toHaveAttribute('aria-pressed','true');
     await page.getByTestId('ground-camera-toggle').click(); // whole map for distant order
     if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
+    // Observe actual committed frame changes before issuing the order.
+    // Sampling RAF for a fixed 700ms can alias the independent sprite timer
+    // on a loaded software-rendered browser, especially at desktop width.
+    const walkSamples=await officer.evaluateHandle(element=>{
+      const samples:number[]=[];
+      const read=()=>{
+        if(element.getAttribute('data-walk-phase')==='moving')
+          samples.push(Number(element.getAttribute('data-walk-frame')));
+      };
+      const observer=new MutationObserver(read);
+      observer.observe(element,{attributes:true,attributeFilter:['data-walk-frame','data-walk-phase']});
+      return {samples,observer};
+    });
     await clickGround(page,9,4);
     await expect(officer).toHaveAttribute('data-walk-phase','moving');
     await expect(page.locator('[data-fog-cell="10,4"]')).toHaveAttribute('data-fog-state','unknown');
@@ -80,19 +93,17 @@ for(const width of [390,1280]){
     },{timeout:6000}).toBeGreaterThan(.08);
     // Sample real movement across multiple rendered frames: a 3x2 atlas has
     // exactly six frames, and out-of-range rows can make the actor disappear.
-    const observed=await officer.evaluate(async element=>{
-      const samples:number[]=[];
-      const until=performance.now()+700;
-      while(performance.now()<until){
-        await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
-        if(element.getAttribute('data-walk-phase')==='moving')
-          samples.push(Number(element.getAttribute('data-walk-frame')));
-      }
-      return samples;
-    });
-    expect(observed.length).toBeGreaterThan(1);
-    expect(new Set(observed).size).toBeGreaterThan(1);
-    expect(observed.every(frame=>Number.isInteger(frame)&&frame>=0&&frame<6)).toBe(true);
+    try{
+      await expect.poll(()=>walkSamples.evaluate(({samples})=>new Set(samples).size),
+        {timeout:6000,message:'moving sprite must commit at least two distinct atlas frames'})
+        .toBeGreaterThan(1);
+      const observed=await walkSamples.evaluate(({samples})=>[...samples]);
+      expect(observed.length).toBeGreaterThan(1);
+      expect(observed.every(frame=>Number.isInteger(frame)&&frame>=0&&frame<6)).toBe(true);
+    }finally{
+      await walkSamples.evaluate(({observer})=>observer.disconnect());
+      await walkSamples.dispose();
+    }
     const mid=await pose(page);
     expect(Math.hypot(mid.x-9,mid.y-4)).toBeGreaterThan(1);
     // Capture the *actual gameplay follow camera* as well: the overview
