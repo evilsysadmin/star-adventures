@@ -4,7 +4,7 @@ import {
   REALTIME_WALK_TILES_PER_SECOND,
   startRealtimeExploration,
   orderRealtimeExplorationMove,appendRealtimeExplorationMove,
-  orderRealtimeExplorationFormation,stopRealtimeExploration,
+  orderRealtimeExplorationFormation,appendRealtimeExplorationFormation,stopRealtimeExploration,
   advanceRealtimeExploration,
   serializeRealtimeExploration,
   deserializeRealtimeExploration,
@@ -381,4 +381,46 @@ test('queue length is bounded atomically and normal retarget/stop still discard 
  const retargeted=orderRealtimeExplorationMove(field,state,'a',{x:1,y:2});
  assert.deepEqual(officer(retargeted,'a').route,[{x:1,y:2}]);
  assert.deepEqual(officer(stopRealtimeExploration(field,state,['a']),'a').route,[]);
+});
+
+
+test('queued formation preserves independent unfinished prefixes and real poses',()=>{
+ const field={width:12,height:9,walls:[],objects:[]};
+ const initial=startRealtimeExploration(field,[{id:'a',x:1,y:2},{id:'b',x:1,y:5}]);
+ let state=orderRealtimeExplorationMove(field,initial,'a',{x:5,y:2});
+ state=orderRealtimeExplorationMove(field,state,'b',{x:5,y:5});
+ const moving=advanceRealtimeExploration(field,state,80);
+ const before=JSON.stringify(moving);
+ const queued=appendRealtimeExplorationFormation(field,moving,['a','b'],{x:9,y:2});
+ for(const id of ['a','b']){
+  const old=officer(moving,id),next=officer(queued,id);
+  assert.deepEqual({x:next.x,y:next.y},{x:old.x,y:old.y});
+  assert.deepEqual(next.route.slice(0,old.route.length),old.route);
+  assert.ok(next.route.length>old.route.length);
+ }
+ assert.deepEqual(officer(queued,'a').route.at(-1),{x:9,y:2});
+ assert.equal(JSON.stringify(moving),before);
+ const restored=deserializeRealtimeExploration(field,serializeRealtimeExploration(field,queued));
+ assert.deepEqual(restored,queued);
+ let advanced=restored;
+ for(let i=0;i<120&&advanced.officers.some(o=>o.route.length);i++){
+  advanced=advanceRealtimeExploration(field,advanced,80);
+  const [a,b]=advanced.officers;
+  assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>=.32,'independent arrival times remain separated');
+ }
+ assert.ok(advanced.officers.every(o=>o.route.length===0));
+ assert.deepEqual(appendRealtimeExplorationFormation(field,initial,['a','b'],{x:9,y:2}),
+   orderRealtimeExplorationFormation(field,initial,['a','b'],{x:9,y:2}));
+});
+
+test('queued formation cannot claim another member unfinished corridor',()=>{
+ const field={width:12,height:9,walls:[],objects:[]};
+ const initial=startRealtimeExploration(field,[{id:'a',x:1,y:2},{id:'b',x:1,y:5}]);
+ let state=orderRealtimeExplorationMove(field,initial,'a',{x:5,y:2});
+ state=orderRealtimeExplorationMove(field,state,'b',{x:5,y:5});
+ const before=JSON.stringify(state);
+ assert.throws(()=>appendRealtimeExplorationFormation(field,state,['a','b'],{x:1,y:5}),
+   /reserved corridor|No collision-free/);
+ assert.equal(JSON.stringify(state),before);
+ assert.throws(()=>appendRealtimeExplorationFormation(field,state,['a','a'],{x:9,y:2}),/Invalid exploration formation/);
 });
