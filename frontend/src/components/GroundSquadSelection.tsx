@@ -12,6 +12,7 @@ import { visibleGroundNameplates } from '../groundNameplateLayout';
 import { GroundArchiveVolume3D } from './GroundArchiveVolume3D';
 import { GroundCrewPortrait } from './GroundCrewPortrait';
 import { groundRealtimeMoveNotice, groundMoveTargetLabel } from '../groundMoveNotice';
+import { groundRoutePreviews } from '../groundRoutePreview';
 import { officerRouteStepAt, reconcileWalkStarts, realtimeOfficerFrame } from '../isoOfficerAnimation';
 import { WALK_ATLAS } from '../tacticalAnimation';
 import { isoSpriteSideFromPoints, retainIsoSpriteSides, type IsoSpriteSide } from '../isoActorFacing';
@@ -737,6 +738,22 @@ export function GroundSquadSelection({
           labelFrame={focused?{left:cameraX,width:cameraWidth}:undefined}
           verticalFrame={!compact&&followSquad
             ? {top:cameraY,height:cameraHeight}:undefined} />
+        {realtime && <g data-testid="ground-route-preview-layer" pointerEvents="none" aria-hidden="true">
+          {groundRoutePreviews(officers,selected,displayedFog.explored).map(preview=>{
+            const points=preview.points.map(p=>tile(p.x,p.y));
+            const end=points[points.length-1];
+            const line=points.map(p=>p.x+','+p.y).join(' ');
+            return <g key={preview.id} data-testid={'ground-route-preview-'+preview.id}
+              data-route-complete={preview.complete}>
+              <polyline points={line} fill="none" stroke="#091b25" strokeWidth="5"
+                strokeLinecap="round" strokeLinejoin="round" opacity=".85"/>
+              <polyline points={line} fill="none" stroke="#e8ca82" strokeWidth="2.5"
+                strokeDasharray="5 5" strokeLinecap="round" strokeLinejoin="round" opacity=".92"/>
+              {preview.complete && <circle cx={end.x} cy={end.y} r="6"
+                fill="#142e38" stroke="#e8ca82" strokeWidth="2"/>}
+            </g>;
+          })}
+        </g>}
         {moveMode && <polygon data-testid="ground-keyboard-destination" points={tileShape(keyboardCell.x,keyboardCell.y)}
           fill="#e8d7a4" fillOpacity=".16" stroke="#e8ca82" strokeWidth="3" strokeDasharray="7 4"
           pointerEvents="none" />}
