@@ -67,3 +67,44 @@ for (const width of [390,1280]) {
     await expect(page.getByTestId('ground-probe-status')).toContainText('ya fue investigada');
   });
 }
+
+
+test.describe('fresh continuous surface',()=>{
+ test.use({storageState:{cookies:[],origins:[]}});
+ for(const width of [390,1280]){
+ test('realtime station button matches actual fractional arrival at '+width+'px',async({page})=>{
+  test.setTimeout(85000);
+  await page.setViewportSize({width,height:850});
+  await page.goto('/');
+  // Same real captain deployment as the continuous-runtime browser journey.
+  await expect(page.getByTestId('captain-controls')).toBeVisible();
+  await page.getByTestId('captain-transport').click();
+  await page.getByTestId('transport-confirm').click();
+  await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+  await page.locator('.ground-squad-instructions summary').click();
+  const toggle=page.getByTestId('ground-realtime-toggle');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('ground-select-venn').click();
+  const inspect=page.getByTestId('ground-inspect-probe');
+  const officer=page.getByTestId('ground-unit-venn');
+  await expect(inspect).toBeDisabled();
+  await moveOnGround(page,4.34,3.2);
+  await expect(officer).toHaveAttribute('data-walk-phase','moving');
+  await expect(inspect).toBeDisabled();
+  await expect(officer).toHaveAttribute('data-walk-phase','idle',{timeout:10000});
+  await expect(inspect).toBeDisabled();
+  await moveOnGround(page,4.14,3);
+  await expect(inspect).toBeEnabled({timeout:10000});
+  await expect(officer).toHaveAttribute('data-walk-phase','idle');
+  const x=Number(await officer.getAttribute('data-world-x'));
+  const y=Number(await officer.getAttribute('data-world-y'));
+  expect(Math.hypot(x-4,y-3)).toBeGreaterThan(.01);
+  expect(Math.hypot(x-4,y-3)).toBeLessThanOrEqual(.2);
+  await page.screenshot({path:'test-results/ground-realtime-probe-ready-'+width+'.png'});
+  await inspect.click();
+  await expect(page.getByTestId('away-finding')).toContainText('Sonda investigada: firma mineral registrada');
+  await expect(page.getByTestId('explore-heading')).toContainText('4:5');
+ });
+}
+});

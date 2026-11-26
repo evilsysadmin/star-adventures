@@ -7,7 +7,7 @@ import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,
   serializeGroundRealtimeWorld,orderGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,groundRealtimeStationUse,
-  orderGroundRealtimeFormation,
+  orderGroundRealtimeFormation,groundRealtimeStationApproach,
 } from '../src/groundRealtimeWorld.mjs';
 import {serializeGroundRealtimeSave} from '../src/groundRealtimeSave.mjs';
 const world=JSON.parse(readFileSync(new URL('../content/scenes/meridian.json',import.meta.url),'utf8'));
@@ -131,4 +131,19 @@ test('three-person real K-47 free-walk formation commits atomically and survives
   moving=finish(restored.state);
   assert.ok(moving.motion.officers.every(o=>o.route.length===0));
   assert.deepEqual(moving.motion.officers.map(o=>({x:o.x,y:o.y})),endpoints);
+});
+
+
+test('shared station approach agrees with real fractional movement and authorization',()=>{
+ const station=world.scenes.surface.objects.find(o=>o.id==='probe');
+ const planned=orderGroundRealtimeWorld(world,deploy(),'venn',{x:4.14,y:3});
+ assert.match(groundRealtimeStationApproach(officer(planned),station,true).reason,/must stop/);
+ const arrived=finish(planned);
+ const approach=groundRealtimeStationApproach(officer(arrived),station,false);
+ assert.equal(approach.reason,null);
+ const actual=groundRealtimeStationUse(world,arrived,'venn','probe');
+ assert.deepEqual([approach.x,approach.y,approach.heading],[actual.pose.x,actual.pose.y,actual.pose.heading]);
+ assert.match(groundRealtimeStationApproach({x:4.34,y:3.2},station,false).reason,/not reached/);
+ assert.match(groundRealtimeStationApproach({x:3,y:3},station,false).reason,/not adjacent/);
+ assert.match(groundRealtimeStationApproach({x:NaN,y:3},station,false).reason,/Invalid/);
 });

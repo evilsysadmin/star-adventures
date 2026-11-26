@@ -106,6 +106,20 @@ export function advanceGroundRealtimeWorld(world,state,deltaMs,{paused=false}={}
   return {version:1,motion,explored:[...tiles].sort()};
 }
 
+// Shared position-only contract for presentation and authoritative use.
+// The caller still owns roster, station identity, motion and world validation.
+export function groundRealtimeStationApproach(officer,station,moving){
+  if(moving)return {reason:'Officer must stop before interacting'};
+  if(!officer||!station||![officer.x,officer.y,station.x,station.y].every(Number.isFinite))
+    return {reason:'Invalid station position'};
+  const x=Math.round(officer.x),y=Math.round(officer.y);
+  if(Math.hypot(officer.x-x,officer.y-y)>0.2)
+    return {reason:'Officer has not reached station position'};
+  const step=DIRECTIONS.find(d=>x+d.dx===station.x&&y+d.dy===station.y);
+  if(!step)return {reason:'Officer not adjacent to station'};
+  return {reason:null,x,y,heading:step.heading};
+}
+
 // Interactions are authorized from the *actual* body position only. The
 // nearest old grid-command destination is never consulted. Require the
 // officer to have stopped close to a real adjacent station cell, then reuse
@@ -118,15 +132,9 @@ export function groundRealtimeStationUse(world,state,officerId,stationId){
   const station=scene.objects.find(item=>
     item.id===stationId&&item.type==='station');
   if(!officer||!station)throw new RangeError('Unknown officer or station');
-  if(officer.route.length)
-    throw new RangeError('Officer must stop before interacting');
-  const x=Math.round(officer.x),y=Math.round(officer.y);
-  if(Math.hypot(officer.x-x,officer.y-y)>0.2)
-    throw new RangeError('Officer has not reached station position');
-  const step=DIRECTIONS.find(d=>
-    x+d.dx===station.x&&y+d.dy===station.y);
-  if(!step)throw new RangeError('Officer not adjacent to station');
-  const pose={version:1,area:'surface',x,y,heading:step.heading,pending:null};
+  const approach=groundRealtimeStationApproach(officer,station,officer.route.length>0);
+  if(approach.reason)throw new RangeError(approach.reason);
+  const pose={version:1,area:'surface',x:approach.x,y:approach.y,heading:approach.heading,pending:null};
   const result=applyExploration(world,pose,{type:'use'});
   if(result.event.type!=='station'||result.event.stationId!==stationId)
     throw new RangeError('Station action not accepted');
