@@ -315,3 +315,25 @@ test('atomic stop validates the entire selection, preserves poses and leaves oth
  assert.deepEqual(advanceRealtimeExploration(field,all,500),all);
  assert.equal(JSON.stringify(moving),before);
 });
+
+
+test('formation cannot round an out-of-bounds point into a valid edge cell',()=>{
+ const field={width:8,height:8,walls:[],objects:[]};
+ const initial=startRealtimeExploration(field,[
+  {id:'a',x:3,y:3},{id:'b',x:3,y:5},
+ ]);
+ const before=JSON.stringify(initial);
+ for(const destination of [{x:-.1,y:3},{x:7.1,y:3},{x:3,y:-.1},{x:3,y:7.1}]){
+  assert.throws(()=>orderRealtimeExplorationFormation(field,initial,['a','b'],destination),
+    /Formation destination outside map/);
+  assert.throws(()=>orderRealtimeExplorationMove(field,initial,'a',destination),
+    /outside map/);
+ }
+ // Exactly on the legal boundary is still a valid order.
+ const edge=orderRealtimeExplorationFormation(field,initial,['a','b'],{x:7,y:3});
+ assert.deepEqual(destinationOf(officer(edge,'a')),{x:7,y:3});
+ // Valid fractional formation anchors continue to round by design.
+ const inside=orderRealtimeExplorationFormation(field,initial,['a','b'],{x:6.8,y:3.1});
+ assert.deepEqual(inside,edge);
+ assert.equal(JSON.stringify(initial),before);
+});
