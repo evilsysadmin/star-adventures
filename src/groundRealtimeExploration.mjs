@@ -112,6 +112,20 @@ export function startRealtimeExploration(scene,officers){
   return state;
 }
 
+// Cancel an entire selection in one immutable transaction. Validate every ID
+// before cloning; a stationary member is a valid no-op within a selection.
+export function stopRealtimeExploration(scene,state,ids){
+  checkState(scene,state);
+  if(!Array.isArray(ids)||ids.length<1||ids.length>state.officers.length||
+     new Set(ids).size!==ids.length||
+     ids.some(id=>typeof id!=='string'||!state.officers.some(o=>o.id===id)))
+    throw new TypeError('Invalid exploration stop selection');
+  const next=clone(state),selected=new Set(ids);
+  for(const officer of next.officers)
+    if(selected.has(officer.id))officer.route=[];
+  return next;
+}
+
 // BFS uses grid topology internally; actual endpoints and saved positions
 // remain fractional. Waypoints are crossed at constant speed, never treated as
 // independent tile turns. Other officers' occupied cells are not traversed.

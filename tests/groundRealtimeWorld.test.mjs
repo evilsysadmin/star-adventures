@@ -7,7 +7,7 @@ import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,
   serializeGroundRealtimeWorld,orderGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,groundRealtimeStationUse,
-  orderGroundRealtimeFormation,groundRealtimeStationApproach,
+  orderGroundRealtimeFormation,groundRealtimeStationApproach,stopGroundRealtimeWorld,
 } from '../src/groundRealtimeWorld.mjs';
 import {serializeGroundRealtimeSave} from '../src/groundRealtimeSave.mjs';
 const world=JSON.parse(readFileSync(new URL('../content/scenes/meridian.json',import.meta.url),'utf8'));
@@ -146,4 +146,25 @@ test('shared station approach agrees with real fractional movement and authoriza
  assert.match(groundRealtimeStationApproach({x:4.34,y:3.2},station,false).reason,/not reached/);
  assert.match(groundRealtimeStationApproach({x:3,y:3},station,false).reason,/not adjacent/);
  assert.match(groundRealtimeStationApproach({x:NaN,y:3},station,false).reason,/Invalid/);
+});
+
+
+test('stopping selected formation members preserves K-47 terrain memory and save recovery',()=>{
+ const planned=orderGroundRealtimeFormation(world,deploy(),['venn','dorn','mira'],{x:2,y:5});
+ const moving=advanceGroundRealtimeWorld(world,planned,80);
+ assert.ok(moving.motion.officers.every(o=>o.route.length>0));
+ const before=JSON.stringify(moving);
+ const stopped=stopGroundRealtimeWorld(world,moving,['venn','dorn']);
+ assert.deepEqual(stopped.explored,moving.explored);
+ assert.deepEqual(groundRealtimeVision(world,stopped),groundRealtimeVision(world,moving));
+ for(const id of ['venn','dorn'])
+  assert.deepEqual(officer(stopped,id),{...officer(moving,id),route:[]});
+ assert.deepEqual(officer(stopped,'mira'),officer(moving,'mira'));
+ assert.equal(JSON.stringify(moving),before);
+ const all=stopGroundRealtimeWorld(world,stopped,['venn','dorn','mira']);
+ const saved=serializeGroundRealtimeWorld(world,away,legacy(),all);
+ const restored=restoreGroundRealtimeWorld(world,away,legacy(),saved);
+ assert.equal(restored.source,'realtime');
+ assert.deepEqual(restored.state,all);
+ assert.deepEqual(advanceGroundRealtimeWorld(world,all,500),all);
 });
