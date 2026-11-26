@@ -17,6 +17,15 @@ const validRoster = (motion,ids) =>
   motion.officers.length === ids.length &&
   motion.officers.every((officer,index)=>officer.id===ids[index]);
 
+// Every route eventually completes, so both the current and terminal
+// poses must be physically separated. This is not a swept-path validator.
+function validateMotionSeparation(scene,motion){
+  startRealtimeExploration(scene,motion.officers);
+  startRealtimeExploration(scene,motion.officers.map(officer=>({
+    ...(officer.route.at(-1)??officer),id:officer.id,
+  })));
+}
+
 function validExplored(scene,explored){
   if(!Array.isArray(explored)||explored.length>scene.width*scene.height)
     throw new TypeError('Invalid continuous terrain memory');
@@ -54,9 +63,8 @@ export function serializeGroundRealtimeSave(world,away,legacy,motion,explored=nu
     serializeRealtimeExploration(world.scenes.surface,motion));
   if(!validRoster(checked,officers.map(o=>o.id)))
     throw new TypeError('Realtime roster does not match saved away team');
-  // Reuse the engine's physical separation check for the saved current
-  // poses. Do not replace the checked state: its outstanding routes matter.
-  startRealtimeExploration(world.scenes.surface,checked.officers);
+  // Reject conflicting current or terminal poses without discarding valid routes.
+  validateMotionSeparation(world.scenes.surface,checked);
   // The v1 command history remains a rollback anchor. It is NOT overwritten
   // by an incomplete walk or a destination that has not been reached.
   // Old v1 sidecars stay readable; new saves additionally persist real
@@ -87,7 +95,7 @@ export function restoreGroundRealtimeSave(world,away,legacy,raw) {
       JSON.stringify(data.motion));
     if(!validRoster(checked,officers.map(o=>o.id)))
       throw new TypeError('Realtime officer roster changed');
-    startRealtimeExploration(world.scenes.surface,checked.officers);
+    validateMotionSeparation(world.scenes.surface,checked);
     const explored=v2?validExplored(world.scenes.surface,data.explored):null;
     return {state:checked,source:'realtime',explored};
   } catch {
