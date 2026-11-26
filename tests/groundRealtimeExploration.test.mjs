@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   REALTIME_WALK_TILES_PER_SECOND,
   startRealtimeExploration,
-  orderRealtimeExplorationMove,
+  orderRealtimeExplorationMove,appendRealtimeExplorationMove,
   orderRealtimeExplorationFormation,stopRealtimeExploration,
   advanceRealtimeExploration,
   serializeRealtimeExploration,
@@ -336,4 +336,49 @@ test('formation cannot round an out-of-bounds point into a valid edge cell',()=>
  const inside=orderRealtimeExplorationFormation(field,initial,['a','b'],{x:6.8,y:3.1});
  assert.deepEqual(inside,edge);
  assert.equal(JSON.stringify(initial),before);
+});
+
+
+test('queued solo destination preserves real pose, unfinished prefix and colleague reservations',()=>{
+ const field={width:9,height:8,walls:[],objects:[]};
+ const initial=startRealtimeExploration(field,[
+  {id:'a',x:1,y:1},{id:'b',x:7,y:6},
+ ]);
+ let planned=orderRealtimeExplorationMove(field,initial,'a',{x:4.2,y:1});
+ planned=orderRealtimeExplorationMove(field,planned,'b',{x:7,y:3});
+ const moving=advanceRealtimeExploration(field,planned,140);
+ const before=JSON.stringify(moving),prefix=officer(moving,'a').route;
+ assert.ok(prefix.length);
+ const queued=appendRealtimeExplorationMove(field,moving,'a',{x:4,y:4.2});
+ const a=officer(queued,'a');
+ assert.equal(a.x,officer(moving,'a').x);
+ assert.equal(a.y,officer(moving,'a').y);
+ assert.deepEqual(a.route.slice(0,prefix.length),prefix);
+ assert.deepEqual(a.route.at(-1),{x:4,y:4.2});
+ assert.deepEqual(officer(queued,'b'),officer(moving,'b'));
+ assert.deepEqual(appendRealtimeExplorationMove(field,moving,'a',prefix.at(-1)),moving);
+ assert.throws(()=>appendRealtimeExplorationMove(field,moving,'a',{x:7,y:3}),/occupied/);
+ assert.throws(()=>appendRealtimeExplorationMove(field,moving,'a',{x:-.1,y:1}),/outside map/);
+ assert.equal(JSON.stringify(moving),before);
+ const restored=deserializeRealtimeExploration(field,serializeRealtimeExploration(field,queued));
+ assert.deepEqual(restored,queued);
+ const arrived=advanceRealtimeExploration(field,restored,10_000);
+ assert.deepEqual(officer(arrived,'a'),{id:'a',x:4,y:4.2,route:[]});
+ assert.deepEqual(officer(arrived,'b'),{id:'b',x:7,y:3,route:[]});
+ assert.deepEqual(appendRealtimeExplorationMove(field,initial,'a',{x:4,y:1}),
+   orderRealtimeExplorationMove(field,initial,'a',{x:4,y:1}));
+});
+
+test('queue length is bounded atomically and normal retarget/stop still discard the queue',()=>{
+ const field={width:8,height:6,walls:[],objects:[]};
+ let state=startRealtimeExploration(field,[{id:'a',x:1,y:1}]);
+ for(let i=0;i<256;i++)
+   state=appendRealtimeExplorationMove(field,state,'a',{x:i%2===0?2:1,y:1});
+ assert.equal(officer(state,'a').route.length,256);
+ const before=JSON.stringify(state);
+ assert.throws(()=>appendRealtimeExplorationMove(field,state,'a',{x:2,y:1}),/route too long/);
+ assert.equal(JSON.stringify(state),before);
+ const retargeted=orderRealtimeExplorationMove(field,state,'a',{x:1,y:2});
+ assert.deepEqual(officer(retargeted,'a').route,[{x:1,y:2}]);
+ assert.deepEqual(officer(stopRealtimeExploration(field,state,['a']),'a').route,[]);
 });
