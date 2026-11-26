@@ -4,7 +4,7 @@ import {
   REALTIME_WALK_TILES_PER_SECOND,
   startRealtimeExploration,
   orderRealtimeExplorationMove,
-  orderRealtimeExplorationFormation,
+  orderRealtimeExplorationFormation,stopRealtimeExploration,
   advanceRealtimeExploration,
   serializeRealtimeExploration,
   deserializeRealtimeExploration,
@@ -287,4 +287,31 @@ test('stop at current position cancels only the selected route even inside a con
  assert.deepEqual(officer(later,'right'),{id:'right',x:4,y:2,route:[]});
  assert.throws(()=>orderRealtimeExplorationMove(field,stopped,'left',{x:2.2,y:2}),/Destination occupied/);
  assert.deepEqual(orderRealtimeExplorationMove(field,stopped,'left',{x:2.1,y:2}),stopped);
+});
+
+
+test('atomic stop validates the entire selection, preserves poses and leaves other routes alone',()=>{
+ const field={width:8,height:6,walls:[],objects:[]};
+ const initial=startRealtimeExploration(field,[
+  {id:'a',x:1,y:1},{id:'b',x:1,y:3},{id:'c',x:1,y:5},
+ ]);
+ let planned=initial;
+ for(const [id,y] of [['a',1],['b',3],['c',5]])
+  planned=orderRealtimeExplorationMove(field,planned,id,{x:6,y});
+ const moving=advanceRealtimeExploration(field,planned,140);
+ const before=JSON.stringify(moving);
+ for(const invalid of [null,[],['a','a'],['a','unknown'],['a',42]])
+  assert.throws(()=>stopRealtimeExploration(field,moving,invalid),/Invalid exploration stop selection/);
+ assert.equal(JSON.stringify(moving),before);
+ const stopped=stopRealtimeExploration(field,moving,['a','b']);
+ for(const id of ['a','b'])
+  assert.deepEqual(officer(stopped,id),{...officer(moving,id),route:[]});
+ assert.deepEqual(officer(stopped,'c'),officer(moving,'c'));
+ assert.deepEqual(stopRealtimeExploration(field,stopped,['a','b']),stopped);
+ const later=advanceRealtimeExploration(field,stopped,400);
+ for(const id of ['a','b'])assert.deepEqual(officer(later,id),officer(stopped,id));
+ assert.ok(officer(later,'c').x>officer(stopped,'c').x);
+ const all=stopRealtimeExploration(field,later,['a','b','c']);
+ assert.deepEqual(advanceRealtimeExploration(field,all,500),all);
+ assert.equal(JSON.stringify(moving),before);
 });
