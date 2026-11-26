@@ -3,7 +3,7 @@ import world from '../../../content/scenes/meridian.json';
 import {startAwayTeam} from '../../../src/awayTeam.mjs';
 import {
   startGroundRealtimeWorld,restoreGroundRealtimeWorld,serializeGroundRealtimeWorld,
-  orderGroundRealtimeWorld,appendGroundRealtimeWorld,orderGroundRealtimeFormation,stopGroundRealtimeWorld,
+  orderGroundRealtimeWorld,appendGroundRealtimeWorld,orderGroundRealtimeFormation,appendGroundRealtimeFormation,stopGroundRealtimeWorld,
   advanceGroundRealtimeWorld,groundRealtimeVision,
   groundRealtimeStationUse,
 } from '../../../src/groundRealtimeWorld.mjs';
@@ -90,11 +90,10 @@ export function useGroundRealtime({
   const order=useCallback((point:Point,selection:string[],append=false)=>{
     if(paused||!surface||!showSquad||selection.length<1||selection.length>3||!legacy||!stateRef.current)
       return false;
-    if(append&&selection.length!==1)return false;
     try{
       const next=(selection.length===1
         ? (append?appendGroundRealtimeWorld:orderGroundRealtimeWorld)(world,stateRef.current,selection[0],point)
-        : orderGroundRealtimeFormation(world,stateRef.current,selection,point)) as RealtimeSurface;
+        : (append?appendGroundRealtimeFormation:orderGroundRealtimeFormation)(world,stateRef.current,selection,point)) as RealtimeSurface;
       replace(next);
       save(next);
       return true;
