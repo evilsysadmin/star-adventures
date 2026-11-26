@@ -1,0 +1,40 @@
+name: Frontend dependency advisory audit
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/frontend-dependency-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/frontend-dependency-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-audit-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  audit:
+    name: Audit locked frontend dependencies (including dev)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      # No lifecycle scripts, no installed packages and no lockfile mutation
+      # are necessary to submit the exact locked graph for advisory analysis.
+      - name: Scan locked graph and fail on high or critical advisories
+        working-directory: frontend
+        run: npm audit --package-lock-only --include=dev --audit-level=high
