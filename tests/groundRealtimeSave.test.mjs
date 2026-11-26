@@ -92,3 +92,27 @@ test('foreign roster, future schema and extra untrusted keys cannot replace a mi
   assert.deepEqual(restoreGroundRealtimeSave(world,away,saved,' '.repeat(200_001)).state,
     fresh);
 });
+
+
+test('overlapping saved officers cannot override the canonical legacy deployment',()=>{
+  const saved=legacy(),fresh=initialRealtimeFromLegacy(world,away,saved);
+  const before=JSON.stringify(saved);
+  for(const explored of [null,['4,5']]){
+    const valid=serializeGroundRealtimeSave(world,away,saved,fresh,explored);
+    for(const x of [4,4.1]){
+      const bad=JSON.parse(valid);
+      const mira=byId(bad.motion,'mira');
+      mira.x=x;mira.y=5;
+      // Each position is individually legal; only the shared body space
+      // is invalid. Check both the write and the actual recovery boundary.
+      assert.throws(()=>serializeGroundRealtimeSave(world,away,saved,bad.motion,explored),/Overlapping deployment/);
+      assert.deepEqual(restoreGroundRealtimeSave(world,away,saved,JSON.stringify(bad)),
+        {state:fresh,source:'recovered-legacy'});
+    }
+    const restored=restoreGroundRealtimeSave(world,away,saved,valid);
+    assert.equal(restored.source,'realtime');
+    assert.deepEqual(restored.state,fresh);
+    assert.deepEqual(restored.explored,explored);
+  }
+  assert.equal(JSON.stringify(saved),before);
+});
