@@ -209,3 +209,29 @@ test('blocked preferred flank still produces legal distinct endpoints',()=>{
  assert.ok(ordered.officers.every(o=>o.route.every(p=>p.x!==6||p.y!==3)));
  assert.deepEqual(deserializeRealtimeExploration(field,serializeRealtimeExploration(field,ordered)),ordered);
 });
+
+
+test('fractional retarget within one cell cannot cut the clearance envelope of a solid corner',()=>{
+ const field={width:6,height:6,walls:[{x:3,y:3}],objects:[]};
+ const from={x:2.35,y:2.44},goal={x:2.44,y:2.35};
+ const initial=startRealtimeExploration(field,[{id:'venn',...from}]);
+ // Each endpoint is legal; the straight midpoint is only ~.1485 from
+ // the wall corner (2.5,2.5), below the existing .16 body clearance.
+ assert.ok(Math.hypot(2.5-from.x,2.5-from.y)>.16);
+ assert.ok(Math.hypot(2.5-goal.x,2.5-goal.y)>.16);
+ const ordered=orderRealtimeExplorationMove(field,initial,'venn',goal);
+ assert.deepEqual(ordered.officers[0].route,[{x:2,y:2},goal]);
+ let live=ordered;
+ for(let i=0;i<100&&live.officers[0].route.length;i++){
+  live=advanceRealtimeExploration(field,live,10);
+  assert.ok(Math.hypot(2.5-live.officers[0].x,2.5-live.officers[0].y)>=.16);
+ }
+ assert.deepEqual(live.officers[0],{id:'venn',...goal,route:[]});
+ assert.deepEqual(initial.officers[0],{id:'venn',...from,route:[]});
+ const unsafe={version:1,officers:[{id:'venn',...from,route:[goal]}]};
+ assert.throws(()=>deserializeRealtimeExploration(field,JSON.stringify(unsafe)),/Unsafe exploration segment/);
+ assert.throws(()=>serializeRealtimeExploration(field,unsafe),/Unsafe exploration segment/);
+ assert.throws(()=>advanceRealtimeExploration(field,unsafe,100),/Unsafe exploration segment/);
+ const clear={x:2.1,y:2.2};
+ assert.deepEqual(orderRealtimeExplorationMove(field,initial,'venn',clear).officers[0].route,[clear]);
+});
