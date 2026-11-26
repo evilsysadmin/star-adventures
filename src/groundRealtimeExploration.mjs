@@ -217,6 +217,11 @@ export function orderRealtimeExplorationFormation(scene,state,ids,destination){
     throw new TypeError('Invalid exploration formation');
   if(!destination||!Number.isFinite(destination.x)||!Number.isFinite(destination.y))
     throw new TypeError('Invalid formation destination');
+  // Validate the raw point before rounding; an outside coordinate must
+  // not become a legal boundary cell merely through quantization.
+  if(destination.x<0||destination.y<0||
+     destination.x>scene.width-1||destination.y>scene.height-1)
+    throw new RangeError('Formation destination outside map');
   const anchor={x:Math.round(destination.x),y:Math.round(destination.y)};
   const blocked=topology(scene);
   if(!free(scene,blocked,anchor))
