@@ -289,3 +289,42 @@ test('realtime pose handoff keeps one decoded layer opaque and respects reduced 
  }
  await assertHandoff(4,5);
 });
+
+
+for(const width of [390,430]){
+ test('touch queue: arm once, append return, reload and stop '+width,async({page})=>{
+  test.setTimeout(100_000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  const help=page.locator('.ground-squad-instructions summary');
+  const queue=page.getByTestId('ground-queue-next');
+  const move=page.getByTestId('ground-move-mode');
+  await help.tap();
+  await page.getByTestId('ground-realtime-toggle').tap();
+  await page.getByTestId('ground-camera-toggle').tap();
+  await page.getByTestId('ground-map-sector').selectOption('all');
+  await tapCell(page,9,4);
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','moving');
+  await help.tap();
+  await queue.tap();
+  await expect(move).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('ground-move-status')).toContainText('Añadir destino');
+  await page.screenshot({path:'test-results/k47-touch-queue-armed-'+width+'.png'});
+  await tapCell(page,4,5);
+  await expect(move).toHaveAttribute('aria-pressed','false');
+  const route=()=>page.evaluate(()=>{
+   const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+   return JSON.parse(raw!).motion.officers.find((o:{id:string})=>o.id==='venn').route as Array<{x:number;y:number}>;
+  });
+  const queued=await route();
+  expect(queued.at(-1)).toEqual({x:4,y:5});
+  expect(queued).toContainEqual({x:9,y:4});
+  await page.screenshot({path:'test-results/k47-touch-queue-accepted-'+width+'.png'});
+  await page.reload();
+  await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
+  expect((await route()).at(-1)).toEqual({x:4,y:5});
+  await expect(move).toHaveAttribute('aria-pressed','false');
+  await page.getByTestId('ground-stop-officer').tap();
+  expect(await route()).toEqual([]);
+ });
+}
