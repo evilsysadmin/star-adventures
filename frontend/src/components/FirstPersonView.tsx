@@ -672,6 +672,7 @@ export function FirstPersonView({ alert, terminal, initialState, onSpatialEvent,
                 realtime={!!realtime.state} realtimeFog={realtime.vision}
                 realtimeMovingIds={realtime.state?.motion.officers
                   .filter(officer=>officer.route.length>0).map(officer=>officer.id)??[]}
+                onRealtimeStop={realtime.stop}
                 onRealtimeToggle={()=>realtime.state?realtime.disable():realtime.enable()}
                 onWideTrial={enterWideTrial}
                 onInspectProbe={id => useGroundStation(id, 'probe')}
