@@ -194,7 +194,9 @@ for(const width of [390,1280]){
 }
 
 
-for(const width of [390,1280]){
+test.describe('legacy first-person deployment',()=>{
+  test.use({storageState:'./tests/tactical-existing.storageState.json'});
+  for(const width of [390,1280]){
   test('legacy deployment leaves tactical help clickable above the HUD at '+width+'px',async({page})=>{
     test.setTimeout(70000);
     await page.setViewportSize({width,height:850});
@@ -221,3 +223,4 @@ for(const width of [390,1280]){
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   });
 }
+});
