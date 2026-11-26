@@ -32,6 +32,14 @@ type GroundMoveResult = boolean | { moved: boolean; officerId: string; path: Poi
 type WalkSession = {officerId:string; path:Point[]; started:number};
 type WalkPose = {officerId:string; x:number; y:number; gridX:number; gridY:number; frame:number};
 type Gesture = { pointerId: number; start: Point; target: string | null; tile: string | null; additive: boolean; dragged: boolean };
+// Stable roster-slot signatures (never painter order or selection order).
+// Distinct dash patterns supplement color; reuse the existing crew border.
+const routeSignatures=[
+  {color:'#e8ca82',dash:'5 5'},
+  {color:'#8dd9e9',dash:'9 4'},
+  {color:'#d8b4f2',dash:'2 5'},
+] as const;
+const routeSignature=(slot:number)=>routeSignatures[slot]??routeSignatures[0];
 const scene = world.scenes.surface;
 const tile = (col: number, row: number): Point => ({ x: 440 + (col - row) * 40, y: 52 + (col + row) * 20 });
 const tileShape = (col: number, row: number) => {
@@ -740,6 +748,7 @@ export function GroundSquadSelection({
             ? {top:cameraY,height:cameraHeight}:undefined} />
         {realtime && <g data-testid="ground-route-preview-layer" pointerEvents="none" aria-hidden="true">
           {groundRoutePreviews(officers,selected,displayedFog.explored).map(preview=>{
+            const signature=routeSignature(squad.findIndex(o=>o.id===preview.id));
             const points=preview.points.map(p=>tile(p.x,p.y));
             const end=points[points.length-1];
             const line=points.map(p=>p.x+','+p.y).join(' ');
@@ -747,10 +756,10 @@ export function GroundSquadSelection({
               data-route-complete={preview.complete}>
               <polyline points={line} fill="none" stroke="#091b25" strokeWidth="5"
                 strokeLinecap="round" strokeLinejoin="round" opacity=".85"/>
-              <polyline points={line} fill="none" stroke="#e8ca82" strokeWidth="2.5"
-                strokeDasharray="5 5" strokeLinecap="round" strokeLinejoin="round" opacity=".92"/>
+              <polyline data-route-ink="" points={line} fill="none" stroke={signature.color} strokeWidth="2.5"
+                strokeDasharray={signature.dash} strokeLinecap="round" strokeLinejoin="round" opacity=".92"/>
               {preview.complete && <circle cx={end.x} cy={end.y} r="6"
-                fill="#142e38" stroke="#e8ca82" strokeWidth="2"/>}
+                fill="#142e38" stroke={signature.color} strokeWidth="2"/>}
             </g>;
           })}
         </g>}
@@ -891,7 +900,10 @@ export function GroundSquadSelection({
           const unit = units.find(item => item.id === officer.id);
           const rank = OFFICERS.find(item => item.id === officer.id)?.rank;
           const isActive = selected.includes(officer.id);
+          const routeActive=realtime&&isActive&&realtimeMovingIds.includes(officer.id);
+          const signature=routeSignature(squad.findIndex(o=>o.id===officer.id));
           return <button key={officer.id} type="button"
+            style={routeActive?{borderLeftColor:signature.color}:undefined}
             className="ground-squad-crew-entry" data-testid={'ground-select-' + officer.id}
             aria-pressed={isActive} disabled={disabled}
             onClick={() => setSelected(previous => selectOfficer(
