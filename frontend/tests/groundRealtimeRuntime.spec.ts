@@ -192,3 +192,32 @@ for(const width of [390,1280]){
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   });
 }
+
+
+for(const width of [390,1280]){
+  test('legacy deployment leaves tactical help clickable above the HUD at '+width+'px',async({page})=>{
+    test.setTimeout(70000);
+    await page.setViewportSize({width,height:850});
+    await page.goto('/');
+    await page.getByTestId('explore-right').click();
+    await page.getByTestId('explore-forward').click();
+    await page.getByTestId('explore-right').click();
+    await page.getByTestId('explore-use').click();
+    await page.getByTestId('transport-confirm').click();
+    await expect(page.getByTestId('ground-squad-board')).toBeVisible();
+    const help=page.locator('.ground-squad-instructions summary');
+    const hud=page.locator('.firstperson-hud');
+    await expect(help).toBeVisible();
+    await expect.poll(async()=>{
+      const a=await help.boundingBox(),b=await hud.boundingBox();
+      return !!a&&!!b&&a.y+a.height<=b.y+1;
+    }).toBe(true);
+    await help.click({timeout:10000});
+    const toggle=page.getByTestId('ground-realtime-toggle');
+    await expect(toggle).toBeVisible();
+    await toggle.click({timeout:10000});
+    await expect(toggle).toHaveAttribute('aria-pressed','true');
+    await page.screenshot({path:'test-results/ground-classic-help-no-overlap-'+width+'.png'});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  });
+}
