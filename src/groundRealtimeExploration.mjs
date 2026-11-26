@@ -129,13 +129,18 @@ export function orderRealtimeExplorationMove(scene,state,id,destination){
   // cell let independently ordered officers collide on intersecting routes.
   // Reserve the entire planned corridor conservatively; no swaps/head-on
   // passes until the dedicated dynamic avoidance system exists.
+  // Fractional future endpoints need the same conservative reservation
+  // as current positions: opposite sides of a rounding boundary can be
+  // different grid cells but less than one body diameter apart.
+  const reservePoint=point=>{
+    for(const x of [Math.floor(point.x),Math.ceil(point.x)])
+      for(const y of [Math.floor(point.y),Math.ceil(point.y)])
+        occupied.add(key(x,y));
+  };
   for(const other of result.officers){
     if(other.id===id)continue;
-    for(const x of [Math.floor(other.x),Math.ceil(other.x)])
-      for(const y of [Math.floor(other.y),Math.ceil(other.y)])
-        occupied.add(key(x,y));
-    for(const point of other.route)
-      occupied.add(key(cell(point).x,cell(point).y));
+    reservePoint(other);
+    for(const point of other.route)reservePoint(point);
   }
   if(occupied.has(key(end.x,end.y)))
     throw new RangeError('Destination occupied');
