@@ -264,3 +264,44 @@ for(const width of [390,1280]){
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   });
 }
+
+
+for(const width of [390,1280]){
+  test('stop selected formation atomically and restore every stopped pose '+width,async({page})=>{
+    test.setTimeout(70000);
+    await page.setViewportSize({width,height:850});
+    await page.goto('/');
+    await expect(page.getByTestId('captain-controls')).toBeVisible({timeout:15000});
+    await page.getByTestId('captain-transport').click();
+    await page.getByTestId('transport-confirm').click();
+    await page.locator('.ground-squad-instructions summary').click();
+    await page.getByTestId('ground-realtime-toggle').click();
+    await page.getByTestId('ground-select-all').click();
+    const stop=page.getByTestId('ground-stop-officer');
+    await expect(stop).toBeDisabled();
+    await page.getByTestId('ground-camera-toggle').click();
+    if(width<=520)await page.getByTestId('ground-map-sector').selectOption('all');
+    const readMotion=()=>page.evaluate(()=>{
+      const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+      return JSON.parse(raw!).motion.officers as Array<{id:string;x:number;y:number;route:Array<{x:number;y:number}>}>;
+    });
+    await clickGround(page,2,5);
+    await expect(stop).toBeEnabled();
+    const planned=await readMotion();
+    expect(planned.filter(o=>o.route.length>0).length).toBeGreaterThanOrEqual(2);
+    const goals=planned.map(o=>o.route.at(-1)??o);
+    await stop.click();
+    await expect(stop).toBeDisabled();
+    await expect(page.getByTestId('ground-current-notice')).toContainText('Formación de 3 oficiales detenida');
+    const stopped=await readMotion();
+    expect(stopped.every(o=>o.route.length===0)).toBe(true);
+    expect(stopped.some((o,i)=>Math.hypot(o.x-goals[i].x,o.y-goals[i].y)>.1)).toBe(true);
+    for(const o of stopped)await expect(page.getByTestId('ground-unit-'+o.id)).toHaveAttribute('data-walk-phase','idle');
+    await page.screenshot({path:'test-results/ground-realtime-formation-stopped-'+width+'.png'});
+    await page.reload();
+    await expect(page.getByTestId('ground-realtime-toggle')).toHaveAttribute('aria-pressed','true');
+    expect(await readMotion()).toEqual(stopped);
+    for(const o of stopped)await expect(page.getByTestId('ground-unit-'+o.id)).toHaveAttribute('data-walk-phase','idle');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  });
+}
