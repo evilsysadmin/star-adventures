@@ -914,7 +914,7 @@ export function GroundSquadSelection({
         }}>
         {moveMode ? 'Cancelar' : 'Mover'}
       </button>
-      {realtime && onRealtimeStop && <button type="button" data-testid="ground-stop-officer"
+      {realtime && onRealtimeStop && !perimeterAtHand && <button type="button" data-testid="ground-stop-officer"
         disabled={disabled || !selectedUnit || !realtimeMovingIds.includes(selectedUnit.id)}
         aria-label="Detener oficial seleccionado" title="Cancelar la ruta sin cambiar de posición"
         onClick={()=>{

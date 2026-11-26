@@ -64,6 +64,15 @@ for(const width of [390,430]){
   await expect(page.getByTestId('ground-unit-dorn')).toHaveAttribute('data-walk-facing','neutral');
   await expect(venn).toHaveAttribute('data-grid-x','3');
   await expect(venn).toHaveAttribute('data-grid-y','5');
+  // Adding a sixth action must not push any control behind the crew rail.
+  const dock=page.locator('.ground-squad-toolbar');
+  const rail=page.getByTestId('ground-crew-rail');
+  await expect.poll(async()=>{
+    const a=await dock.boundingBox(),b=await rail.boundingBox();
+    return !!a&&!!b&&a.y>=b.y+b.height-1;
+  }).toBe(true);
+  await expect.poll(async()=>dock.locator('button').evaluateAll(buttons=>
+    buttons.every(button=>button.getBoundingClientRect().height>=44))).toBe(true);
   await page.getByTestId('ground-select-all').tap();
   // Sample the visible label envelopes against all other officer bodies
   // throughout the real formation order. No fixed screenshot timing.
