@@ -1,0 +1,11 @@
+/release.json
+  Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+
+/
+  Cache-Control: no-cache, max-age=0, must-revalidate
+  Cloudflare-CDN-Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-cache, max-age=0, must-revalidate
+  Cloudflare-CDN-Cache-Control: no-store
