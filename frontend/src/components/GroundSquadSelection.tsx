@@ -342,7 +342,7 @@ export function GroundSquadSelection({
     ? fullFrame.left+' '+fullFrame.top+' '+fullWidth+' '+fullHeight
     : cameraX+' '+cameraY+' '+cameraWidth+' '+cameraHeight;
   const [moveMode, setMoveMode] = useState(false);
-  const [queueFor,setQueueFor]=useState<string|null>(null);
+  const [queueFor,setQueueFor]=useState<string[]|null>(null);
   const [moveNotice, setMoveNotice] = useState('Selecciona un oficial o todo el equipo para dar una orden.');
   const [orderedIds,setOrderedIds]=useState<string[]>([]);
   const [scienceNotice, setScienceNotice] = useState('Acerca un oficial a la sonda científica para investigarla.');
@@ -367,7 +367,7 @@ export function GroundSquadSelection({
   // Explain the one-tap affordance in the existing status strip, without a
   // new overlay over officers, objectives or the canonical picking plane.
   const touchMoveNotice=realtime&&queueFor!==null
-    ? 'Añadir destino: toca el terreno para prolongar la ruta del oficial.'
+    ? 'Añadir destino: toca el terreno para prolongar '+(queueFor.length===1?'la ruta del oficial.':'las rutas de la formación.')
     : realtime&&compact&&
     moveNotice==='Selecciona un oficial o todo el equipo para dar una orden.'
     ? 'Toca el terreno para ordenar al oficial o equipo seleccionado.'
@@ -442,9 +442,10 @@ export function GroundSquadSelection({
     setMoveMode(false);
     setQueueFor(null);
     const append=realtime&&(queue||queueFor!==null);
-    if(append&&(selected.length!==1||(queueFor!==null&&selected[0]!==queueFor))){
+    if(append&&queueFor!==null&&
+       (selected.length!==queueFor.length||selected.some((id,i)=>id!==queueFor[i]))){
       setOrderedIds([]);
-      setMoveNotice('Para añadir un destino, selecciona un solo oficial. Las rutas actuales se conservan.');
+      setMoveNotice('La selección ha cambiado. Las rutas actuales se conservan.');
       return;
     }
     setOrderedIds([]);
@@ -1040,10 +1041,10 @@ export function GroundSquadSelection({
         {realtime?'Volver al movimiento clásico':'Probar movimiento libre del equipo (beta)'}
       </button>}
       {realtime&&<button type="button" className="ground-realtime-toggle"
-        data-testid="ground-queue-next" disabled={disabled||selected.length!==1}
+        data-testid="ground-queue-next" disabled={disabled||selected.length<1||selected.length>3}
         aria-pressed={queueFor!==null}
         onClick={event=>{
-          setQueueFor(selected[0]);
+          setQueueFor([...selected]);
           setMoveMode(true);
           setLastNotice('move');
           setKeyboardCell(leaderUnit
@@ -1051,13 +1052,13 @@ export function GroundSquadSelection({
             :{x:position.x,y:position.y});
           event.currentTarget.closest('details')?.removeAttribute('open');
           svg.current?.focus({preventScroll:true});
-        }}>Añadir destino al oficial</button>}
+        }}>{selected.length===1?'Añadir destino al oficial':'Añadir destino a la formación'}</button>}
       {onWideTrial && <button type="button" className="ground-realtime-toggle"
         data-testid="wide-trial-enter" disabled={disabled} onClick={onWideTrial}>
         Explorar K-47 exterior · mapa grande 32×20 (beta)
       </button>}
       <p className="ground-squad-help">{realtime
-        ? 'Beta: en móvil toca terreno libre para ordenar al oficial o equipo seleccionado. «Añadir destino al oficial» prepara una única orden encadenada. En escritorio, clic derecho o Mover. Con un oficial, Shift + clic derecho o Shift + Enter en modo Mover añade un destino. Los compañeros reservan sus rutas. Volver al clásico descarta el recorrido de prueba.'
+        ? 'Beta: en móvil toca terreno libre para ordenar al oficial o equipo seleccionado. «Añadir destino» prepara una única orden encadenada para la selección. En escritorio, clic derecho o Mover. Shift + clic derecho o Shift + Enter en modo Mover añade un destino si las rutas son compatibles. Los compañeros reservan sus rutas. Volver al clásico descarta el recorrido de prueba.'
         : 'El modo clásico conserva el movimiento por casillas. La beta opcional permite que hasta tres oficiales avancen simultáneamente, sin alterar este historial.'}</p>
       <p className="ground-squad-help">Clic, Shift+clic o arrastrar para seleccionar.
       En móvil, activa «Sumar» y toca los nombres para crear un grupo.

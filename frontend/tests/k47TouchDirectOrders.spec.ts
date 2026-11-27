@@ -328,3 +328,72 @@ for(const width of [390,430]){
   expect(await route()).toEqual([]);
  });
 }
+
+
+// Resume a valid sidecar with two active exterior routes. Repeated adjacent
+// waypoints deliberately keep both prefixes active despite slow CI renderers;
+// the real mission planner/restore, browser input and movement are exercised.
+for(const width of [390,1280]){
+ test('queued formation input preserves two active routes and third officer '+width,async({page})=>{
+  test.setTimeout(120_000);
+  await page.setViewportSize({width,height:850});
+  await land(page);
+  const help=page.locator('.ground-squad-instructions summary');
+  await help.click();
+  await page.getByTestId('ground-realtime-toggle').click();
+  const fixture=await page.evaluate(()=>{
+   const key='shadowops.star-adventures.ground-realtime.v1';
+   const raw=JSON.parse(localStorage.getItem(key)!);
+   raw.motion.officers=raw.motion.officers.map((o:{id:string})=>{
+    if(o.id==='mira')return {id:o.id,x:13,y:8,route:[]};
+    const y=o.id==='venn'?3:6;
+    return {id:o.id,x:13,y,route:Array.from({length:79},(_,i)=>({x:i%2===0?14:13,y}))};
+   });
+   const cells=new Set<string>(raw.explored);
+   for(let x=13;x<=16;x++)for(let y=3;y<=8;y++)cells.add(x+','+y);
+   raw.explored=[...cells].sort();
+   return {key,raw};
+  });
+  // Install the exact valid sidecar before the app's restore effect runs;
+  // otherwise an in-flight React save can race the fixture write on reload.
+  await page.addInitScript(({key,raw})=>localStorage.setItem(key,JSON.stringify(raw)),fixture);
+  await page.reload();
+  await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','moving');
+  await expect(page.getByTestId('ground-unit-dorn')).toHaveAttribute('data-walk-phase','moving');
+  await expect(page.getByTestId('ground-unit-mira')).toHaveAttribute('data-world-x','13.000');
+  const camera=page.getByTestId('ground-camera-toggle');
+  if(await camera.getAttribute('aria-pressed')==='true')await camera.click();
+  if(width===390)await page.getByTestId('ground-map-sector').selectOption('all');
+  await page.getByTestId('ground-selection-additive').click();
+  await page.getByTestId('ground-select-dorn').click();
+  await expect(page.getByTestId('ground-select-venn')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('ground-select-dorn')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('ground-select-mira')).toHaveAttribute('aria-pressed','false');
+  if(width===390){
+   await help.tap();
+   const queue=page.getByTestId('ground-queue-next');
+   await expect(queue).toHaveText('Añadir destino a la formación');
+   await queue.tap();
+   await expect(page.getByTestId('ground-current-notice')).toContainText('las rutas de la formación');
+   await tapCell(page,16,3);
+  }else{
+   const position=await cellScreen(page,16,3);
+   await page.getByTestId('ground-squad-board').click({position,button:'right',modifiers:['Shift']});
+  }
+  const motion=()=>page.evaluate(()=>{
+   const raw=localStorage.getItem('shadowops.star-adventures.ground-realtime.v1');
+   return JSON.parse(raw!).motion.officers as Array<{id:string;x:number;y:number;route:Array<{x:number;y:number}>}>;
+  });
+  const queued=await motion(),venn=queued.find(o=>o.id==='venn')!,dorn=queued.find(o=>o.id==='dorn')!;
+  expect(venn.route.at(-1)).toEqual({x:16,y:3});
+  expect(venn.route.length).toBeGreaterThan(3);
+  expect(venn.route).toContainEqual({x:14,y:3});
+  expect(dorn.route).toContainEqual({x:14,y:6});
+  expect(dorn.route.at(-1)).not.toEqual(venn.route.at(-1));
+  expect(queued.find(o=>o.id==='mira')).toEqual({id:'mira',x:13,y:8,route:[]});
+  await expect(page.getByTestId('ground-move-mode')).toHaveAttribute('aria-pressed','false');
+  await page.screenshot({path:'test-results/k47-formation-queue-'+width+'.png'});
+  await page.getByTestId('ground-stop-officer').click();
+  expect((await motion()).every(o=>o.route.length===0)).toBe(true);
+ });
+}
