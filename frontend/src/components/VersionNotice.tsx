@@ -18,14 +18,19 @@ export function VersionNotice() {
       activeController = controller;
       const timeout = window.setTimeout(() => controller.abort(), CHECK_TIMEOUT);
       try {
-        const url = new URL(`${import.meta.env.BASE_URL}version.json`, location.origin);
-        url.searchParams.set('check', String(Date.now()));
-        const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+        const url = new URL(`${import.meta.env.BASE_URL}release.json`, location.origin);
+        url.searchParams.set('ts', String(Date.now()));
+        const response = await fetch(url, {
+          cache: 'no-store',
+          headers: { accept: 'application/json' },
+          signal: controller.signal,
+        });
         if (!response.ok) return;
         const data: unknown = await response.json();
-        if (!stopped && data && typeof data === 'object' && 'version' in data &&
-            typeof data.version === 'string' && data.version.length > 0 && data.version !== __BUILD_ID__) {
-          setAvailableVersion(data.version);
+        if (!stopped && data && typeof data === 'object' && 'build' in data &&
+            typeof data.build === 'string' && /^[a-f0-9]{40}$/i.test(data.build) &&
+            data.build.toLowerCase() !== __BUILD_ID__.toLowerCase()) {
+          setAvailableVersion(data.build.toLowerCase());
         }
       } catch {
         // Offline play and temporary network errors do not interrupt the game.
