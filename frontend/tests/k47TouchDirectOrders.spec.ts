@@ -341,7 +341,7 @@ for(const width of [390,1280]){
   const help=page.locator('.ground-squad-instructions summary');
   await help.click();
   await page.getByTestId('ground-realtime-toggle').click();
-  await page.evaluate(()=>{
+  const fixture=await page.evaluate(()=>{
    const key='shadowops.star-adventures.ground-realtime.v1';
    const raw=JSON.parse(localStorage.getItem(key)!);
    raw.motion.officers=raw.motion.officers.map((o:{id:string})=>{
@@ -352,8 +352,11 @@ for(const width of [390,1280]){
    const cells=new Set<string>(raw.explored);
    for(let x=13;x<=16;x++)for(let y=3;y<=8;y++)cells.add(x+','+y);
    raw.explored=[...cells].sort();
-   localStorage.setItem(key,JSON.stringify(raw));
+   return {key,raw};
   });
+  // Install the exact valid sidecar before the app's restore effect runs;
+  // otherwise an in-flight React save can race the fixture write on reload.
+  await page.addInitScript(({key,raw})=>localStorage.setItem(key,JSON.stringify(raw)),fixture);
   await page.reload();
   await expect(page.getByTestId('ground-unit-venn')).toHaveAttribute('data-walk-phase','moving');
   await expect(page.getByTestId('ground-unit-dorn')).toHaveAttribute('data-walk-phase','moving');
