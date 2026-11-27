@@ -70,7 +70,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
   const scene=new THREE.Scene();
   const shades = scenario.id==='derelict'
    ? {sky:'#0c1323',tile:'#243346',alternate:'#1c2a3a',wall:'#687084',metal:'#b3a68b'}
-   : scenario.id==='evacuation'
+   : scenario.id==='evacuation'||scenario.id==='frontier'
    ? {sky:'#1e1922',tile:'#473b38',alternate:'#3c302f',wall:'#91766a',metal:'#e1b184'}
    : {sky:'#091b28',tile:'#204553',alternate:'#183745',wall:'#607a82',metal:'#adcab4'};
   scene.background=new THREE.Color(shades.sky);
@@ -111,7 +111,9 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    const tile=add(new THREE.Mesh(
     new THREE.BoxGeometry(.963,elevated,.963),
     new THREE.MeshStandardMaterial({
-     color:blocked?shades.wall:protectedTile?shades.metal:(cell.col+cell.row)%2?shades.alternate:shades.tile,
+     color:blocked?shades.wall:protectedTile?shades.metal:scenario.id==='frontier'
+      ? (cell.col*17+cell.row*11)%5===0?'#5b5145':'#51473d'
+      : (cell.col+cell.row)%2?shades.alternate:shades.tile,
      metalness:blocked?.32:.13,roughness:blocked?.65:.83,
     })
    ));
@@ -123,6 +125,69 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
      new THREE.MeshStandardMaterial({color:'#283946',metalness:.53,roughness:.38})
     ));
     top.position.set(p.x,elevated-.08,p.z);
+   }
+  }
+  // Planetary outpost: scenery is anchored to the authored walls and cover.
+  // Low ground markings are decorative; logical occupancy and picking stay pure.
+  if(scenario.id==='frontier'){
+   const rock=new THREE.MeshStandardMaterial({color:'#806f5a',roughness:1});
+   const shadow=new THREE.MeshStandardMaterial({color:'#514a40',roughness:1});
+   const hull=new THREE.MeshStandardMaterial({color:'#8a9187',metalness:.45,roughness:.6});
+   const dark=new THREE.MeshStandardMaterial({color:'#394b4c',metalness:.5,roughness:.55});
+   const amber=new THREE.MeshBasicMaterial({color:'#f2b966'});
+   const cyan=new THREE.MeshBasicMaterial({color:'#83d8cf'});
+   const box=(x:number,y:number,z:number,w:number,h:number,d:number,material:THREE.Material)=>{
+    const mesh=add(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material));
+    mesh.position.set(x,y,z);return mesh;
+   };
+   scenario.walls.forEach((cell,index)=>{
+    const p=atCell(cell,scenario.size);
+    if(index<8){
+     const cliff=add(new THREE.Mesh(new THREE.DodecahedronGeometry(.60,0),index%2?rock:shadow));
+     cliff.scale.set(.82,1.05,.80);cliff.position.set(p.x,1.04,p.z);
+     box(p.x,1.24,p.z,.74,.10,.78,rock);
+    }else{
+     box(p.x,1.19,p.z,.94,.13,.94,dark);
+     box(p.x,.82,p.z+.48,.72,.42,.035,hull);
+     box(p.x,1.03,p.z+.505,.35,.08,.018,amber);
+    }
+   });
+   scenario.cover.forEach((cell,index)=>{
+    const p=atCell(cell,scenario.size);
+    if(index%2===0){
+     const boulder=add(new THREE.Mesh(new THREE.DodecahedronGeometry(.47,0),rock));
+     boulder.scale.set(.9,.7,.85);boulder.position.set(p.x,.53,p.z);
+    }else{
+     box(p.x,.62,p.z,.74,.30,.74,dark);
+     box(p.x,.79,p.z,.78,.06,.78,hull);
+     box(p.x,.60,p.z+.38,.40,.055,.02,amber);
+    }
+   });
+   // Flush trail and landing-pad markings do not imply new collisions.
+   for(const cell of ['3:5','4:5','5:5','6:5','7:5','8:5']){
+    const p=atCell(cell,scenario.size);
+    box(p.x,.075,p.z-.38,.70,.012,.035,amber);
+   }
+   const sensor=atCell(scenario.sensor,scenario.size);
+   box(sensor.x,.25,sensor.z,.55,.30,.55,dark);
+   const antenna=add(new THREE.Mesh(new THREE.CylinderGeometry(.04,.07,.78,8),hull));
+   antenna.position.set(sensor.x,.72,sensor.z);
+   box(sensor.x,1.10,sensor.z,.63,.08,.08,cyan);
+   if(scenario.console){
+    const p=atCell(scenario.console,scenario.size);
+    box(p.x,.35,p.z+.20,.68,.48,.24,hull);
+    box(p.x,.76,p.z+.32,.60,.42,.06,dark);
+    box(p.x,.77,p.z+.355,.43,.26,.012,cyan);
+   }
+   if(scenario.survivor){
+    const p=atCell(scenario.survivor,scenario.size);
+    box(p.x,.13,p.z,.78,.10,.85,dark);
+    for(const x of [-.34,.34])box(p.x+x,.24,p.z,.05,.22,.85,hull);
+   }
+   const pad=atCell(scenario.extraction,scenario.size);
+   for(const x of [-.36,.36])for(const z of [-.36,.36]){
+    box(pad.x+x,.21,pad.z+z,.10,.28,.10,dark);
+    box(pad.x+x,.37,pad.z+z,.10,.05,.10,cyan);
    }
   }
   // Original, deterministic relay-outpost dressing: structural wall ribs,
@@ -498,7 +563,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
    aegis:{key:'starAdventures.tactical.aegisRaiderIdleV1',scale:[2.02,3.04] as const,color:'#e4946f'},
    veil:{key:'starAdventures.tactical.veilAgentIdleV1',scale:[1.74,2.68] as const,color:'#b59be8'},
   } as const;
-  type HostileVisual={ground:THREE.Mesh;sprite:THREE.Sprite;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null};
+  type HostileVisual={ground:THREE.Mesh;fallback:THREE.Mesh;sprite:THREE.Sprite;facing:THREE.Mesh;idle:THREE.Texture|null;walk:THREE.Texture|null};
   const hostileVisuals=new Map<HostileId,HostileVisual>();
   for(const hostile of scenario.hostiles){
    const asset=hostileAssets[hostile.id];
@@ -507,10 +572,14 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     color:asset.color,transparent:true,opacity:.24,depthWrite:false,
    })));
    ground.rotation.x=-Math.PI/2;ground.position.set(p.x,.107,p.z);
+   const fallback=add(new THREE.Mesh(new THREE.ConeGeometry(.30,.95,6),
+    new THREE.MeshStandardMaterial({color:asset.color,roughness:.7})));
+   fallback.position.set(p.x,.62,p.z);
    const sprite=add(new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,alphaTest:.06})));
+   sprite.visible=false;
    sprite.name=hostile.label;sprite.center.set(.5,0);sprite.scale.set(asset.scale[0],asset.scale[1],1);sprite.position.set(p.x,.14,p.z);
    const facing=createFacing(asset.color);
-   const visual:HostileVisual={ground,sprite,facing,idle:null,walk:null};
+   const visual:HostileVisual={ground,fallback,sprite,facing,idle:null,walk:null};
    hostileVisuals.set(hostile.id,visual);
    // Both atlases contain six frames. Each hostile owns its own UV offsets:
    // a shared texture would make two independent sprites animate in lockstep.
@@ -528,6 +597,8 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
        texture.offset.set(uv.x,uv.y);
       }
       sprite.material.map=texture;sprite.material.needsUpdate=true;
+      sprite.visible=ground.visible;
+      fallback.visible=false;
       canvas.dataset[`hostileIdleUv${hostile.id[0].toUpperCase()+hostile.id.slice(1)}`]=String(texture.repeat.x);
      }
      render();
@@ -549,7 +620,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const p=atCell(view.hostilePositions?.[shotMotion.target]??shotMotion.toCell,scenario.size);
     victim.sprite.position.set(p.x,.14,p.z);
     const alive=view.hostileHealth?.[shotMotion.target]!==0;
-    victim.sprite.visible=alive;victim.ground.visible=alive;
+    victim.sprite.visible=alive&&!!victim.idle;victim.fallback.visible=alive&&!victim.idle;victim.ground.visible=alive;
    }
    canvas.dataset.hitPhase='idle';
    delete canvas.dataset.hitTarget;
@@ -647,12 +718,13 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     // Combat HP changes immediately, but a lethal hit should not erase the
     // sprite before the visible projectile has actually reached its target.
     const alive=view.hostileHealth?.[hostile.id]!==0||shotMotion?.target===hostile.id;
-    visual.ground.visible=alive;visual.sprite.visible=alive;
+    visual.ground.visible=alive;visual.sprite.visible=alive&&!!visual.idle;visual.fallback.visible=alive&&!visual.idle;
     visual.facing.visible=alive&&Number.isFinite(visual.facing.userData.heading);
     if(!alive)motions.delete(hostile.id);
     const p=atCell(view.hostilePositions?.[hostile.id]??hostile.cell,scenario.size);
     if(!motions.has(hostile.id)){
      visual.ground.position.set(p.x,.107,p.z);
+     visual.fallback.position.set(p.x,.62,p.z);
      visual.sprite.position.set(p.x,.14,p.z);
      placeFacing(visual.facing,p.x,p.z);
     }
@@ -688,6 +760,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
     const x=THREE.MathUtils.lerp(from.x,to.x,step.progress);
     const z=THREE.MathUtils.lerp(from.z,to.z,step.progress);
     visual.sprite.position.set(x,.14,z);
+    visual.fallback.position.set(x,.62,z);
     visual.ground.position.set(x,.107,z);
     if(!step.done){
      const side=isoSpriteSideFromCells(step.from,step.to);
@@ -834,7 +907,7 @@ export function IsoScenarioBoard({scenario,mission,selected,focus,route,hostileP
       );
       victim.sprite.material.color.setRGB(1,1-.6*reaction.flash,1-.85*reaction.flash);
       victim.sprite.material.opacity=reaction.opacity;
-      victim.sprite.visible=true;victim.ground.visible=true;
+      victim.sprite.visible=!!victim.idle;victim.ground.visible=true;
      }
     }
     if(progress===1){

@@ -31,7 +31,7 @@ function go(state,officer,destination,reach){
 function action(state,command){
  return applyMissionAction(state.ap?state:applyMissionAction(state,{type:'end-turn'}),command);
 }
-for(const id of ['relay','derelict','evacuation']){
+for(const id of ['relay','derelict','evacuation','frontier']){
  test(`${id} objectives are fully reachable and completion is an actual state transition`,()=>{
   const scenario=SCENARIOS[id];validateScenario(scenario);
   let state=createMission(id);validateMission(state);
