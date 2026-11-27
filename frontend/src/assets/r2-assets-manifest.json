@@ -63,6 +63,13 @@
       "sha256": "d0b5513c0c189f42290df40e1b563341e9805214f216357eaf97eecf5f8af4a2",
       "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-run-v1-d0b5513c0c189f42.webp"
     },
+    "starAdventures.tactical.officerFemaleWalk4V1": {
+      "bytes": 1223506,
+      "contentType": "image/webp",
+      "key": "star-adventures/tactical/officer-female-walk4-v1-8ee3e84f15310061.webp",
+      "sha256": "8ee3e84f15310061831bb668a433c32eacf9b7a5af070cd1ad9fde1f8963a029",
+      "url": "https://assets.chess-studio.shadowops.dpdns.org/star-adventures/tactical/officer-female-walk4-v1-8ee3e84f15310061.webp"
+    },
     "starAdventures.tactical.officerFemaleWalkV1": {
       "bytes": 205474,
       "contentType": "image/webp",

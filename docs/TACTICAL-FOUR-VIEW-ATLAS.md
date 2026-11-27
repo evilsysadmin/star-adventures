@@ -2,7 +2,11 @@
 
 **Status:** support for officers is opt-in. The existing R2 V1 WebPs have SIX
 frames of ONE view and cannot show an authentic back-facing character.
-No V2 assets are yet published or claimed to have passed artistic QA.
+The female atlas `officerFemaleWalk4V1` is now registered in the manifest
+with its content hash. A mandatory browser test downloads R2 bytes and
+checks their SHA-256, then verifies active 4-view frames in Chromium.
+Visual quality still requires inspection of real screenshots and motion;
+male/officer fire/hit and hostile 4-view sheets remain pending.
 
 Create original transparent WebP atlases with exactly 6 columns x 4 rows.
 Each column contains a different phase of the walk cycle; rows from the
