@@ -27,9 +27,11 @@ Note: Chrome must be installed for Playwright's `channel: chrome`. GitHub-hosted
 
 - **Game rules and stories:** this repository, separate from Chess Studio and Chronicles.
 - **Infrastructure, staging, deployments and observability:** [shadowops-infra](https://github.com/evilsysadmin/shadowops-infra), only after explicit handoff.
-
-After **both** source CI jobs pass on a `main` push, the optional notification job requests Infra's existing `staradvs-pages-staging.yml` workflow. The game repository **never deploys** or accesses Cloudflare. To enable immediate cross-repository handoff, configure the `SHADOWOPS_INFRA_ACTIONS_TOKEN` **repository secret in Star Adventures**, using a GitHub fine-grained token restricted to `evilsysadmin/shadowops-infra` with **Actions: read/write** permission. Without it, or if dispatch temporarily fails, source CI remains green and Infra's scheduled staging reconciliation remains the fallback. Infra independently verifies exact source `main` SHA and finished, successful core/browser CI before any publication.
 - **No server yet:** the browser UI talks directly to a deterministic domain engine, not mocked API calls.
+
+After the source CI passes on a `main` push, the notification workflow requests Infra's protected bundle candidate. Infra independently verifies the exact game SHA and creates a seven-day artifact; this step does not publish the game. Protected staging publication uses Infra's reviewed `staradvs-protected-publish.yml` workflow. The game repository never deploys or accesses Cloudflare. If cross-repository notification is unavailable, Infra's scheduled candidate build is the fallback.
+
+The game compares its embedded source SHA with the protected `/release.json` every minute and when the tab regains focus. A newly published SHA shows **Nueva versión disponible** without interrupting play; **Recargar** loads the new build while keeping the locally saved game. To rehearse the notice, leave an authenticated staging tab open while a newer admitted SHA is published through Infra's protected workflow.
 
 Read `AGENTS.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` before extending the game.
 
